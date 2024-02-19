@@ -7,7 +7,7 @@ const {sheetValuesToObject, jwtClient} = require('./utils');
 //Configuration
 const app = express();
 const router = express.Router();
-const PORT = process.env.PORT || 'https://siac-5b33.vercel.app';
+const PORT = process.env.PORT || 3001;
 
 app.use(bodyParser.json());
 
