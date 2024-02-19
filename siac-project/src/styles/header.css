@@ -1,0 +1,44 @@
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items:flex-start; 
+    text-align: center; 
+  }
+  
+
+.title{
+    width: 60%;
+    align-self: center;
+    font-weight: 500;
+    font-size:35px;
+    color: #423b3b;
+}
+
+.buttons-container{
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+}
+
+
+.radio-group{
+    padding: 2rem;
+    padding-left: 10rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    background-color:white;
+    color: #423b3b;
+}
+
+.custom-radio {
+    width: 100px;
+    height: 40px;
+    border-radius: 5px;
+  }
+
+  .semaforo-container{
+    display: flex;
+    flex-direction: row;
+}
+
