@@ -10,7 +10,7 @@ export const Filtro1 = async (data) => {
     try {
         const response = await fetchPostGeneral({
             dataSend: data,
-            urlEndPoint: 'http://localhost:3001/'
+            urlEndPoint: 'https://siac-5b33.vercel.app/'
         });
 
         if (data) {
@@ -43,7 +43,7 @@ export const Filtro2 = async (data) => {
   try {
       const response = await fetchPostGeneral({
           dataSend: data,
-          urlEndPoint: 'http://localhost:3001/'
+          urlEndPoint: 'https://siac-5b33.vercel.app/'
       });
 
       if (data) {
@@ -77,7 +77,7 @@ export const Filtro3 = async (data) => {
     try {
         const response = await fetchPostGeneral({
             dataSend: data,
-            urlEndPoint: 'http://localhost:3001/'
+            urlEndPoint: 'https://siac-5b33.vercel.app//'
         });
   
         if (data) {
@@ -110,7 +110,7 @@ export const Filtro4 = async (data) => {
     try {
         const response = await fetchPostGeneral({
             dataSend: data,
-            urlEndPoint: 'http://localhost:3001/'
+            urlEndPoint: 'https://siac-5b33.vercel.app/'
         });
   
         if (data) {

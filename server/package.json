@@ -6,6 +6,10 @@
   "scripts": {
     "start": "node server.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saludunivalle/siac.git"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
