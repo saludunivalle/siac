@@ -184,47 +184,45 @@ const Semaforo = () => {
           style={setButtonStyles('white', clickedButton === 'white')}
           onClick={() => handleButtonClick('white')}
         >
-          NO APLICA / SIN INFORMACIÓN
+          NO APLICA / SIN INFORMACIÓN <br/>
+          {whiteProgramsCount}
         </button>
         <button
           style={setButtonStyles('green', clickedButton === 'green')}
           onClick={() => handleButtonClick('green')}
         >
-          AÑO Y 6 MESES
+          AÑO Y 6 MESES <br/>
+          {greenProgramsCount}
         </button>
         <button
           style={setButtonStyles('yellow', clickedButton === 'yellow')}
           onClick={() => handleButtonClick('yellow')}
         >
-          6 MESES ANTES DE LA MITAD
+          6 MESES ANTES DE LA MITAD<br/>
+          {yellowProgramsCount}
         </button>
         <button
           style={setButtonStyles('orange', clickedButton === 'orange')}
           onClick={() => handleButtonClick('orange')}
         >
-          3 AÑOS ANTES DEL VENCIMIENTO
+          3 AÑOS ANTES DEL VENCIMIENTO<br/>
+          {orangeProgramsCount}
         </button>
         <button
           style={setButtonStyles('orange2', clickedButton === 'orange2')}
           onClick={() => handleButtonClick('orange2')}
         >
-          18 MESES ANTES DEL VENCIMIENTO
+          18 MESES ANTES DEL VENCIMIENTO<br/>
+          {orange2ProgramsCount}
         </button>
         <button
           style={setButtonStyles('red', clickedButton === 'red')}
           onClick={() => handleButtonClick('red')}
         >
-          AÑO DE VENCIMIENTO
+          AÑO DE VENCIMIENTO<br/>
+          {redProgramsCount}
         </button>
       </div>
-      <div className='cantidad-container2'>
-          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {whiteProgramsCount}</div>
-          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {greenProgramsCount}</div>
-          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {yellowProgramsCount}</div>
-          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {orangeProgramsCount}</div>
-          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {orange2ProgramsCount}</div>
-          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {redProgramsCount}</div>
-        </div>
       <div className='result-container'>
         {filteredData && filteredData.length > 0 ? (
           <div className='containerCollapsible'>
