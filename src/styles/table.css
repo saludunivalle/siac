@@ -15,6 +15,7 @@
     text-align: left;
     font-size: 12px;
     text-align: center;
+    cursor: pointer;
   }
   
   .table-container th {
@@ -23,4 +24,8 @@
   
   .bold {
     font-weight:bold;
+  }
+
+  .table-container tr:hover {
+    background-color: #dbdbdb6e;
   }

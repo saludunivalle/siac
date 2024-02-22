@@ -21,11 +21,10 @@ export const Filtro1 = async (data) => {
                     const propiedadValue = item['pregrado/posgrado']; 
                     return propiedadValue && propiedadValue.toLowerCase().includes(searchTerm.toLowerCase());
                 });
-
                 return filteredData;
+               
             }
         }
-
         return response.data;
     } catch (error) {
         console.error('Error en la solicitud:', error);
@@ -54,11 +53,9 @@ export const Filtro2 = async (data) => {
                   const propiedadValue = item['fase rrc']; 
                   return propiedadValue && propiedadValue.toLowerCase().includes(searchTerm.toLowerCase());
               });
-
               return filteredData;
           }
       }
-
       return response.data;
   } catch (error) {
       console.error('Error en la solicitud:', error);
@@ -105,31 +102,55 @@ export const Filtro3 = async (data) => {
  * 
  * @param {Object} data
  * @returns {Promise<Object[]>}
- */
-export const Filtro4 = async (data) => {
+*/
+// export const Filtro4 = async (data) => {
+//     try {
+//         const response = await fetchPostGeneral({
+//             dataSend: data,
+//             urlEndPoint: 'https://siac-server.vercel.app/'
+//         });
+  
+//         if (data) {
+//             const searchTerm = data.searchTerm; 
+  
+//             if (searchTerm) {
+//                 const filteredData = response.data.filter(item => {
+//                     const propiedadValue = item['escuela']; 
+//                     return propiedadValue && propiedadValue.toLowerCase().includes(searchTerm.toLowerCase());
+//                 });
+  
+//                 return filteredData;
+//             }
+//         }
+  
+//         return response.data;
+//     } catch (error) {
+//         console.error('Error en la solicitud:', error);
+//         throw error; 
+//     }
+//   };
+
+export const Filtro4 = (datos, termino_a_filtrar) => {
     try {
-        const response = await fetchPostGeneral({
-            dataSend: data,
-            urlEndPoint: 'https://siac-server.vercel.app/'
-        });
-  
-        if (data) {
-            const searchTerm = data.searchTerm; 
-  
-            if (searchTerm) {
-                const filteredData = response.data.filter(item => {
-                    const propiedadValue = item['escuela']; 
-                    return propiedadValue && propiedadValue.toLowerCase().includes(searchTerm.toLowerCase());
-                });
-  
-                return filteredData;
-            }
+        if (!Array.isArray(datos)) {
+            throw new Error('Los datos proporcionados no son un array');
         }
-  
-        return response.data;
+
+        if (!termino_a_filtrar || typeof termino_a_filtrar !== 'string') {
+            throw new Error('El término de filtrado proporcionado no es válido');
+        }
+
+        const filteredData = datos.filter(item => {
+            // Aquí debes especificar la propiedad que quieres usar para filtrar,
+            // por ejemplo, 'programa académico', 'sede', etc.
+            // En este caso, se utiliza 'programa académico' como ejemplo.
+            const propiedadValue = item['escuela'];
+            return propiedadValue && propiedadValue.toLowerCase().includes(termino_a_filtrar.toLowerCase());
+        });
+
+        return filteredData;
     } catch (error) {
-        console.error('Error en la solicitud:', error);
-        throw error; 
+        console.error('Error en el filtro:', error);
+        throw error;
     }
-  };
-  
+};

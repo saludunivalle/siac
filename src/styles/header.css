@@ -1,31 +1,33 @@
 .header {
+    padding: 1rem;
     display: flex;
-    flex-direction: column;
-    align-items:flex-start; 
+    flex-direction: row;
     text-align: center; 
-  }
+}
   
 
 .title{
-    width: 60%;
-    align-self: center;
+    padding-left: 2rem;
+    width: 50%;
     font-weight: 500;
-    font-size:35px;
+    font-size: 35px;
     color: #423b3b;
 }
 
 .buttons-container{
+    width: 100%;
     display: flex;
     flex-direction: row;
-    align-content: center;
+    /* align-content: center;
+    align-items: center; */
 }
 
 
 .radio-group{
     padding: 2rem;
-    padding-left: 10rem;
     height: 3rem;
-    display: flex;
+    padding-left: 30%;
+    display: flex; 
     align-items: center;
     background-color:white;
     color: #423b3b;
@@ -37,8 +39,27 @@
     border-radius: 5px;
   }
 
-  .semaforo-container{
+.semaforo-container{
     display: flex;
     flex-direction: row;
+}
+
+.cantidad-container{
+    padding-top: 0.5rem;
+    padding-bottom: 2rem;
+    font-weight: 500;
+    font-size:20px;
+    color: #423b3b;
+}
+
+.cantidad-container2{
+    display: flex;
+    text-align: center;
+    flex-direction: row;
+    padding-top: 0.5rem;
+    padding-bottom: 2rem;
+    font-weight: 300;
+    font-size:15px;
+    color: #423b3b;
 }
 

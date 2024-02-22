@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const {sheetValuesToObject, jwtClient} = require('./utils');
 
-//Configuration
 const app = express();
 const router = express.Router();
 const PORT = process.env.PORT || 3001;

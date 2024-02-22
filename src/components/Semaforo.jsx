@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { Filtro2 } from '../service/data'; 
+import React, { useEffect, useState } from 'react';
+import { Filtro2, Filtro4 } from '../service/data'; 
+import CollapsibleButton from './CollapsibleButton';
 import '/src/styles/header.css';
 import '/src/styles/table.css';
+import Si_icon from '../assets/si_icon.png';
+import No_icon from '../assets/no_icon.png';
 
 const setButtonStyles = (buttonType, isClicked) => {
   switch (buttonType) {
@@ -55,7 +58,19 @@ const Semaforo = () => {
   const [clickedButton, setClickedButton] = useState(null);
   const [filteredData, setFilteredData] = useState(null); 
   const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2'); 
+  const [loading, setLoading] = useState(false);
+  const [greenProgramsCount, setGreenProgramsCount] = useState(0);
+  const [whiteProgramsCount, setWhiteProgramsCount] = useState(0);
+  const [yellowProgramsCount, setYellowProgramsCount] = useState(0);
+  const [orangeProgramsCount, setOrangeProgramsCount] = useState(0);
+  const [orange2ProgramsCount, setOrange2ProgramsCount] = useState(0);
+  const [redProgramsCount, setRedProgramsCount] = useState(0);
 
+  useEffect(() => {
+    console.log(filteredData); 
+    setLoading(false);
+  }, [filteredData]); 
+  
   const handleButtonClick = async (buttonType) => {
     setClickedButton(buttonType === clickedButton ? null : buttonType);
     let searchTerm = '';
@@ -88,12 +103,78 @@ const Semaforo = () => {
         searchTerm =  'N/A';
     }
     try {
+      setLoading(true);
       const response = await Filtro2({ searchTerm });
       setFilteredData(response);
+      switch (buttonType) {
+        case 'white':
+          setWhiteProgramsCount(response.length);
+          break;
+        case 'green':
+          setGreenProgramsCount(response.length);
+          break;
+        case 'yellow':
+          setYellowProgramsCount(response.length);
+          break;
+        case 'orange':
+          setOrangeProgramsCount(response.length);
+          break;
+        case 'orange2':
+          setOrange2ProgramsCount(response.length);
+          break;
+        case 'red':
+          setRedProgramsCount(response.length);
+          break;
+        default:
+          break;
+      }
     } catch (error) {
       console.error('Error al filtrar datos:', error);
-      // Puedes manejar el error según tus necesidades
     }
+  };
+
+  const renderFilteredTable = (data, filter) => {
+    const filteredData = Filtro4(data, filter);
+    return (
+      <div className='table-container'>
+        {loading ? (
+          <p>Cargando datos...</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Programa Académico</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>Sede</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>Escuela</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>  
+                <th style={{ backgroundColor: headerBackgroundColor }}>Pregrado/Posgrado</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>RRC Vigente</th>                    
+                <th style={{ backgroundColor: headerBackgroundColor }}>FechaExpedRRC</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>DuracionRRC</th>
+                <th className="bold"style={{ backgroundColor: headerBackgroundColor }}>FechaVencRRC</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>AC Vigente</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData.map((item, index) => (
+                <tr key={index}>
+                  <td className="bold">{item['programa académico']}</td> 
+                  <td>{item['sede']}</td> 
+                  <td>{item['escuela']}</td> 
+                  <td>{item['departamento']}</td> 
+                  <td>{item['pregrado/posgrado']}</td> 
+                  <td>{item['rc vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
+                  <td>{item['fechaexpedrc']}</td> 
+                  <td>{item['duracionrc']}</td> 
+                  <td className="bold">{item['fechavencrc']}</td>                           
+                  <td>{item['ac vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+            )}
+            </div>
+    );
   };
 
   return (
@@ -136,52 +217,36 @@ const Semaforo = () => {
           AÑO DE VENCIMIENTO
         </button>
       </div>
+      <div className='cantidad-container2'>
+          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {whiteProgramsCount}</div>
+          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {greenProgramsCount}</div>
+          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {yellowProgramsCount}</div>
+          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {orangeProgramsCount}</div>
+          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {orange2ProgramsCount}</div>
+          <div style={{ marginRight: '20px', marginLeft: '30px' }}>Cantidad de programas: {redProgramsCount}</div>
+        </div>
       <div className='result-container'>
         {filteredData && filteredData.length > 0 ? (
-          <div className='table-container'>
-          <table>
-            <thead>
-              <tr>
-                <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Programa Académico</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>Sede</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>Escuela</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>  
-                <th style={{ backgroundColor: headerBackgroundColor }}>Pregrado/Posgrado</th>                    
-                <th style={{ backgroundColor: headerBackgroundColor }}>FechaExpedRRC</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>DuracionRRC</th>
-                <th className="bold"style={{ backgroundColor: headerBackgroundColor }}>FechaVencRRC</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>AC Vigente</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>FechaExpedAC</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>DuracionAC</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>FechaVencAC</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.map((item, index) => (
-                <tr key={index}>
-                  <td className="bold">{item['programa académico']}</td> 
-                  <td>{item['sede']}</td> 
-                  <td>{item['escuela']}</td> 
-                  <td>{item['departamento']}</td> 
-                  <td>{item['pregrado/posgrado']}</td> 
-                  <td>{item['fechaexpedrc']}</td> 
-                  <td>{item['duracionrc']}</td> 
-                  <td className="bold">{item['fechavencrc']}</td> 
-                  <td>{item['ac vigente']}</td> 
-                  <td>{item['fechaexpedac']}</td> 
-                  <td>{item['duracionac']}</td> 
-                  <td>{item['fechavencac']}</td> 
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
+          <div className='containerCollapsible'>
+            {/* <div className='cantidad-container'> Cantidad de programas: {filteredData ? filteredData.length : 0} </div>          */}
+            <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
+            <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
+            <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />
+            <CollapsibleButton buttonText="Medicina" content={renderFilteredTable(filteredData, 'Medicina')} />
+            <CollapsibleButton buttonText="Odontología" content={renderFilteredTable(filteredData, 'Odontología')} />
+            <CollapsibleButton buttonText="Rehabilitación Humana" content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
+            <CollapsibleButton buttonText="Salud Pública" content={renderFilteredTable(filteredData, 'Salud Pública')} />
+        </div>
         ) : (
-          <p>No hay datos para mostrar.</p>
+          <p> </p>
         )}
       </div>
     </>
   );
+
+
 }
+
+
 
 export default Semaforo;

@@ -7,7 +7,7 @@ import Escuelas from './Escuelas'
 import Semaforo from './Semaforo';
 
 const Header = () => {
-  const [selectedValue, setSelectedValue] = useState('option1');
+  const [selectedValue, setSelectedValue] = useState();
   const [semaforoVisible, setSemaforoVisible] = useState(false);
   const [isNivelVisible, setIsNivelVisible] = useState(false);
   const [isEscuelasVisible, setIsEscuelasVisible] = useState(false);
@@ -41,7 +41,7 @@ const Header = () => {
     <>
       <div className='header'>
         <div className='logo'><img src={logo} alt="Logo" /></div>
-        <div className='title'>Sistema de Seguimiento a la Autoevaluación y Calidad Académica Facultad de Salud</div>
+        <div className='title'>Sistema SIAC Facultad de Salud</div>
       </div>
       <div className='buttons-container'>
           <ButtonGroup
@@ -51,19 +51,19 @@ const Header = () => {
           >
             <Button value="option1" className="custom-radio" 
               style={setButtonStyles('option1')}
-              onClick={() => handleButtonClick('option1')} // Oculta Escuelas al hacer clic en Nivel
+              onClick={() => handleButtonClick('option1')} 
             >
               <span style={{ marginRight: '8px' }}>&nbsp;</span> RRC <span style={{ marginRight: '8px' }}>&nbsp;</span> </Button>
-            <Button value="option2" className="custom-radio"
-              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AC </Button>
             <Button value="option3" className="custom-radio"
               style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> RAC </Button>
+            <Button value="option2" className="custom-radio"
+              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AC </Button>
             <Button value="option4" className="custom-radio"
               style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> CREA </Button>
             <Button value="option5" className="custom-radio"
               style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> MOD </Button>
           </ButtonGroup>
-          <ButtonGroup
+          {/* <ButtonGroup
             aria-label="gender"
             name="controlled-radio-buttons-group"
             value={selectedValue}
@@ -79,17 +79,17 @@ const Header = () => {
               onClick={() => handleButtonClick('option7')}> 
               Escuela 
             </Button>
-          </ButtonGroup>
+          </ButtonGroup> */}
       </div>
       {selectedValue === 'option1' && (
         <Semaforo />
       )}
-      {selectedValue === 'option6' && (
+      {/* {selectedValue === 'option6' && (
         <Nivel/>
-      )}
-      {selectedValue === 'option7' && (
+      )} */}
+      {/* {selectedValue === 'option7' && (
         <Escuelas/>
-      )}
+      )} */}
     </>
   );
 }

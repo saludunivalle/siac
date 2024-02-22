@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import '/src/styles/collapsibleButton.css';
 
 const CollapsibleButton = ({ buttonText, content, nestedButton }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const toggleCollapsible = () => {
     setIsOpen(!isOpen);
@@ -10,7 +10,7 @@ const CollapsibleButton = ({ buttonText, content, nestedButton }) => {
 
   return (
     <div>
-      <button onClick={toggleCollapsible}>
+      <button onClick={toggleCollapsible} >
         {buttonText} {isOpen ? '▲' : '▼'} 
       </button>
       {isOpen && (
