@@ -1,0 +1,82 @@
+.procesos {
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    align-items: center;
+    width: 100%;
+    color: #353131;
+    font-size: 18px;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.procesosRRC{
+    padding: 2rem;
+    border-radius: 8px ;
+    background-color:rgb(241, 241, 241);
+    border: 1px solid #ffffff;
+    text-align: center;
+    width: 60px;
+}
+
+.procesosRAC{
+    padding: 2rem;
+    border-radius: 8px ;
+    background-color:rgb(241, 241, 241);
+    border: 1px solid #ffffff;
+    text-align: center;
+    width: 60px;
+}
+
+.procesosAC{
+    padding: 2rem;
+    border-radius: 8px ;
+    background-color:rgb(241, 241, 241);
+    border: 1px solid #ffffff;
+    text-align: center;
+    width: 60px;
+}
+
+.procesosCREA{
+    padding: 2rem;
+    border-radius: 8px ;
+    background-color:rgb(241, 241, 241);
+    border: 1px solid #ffffff;
+    text-align: center;
+    width: 60px;
+}
+
+.procesosMOD{
+    padding: 2rem;
+    border-radius: 8px ;
+    background-color:rgb(241, 241, 241);
+    border: 1px solid #ffffff;
+    text-align: center;
+    width: 60px;
+}
+
+.title-program{
+    font-size: 20px;
+}
+
+ul {
+    list-style-type:disc; 
+  }
+  
+li {
+    color: #333;
+    font-size: 18px;
+}
+
+.button-reverse{
+    padding: 1rem;
+    border-radius: 15px ;
+    background-color:rgb(255, 253, 253);
+    border: 2px solid #969595;
+    text-align: center;
+    width: 100px;
+    font-size: 18px;
+}
+
+.button-reverse:hover{
+    background-color:rgba(163, 163, 163, 0.562);
+}

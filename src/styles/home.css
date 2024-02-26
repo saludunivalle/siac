@@ -1,14 +1,13 @@
-.header {
-    padding: 1rem;
+.home {
     display: flex;
     flex-direction: row;
-    text-align: center; 
+    text-align: left; 
 }
   
 
 .title{
-    padding-left: 2rem;
-    width: 50%;
+    padding-left: 1rem;
+    width: 40%;
     font-weight: 500;
     font-size: 35px;
     color: #423b3b;
@@ -45,6 +44,14 @@
 }
 
 .result-container{
-    padding-top: 3rem;
+    padding-top: 2rem;
 }
 
+.total{
+    padding-left: 1rem;
+    width: 90%;
+    font-weight: 300;
+    font-size: 20px;
+    color: #423b3b;
+    text-align: center; 
+}

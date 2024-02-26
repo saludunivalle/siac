@@ -74,7 +74,7 @@ export const Filtro3 = async (data) => {
     try {
         const response = await fetchPostGeneral({
             dataSend: data,
-            urlEndPoint: 'https://siac-server.vercel.app//'
+            urlEndPoint: 'https://siac-server.vercel.app/'
         });
   
         if (data) {
@@ -141,9 +141,6 @@ export const Filtro4 = (datos, termino_a_filtrar) => {
         }
 
         const filteredData = datos.filter(item => {
-            // Aquí debes especificar la propiedad que quieres usar para filtrar,
-            // por ejemplo, 'programa académico', 'sede', etc.
-            // En este caso, se utiliza 'programa académico' como ejemplo.
             const propiedadValue = item['escuela'];
             return propiedadValue && propiedadValue.toLowerCase().includes(termino_a_filtrar.toLowerCase());
         });
@@ -154,3 +151,50 @@ export const Filtro4 = (datos, termino_a_filtrar) => {
         throw error;
     }
 };
+
+
+export const Filtro5 = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {},
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+  };
+
+
+/**
+ * Filtro6
+ * 
+ * @param {Object} data
+ * @returns {Promise<Object[]>}
+ */
+export const Filtro6 = async (data) => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: data,
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+  
+        if (data) {
+            const searchTerm = data.searchTerm; 
+  
+            if (searchTerm) {
+                const filteredData = response.data.filter(item => {
+                    const propiedadValue = item['fase rac']; 
+                    return propiedadValue && propiedadValue.toLowerCase().includes(searchTerm.toLowerCase());
+                });
+                return filteredData;
+            }
+        }
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+  };

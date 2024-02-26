@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Filtro2, Filtro4 } from '../service/data'; 
+import { Filtro6, Filtro4 } from '../service/data'; 
 import CollapsibleButton from './CollapsibleButton';
 import '/src/styles/home.css';
 import '/src/styles/table.css';
 import Si_icon from '../assets/si_icon.png';
 import No_icon from '../assets/no_icon.png';
 import { useNavigate } from 'react-router-dom';
-
 
 const setButtonStyles = (buttonType, isClicked) => {
   switch (buttonType) {
@@ -56,7 +55,7 @@ const setButtonStyles = (buttonType, isClicked) => {
   }
 };
 
-const Semaforo = () => {
+const SemaforoAC = () => {
   const [clickedButton, setClickedButton] = useState(null);
   const [filteredData, setFilteredData] = useState(null); 
   const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2'); 
@@ -83,14 +82,14 @@ const Semaforo = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await Filtro2({ searchTerm: '' }); // Obtener todos los datos sin filtrar
+        const response = await Filtro6({ searchTerm: '' }); // Obtener todos los datos sin filtrar
         setFilteredData(response);
-        setWhiteProgramsCount(response.filter(item => item['fase rrc'] === 'N/A').length);
-        setGreenProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 1').length);
-        setYellowProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 2').length);
-        setOrangeProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 3').length);
-        setOrange2ProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 4').length);
-        setRedProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 5').length);
+        setWhiteProgramsCount(response.filter(item => item['fase rac'] === 'N/A').length);
+        setGreenProgramsCount(response.filter(item => item['fase rac'] === 'Fase 1').length);
+        setYellowProgramsCount(response.filter(item => item['fase rac'] === 'Fase 2').length);
+        setOrangeProgramsCount(response.filter(item => item['fase rac'] === 'Fase 3').length);
+        setOrange2ProgramsCount(response.filter(item => item['fase rac'] === 'Fase 4').length);
+        setRedProgramsCount(response.filter(item => item['fase rac'] === 'Fase 5').length);
         setLoading(false);
       } catch (error) {
         console.error('Error al filtrar datos:', error);
@@ -134,7 +133,7 @@ const Semaforo = () => {
     }
     try {
       setLoading(true);
-      const response = await Filtro2({ searchTerm });
+      const response = await Filtro6({ searchTerm });
       setFilteredData(response);
     } catch (error) {
       console.error('Error al filtrar datos:', error);
@@ -160,11 +159,11 @@ const Semaforo = () => {
                   <td>{item['escuela']}</td> 
                   <td>{item['departamento']}</td> 
                   <td>{item['pregrado/posgrado']}</td> 
-                  <td>{item['rc vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
-                  <td>{item['fechaexpedrc']}</td> 
-                  <td>{item['duracionrc']}</td> 
-                  <td className="bold">{item['fechavencrc']}</td>                           
                   <td>{item['ac vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
+                  <td>{item['fechaexpedac']}</td> 
+                  <td>{item['duracionac']}</td> 
+                  <td className="bold">{item['fechavencac']}</td>                           
+                  <td>{item['rc vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
                 </tr>
               ))}
             </tbody>
@@ -231,14 +230,14 @@ const Semaforo = () => {
                   <th style={{ backgroundColor: headerBackgroundColor }}>Escuela</th>
                   <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>  
                   <th style={{ backgroundColor: headerBackgroundColor }}>Pregrado/Posgrado</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>RRC Vigente</th>                    
-                  <th style={{ backgroundColor: headerBackgroundColor }}>FechaExpedRRC</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>DuracionRRC</th>
-                  <th className="bold"style={{ backgroundColor: headerBackgroundColor }}>FechaVencRRC</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>AC Vigente</th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>RAC Vigente</th>                    
+                  <th style={{ backgroundColor: headerBackgroundColor }}>FechaExpedRAC</th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>DuracionRAC</th>
+                  <th className="bold"style={{ backgroundColor: headerBackgroundColor }}>FechaVencRAC</th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>RRC Vigente</th>
                 </tr>
               </thead>
-            </table>  
+            </table>
             {/* <div className='cantidad-container'> Cantidad de programas: {filteredData ? filteredData.length : 0} </div>          */}
             <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
             <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
@@ -261,4 +260,4 @@ const Semaforo = () => {
 
 
 
-export default Semaforo;
+export default SemaforoAC;
