@@ -1,15 +1,17 @@
 button{
     border-radius: 8px ;
+    border: 1px solid #aaa8a8;
     padding: 0.6em 1.2em;
     width: 100%;
     font-size: 1em;
     font-weight: 500;
     font-family: inherit;
-    background-color: #6e6666;
+    background-color: #e2dddd;
     cursor: pointer;
+    color: black;
 }
 
 button:hover {
-    border-color:  #3a3232;
-    background-color: #817b7b;
+    border-color:  #969595;
+    background-color: #817b7b8f;
   }

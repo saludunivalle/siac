@@ -14,6 +14,8 @@ const ProgramDetails = () => {
     const sede = rowData['sede'];
     const faseRRC = rowData['fase rrc'];
     const faseRAC = rowData['fase rac'];
+    const fechavencrac = rowData['fechavencac'];
+    const fechavencrrc = rowData['fechavencrc'];
 
     const getProcesosRRCBackground = () => {
         if (faseRRC === 'Fase 1') {
@@ -62,11 +64,13 @@ const ProgramDetails = () => {
         <div className='procesos'>
             <div className='procesosRRC' style={procesosRRCStyle}>
                  RRC <br/>
-                 {faseRRC}    
+                 {faseRRC} <br/>
+                {fechavencrrc}   
             </div>
             <div className='procesosRAC' style={procesosRACStyle}> 
                 RAC <br/>
-                {faseRAC}
+                {faseRAC} <br/>
+                {fechavencrac}
             </div>
             <div className='procesosAC'>
                 AC<br/>
@@ -88,9 +92,12 @@ const ProgramDetails = () => {
             <li>Sede: {sede}</li>
         </ul> 
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
-        <div className='button-reverse'>
-            <Link to="/" >REGRESAR</Link>     
-        </div>   
+        <Link to="/">
+            <button className='button-reverse'>
+                REGRESAR
+            </button>
+        </Link>
+
         </div>
     );
 };
