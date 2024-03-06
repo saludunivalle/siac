@@ -82,7 +82,7 @@ const SemaforoAC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await Filtro6({ searchTerm: '' }); // Obtener todos los datos sin filtrar
+        const response = await Filtro6({ searchTerm: '' }); 
         setFilteredData(response);
         setWhiteProgramsCount(response.filter(item => item['fase rac'] === 'N/A').length);
         setGreenProgramsCount(response.filter(item => item['fase rac'] === 'Fase 1').length);
@@ -176,42 +176,42 @@ const SemaforoAC = () => {
   return (
     <>
       <div className='semaforo-container'>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('white', clickedButton === 'white')}
           onClick={() => handleButtonClick('white')}
         >
           NO APLICA / SIN INFORMACIÓN <br/>
           {whiteProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('green', clickedButton === 'green')}
           onClick={() => handleButtonClick('green')}
         >
           AÑO Y 6 MESES <br/>
           {greenProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('yellow', clickedButton === 'yellow')}
           onClick={() => handleButtonClick('yellow')}
         >
           6 MESES ANTES DE LA MITAD<br/>
           {yellowProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('orange', clickedButton === 'orange')}
           onClick={() => handleButtonClick('orange')}
         >
           3 AÑOS ANTES DEL VENCIMIENTO<br/>
           {orangeProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('orange2', clickedButton === 'orange2')}
           onClick={() => handleButtonClick('orange2')}
         >
           18 MESES ANTES DEL VENCIMIENTO<br/>
           {orange2ProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('red', clickedButton === 'red')}
           onClick={() => handleButtonClick('red')}
         >

@@ -28,13 +28,13 @@ const setButtonStyles = (buttonType, isClicked) => {
         paddingLeft: '1rem',
         backgroundColor: isClicked ? '#ffe600' : 'rgba(255, 235, 59, 0.288)',
         color: isClicked ? '#fff' : '#000000',
-        borderColor: isClicked ? '#ffe600' : 'ffe600'
+        borderColor: isClicked ? '#yellow' : 'yellow'
       };
     case 'orange':
       return {
         backgroundColor: isClicked ? '#ff9800' : '#ff990079',
         color: isClicked ? '#fff' : '#000000',
-        borderColor: isClicked ? '#ff9800' : 'ffe600'
+        borderColor: isClicked ? '#orange' : 'orange'
       };
     case 'orange2':
       return {
@@ -83,7 +83,7 @@ const Semaforo = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await Filtro2({ searchTerm: '' }); // Obtener todos los datos sin filtrar
+        const response = await Filtro2({ searchTerm: '' }); 
         setFilteredData(response);
         setWhiteProgramsCount(response.filter(item => item['fase rrc'] === 'N/A').length);
         setGreenProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 1').length);
@@ -177,42 +177,42 @@ const Semaforo = () => {
   return (
     <>
       <div className='semaforo-container'>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('white', clickedButton === 'white')}
           onClick={() => handleButtonClick('white')}
         >
           NO APLICA / SIN INFORMACIÓN <br/>
           {whiteProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('green', clickedButton === 'green')}
           onClick={() => handleButtonClick('green')}
         >
           AÑO Y 6 MESES <br/>
           {greenProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('yellow', clickedButton === 'yellow')}
           onClick={() => handleButtonClick('yellow')}
         >
           6 MESES ANTES DE LA MITAD<br/>
           {yellowProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('orange', clickedButton === 'orange')}
           onClick={() => handleButtonClick('orange')}
         >
           3 AÑOS ANTES DEL VENCIMIENTO<br/>
           {orangeProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('orange2', clickedButton === 'orange2')}
           onClick={() => handleButtonClick('orange2')}
         >
           18 MESES ANTES DEL VENCIMIENTO<br/>
           {orange2ProgramsCount}
         </button>
-        <button
+        <button className='custom-button'
           style={setButtonStyles('red', clickedButton === 'red')}
           onClick={() => handleButtonClick('red')}
         >

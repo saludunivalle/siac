@@ -2,18 +2,15 @@ import React, { useState, useEffect} from 'react';
 import {ButtonGroup, Button } from '@mui/material';
 import logo from '/src/assets/logovalle.png';
 import '/src/styles/home.css'; 
-// import Nivel from './NivelEd';
-// import Escuelas from './Escuelas'
 import Semaforo from './Semaforo';
 import SemaforoAc from './SemaforoAc';
 import { Filtro5 } from '../service/data';
+import Header from './Header';
 
 const Home = () => {
   const [selectedValue, setSelectedValue] = useState();
   const [semaforoVisible, setSemaforoVisible] = useState(false);
   const [semaforoAcVisible, setSemaforoAcVisible] = useState(false);
-  const [isNivelVisible, setIsNivelVisible] = useState(false);
-  const [isEscuelasVisible, setIsEscuelasVisible] = useState(false);
   const [totalProgramsCount, setTotalProgramsCount] = useState(0);
 
   useEffect(() => {
@@ -43,8 +40,6 @@ const Home = () => {
     setSelectedValue(buttonValue);
     setSemaforoVisible(false);
     setSemaforoAcVisible(false);
-    setIsNivelVisible(false);
-    setIsEscuelasVisible(false);
 
     if (buttonValue === 'option1') {
       setSemaforoVisible(true);
@@ -60,10 +55,7 @@ const Home = () => {
   
   return (
     <>
-      <div className='home'>
-        <div className='logo'><img src={logo} alt="Logo" /></div>
-        <div className='title'>Sistema SIAC Facultad de Salud</div>
-      </div>
+      <Header/>
       <div className='total'> 
         Total Programas de la Facultad: {totalProgramsCount}
       </div>
@@ -73,6 +65,8 @@ const Home = () => {
             name="controlled-radio-buttons-group"
             className='radio-group'
           >
+            <Button value="option4" className="custom-radio"
+              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> CREA </Button>
             <Button value="option1" className="custom-radio" 
               style={setButtonStyles('option1')}
               onClick={() => handleButtonClick('option1')} 
@@ -82,11 +76,9 @@ const Home = () => {
               style={setButtonStyles('option2')}
               onClick={() => handleButtonClick('option2')} 
             >
-              <span style={{ marginRight: '8px' }}>&nbsp;</span> RAC <span style={{ marginRight: '8px' }}>&nbsp;</span> </Button>
+              <span style={{ marginRight: '8px' }}>&nbsp;</span> RAAC <span style={{ marginRight: '8px' }}>&nbsp;</span> </Button>
             <Button value="option3" className="custom-radio"
-              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AC </Button>
-            <Button value="option4" className="custom-radio"
-              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> CREA </Button>
+              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AAC </Button>
             <Button value="option5" className="custom-radio"
               style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> MOD </Button>
           </ButtonGroup>

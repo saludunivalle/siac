@@ -1,6 +1,7 @@
 .procesos {
     display: flex;
-    flex-direction: row;
+    /*flex-direction: row;*/
+    flex-wrap: wrap;
     text-align: center;
     align-items: center;
     width: 100%;
@@ -9,54 +10,19 @@
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
-.procesosRRC{
+.procesosRRC,
+.procesosRAC,
+.procesosAC,
+.procesosCREA,
+.procesosMOD {
     padding: 2rem;
-    border-radius: 8px ;
+    border-radius: 8px;
     height: 82px;
-    background-color:rgb(241, 241, 241);
+    background-color: rgb(241, 241, 241);
     border: 1px solid #ffffff;
     text-align: center;
-    width: 100px;
-}
-
-.procesosRAC{
-    padding: 2rem;
-    border-radius: 8px ;
-    height: 82px;
-    background-color:rgb(241, 241, 241);
-    border: 1px solid #ffffff;
-    text-align: center;
-    width: 100px;
-}
-
-.procesosAC{
-    padding: 2rem;
-    border-radius: 8px ;
-    height: 82px;
-    background-color:rgb(241, 241, 241);
-    border: 1px solid #ffffff;
-    text-align: center;
-    width: 100px;
-}
-
-.procesosCREA{
-    padding: 2rem;
-    border-radius: 8px ;
-    height: 82px;
-    background-color:rgb(241, 241, 241);
-    border: 1px solid #ffffff;
-    text-align: center;
-    width: 100px;
-}
-
-.procesosMOD{
-    padding: 2rem;
-    border-radius: 8px ;
-    height: 82px;
-    background-color:rgb(241, 241, 241);
-    border: 1px solid #ffffff;
-    text-align: center;
-    width: 100px;
+    width: 100px; 
+    margin: 2px; 
 }
 
 .title-program{
@@ -80,8 +46,30 @@ li {
     text-align: center;
     width: 150px;
     font-size: 18px;
+    color: black;
 }
 
 .button-reverse:hover{
     background-color:rgba(163, 163, 163, 0.562);
+}
+
+@media screen and (max-width: 768px) {
+
+    .procesos {
+        justify-content: center; 
+    }
+
+    .procesosRRC,
+    .procesosRAC,
+    .procesosAC,
+    .procesosCREA,
+    .procesosMOD {
+        width: calc(33.33% - 18px);
+        font-size: 17px;
+    }
+
+    .title-program{
+        font-size: 15px;
+        text-align: center;
+    }
 }

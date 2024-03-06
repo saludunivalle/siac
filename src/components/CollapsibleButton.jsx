@@ -9,8 +9,8 @@ const CollapsibleButton = ({ buttonText, content, nestedButton }) => {
   };
 
   return (
-    <div>
-      <button onClick={toggleCollapsible} >
+    <div >
+      <button className='collapsible-button' onClick={toggleCollapsible} >
         {buttonText} {isOpen ? '▲' : '▼'} 
       </button>
       {isOpen && (

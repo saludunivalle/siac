@@ -39,3 +39,11 @@
   .table-container tr:hover {
     background-color: #dbdbdb6e;
   }
+
+  @media screen and (max-width: 768px) {
+    .row-container th, .table-container td {
+      padding: 5px;
+      font-size: 10px;
+      width: auto; 
+    }
+  }

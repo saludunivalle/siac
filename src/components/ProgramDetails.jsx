@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import logo from '/src/assets/logovalle.png';
 import '/src/styles/programDetails.css'; 
+import Header from './Header';
 
 const ProgramDetails = () => {
     const location = useLocation();
@@ -59,7 +60,7 @@ const ProgramDetails = () => {
 
     return (
         <div>
-        <div className='logo'><img src={logo} alt="Logo" /></div>
+        <Header/>
         <div className='title-program'><h2>{programaAcademico}</h2></div>
         <div className='procesos'>
             <div className='procesosRRC' style={procesosRRCStyle}>
@@ -86,10 +87,11 @@ const ProgramDetails = () => {
             </div>
         </div>
         <ul>  
-            <li>Departamento: {departamento}</li>
-            <li>Escuela: {escuela}</li>
-            <li>Facultad: {facultad}</li>
-            <li>Sede: {sede}</li>
+            <li><strong>Facultad </strong> {facultad}</li>
+            <li><strong>Escuela </strong> {escuela}</li>
+            <li><strong>Departamento </strong> {departamento}</li>
+            <li><strong>Sección </strong> {sede}</li>
+            <li><strong>Sede </strong> {sede}</li>
         </ul> 
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
         <Link to="/">
