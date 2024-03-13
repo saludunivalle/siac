@@ -1,5 +1,10 @@
 import { fetchPostGeneral } from './fetch';
 
+const hojaProgramas = 'Programas';
+const hojaSeguimientos = 'Seguimientos';
+const hojaPermisos = 'Permisos';
+
+
 /**
  * Filtro1
  * 
@@ -9,7 +14,7 @@ import { fetchPostGeneral } from './fetch';
 export const Filtro1 = async (data) => {
     try {
         const response = await fetchPostGeneral({
-            dataSend: data,
+            dataSend: { ...data, sheetName: hojaProgramas },
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
 
@@ -41,7 +46,8 @@ export const Filtro1 = async (data) => {
 export const Filtro2 = async (data) => {
   try {
       const response = await fetchPostGeneral({
-          dataSend: data,
+          dataSend: { ...data },
+          sheetName: 'Programas',
           urlEndPoint: 'https://siac-server.vercel.app/'
       });
 
@@ -73,7 +79,7 @@ export const Filtro2 = async (data) => {
 export const Filtro3 = async (data) => {
     try {
         const response = await fetchPostGeneral({
-            dataSend: data,
+            dataSend: { ...data, sheetName: hojaProgramas },
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
   
@@ -156,7 +162,8 @@ export const Filtro4 = (datos, termino_a_filtrar) => {
 export const Filtro5 = async () => {
     try {
         const response = await fetchPostGeneral({
-            dataSend: {},
+            dataSend: {}, // Puedes proporcionar aquí los datos necesarios, si es necesario
+            sheetName: 'Programas', // Nombre de la hoja 'Programas'
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
         console.log(response.data);
@@ -165,7 +172,8 @@ export const Filtro5 = async () => {
         console.error('Error en la solicitud:', error);
         throw error; 
     }
-  };
+};
+
 
 
 /**
@@ -198,3 +206,91 @@ export const Filtro6 = async (data) => {
         throw error; 
     }
   };
+
+  /**
+ * Filtro7
+ * 
+ * @param {Object} data
+ * @returns {Promise<Object[]>}
+ */
+export const Filtro7 = async (data) => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: { ...data},
+            sheetName: hojaSeguimientos,
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+  
+        if (data) {
+            const searchTerm = data.searchTerm; 
+  
+            if (searchTerm) {
+                const filteredData = response.data.filter(item => {
+                    const propiedadValue = item['id_programa']; 
+                    return propiedadValue && propiedadValue.toLowerCase().includes(searchTerm.toLowerCase());
+                });
+                return filteredData;
+            }
+        }
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+  };
+  
+   /**
+ * Filtro8
+ * 
+ * @param {Object} data
+ * @returns {Promise<Object[]>}
+ */
+  export const Filtro8 = (datos, termino_a_filtrar) => {
+    try {
+        if (!Array.isArray(datos)) {
+            throw new Error('Los datos proporcionados no son un array');
+        }
+
+        if (!termino_a_filtrar || typeof termino_a_filtrar !== 'string') {
+            throw new Error('El término de filtrado proporcionado no es válido');
+        }
+
+        const filteredData = datos.filter(item => {
+            const propiedadValue = item['topic'];
+            return propiedadValue && propiedadValue.toLowerCase().includes(termino_a_filtrar.toLowerCase());
+        });
+
+        return filteredData;
+    } catch (error) {
+        console.error('Error en el filtro:', error);
+        throw error;
+    }
+};
+
+export const sendDataToServer = async (idPrograma, timestamp, comentario, value, usuario, topic) => {
+    try {
+        const requestData = {
+            comentario: comentario, 
+            riesgo: value, 
+            timestamp: timestamp, 
+            usuario: usuario,
+            idPrograma: idPrograma,
+            topic: topic,
+            sheetName: 'Seguimientos',
+        };
+
+        const response = await fetchPostGeneral({
+            dataSend: requestData,
+            sheetName: hojaSeguimientos, 
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+
+        if (response.status && response.status === true) {
+            console.log('Datos enviados correctamente al servidor.');
+        } else {
+            console.error('Error al enviar datos al servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+    }
+};

@@ -8,12 +8,16 @@ import logo from '/src/assets/logovalle.png';
 
 const HeaderContainer = styled('div')({
   display: 'flex',
-  flexDirection: 'column',
-  textAlign: 'left',
+  flexDirection: 'row',
+  placeItems: 'center',
+  justifyContent: 'space-between',
   width: '100%',
-  margin: 0,
+  margin: '2px',
   position: 'relative', 
   zIndex: 1,
+  '@media (max-width:600px)': {
+    flexDirection: 'column', 
+  },
 });
 
 const Title = styled('div')(({ theme }) => ({
@@ -150,14 +154,14 @@ const Header = () => {
         <IconButton type="submit" aria-label="search" onClick={handleSearch}>
           <SearchIcon />
         </IconButton>
+        <SearchResultLabel ref={labelRef} style={{ display: isLabelVisible ? 'block' : 'none' }}>
+          {searchResults.map((result, index) => (
+            <SearchResultItem key={index} onClick={() => handleResultClick(result)}>
+              {result['programa académico']}
+            </SearchResultItem>
+          ))}
+        </SearchResultLabel>
       </SearchBar>
-      <SearchResultLabel ref={labelRef} style={{ display: isLabelVisible ? 'block' : 'none' }}>
-        {searchResults.map((result, index) => (
-          <SearchResultItem key={index} onClick={() => handleResultClick(result)}>
-            {result['programa académico']}
-          </SearchResultItem>
-        ))}
-      </SearchResultLabel>
     </HeaderContainer>
   );
 }

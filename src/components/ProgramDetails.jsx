@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import logo from '/src/assets/logovalle.png';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
+import { useNavigate } from 'react-router-dom';
+
 
 const ProgramDetails = () => {
     const location = useLocation();
@@ -13,10 +15,14 @@ const ProgramDetails = () => {
     const escuela = rowData['escuela'];
     const facultad = rowData['facultad'];
     const sede = rowData['sede'];
+    const seccion = rowData['seccion']
     const faseRRC = rowData['fase rrc'];
     const faseRAC = rowData['fase rac'];
     const fechavencrac = rowData['fechavencac'];
     const fechavencrrc = rowData['fechavencrc'];
+    const navigate = useNavigate();
+
+
 
     const getProcesosRRCBackground = () => {
         if (faseRRC === 'Fase 1') {
@@ -34,9 +40,12 @@ const ProgramDetails = () => {
         }
     };
 
+
     const procesosRRCStyle = {
-        backgroundColor: getProcesosRRCBackground()
+        backgroundColor: getProcesosRRCBackground(),
+        cursor: getProcesosRRCBackground() !== 'rgb(241, 241, 241)' ? 'pointer' : 'default',
     };
+
 
     const getProcesosRACBackground = () => {
         if (faseRAC === 'Fase 1') {
@@ -55,30 +64,38 @@ const ProgramDetails = () => {
     };
 
     const procesosRACStyle = {
-        backgroundColor: getProcesosRACBackground()
+        backgroundColor: getProcesosRACBackground(),
+        cursor: getProcesosRRCBackground() !== 'rgb(241, 241, 241)' ? 'pointer' : 'default',
     };
 
     return (
         <div>
         <Header/>
         <div className='title-program'><h2>{programaAcademico}</h2></div>
+        <div className='about-program'>
+        <div className='about-program'><strong>Facultad-</strong> {facultad}</div>
+        <div className='about-program'><strong>Escuela- </strong> {escuela}</div>
+        <div className='about-program'><strong>Sede- </strong> {sede}</div>
+        <div className='about-program'><strong>Departamento-</strong> {departamento}</div>
+        <div className='about-program'><strong>Sección-</strong> {seccion}</div>
+        </div>
         <div className='procesos'>
-            <div className='procesosRRC' style={procesosRRCStyle}>
+            <div className='procesosCREA'> 
+                CREA <br/>
+                N/A
+            </div>
+            <div className='procesosRRC' style={procesosRRCStyle}  onClick={() => navigate('/seguimiento', { state: rowData })}>
                  RRC <br/>
                  {faseRRC} <br/>
                 {fechavencrrc}   
             </div>
             <div className='procesosRAC' style={procesosRACStyle}> 
-                RAC <br/>
+                RAAC <br/>
                 {faseRAC} <br/>
                 {fechavencrac}
             </div>
             <div className='procesosAC'>
-                AC<br/>
-                N/A
-            </div>
-            <div className='procesosCREA'> 
-                CREA <br/>
+                AAC<br/>
                 N/A
             </div>
             <div className='procesosMOD'> 
@@ -86,13 +103,6 @@ const ProgramDetails = () => {
                 N/A
             </div>
         </div>
-        <ul>  
-            <li><strong>Facultad </strong> {facultad}</li>
-            <li><strong>Escuela </strong> {escuela}</li>
-            <li><strong>Departamento </strong> {departamento}</li>
-            <li><strong>Sección </strong> {sede}</li>
-            <li><strong>Sede </strong> {sede}</li>
-        </ul> 
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
         <Link to="/">
             <button className='button-reverse'>

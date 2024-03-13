@@ -1,15 +1,15 @@
 .buttons-container {
     width: 100%;
     display: flex;
-    flex-wrap: wrap; 
+    flex-direction: row; 
     justify-content: center; 
 }
 
 .radio-group {
+    width: 100%;
     padding: 2rem;
-    height: auto; 
     display: flex;
-    flex-wrap: wrap; 
+    flex-direction: row; 
     justify-content: center; 
     background-color: white;
     color: #423b3b;
@@ -18,8 +18,6 @@
 .custom-radio {
     width: 100px;
     height: 40px;
-    border-radius: 5px;
-    margin: 0.5rem; 
 }
 
 .result-container{
@@ -55,11 +53,12 @@
 
 @media screen and (max-width: 768px) {
     .radio-group {
-        padding: 1rem; 
+        padding: 10px; 
+        padding-bottom: 0;
     }
 
     .custom-radio {
-        width: 120px; 
+        width: 60px; 
     }
 
     .total{

@@ -11,11 +11,17 @@ methodGet = 'GET';
  */
 export const fetchPostGeneral = ({
     dataSend,
+    sheetName,
     urlEndPoint
 }) =>
 {
+    const requestData = {
+        ...dataSend,
+        sheetName: sheetName
+    };
+
     return fetchGeneral({
-        dataSend: dataSend,
+        dataSend: requestData,
         urlEndPoint: urlEndPoint,
         type: methodPost     
     })
@@ -67,16 +73,23 @@ const fetchGeneral = async ({
     type
 }) => {
     try {
+        const { sheetName, ...requestData } = dataSend;
+        const requestBody = sheetName ? { ...requestData, sheetName } : requestData;
+
         const response = await fetch(urlEndPoint, {
             method: type,
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(dataSend),
+            body: JSON.stringify(requestBody),
         });
+
+        if (!response.ok) {
+            throw new Error(`Error en la solicitud: ${response.statusText}`);
+        }
 
         return await response.json();
     } catch (error) {
-        console.log(error);
+        throw error;
     }
 };

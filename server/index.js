@@ -17,10 +17,24 @@ router.post('/', async ( req, res) => {
     const sheets = google.sheets({ version: 'v4',  auth: jwtClient });
       const spreadsheetId = '1GQY2sWovU3pIBk3NyswSIl_bkCi86xIwCjbMqK_wIAE';
       //const range = 'PROGRAMAS';
-  
+      let range;
+      switch (req.body.sheetName) {
+        case 'Programas':
+          range = 'PROGRAMAS!A1:AE97';
+          break;
+        case 'Seguimientos':
+          range = 'SEGUIMIENTOS!A1:G97';
+          break;
+        case 'Permisos':
+          range = 'PERMISOS!A1:C20';
+          break;
+        default:
+          return res.status(400).json({ error: 'Nombre de hoja no válido' });
+      }
+
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range:'PROGRAMAS!A1:AC97',
+        range,
         key: 'AIzaSyDQTWi9NHU_UTjhVQ1Wb08qxREaRgD9v1g', 
     });
     console.log(sheetValuesToObject(response.data.values));   

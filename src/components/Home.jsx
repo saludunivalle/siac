@@ -1,12 +1,13 @@
 import React, { useState, useEffect} from 'react';
 import {ButtonGroup, Button } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
 import logo from '/src/assets/logovalle.png';
 import '/src/styles/home.css'; 
 import Semaforo from './Semaforo';
 import SemaforoAc from './SemaforoAc';
 import { Filtro5 } from '../service/data';
 import Header from './Header';
-
+import CollapsibleButton from './CollapsibleButton';
 const Home = () => {
   const [selectedValue, setSelectedValue] = useState();
   const [semaforoVisible, setSemaforoVisible] = useState(false);
@@ -32,7 +33,6 @@ const Home = () => {
       backgroundColor: selectedValue === buttonValue ? 'grey' : 'transparent',
       border: `2px solid ${selectedValue === buttonValue ? 'grey' : 'grey'}`,
       borderRadius: '6px',
-      width: buttonValue === 'option6' ? 'fit-content' : 'fit-content',
     };
   };
 
@@ -57,7 +57,7 @@ const Home = () => {
     <>
       <Header/>
       <div className='total'> 
-        Total Programas de la Facultad: {totalProgramsCount}
+        Total Programas de la Facultad: {totalProgramsCount !== 0 ? totalProgramsCount : <CircularProgress size={20} /> }
       </div>
       <div className='buttons-container'>
           <ButtonGroup
@@ -70,13 +70,11 @@ const Home = () => {
             <Button value="option1" className="custom-radio" 
               style={setButtonStyles('option1')}
               onClick={() => handleButtonClick('option1')} 
-            >
-              <span style={{ marginRight: '8px' }}>&nbsp;</span> RRC <span style={{ marginRight: '8px' }}>&nbsp;</span> </Button>
-              <Button value="option2" className="custom-radio" 
+            > RRC </Button>
+            <Button value="option2" className="custom-radio" 
               style={setButtonStyles('option2')}
               onClick={() => handleButtonClick('option2')} 
-            >
-              <span style={{ marginRight: '8px' }}>&nbsp;</span> RAAC <span style={{ marginRight: '8px' }}>&nbsp;</span> </Button>
+            > RAAC </Button>
             <Button value="option3" className="custom-radio"
               style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AAC </Button>
             <Button value="option5" className="custom-radio"
@@ -100,6 +98,7 @@ const Home = () => {
             </Button>
           </ButtonGroup> */}
       </div>
+
       {selectedValue === 'option1' && (
         <Semaforo />
       )}

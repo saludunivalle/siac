@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Filtro2, Filtro4 } from '../service/data'; 
+import CircularProgress from '@mui/material/CircularProgress';
 import CollapsibleButton from './CollapsibleButton';
 import '/src/styles/home.css';
 import '/src/styles/table.css';
@@ -100,7 +101,7 @@ const Semaforo = () => {
   
     fetchData();
   }, []);
-  
+
   const handleButtonClick = async (buttonType) => {
     setClickedButton(buttonType === clickedButton ? null : buttonType);
     let searchTerm = '';
@@ -182,42 +183,42 @@ const Semaforo = () => {
           onClick={() => handleButtonClick('white')}
         >
           NO APLICA / SIN INFORMACIÓN <br/>
-          {whiteProgramsCount}
+          {whiteProgramsCount !== 0 ? whiteProgramsCount : loading ? <CircularProgress size={20} /> : ''}
         </button>
         <button className='custom-button'
           style={setButtonStyles('green', clickedButton === 'green')}
           onClick={() => handleButtonClick('green')}
         >
           AÑO Y 6 MESES <br/>
-          {greenProgramsCount}
+          {greenProgramsCount !== 0 ? greenProgramsCount : loading ? <CircularProgress size={20} /> : ''}
         </button>
         <button className='custom-button'
           style={setButtonStyles('yellow', clickedButton === 'yellow')}
           onClick={() => handleButtonClick('yellow')}
         >
           6 MESES ANTES DE LA MITAD<br/>
-          {yellowProgramsCount}
+          {yellowProgramsCount !== 0 ? yellowProgramsCount : loading ? <CircularProgress size={20} /> : ''}
         </button>
         <button className='custom-button'
           style={setButtonStyles('orange', clickedButton === 'orange')}
           onClick={() => handleButtonClick('orange')}
         >
           3 AÑOS ANTES DEL VENCIMIENTO<br/>
-          {orangeProgramsCount}
+          {orangeProgramsCount !== 0 ? orangeProgramsCount : loading ? <CircularProgress size={20} /> : ''}
         </button>
         <button className='custom-button'
           style={setButtonStyles('orange2', clickedButton === 'orange2')}
           onClick={() => handleButtonClick('orange2')}
         >
           18 MESES ANTES DEL VENCIMIENTO<br/>
-          {orange2ProgramsCount}
+          {orange2ProgramsCount !== 0 ? orange2ProgramsCount : loading ? <CircularProgress size={20} /> : ''}
         </button>
         <button className='custom-button'
           style={setButtonStyles('red', clickedButton === 'red')}
           onClick={() => handleButtonClick('red')}
         >
           AÑO DE VENCIMIENTO<br/>
-          {redProgramsCount}
+          {redProgramsCount !== 0 ? redProgramsCount : loading ? <CircularProgress size={20} /> : ''}
         </button>
       </div>
       <div className='result-container'>

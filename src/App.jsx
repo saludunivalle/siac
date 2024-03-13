@@ -3,6 +3,7 @@ import './App.css'
 import Home from './components/Home';
 import ProgramDetails from './components/ProgramDetails';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Seguimiento from './components/Seguimiento';
 
 function App() {
 
@@ -12,6 +13,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/program_details" element={<ProgramDetails />} />
+              <Route path="/seguimiento" element={<Seguimiento />} />
               <Route
                         path="*"
                         element={
