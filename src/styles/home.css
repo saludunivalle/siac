@@ -54,7 +54,7 @@
 @media screen and (max-width: 768px) {
     .radio-group {
         padding: 10px; 
-        padding-bottom: 0;
+        padding-bottom: 1rem;
     }
 
     .custom-radio {

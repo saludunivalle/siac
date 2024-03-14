@@ -7,6 +7,7 @@ import '/src/styles/table.css';
 import Si_icon from '../assets/si_icon.png';
 import No_icon from '../assets/no_icon.png';
 import { useNavigate } from 'react-router-dom';
+import { useMediaQuery } from '@mui/material';
 
 
 const setButtonStyles = (buttonType, isClicked) => {
@@ -69,6 +70,7 @@ const Semaforo = () => {
   const [orange2ProgramsCount, setOrange2ProgramsCount] = useState(0);
   const [redProgramsCount, setRedProgramsCount] = useState(0);
   const navigate = useNavigate();
+  const isMobile = useMediaQuery('(max-width:768px)');
 
   const handleRowClick = (rowData) => {
     console.log('Datos de la fila:', rowData);
@@ -175,85 +177,174 @@ const Semaforo = () => {
     );
   };
 
+  const contenido_semaforo = () =>{
+    return (
+        <>
+          <div className='result-container'>
+            {filteredData && filteredData.length > 0 && clickedButton !== null ? (
+              <div className='row-container'>
+                <table>
+                  <thead>
+                    <tr>
+                      <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Programa Académico</th>
+                      <th style={{ backgroundColor: headerBackgroundColor }}>Sede</th>
+                      <th style={{ backgroundColor: headerBackgroundColor }}>Escuela</th>
+                      <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>  
+                      <th style={{ backgroundColor: headerBackgroundColor }}>Pregrado/Posgrado</th>
+                      <th style={{ backgroundColor: headerBackgroundColor }}>RRC Vigente</th>                    
+                      <th style={{ backgroundColor: headerBackgroundColor }}>FechaExpedRRC</th>
+                      <th style={{ backgroundColor: headerBackgroundColor }}>DuracionRRC</th>
+                      <th className="bold"style={{ backgroundColor: headerBackgroundColor }}>FechaVencRRC</th>
+                      <th style={{ backgroundColor: headerBackgroundColor }}>AC Vigente</th>
+                    </tr>
+                  </thead>
+                </table>  
+                {/* <div className='cantidad-container'> Cantidad de programas: {filteredData ? filteredData.length : 0} </div>          */}
+                <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
+                <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
+                <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />
+                <CollapsibleButton buttonText="Medicina" content={renderFilteredTable(filteredData, 'Medicina')} />
+                <CollapsibleButton buttonText="Odontología" content={renderFilteredTable(filteredData, 'Odontología')} />
+                <CollapsibleButton buttonText="Rehabilitación Humana" content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
+                <CollapsibleButton buttonText="Salud Pública" content={renderFilteredTable(filteredData, 'Salud Pública')} />
+                <CollapsibleButton buttonText="No Aplica" content={renderFilteredTable(filteredData, 'No Aplica')} />
+              </div>
+            ) : (
+              <p>Ningún progama por mostrar</p>
+            )}
+          </div>
+        </>
+    );
+  };
+
   return (
     <>
-      <div className='semaforo-container'>
-        <button className='custom-button'
-          style={setButtonStyles('white', clickedButton === 'white')}
-          onClick={() => handleButtonClick('white')}
-        >
-          NO APLICA / SIN INFORMACIÓN <br/>
-          {whiteProgramsCount !== 0 ? whiteProgramsCount : loading ? <CircularProgress size={20} /> : ''}
-        </button>
-        <button className='custom-button'
-          style={setButtonStyles('green', clickedButton === 'green')}
-          onClick={() => handleButtonClick('green')}
-        >
-          AÑO Y 6 MESES <br/>
-          {greenProgramsCount !== 0 ? greenProgramsCount : loading ? <CircularProgress size={20} /> : ''}
-        </button>
-        <button className='custom-button'
-          style={setButtonStyles('yellow', clickedButton === 'yellow')}
-          onClick={() => handleButtonClick('yellow')}
-        >
-          6 MESES ANTES DE LA MITAD<br/>
-          {yellowProgramsCount !== 0 ? yellowProgramsCount : loading ? <CircularProgress size={20} /> : ''}
-        </button>
-        <button className='custom-button'
-          style={setButtonStyles('orange', clickedButton === 'orange')}
-          onClick={() => handleButtonClick('orange')}
-        >
-          3 AÑOS ANTES DEL VENCIMIENTO<br/>
-          {orangeProgramsCount !== 0 ? orangeProgramsCount : loading ? <CircularProgress size={20} /> : ''}
-        </button>
-        <button className='custom-button'
-          style={setButtonStyles('orange2', clickedButton === 'orange2')}
-          onClick={() => handleButtonClick('orange2')}
-        >
-          18 MESES ANTES DEL VENCIMIENTO<br/>
-          {orange2ProgramsCount !== 0 ? orange2ProgramsCount : loading ? <CircularProgress size={20} /> : ''}
-        </button>
-        <button className='custom-button'
-          style={setButtonStyles('red', clickedButton === 'red')}
-          onClick={() => handleButtonClick('red')}
-        >
-          AÑO DE VENCIMIENTO<br/>
-          {redProgramsCount !== 0 ? redProgramsCount : loading ? <CircularProgress size={20} /> : ''}
-        </button>
-      </div>
-      <div className='result-container'>
-        {filteredData && filteredData.length > 0 && clickedButton !== null ? (
-          <div className='row-container'>
-            <table>
-              <thead>
-                <tr>
-                  <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Programa Académico</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>Sede</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>Escuela</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>  
-                  <th style={{ backgroundColor: headerBackgroundColor }}>Pregrado/Posgrado</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>RRC Vigente</th>                    
-                  <th style={{ backgroundColor: headerBackgroundColor }}>FechaExpedRRC</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>DuracionRRC</th>
-                  <th className="bold"style={{ backgroundColor: headerBackgroundColor }}>FechaVencRRC</th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>AC Vigente</th>
-                </tr>
-              </thead>
-            </table>  
-            {/* <div className='cantidad-container'> Cantidad de programas: {filteredData ? filteredData.length : 0} </div>          */}
-            <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
-            <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
-            <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />
-            <CollapsibleButton buttonText="Medicina" content={renderFilteredTable(filteredData, 'Medicina')} />
-            <CollapsibleButton buttonText="Odontología" content={renderFilteredTable(filteredData, 'Odontología')} />
-            <CollapsibleButton buttonText="Rehabilitación Humana" content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
-            <CollapsibleButton buttonText="Salud Pública" content={renderFilteredTable(filteredData, 'Salud Pública')} />
-            <CollapsibleButton buttonText="No Aplica" content={renderFilteredTable(filteredData, 'No Aplica')} />
+      {isMobile ? (
+        <>
+            <div className='semaforo-container'>
+            <button className='custom-button'
+              style={setButtonStyles('white', clickedButton === 'white')}
+              onClick={() => handleButtonClick('white')}
+            >
+              NO APLICA / SIN INFORMACIÓN <br/>
+              {whiteProgramsCount !== 0 ? whiteProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+            </button>
+            {clickedButton === 'white' && (
+                <>
+                    {contenido_semaforo()}
+                </>
+            )}
+            <button className='custom-button'
+              style={setButtonStyles('green', clickedButton === 'green')}
+              onClick={() => {handleButtonClick('green'); contenido_semaforo()}}
+            >
+              AÑO Y 6 MESES <br/>
+              {greenProgramsCount !== 0 ? greenProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+            </button>
+            {clickedButton === 'green' && (
+                <>
+                    {contenido_semaforo()}
+                </>
+            )}
+            <button className='custom-button'
+              style={setButtonStyles('yellow', clickedButton === 'yellow')}
+              onClick={() => {handleButtonClick('yellow'); contenido_semaforo()}}
+            >
+              6 MESES ANTES DE LA MITAD<br/>
+              {yellowProgramsCount !== 0 ? yellowProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+            </button>
+            {clickedButton === 'yellow' && (
+                <>
+                    {contenido_semaforo()}
+                </>
+            )}
+            <button className='custom-button'
+              style={setButtonStyles('orange', clickedButton === 'orange')}
+              onClick={() => {handleButtonClick('orange'); contenido_semaforo()}}
+            >
+              3 AÑOS ANTES DEL VENCIMIENTO<br/>
+              {orangeProgramsCount !== 0 ? orangeProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+            </button>
+            {clickedButton === 'orange' && (
+                <>
+                    {contenido_semaforo()}
+                </>
+            )}
+            <button className='custom-button'
+              style={setButtonStyles('orange2', clickedButton === 'orange2')}
+              onClick={() => {handleButtonClick('orange2'); contenido_semaforo()}}
+            >
+              18 MESES ANTES DEL VENCIMIENTO<br/>
+              {orange2ProgramsCount !== 0 ? orange2ProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+            </button>
+            {clickedButton === 'orange2' && (
+                <>
+                    {contenido_semaforo()}
+                </>
+            )}
+            <button className='custom-button'
+              style={setButtonStyles('red', clickedButton === 'red')}
+              onClick={() => {handleButtonClick('red'); contenido_semaforo()}}
+            >
+              AÑO DE VENCIMIENTO<br/>
+              {redProgramsCount !== 0 ? redProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+            </button>
+            {clickedButton === 'red' && (
+                <>
+                    {contenido_semaforo()}
+                </>
+            )}
           </div>
-        ) : (
-          <p>Ningún progama por mostrar</p>
-        )}
-      </div>
+        </>
+      ):(
+        <>
+          <div className='semaforo-container'>
+          <button className='custom-button'
+            style={setButtonStyles('white', clickedButton === 'white')}
+            onClick={() => handleButtonClick('white')}
+          >
+            NO APLICA / SIN INFORMACIÓN <br/>
+            {whiteProgramsCount !== 0 ? whiteProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+          </button>
+          <button className='custom-button'
+            style={setButtonStyles('green', clickedButton === 'green')}
+            onClick={() => handleButtonClick('green')}
+          >
+            AÑO Y 6 MESES <br/>
+            {greenProgramsCount !== 0 ? greenProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+          </button>
+          <button className='custom-button'
+            style={setButtonStyles('yellow', clickedButton === 'yellow')}
+            onClick={() => handleButtonClick('yellow')}
+          >
+            6 MESES ANTES DE LA MITAD<br/>
+            {yellowProgramsCount !== 0 ? yellowProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+          </button>
+          <button className='custom-button'
+            style={setButtonStyles('orange', clickedButton === 'orange')}
+            onClick={() => handleButtonClick('orange')}
+          >
+            3 AÑOS ANTES DEL VENCIMIENTO<br/>
+            {orangeProgramsCount !== 0 ? orangeProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+          </button>
+          <button className='custom-button'
+            style={setButtonStyles('orange2', clickedButton === 'orange2')}
+            onClick={() => handleButtonClick('orange2')}
+          >
+            18 MESES ANTES DEL VENCIMIENTO<br/>
+            {orange2ProgramsCount !== 0 ? orange2ProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+          </button>
+          <button className='custom-button'
+            style={setButtonStyles('red', clickedButton === 'red')}
+            onClick={() => handleButtonClick('red')}
+          >
+            AÑO DE VENCIMIENTO<br/>
+            {redProgramsCount !== 0 ? redProgramsCount : loading ? <CircularProgress size={20} /> : ''}
+          </button>
+        </div>
+        {contenido_semaforo()}
+        </>
+      )};
     </>
   );
 
