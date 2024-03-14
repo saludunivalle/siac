@@ -84,12 +84,12 @@ const ProgramDetails = () => {
                 CREA <br/>
                 N/A
             </div>
-            <div className='procesosRRC' style={procesosRRCStyle}  onClick={() => navigate('/seguimiento', { state: rowData })}>
+            <div className='procesosRRC' style={procesosRRCStyle}  onClick={() => navigate('/seguimiento', { state: rowData})}>
                  RRC <br/>
                  {faseRRC} <br/>
                 {fechavencrrc}   
             </div>
-            <div className='procesosRAC' style={procesosRACStyle}> 
+            <div className='procesosRAC' style={procesosRACStyle} onClick={() => navigate('/seguimientorac', { state: rowData})}> 
                 RAAC <br/>
                 {faseRAC} <br/>
                 {fechavencrac}

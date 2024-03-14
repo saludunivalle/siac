@@ -12,7 +12,7 @@ const authorize = () => {
   console.log(clientId, clientSecret, redirectUris, apiKey,'j');
   //const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUris);
   const oAuth2Client =new google.auth.GoogleAuth({
-    credentials: null,
+    credentials: null, // Deja las credenciales en null para que no intente utilizar OAuth 2.0.
   });
 
   return new Promise((resolve, reject) => {

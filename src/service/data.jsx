@@ -1,5 +1,4 @@
 import { fetchPostGeneral } from './fetch';
-
 const hojaProgramas = 'Programas';
 const hojaSeguimientos = 'Seguimientos';
 const hojaPermisos = 'Permisos';
@@ -267,25 +266,43 @@ export const Filtro7 = async (data) => {
     }
 };
 
-export const sendDataToServer = async (idPrograma, timestamp, comentario, value, usuario, topic) => {
+export const Filtro9 = (datos, termino_a_filtrar) => {
     try {
-        const requestData = {
-            comentario: comentario, 
-            riesgo: value, 
-            timestamp: timestamp, 
-            usuario: usuario,
-            idPrograma: idPrograma,
-            topic: topic,
-            sheetName: 'Seguimientos',
-        };
+        if (!Array.isArray(datos)) {
+            throw new Error('Los datos proporcionados no son un array');
+        }
 
-        const response = await fetchPostGeneral({
-            dataSend: requestData,
-            sheetName: hojaSeguimientos, 
-            urlEndPoint: 'https://siac-server.vercel.app/'
+        if (!termino_a_filtrar || typeof termino_a_filtrar !== 'string') {
+            throw new Error('El término de filtrado proporcionado no es válido');
+        }
+
+        const filteredData = datos.filter(item => {
+            const propiedadValue = item['proceso'];
+            return propiedadValue && propiedadValue.toLowerCase().includes(termino_a_filtrar.toLowerCase());
         });
 
-        if (response.status && response.status === true) {
+        return filteredData;
+    } catch (error) {
+        console.error('Error en el filtro:', error);
+        throw error;
+    }
+};
+
+export const sendDataToServer = async (data) => {
+    try {
+        const dataSend = {
+            insertData:[
+                data
+            ]
+        };
+        console.log(dataSend, data);
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: hojaSeguimientos, 
+            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+        });
+        console.log(response);
+        if (response.status) {
             console.log('Datos enviados correctamente al servidor.');
         } else {
             console.error('Error al enviar datos al servidor.');

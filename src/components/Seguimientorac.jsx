@@ -12,7 +12,7 @@ const Seguimiento = () => {
     const rowData = location.state; 
     const programaAcademico = rowData['programa académico'];
     const idPrograma = rowData['id_programa'];
-    const process = "RRC";
+    const process = "RAAC";
     const [value, setValue] = useState('');
     const [showContent, setShowContent] = useState(false);
     const [filteredData, setFilteredData] = useState([]);
