@@ -1,5 +1,4 @@
 .buttons-container {
-    width: 100%;
     display: flex;
     flex-direction: row; 
     justify-content: center; 
@@ -7,7 +6,6 @@
 
 .radio-group {
     width: 100%;
-    padding: 2rem;
     display: flex;
     flex-direction: row; 
     justify-content: center; 
@@ -18,6 +16,68 @@
 .custom-radio {
     width: 100px;
     height: 40px;
+}
+
+.banner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+  
+.linea1 {
+    flex-grow: 1;
+    height: 1px;
+    background-color: #000;   
+    margin: 0 5px;
+}
+
+.linea2 {
+    flex-grow: 1;
+    height: 1px;
+    background-color: #000;   
+    margin: 0 5px;
+}
+.text {
+    margin: 0 10px;
+}
+
+.alltogether1{
+    display: flex;
+    flex-direction: column;
+    padding-right: 1rem;
+}
+
+.alltogether{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: -50px;
+}
+
+.programas{
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    margin-left: 80px;
+    margin-top: 10px;
+    padding: 10px;
+    border: 2px solid #808080;
+    border-radius: 8px ;
+    cursor: pointer;
+}
+
+.title{
+    align-self: center;
+}
+
+.container-general{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
 }
 
 .result-container{
@@ -38,6 +98,7 @@
     flex-direction: row; 
     align-items: center; 
     margin: 0;
+    padding-top: 3rem;
 }
 
 .custom-button {
@@ -49,6 +110,10 @@
     font-size: 1em;
     font-weight: 500;
     font-family: inherit;
+}
+  
+.contenedorButtonGroup{
+    margin-right: 20px;
 }
 
 @media screen and (max-width: 768px) {

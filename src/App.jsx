@@ -5,7 +5,7 @@ import ProgramDetails from './components/ProgramDetails';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Seguimiento from './components/Seguimiento';
 import Seguimientorac from './components/Seguimientorac';
-
+import Programas from './components/Programas';
 
 function App() {
 
@@ -17,6 +17,7 @@ function App() {
               <Route path="/program_details" element={<ProgramDetails />} />
               <Route path="/seguimiento" element={<Seguimiento />} />
               <Route path="/seguimientorac" element={<Seguimientorac />} />
+              <Route path="/programas" element={<Programas />} />
               <Route
                         path="*"
                         element={

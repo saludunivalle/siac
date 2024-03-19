@@ -14,6 +14,7 @@ const HeaderContainer = styled('div')({
   width: '100%',
   margin: '2px',
   position: 'relative', 
+  paddingBottom: '60px',
   zIndex: 1,
   '@media (max-width:600px)': {
     flexDirection: 'column', 

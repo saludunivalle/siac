@@ -1,24 +1,34 @@
 import React, { useState, useEffect} from 'react';
+import { useNavigate } from 'react-router-dom';
 import {ButtonGroup, Button } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import logo from '/src/assets/logovalle.png';
-import '/src/styles/home.css'; 
 import Semaforo from './Semaforo';
 import SemaforoAc from './SemaforoAc';
 import { Filtro5 } from '../service/data';
 import Header from './Header';
-import CollapsibleButton from './CollapsibleButton';
+import '/src/styles/home.css'; 
+
 const Home = () => {
   const [selectedValue, setSelectedValue] = useState();
   const [semaforoVisible, setSemaforoVisible] = useState(false);
   const [semaforoAcVisible, setSemaforoAcVisible] = useState(false);
   const [totalProgramsCount, setTotalProgramsCount] = useState(0);
+  const [activosCount, setActivosCount]= useState(0);
+  const [creacionCount, setCreacionCount]= useState(0);
+  const [sedesCount, setSedesCount]= useState(0);
+  const navigate = useNavigate();
+  const [programasVisible, setProgramasVisible] = useState(true); 
+  const [rowData, setRowData] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await Filtro5(); 
         setTotalProgramsCount(response.length); 
+        setActivosCount(response.filter(item => item['estado'] === 'Activo').length);   
+        setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);     
+        setSedesCount(response.filter(item => item['sede'] !== 'Cali').length);  
+        setRowData(response);         
       } catch (error) {
         console.error('Error al filtrar datos:', error);
       }
@@ -26,6 +36,13 @@ const Home = () => {
 
     fetchData();
   }, []);
+
+  const handleBackClick = () => {
+    setProgramasVisible(true);
+    setSemaforoVisible(false);
+    setSemaforoAcVisible(false);
+    setSelectedValue();
+  };
 
   const setButtonStyles = (buttonValue) => {
     return {
@@ -46,6 +63,7 @@ const Home = () => {
     } else if ( (buttonValue === 'option2')){
       setSemaforoAcVisible(true);
     }
+    setProgramasVisible(false);
     // else if (buttonValue === 'option6') {
     //   setIsNivelVisible(true);
     // } else if (buttonValue === 'option7') {
@@ -53,54 +71,94 @@ const Home = () => {
     // }
   };
   
+  const handleClick = () => {
+    if (rowData) {
+      navigate('/programas', { state: rowData }); // Pasar los datos del response como estado al navegar
+    }
+  };
+
   return (
     <>
       <Header/>
-      <div className='total'> 
-        Total Programas de la Facultad: {totalProgramsCount !== 0 ? totalProgramsCount : <CircularProgress size={20} /> }
-      </div>
-      <div className='buttons-container'>
+      <div className='container-general'>
+      <div className='alltogether'>
+       <div className='alltogether1'>
+        <div className="banner">
+            <div className="linea1"></div>
+            <div className="text">Registro Calificado</div>
+          <div className="linea1"></div>
+        </div>
+          <div className='buttons-container'>
           <ButtonGroup
-            aria-label="gender"
-            name="controlled-radio-buttons-group"
-            className='radio-group'
-          >
+              aria-label="gender"
+              name="controlled-radio-buttons-group"
+              className='radio-group'
+            >
             <Button value="option4" className="custom-radio"
-              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> CREA </Button>
-            <Button value="option1" className="custom-radio" 
-              style={setButtonStyles('option1')}
-              onClick={() => handleButtonClick('option1')} 
-            > RRC </Button>
-            <Button value="option2" className="custom-radio" 
-              style={setButtonStyles('option2')}
-              onClick={() => handleButtonClick('option2')} 
-            > RAAC </Button>
-            <Button value="option3" className="custom-radio"
-              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AAC </Button>
-            <Button value="option5" className="custom-radio"
-              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> MOD </Button>
-          </ButtonGroup>
-          {/* <ButtonGroup
-            aria-label="gender"
-            name="controlled-radio-buttons-group"
-            value={selectedValue}
-            className='radio-group'
-          >
-            <Button value="option6" className="custom-radio" 
-              style={setButtonStyles('option6')}
-              onClick={() => handleButtonClick('option6')}> 
-              Nivel Educativo 
-            </Button>
-            <Button value="option7" className="custom-radio" 
-              style={setButtonStyles('option7')}
-              onClick={() => handleButtonClick('option7')}> 
-              Escuela 
-            </Button>
-          </ButtonGroup> */}
+                style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> CREA </Button>
+              <Button value="option1" className="custom-radio" 
+                style={setButtonStyles('option1')}
+                onClick={() => handleButtonClick('option1')} 
+              > RRC </Button>
+              <Button value="option2" className="custom-radio" 
+                style={setButtonStyles('option2')}
+                onClick={() => handleButtonClick('option2')} 
+              > RAAC </Button>
+            </ButtonGroup>
+            </div>
+        </div>
+        <div className='alltogether1'>
+        <div className="banner">
+          <div className="linea2"></div>
+          <div className="text">Acreditación</div>
+          <div className="linea2"></div>
+        </div>
+        <div className='buttons-container'>
+            <ButtonGroup
+              aria-label="gender"
+              name="controlled-radio-buttons-group"
+              className='radio-group'
+            >
+              <Button value="option3" className="custom-radio"
+                style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AAC </Button>
+              <Button value="option5" className="custom-radio"
+                style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> MOD </Button>
+            </ButtonGroup>
+            {/* <ButtonGroup
+              aria-label="gender"
+              name="controlled-radio-buttons-group"
+              value={selectedValue}
+              className='radio-group'
+            >
+              <Button value="option6" className="custom-radio" 
+                style={setButtonStyles('option6')}
+                onClick={() => handleButtonClick('option6')}> 
+                Nivel Educativo 
+              </Button>
+              <Button value="option7" className="custom-radio" 
+                style={setButtonStyles('option7')}
+                onClick={() => handleButtonClick('option7')}> 
+                Escuela 
+              </Button>
+            </ButtonGroup> */}
+          </div>
+        </div>
       </div>
-
+      {programasVisible && (
+      <div className='programas' onClick={handleClick}>
+        <div className='title'><strong>Programas</strong></div>
+        <div className='activos'><strong>Activos </strong>..... {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> }</div>
+        <div className='creacion'><strong>En Creación</strong>..... {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> }</div>
+        <div className='sedes'><strong>En sedes</strong>..... {sedesCount !== 0 ? sedesCount : <CircularProgress size={20} /> }</div>
+        <div className='total-programas'>Total Programas de la Facultad: {totalProgramsCount !== 0 ? totalProgramsCount : <CircularProgress size={20} /> }</div>
+      </div>
+      )}
+      </div>
       {selectedValue === 'option1' && (
+        <>
+        <button onClick={handleBackClick}>Atras</button>  
         <Semaforo />
+        </>
       )}
       {selectedValue === 'option2' && (
         <SemaforoAc />
