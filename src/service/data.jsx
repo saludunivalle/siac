@@ -161,8 +161,8 @@ export const Filtro4 = (datos, termino_a_filtrar) => {
 export const Filtro5 = async () => {
     try {
         const response = await fetchPostGeneral({
-            dataSend: {}, // Puedes proporcionar aquí los datos necesarios, si es necesario
-            sheetName: 'Programas', // Nombre de la hoja 'Programas'
+            dataSend: {}, 
+            sheetName: 'Programas', 
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
         console.log(response.data);
@@ -185,6 +185,7 @@ export const Filtro6 = async (data) => {
     try {
         const response = await fetchPostGeneral({
             dataSend: data,
+            sheetName: 'Programas',
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
   

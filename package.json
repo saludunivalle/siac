@@ -17,8 +17,10 @@
     "@mui/material": "^5.15.11",
     "@mui/styled-engine": "^5.15.11",
     "googleapis": "^134.0.0",
+    "js-cookie": "^3.0.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-jwt": "^1.2.1",
     "react-router-dom": "^6.22.2"
   },
   "devDependencies": {

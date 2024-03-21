@@ -4,6 +4,7 @@ import { Button, ButtonGroup } from "@mui/material";
 import { useState } from "react";
 import { styled } from '@mui/material/styles';
 import { Filtro4 } from "../service/data";
+import CircularProgress from '@mui/material/CircularProgress';
 import CollapsibleButton from "./CollapsibleButton";
 import '/src/styles/home.css'; 
 
@@ -28,7 +29,6 @@ const Programas = () => {
         placeItems: 'center',
         justifyContent: 'center',
         width: '100%',
-        marginTop: '4px',
         position: 'relative', 
         zIndex: 1,
     });
@@ -132,6 +132,14 @@ const Programas = () => {
         <>
             <Header/>
             <div><button onClick={handleBackClick}>Atras</button></div>
+            <div className='table-buttons'>
+            <div className='programas2'>
+                <div className='title'><strong>Programas</strong></div>
+                <div className='activos'><strong>Activos </strong>..... {(rowData.filter(item => item['estado'] === 'Activo').length) !== 0 ? (rowData.filter(item => item['estado'] === 'Activo').length) : <CircularProgress size={20} /> }</div>
+                <div className='creacion'><strong>En Creación</strong>..... {(rowData.filter(item => item['estado'] === 'En Creación').length) !== 0 ? (rowData.filter(item => item['estado'] === 'En Creación').length) : <CircularProgress size={20} /> }</div>
+                <div className='sedes'><strong>En sedes</strong>..... {(rowData.filter(item => item['sede'] !== 'Cali').length) !== 0 ? (rowData.filter(item => item['sede'] !== 'Cali').length) : <CircularProgress size={20} /> }</div>
+                <div className='total-programas'>Total Programas de la Facultad: {(rowData.length) !== 0 ? (rowData.length) : <CircularProgress size={20} /> }</div>
+            </div>
             <ButtonsContainer>
                 <div className="contenedorButtonGroup">
                 <ButtonGroup >
@@ -156,7 +164,8 @@ const Programas = () => {
                         onClick={() => handleButtonClick('option5')} > Sedes </Button> 
                 </ButtonGroup>
                 </div>
-            </ButtonsContainer>   
+            </ButtonsContainer>  
+            </div> 
             {filteredData && filteredData.length > 0 ? (
               <div className='row-container'>
                 <table style={{ width: '100%', textAlign: 'center', marginTop: '10px' }}>
