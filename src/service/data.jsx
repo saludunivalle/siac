@@ -278,7 +278,7 @@ export const Filtro9 = (datos, termino_a_filtrar) => {
         }
 
         const filteredData = datos.filter(item => {
-            const propiedadValue = item['proceso'];
+            const propiedadValue = item['id_programa'];
             return propiedadValue && propiedadValue.toLowerCase().includes(termino_a_filtrar.toLowerCase());
         });
 

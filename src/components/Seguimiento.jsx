@@ -14,12 +14,13 @@ const Seguimiento = () => {
     const rowData = location.state; 
     const programaAcademico = rowData['programa académico'];
     const idPrograma = rowData['id_programa'];
-    const process = "RRC";
+    //const process = "RRC";
     const [value, setValue] = useState('');
     const [showCollapsible, setShowCollapsible] = useState({}); 
     const [filteredData, setFilteredData] = useState([]);
     const [timestamp, setTimestamp] = useState(null);
     const [comment, setComment] = useState(''); 
+    const [file, setFile] = useState(null);
     const [user, setUser] = useState('');
     const [collapsible, setCollapsible] = useState('');
     const [isPlan, setPlan] = useState(['Plan de Mejoramiento', 'Sistemas']);
@@ -28,7 +29,6 @@ const Seguimiento = () => {
     const [isConv, setConv] = useState(['Convenio Docencia Servicio', 'Sistemas']);
     const [isCargo, setCargo] = useState('');
     const [openModal, setOpenModal] = useState(false);
-
     
     const handleChange = (event) => {
         setValue(event.target.value);
@@ -58,7 +58,9 @@ const Seguimiento = () => {
         const fetchData = async () => {
             try {
             const response = await Filtro7({idPrograma}); 
-            const response2 = await Filtro9(response.filter(item => item['id_programa'] === idPrograma), process);
+            const response2 = await Filtro9(response.filter(item => item['id_programa'] === idPrograma), idPrograma);
+            console.log('response',response);
+            console.log('response2',response2);
             setFilteredData(response2);
             } catch (error) {
             console.error('Error al filtrar datos:', error);
@@ -109,6 +111,11 @@ const Seguimiento = () => {
             setComment(event.target.value);
         };
 
+        const handleFileChange = (event) => {
+            const selectedFile = event.target.files[0];
+            setFile(selectedFile);
+        };
+
         const handleGuardarClick = async () => {
             try {
                 const dataSend=[
@@ -118,7 +125,6 @@ const Seguimiento = () => {
                     value,
                     user,
                     collapsible,
-                    process
                 ];
                 await sendDataToServer(dataSend);
                 console.log('Datos enviados correctamente');
@@ -133,30 +139,28 @@ const Seguimiento = () => {
 
         return(
             <>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', marginTop: '10px' }}>
-                <tbody>
-                    <tr>                                           
-                        <th style={{ width: '15%'}}>Comentario</th>
-                        <th style={{ width: '15%'}}>Riesgo</th>
-                        <th style={{ width: '15%'}}>Adjunto</th>
-                    </tr>
-                    <tr>
-                        <td style={{ verticalAlign: 'middle' }}>
-                            <TextField value={comment} onChange={handleInputChange1} placeholder="comentario" type="text" style={{ width: '90%', border: 'none', textAlign: 'start', padding: '8px', borderRadius: '4px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',  backgroundColor: '#f0f0f0', color: 'black' }} />
-                        </td>
-                        <td>
-                            <FormControl component="fieldset">
-                                <RadioGroup value={value} onChange={handleChange}>
+            <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display:'flex', flexDirection:'row', margin:'5px',  justifyContent: 'center', marginTop: '10px' }}>
+                <div className='comments' style={{ display:'flex', flexDirection:'column', paddingRight:'50px', justifyContent: 'left', textAlign: 'left', marginTop: '5px' }}>
+                   Comentario <br/>
+                   <TextField value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{ width: '100%', height: '100%', border: 'none', textAlign: 'start', padding: '20px', borderRadius: '4px', backgroundColor: '#f0f0f0', color: 'black'}} />
+                </div>
+                <div className='adj-risk' style={{ display:'flex', flexDirection:'column', justifyContent: 'left',  textAlign: 'left', marginTop: '5px', margin:'5px', }}>
+                    <div className='risk'  style={{textAlign: 'left'}}>
+                        Riesgo <br/>
+                        <FormControl component="fieldset">
+                                <RadioGroup value={value} onChange={handleChange} style={{ display:'flex', flexDirection:'row'}}>
                                     <FormControlLabel value="Alto" control={<Radio />} label="Alto" />
                                     <FormControlLabel value="Medio" control={<Radio />} label="Medio" />
                                     <FormControlLabel value="Bajo" control={<Radio />} label="Bajo" />
                                 </RadioGroup>
-                            </FormControl>
-                        </td>
-                        <td>Adjunto</td>
-                    </tr>
-                </tbody>
-            </table>
+                        </FormControl>
+                    </div>
+                    <div className='adj'>
+                        Adjunto <br/>
+                        <input type="file" onChange={handleFileChange} placeholder="Seleccionar archivo..." />
+                    </div>
+                </div>
+            </div>
             <Button variant="contained" style={{textAlign: 'center', margin: '8px'}} onClick={handleGuardarClick}>Guardar</Button>
             </>
         );
@@ -165,8 +169,8 @@ const Seguimiento = () => {
     return (
         <>
             <div>
-                <Header />
-                <h2>{programaAcademico}</h2>
+                {/* <Header />
+                <h2>{programaAcademico}</h2> */}
                 <h3>Seguimiento</h3>
                         <CollapsibleButton buttonText="Plan de Mejoramiento" content={
                             <>

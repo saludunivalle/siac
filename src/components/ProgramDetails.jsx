@@ -1,10 +1,10 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import logo from '/src/assets/logovalle.png';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
-import { useNavigate } from 'react-router-dom';
+//import { useNavigate } from 'react-router-dom';
+import Seguimiento from './Seguimiento';
 
 
 const ProgramDetails = () => {
@@ -20,7 +20,7 @@ const ProgramDetails = () => {
     const faseRAC = rowData['fase rac'];
     const fechavencrac = rowData['fechavencac'];
     const fechavencrrc = rowData['fechavencrc'];
-    const navigate = useNavigate();
+    //const navigate = useNavigate();
 
 
 
@@ -43,7 +43,7 @@ const ProgramDetails = () => {
 
     const procesosRRCStyle = {
         backgroundColor: getProcesosRRCBackground(),
-        cursor: getProcesosRRCBackground() !== 'rgb(241, 241, 241)' ? 'pointer' : 'default',
+        //cursor: getProcesosRRCBackground() !== 'rgb(241, 241, 241)' ? 'pointer' : 'default',
     };
 
 
@@ -65,7 +65,7 @@ const ProgramDetails = () => {
 
     const procesosRACStyle = {
         backgroundColor: getProcesosRACBackground(),
-        cursor: getProcesosRRCBackground() !== 'rgb(241, 241, 241)' ? 'pointer' : 'default',
+        //cursor: getProcesosRRCBackground() !== 'rgb(241, 241, 241)' ? 'pointer' : 'default',
     };
 
     return (
@@ -81,28 +81,22 @@ const ProgramDetails = () => {
         </div>
         <div className='procesos'>
             <div className='procesosCREA'> 
-                CREA <br/>
-                N/A
+                <strong>CREA</strong> N/A
             </div>
-            <div className='procesosRRC' style={procesosRRCStyle}  onClick={() => navigate('/seguimiento', { state: rowData})}>
-                 RRC <br/>
-                 {faseRRC} <br/>
-                {fechavencrrc}   
+            <div className='procesosRRC' style={procesosRRCStyle}>
+                 <strong>RRC</strong> {fechavencrrc}   
             </div>
-            <div className='procesosRAC' style={procesosRACStyle} onClick={() => navigate('/seguimientorac', { state: rowData})}> 
-                RAAC <br/>
-                {faseRAC} <br/>
-                {fechavencrac}
+            <div className='procesosRAC' style={procesosRACStyle}> 
+                <strong>RAAC</strong> {fechavencrac}
             </div>
             <div className='procesosAC'>
-                AAC<br/>
-                N/A
+                <strong>AAC</strong> N/A
             </div>
             <div className='procesosMOD'> 
-                MOD <br/>
-                N/A
+                <strong>MOD</strong> N/A
             </div>
         </div>
+        <Seguimiento/>
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
         <Link to="/">
             <button className='button-reverse'>

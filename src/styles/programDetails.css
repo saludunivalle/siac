@@ -6,27 +6,26 @@
     align-items: center;
     width: 100%;
     color: #353131;
-    font-size: 18px;
+    font-size: 16.5px;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
-.procesos > div:hover {
+/* .procesos > div:hover {
     filter: brightness(80%);
-}
+} */
 
 .procesosRRC,
 .procesosRAC,
 .procesosAC,
 .procesosCREA,
 .procesosMOD {
-    padding: 2rem;
+    padding: 0.5rem;
     border-radius: 8px;
-    height: 82px;
+    height: fit-content;
     background-color: rgb(241, 241, 241);
     border: 1px solid #ffffff;
     text-align: center;
-    width: 100px; 
-    margin: 2px; 
+    width: 170px; 
 }
 
 .title-program{
