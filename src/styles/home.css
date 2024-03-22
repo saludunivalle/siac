@@ -18,6 +18,11 @@
     height: 40px;
 }
 
+.custom-radio2 {
+    width: 100px;
+    height: 40px;
+}
+
 .banner {
     display: flex;
     flex-direction: row;
@@ -158,5 +163,39 @@
     .custom-button{
         width: 100%;
         height: 100%;
+    }
+
+    .container-general{
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .programas{
+        margin-left: 6px;
+    }
+
+    .table-buttons{
+        width: 100%;
+        display: flex;
+        flex-direction: column; 
+        justify-content: center;
+        align-items: center; 
+        margin: 0;
+    }
+
+    .custom-radio2 {
+        width: 90px;
+        height: 35px;
+    }
+
+    .contenedorButtonGroup{
+        margin-top: 5px;
+    }
+
+    .buttonreturn{
+        margin-top: 0px;
     }
 }

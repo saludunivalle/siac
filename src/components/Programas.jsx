@@ -31,6 +31,9 @@ const Programas = () => {
         width: '100%',
         position: 'relative', 
         zIndex: 1,
+        '@media (max-width:600px)': {
+            flexDirection: 'column',
+          },
     });
 
     const handleBackClick = () => {
@@ -131,7 +134,7 @@ const Programas = () => {
     return(
         <>
             <Header/>
-            <div><button onClick={handleBackClick}>Atras</button></div>
+            <div><button className= 'buttonreturn' onClick={handleBackClick}>Atras</button></div>
             <div className='table-buttons'>
             <div className='programas2'>
                 <div className='title'><strong>Programas</strong></div>
@@ -143,23 +146,23 @@ const Programas = () => {
             <ButtonsContainer>
                 <div className="contenedorButtonGroup">
                 <ButtonGroup >
-                    <Button value="option1" className="custom-radio"
+                    <Button value="option1" className="custom-radio2"
                         style={setButtonStyles('option1')}
                         onClick={() => handleButtonClick('option1')} > Pregrado </Button>
-                    <Button value="option2" className="custom-radio" 
+                    <Button value="option2" className="custom-radio2" 
                         style={setButtonStyles('option2')}
                         onClick={() => handleButtonClick('option2')} > Posgrado </Button>
                 </ButtonGroup>
                 </div>
                 <div className="contenedorButtonGroup">
                 <ButtonGroup>
-                    <Button value="option3" className="custom-radio" 
+                    <Button value="option3" className="custom-radio2" 
                         style={setButtonStyles('option3')}
                         onClick={() => handleButtonClick('option3')} > Activos </Button>
-                    <Button value="option4" className="custom-radio" 
+                    <Button value="option4" className="custom-radio2" 
                         style={setButtonStyles('option4')}
                         onClick={() => handleButtonClick('option4')} > Creacion </Button>
-                    <Button value="option5" className="custom-radio" 
+                    <Button value="option5" className="custom-radio2" 
                         style={setButtonStyles('option5')}
                         onClick={() => handleButtonClick('option5')} > Sedes </Button> 
                 </ButtonGroup>

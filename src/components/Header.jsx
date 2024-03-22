@@ -49,8 +49,9 @@ const SearchInput = styled(InputBase)({
 const SearchResultLabel = styled('label')({
   padding: '0.5rem',
   border: '1px solid #ccc',
+  marginTop: '-65px',
   borderRadius: '5px',
-  backgroundColor: 'white',
+  backgroundColor: '#ffffff',
   cursor: 'pointer',
   width:'320px',
   alignSelf:'flex-end',
