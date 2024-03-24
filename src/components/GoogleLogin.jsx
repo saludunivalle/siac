@@ -22,8 +22,8 @@ const _get_auth = async (setData, setInfo) => {
             );
 
             google.accounts.id.prompt();
-            const _container_button = document.getElementById('section-button-google');
-            _container_button.classList.remove('_display_none');
+            const _container_button = document.getElementById('root');
+            //_container_button.classList.remove('_display_none');
         } catch (error) {
             console.log('error' , error);
         }

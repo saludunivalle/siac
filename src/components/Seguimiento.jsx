@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Header from './Header';
 import { useLocation } from 'react-router-dom';
 import { Radio, RadioGroup, FormControl, FormControlLabel, TextField } from '@mui/material';
@@ -20,7 +20,6 @@ const Seguimiento = () => {
     const [filteredData, setFilteredData] = useState([]);
     const [timestamp, setTimestamp] = useState(null);
     const [comment, setComment] = useState(''); 
-    const [file, setFile] = useState(null);
     const [user, setUser] = useState('');
     const [collapsible, setCollapsible] = useState('');
     const [isPlan, setPlan] = useState(['Plan de Mejoramiento', 'Sistemas']);
@@ -29,9 +28,35 @@ const Seguimiento = () => {
     const [isConv, setConv] = useState(['Convenio Docencia Servicio', 'Sistemas']);
     const [isCargo, setCargo] = useState('');
     const [openModal, setOpenModal] = useState(false);
-    
+    const [fileData, setfileData] = useState(null);
+    const fileInputRef = useRef(null);
+
     const handleChange = (event) => {
         setValue(event.target.value);
+    };
+
+    const handleFileUpload = async () => {
+        const files = fileInputRef.current.files;
+        const formData = new FormData();
+
+        for (let i = 0; i < files.length; i++) {
+            formData.append("file", files[i]); 
+        }
+    
+        try {
+            const response = await fetch("https://siac-server.vercel.app/upload/",{
+                method: 'POST',
+                body: formData, 
+                headers: {
+                    enctype: 'multipart/form-data',
+                }
+            })
+            const data = await response.json();
+            setfileData(data.enlace);
+            console.log("uploaded files: ", data);
+        } catch (error) {
+            console.log("error archivo");
+        }
     };
 
     useEffect(() => {
@@ -111,11 +136,6 @@ const Seguimiento = () => {
             setComment(event.target.value);
         };
 
-        const handleFileChange = (event) => {
-            const selectedFile = event.target.files[0];
-            setFile(selectedFile);
-        };
-
         const handleGuardarClick = async () => {
             try {
                 const dataSend=[
@@ -125,7 +145,9 @@ const Seguimiento = () => {
                     value,
                     user,
                     collapsible,
+                    fileData,
                 ];
+                await handleFileUpload();
                 await sendDataToServer(dataSend);
                 console.log('Datos enviados correctamente');
                 console.log(dataSend);
@@ -157,7 +179,7 @@ const Seguimiento = () => {
                     </div>
                     <div className='adj'>
                         Adjunto <br/>
-                        <input type="file" onChange={handleFileChange} placeholder="Seleccionar archivo..." />
+                        <input type="file" multiple ref={fileInputRef} placeholder="Seleccionar archivo..." />
                     </div>
                 </div>
             </div>

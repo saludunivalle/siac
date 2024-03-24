@@ -312,3 +312,27 @@ export const sendDataToServer = async (data) => {
         console.error('Error al procesar la solicitud:', error);
     }
 };
+
+
+// export const handleFileUpload = async () => {
+//     const files = fileInputRef.current.files;
+    
+//     if(files.length > 0){
+//     const formData = new FormData();
+
+//     for(let i=0;i<files.length;i++){
+//     formData.append("files", files[i])
+//     }
+
+//     try {
+//         const response = await fetch("https://siac-server.vercel.app/upload",{
+//             method: 'POST',
+//             body: formData
+//         })
+//         const data = await response.json();
+//         console.log("uploaded files: ", data.files);
+//     } catch (error) {
+//         console.log("error archivo");
+//     }
+//     }
+// };

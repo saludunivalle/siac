@@ -33,7 +33,10 @@ const Home = () => {
         console.error('Error al filtrar datos:', error);
       }
     };
-
+    const buttonGoogle = document.getElementById("buttonDiv")
+    if (buttonGoogle){
+      buttonGoogle.classList.add('_display_none');
+    }
     fetchData();
   }, []);
 

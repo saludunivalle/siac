@@ -1,3 +1,7 @@
+._display_none{
+    display: none;
+}
+
 .buttons-container {
     display: flex;
     flex-direction: row; 
