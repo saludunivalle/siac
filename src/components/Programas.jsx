@@ -17,6 +17,8 @@ const Programas = () => {
     const [filteredData, setFilteredData] = useState(rowData);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
+
+    console.log('datos', rowData);
     
     const handleRowClick = (rowData) => {
         console.log('Datos de la fila:', rowData);

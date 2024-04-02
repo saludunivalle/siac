@@ -30,6 +30,7 @@ const Seguimiento = () => {
     const [openModal, setOpenModal] = useState(false);
     const [fileData, setfileData] = useState(null);
     const fileInputRef = useRef(null);
+    
 
     const handleChange = (event) => {
         setValue(event.target.value);
@@ -54,6 +55,7 @@ const Seguimiento = () => {
             const data = await response.json();
             setfileData(data.enlace);
             console.log("uploaded files: ", data);
+            console.log("enlace:", fileData);
         } catch (error) {
             console.log("error archivo");
         }
@@ -70,6 +72,7 @@ const Seguimiento = () => {
             setUser(res[0].user);
         }
     }, []);
+
 
     const avaibleRange = (buscar) =>{
         return buscar.includes(isCargo);
@@ -103,10 +106,11 @@ const Seguimiento = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
                 <thead>
                     <tr>
-                    <th style={{ width: '15%', border: '1px solid grey' }}>timeStamp</th>
-                    <th style={{ width: '15%', border: '1px solid grey' }}>mensaje</th>
-                    <th style={{ width: '15%', border: '1px solid grey' }}>riesgo</th>  
-                    <th style={{ width: '15%', border: '1px solid grey' }}>usuario</th>
+                    <th style={{ width: '15%', border: '1px solid grey' }}>Fecha</th>
+                    <th style={{ width: '15%', border: '1px solid grey' }}>Comentario</th>
+                    <th style={{ width: '15%', border: '1px solid grey' }}>Riesgo</th>  
+                    <th style={{ width: '15%', border: '1px solid grey' }}>Usuario</th>
+                    <th style={{ width: '15%', border: '1px solid grey' }}>Enlace</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -116,6 +120,7 @@ const Seguimiento = () => {
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['mensaje']}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario']}</td> 
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['url_adjunto']}</td> 
                         </tr>
                     ))}
                 </tbody>
@@ -164,7 +169,7 @@ const Seguimiento = () => {
             <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display:'flex', flexDirection:'row', margin:'5px',  justifyContent: 'center', marginTop: '10px' }}>
                 <div className='comments' style={{ display:'flex', flexDirection:'column', paddingRight:'50px', justifyContent: 'left', textAlign: 'left', marginTop: '5px' }}>
                    Comentario <br/>
-                   <TextField value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{ width: '100%', height: '100%', border: 'none', textAlign: 'start', padding: '20px', borderRadius: '4px', backgroundColor: '#f0f0f0', color: 'black'}} />
+                   <TextField value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{border: 'none', textAlign: 'start', borderRadius: '4px', backgroundColor: '#f0f0f0', color: 'black'}} />
                 </div>
                 <div className='adj-risk' style={{ display:'flex', flexDirection:'column', justifyContent: 'left',  textAlign: 'left', marginTop: '5px', margin:'5px', }}>
                     <div className='risk'  style={{textAlign: 'left'}}>

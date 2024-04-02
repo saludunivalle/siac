@@ -1,9 +1,8 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
-//import { useNavigate } from 'react-router-dom';
 import Seguimiento from './Seguimiento';
 
 
@@ -20,9 +19,18 @@ const ProgramDetails = () => {
     const faseRAC = rowData['fase rac'];
     const fechavencrac = rowData['fechavencac'];
     const fechavencrrc = rowData['fechavencrc'];
-    //const navigate = useNavigate();
+    const navigate = useNavigate();
 
+    const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
 
+    useEffect(() => {
+
+        const timeout = setTimeout(() => {
+            setReloadSeguimiento(prevState => !prevState); 
+        }, 0); 
+
+        return () => clearTimeout(timeout); 
+    }, [rowData]); 
 
     const getProcesosRRCBackground = () => {
         if (faseRRC === 'Fase 1') {
@@ -40,6 +48,9 @@ const ProgramDetails = () => {
         }
     };
 
+    const handleBackClick = () => {
+        navigate('/');
+    };
 
     const procesosRRCStyle = {
         backgroundColor: getProcesosRRCBackground(),
@@ -71,6 +82,7 @@ const ProgramDetails = () => {
     return (
         <div>
         <Header/>
+        <div><button className= 'buttonreturn' onClick={handleBackClick}>Atras</button></div>
         <div className='title-program'><h2>{programaAcademico}</h2></div>
         <div className='about-program'>
         <div className='about-program'><strong>Facultad-</strong> {facultad}</div>
@@ -96,14 +108,8 @@ const ProgramDetails = () => {
                 <strong>MOD</strong> N/A
             </div>
         </div>
-        <Seguimiento/>
+        <Seguimiento key={reloadSeguimiento}/>
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
-        <Link to="/">
-            <button className='button-reverse'>
-                REGRESAR
-            </button>
-        </Link>
-
         </div>
     );
 };

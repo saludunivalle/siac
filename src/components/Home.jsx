@@ -7,6 +7,7 @@ import SemaforoAc from './SemaforoAc';
 import { Filtro5 } from '../service/data';
 import Header from './Header';
 import '/src/styles/home.css'; 
+import Crea from './Crea';
 
 const Home = () => {
   const [selectedValue, setSelectedValue] = useState();
@@ -76,7 +77,7 @@ const Home = () => {
   
   const handleClick = () => {
     if (rowData) {
-      navigate('/programas', { state: rowData }); // Pasar los datos del response como estado al navegar
+      navigate('/programas', { state: rowData }); 
     }
   };
 
@@ -98,15 +99,15 @@ const Home = () => {
               className='radio-group'
             >
             <Button value="option4" className="custom-radio"
-                style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> CREA </Button>
-              <Button value="option1" className="custom-radio" 
-                style={setButtonStyles('option1')}
-                onClick={() => handleButtonClick('option1')} 
-              > RRC </Button>
-              <Button value="option2" className="custom-radio" 
-                style={setButtonStyles('option2')}
-                onClick={() => handleButtonClick('option2')} 
-              > RAAC </Button>
+                style={setButtonStyles('option4')}
+                onClick={() => handleButtonClick('option4')} 
+                > CREA </Button>
+            <Button value="option5" className="custom-radio"
+              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> MOD </Button>
+            <Button value="option1" className="custom-radio" 
+              style={setButtonStyles('option1')}
+              onClick={() => handleButtonClick('option1')} 
+            > RRC </Button>
             </ButtonGroup>
             </div>
         </div>
@@ -124,8 +125,12 @@ const Home = () => {
             >
               <Button value="option3" className="custom-radio"
                 style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AAC </Button>
-              <Button value="option5" className="custom-radio"
-                style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> MOD </Button>
+              <Button value="option2" className="custom-radio" 
+                style={setButtonStyles('option2')}
+                onClick={() => handleButtonClick('option2')} 
+              > RAAC </Button>
+              <Button value="option3" className="custom-radio"
+                style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> INT </Button>
             </ButtonGroup>
             {/* <ButtonGroup
               aria-label="gender"
@@ -164,7 +169,16 @@ const Home = () => {
         </>
       )}
       {selectedValue === 'option2' && (
+        <>
+        <button onClick={handleBackClick}>Atras</button>
         <SemaforoAc />
+        </>
+      )}
+      {selectedValue === 'option4' && (
+        <>
+        <button onClick={handleBackClick}>Atras</button>
+        <Crea />
+        </>
       )}
       {/* {selectedValue === 'option6' && (
         <Nivel/>
