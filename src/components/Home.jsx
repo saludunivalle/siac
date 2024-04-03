@@ -164,19 +164,19 @@ const Home = () => {
       </div>
       {selectedValue === 'option1' && (
         <>
-        <button onClick={handleBackClick}>Atras</button>  
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', border: 'none', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         <Semaforo />
         </>
       )}
       {selectedValue === 'option2' && (
         <>
-        <button onClick={handleBackClick}>Atras</button>
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', border: 'none', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         <SemaforoAc />
         </>
       )}
       {selectedValue === 'option4' && (
         <>
-        <button onClick={handleBackClick}>Atras</button>
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', border: 'none', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         <Crea />
         </>
       )}
