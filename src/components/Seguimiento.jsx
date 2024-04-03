@@ -5,7 +5,7 @@ import { Radio, RadioGroup, FormControl, FormControlLabel, TextField } from '@mu
 import { Button, Typography } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
 import { Filtro7, Filtro8, Filtro9, sendDataToServer} from '../service/data';
-import { Modal } from '@mui/material';
+import { Modal, CircularProgress  } from '@mui/material';
 
 
 
@@ -30,36 +30,39 @@ const Seguimiento = () => {
     const [openModal, setOpenModal] = useState(false);
     const [fileData, setfileData] = useState(null);
     const fileInputRef = useRef(null);
-    
+    const [loading, setLoading] = useState(false);
+    const [updateTrigger, setUpdateTrigger] = useState(false);
 
     const handleChange = (event) => {
         setValue(event.target.value);
     };
 
-    const handleFileUpload = async () => {
-        const files = fileInputRef.current.files;
-        const formData = new FormData();
+    // const handleFileUpload = async () => {
+    //     const files = fileInputRef.current.files;
+    //     const formData = new FormData();
 
-        for (let i = 0; i < files.length; i++) {
-            formData.append("file", files[i]); 
-        }
+    //     for (let i = 0; i < files.length; i++) {
+    //         formData.append("file", files[i]); 
+    //     }
     
-        try {
-            const response = await fetch("https://siac-server.vercel.app/upload/",{
-                method: 'POST',
-                body: formData, 
-                headers: {
-                    enctype: 'multipart/form-data',
-                }
-            })
-            const data = await response.json();
-            setfileData(data.enlace);
-            console.log("uploaded files: ", data);
-            console.log("enlace:", fileData);
-        } catch (error) {
-            console.log("error archivo");
-        }
-    };
+    //     try {
+    //         const response = await fetch("https://siac-server.vercel.app/upload/",{
+    //             method: 'POST',
+    //             body: formData, 
+    //             headers: {
+    //                 enctype: 'multipart/form-data',
+    //             }
+    //         })
+    //         const data = await response.json();
+    //         console.log("uploaded files: ", data);
+    //         console.log("enlace:", data.enlace);
+    //         setfileData(data.enlace);
+    //         console.log("enlace del setfile:", fileData );
+    //     } catch (error) {
+    //         console.log("error archivo");
+    //     }
+        
+    // };
 
     useEffect(() => {
         const currentDate = new Date();
@@ -95,7 +98,7 @@ const Seguimiento = () => {
             }
         };
         fetchData();
-        }, []);
+        }, [updateTrigger]);
 
     const renderFilteredTable = (data, filter) => {
         const filteredData = Filtro8(data, filter);
@@ -120,7 +123,10 @@ const Seguimiento = () => {
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['mensaje']}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario']}</td> 
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['url_adjunto']}</td> 
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}><a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
+                                    Enlace
+                                </a>
+                            </td> 
                         </tr>
                     ))}
                 </tbody>
@@ -143,6 +149,26 @@ const Seguimiento = () => {
 
         const handleGuardarClick = async () => {
             try {
+                setLoading(true);
+                const files = fileInputRef.current.files;
+                const formData = new FormData();
+
+                for (let i = 0; i < files.length; i++) {
+                    formData.append("file", files[i]); 
+                }
+            
+                const response = await fetch("https://siac-server.vercel.app/upload/",{
+                    method: 'POST',
+                    body: formData, 
+                    headers: {
+                        enctype: 'multipart/form-data',
+                    }
+                });
+                const data = await response.json();
+                console.log("uploaded files: ", data);
+                console.log("enlace:", data.enlace);
+                setfileData(data.enlace);
+
                 const dataSend=[
                     idPrograma,
                     timestamp,
@@ -150,16 +176,19 @@ const Seguimiento = () => {
                     value,
                     user,
                     collapsible,
-                    fileData,
+                    data.enlace,
                 ];
-                await handleFileUpload();
+                //await handleFileUpload();
                 await sendDataToServer(dataSend);
+                setLoading(false);
+                setOpenModal(true);
                 console.log('Datos enviados correctamente');
                 console.log(dataSend);
+                setUpdateTrigger(true); 
                 setComment('');
                 setValue('');
-                setOpenModal(true);
             } catch (error) {
+                setLoading(false);
                 console.error('Error al enviar datos:', error);
             }
         };
@@ -189,6 +218,54 @@ const Seguimiento = () => {
                 </div>
             </div>
             <Button variant="contained" style={{textAlign: 'center', margin: '8px'}} onClick={handleGuardarClick}>Guardar</Button>
+            {loading && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.4)', 
+                        zIndex: 9998, 
+                        display: 'flex',
+                        justifyContent: 'center', 
+                        alignItems: 'center', 
+                    }}
+                >
+                    <div style={{ position: 'relative' }}>
+                        <CircularProgress style={{ zIndex: 9999 }} /> 
+                    </div>
+                </div>
+            )}
+            <Modal
+                open={openModal}
+                onClose={() => setOpenModal(false)}
+                aria-labelledby="modal-modal-title"
+                aria-describedby="modal-modal-description"
+            >
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '300px',
+                    color: '#423b3b',
+                    border: '2px solid grey',
+                    borderRadius: '10px',
+                    boxShadow: 24,
+                    p: 4,
+                    padding: '25px',
+                    textAlign: 'center',
+                    backgroundColor: '#ffffff',
+                }}>
+                    <Typography variant="h6" component="h2" style={{ fontFamily: 'Roboto'}} gutterBottom>
+                        Sus datos han sido guardados exitosamente
+                    </Typography>
+                    <Button style={{backgroundColor: '#1A80D9', color: '#F2F2F2'}} onClick={() => setOpenModal(false)}>Cerrar</Button>
+                    </div>
+                
+            </Modal>
             </>
         );
     };
@@ -270,34 +347,7 @@ const Seguimiento = () => {
                 } />
             </div>
 
-            <Modal
-                open={openModal}
-                onClose={() => setOpenModal(false)}
-                aria-labelledby="modal-modal-title"
-                aria-describedby="modal-modal-description"
-            >
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '300px',
-                    color: '#423b3b',
-                    border: '2px solid grey',
-                    borderRadius: '10px',
-                    boxShadow: 24,
-                    p: 4,
-                    padding: '25px',
-                    textAlign: 'center',
-                    backgroundColor: '#ffffff',
-                }}>
-                    <Typography variant="h6" component="h2" style={{ fontFamily: 'Roboto'}} gutterBottom>
-                        Sus datos han sido guardados exitosamente
-                    </Typography>
-                    <Button style={{backgroundColor: '#1A80D9', color: '#F2F2F2'}} onClick={() => setOpenModal(false)}>Cerrar</Button>
-                    </div>
-                
-            </Modal>
+            
 
         </>
 
