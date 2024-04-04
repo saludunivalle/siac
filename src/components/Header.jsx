@@ -91,30 +91,33 @@ const Header = () => {
   const removeAccents = (str) => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   };
-  
+
   const handleSearch = async () => {
     try {
-      if (!searchTerm) {
+      if (!searchTerm || typeof searchTerm !== 'string') {
+        setSearchResults([]);
+        setIsLabelVisible(false);
         return;
       }
-
+  
       const academicPrograms = await Filtro5();
-      if (!academicPrograms) {
-        console.error('No se obtuvieron datos de los programas académicos');
+      if (!academicPrograms || !Array.isArray(academicPrograms)) {
+        console.error('academicPrograms no es una matriz válida');
         return;
       }
-
+  
       const searchTermNormalized = searchTerm.toLowerCase().trim();
-      const results = academicPrograms.filter(program =>
-        removeAccents(program['programa académico'].toLowerCase()).includes(searchTermNormalized)
+      const results = academicPrograms.filter(programa =>
+        programa['programa académico'] && removeAccents(programa['programa académico'].toLowerCase()).includes(searchTermNormalized)
       );
-
+  
       setSearchResults(results); 
       setIsLabelVisible(true);
     } catch (error) {
       console.error('Error obteniendo los datos de los programas académicos:', error);
     }
   };
+  
 
   const handleResultClick = (result) => {
     navigate('/program_details', { state: result });
@@ -137,6 +140,16 @@ const Header = () => {
     };
   }, []);
 
+  const handleInputChange = (e) => {
+    setSearchTerm(e.target.value);
+    if (e.target.value === '') {
+      setSearchResults([]);
+      setIsLabelVisible(false);
+    } else {
+      handleSearch();
+    }
+  };
+
   return (
     <HeaderContainer>
       <Link to="/">
@@ -148,10 +161,7 @@ const Header = () => {
           placeholder="Buscar..." 
           value={searchTerm} 
           onClick={() => setIsLabelVisible(true)}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            handleSearch();
-          }}
+          onChange={handleInputChange}
         />
         <IconButton type="submit" aria-label="search" onClick={handleSearch}>
           <SearchIcon />
