@@ -247,14 +247,38 @@ const Programas = () => {
                     </tr>
                   </thead>
                 </table>  
-                <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
+                {filteredData.some(data => data['escuela'] === 'Bacteriología y Lab. Clínico') && 
+                    <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Ciencias Básicas') && 
+                    <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Enfermería') && 
+                    <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Medicina') && 
+                    <CollapsibleButton buttonText="Medicina" content={renderFilteredTable(filteredData, 'Medicina')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Odontología') && 
+                    <CollapsibleButton buttonText="Odontología" content={renderFilteredTable(filteredData, 'Odontología')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Rehabilitación Humana') && 
+                    <CollapsibleButton buttonText="Rehabilitación Humana" content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Salud Pública') && 
+                    <CollapsibleButton buttonText="Salud Pública" content={renderFilteredTable(filteredData, 'Salud Pública')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'No Aplica') && 
+                    <CollapsibleButton buttonText="No Aplica" content={renderFilteredTable(filteredData, 'No Aplica')} />
+                }
+                {/* <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
                 <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
                 <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />
                 <CollapsibleButton buttonText="Medicina" content={renderFilteredTable(filteredData, 'Medicina')} />
                 <CollapsibleButton buttonText="Odontología" content={renderFilteredTable(filteredData, 'Odontología')} />
                 <CollapsibleButton buttonText="Rehabilitación Humana" content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
                 <CollapsibleButton buttonText="Salud Pública" content={renderFilteredTable(filteredData, 'Salud Pública')} />
-                <CollapsibleButton buttonText="No Aplica" content={renderFilteredTable(filteredData, 'No Aplica')} />
+                <CollapsibleButton buttonText="No Aplica" content={renderFilteredTable(filteredData, 'No Aplica')} /> */}
               </div>
             ) : (
               <p>Ningún progama por mostrar</p>
