@@ -13,10 +13,12 @@ const Home = () => {
   const [selectedValue, setSelectedValue] = useState();
   const [semaforoVisible, setSemaforoVisible] = useState(false);
   const [semaforoAcVisible, setSemaforoAcVisible] = useState(false);
-  const [totalProgramsCount, setTotalProgramsCount] = useState(0);
   const [activosCount, setActivosCount]= useState(0);
   const [creacionCount, setCreacionCount]= useState(0);
-  const [sedesCount, setSedesCount]= useState(0);
+  const [creacionSedesCount, setCreacionSedesCount]= useState(0);
+  const [activoSedesCount, setActivoSedesCount]= useState(0);
+  const [inactivosCount, setInactivosCount]= useState(0);
+  const [otrosCount, setOtrosCount]= useState(0);
   const navigate = useNavigate();
   const [programasVisible, setProgramasVisible] = useState(true); 
   const [rowData, setRowData] = useState(null);
@@ -25,10 +27,12 @@ const Home = () => {
     const fetchData = async () => {
       try {
         const response = await Filtro5(); 
-        setTotalProgramsCount(response.length); 
         setActivosCount(response.filter(item => item['estado'] === 'Activo').length);   
-        setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);     
-        setSedesCount(response.filter(item => item['sede'] !== 'Cali').length);  
+        setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);   
+        setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);  
+        setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);     
+        setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);  
+        setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);  
         setRowData(response);         
       } catch (error) {
         console.error('Error al filtrar datos:', error);
@@ -155,29 +159,66 @@ const Home = () => {
       {programasVisible && (
       <div className='programas' onClick={handleClick}>
         <div className='title'><strong>Programas</strong></div>
-        <div className='activos'><strong>Activos </strong>..... {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> }</div>
-        <div className='creacion'><strong>En Creación</strong>..... {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> }</div>
-        <div className='sedes'><strong>En sedes</strong>..... {sedesCount !== 0 ? sedesCount : <CircularProgress size={20} /> }</div>
-        <div className='total-programas'>Total Programas de la Facultad: {totalProgramsCount !== 0 ? totalProgramsCount : <CircularProgress size={20} /> }</div>
+        <table>
+          <thead>
+            <tr>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{paddingRight:'4px'}}>Activos Cali</td>
+              <td>{activosCount !== 0 ? activosCount : <CircularProgress size={20} /> }</td>
+            </tr>
+            <tr>
+              <td style={{paddingRight:'4px'}}>Activos Sedes</td>
+              <td>{activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} /> }</td>
+            </tr>
+            <tr>
+              <td style={{paddingRight:'4px'}}>En Creación</td>
+              <td>{creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> }</td>
+            </tr>
+            <tr>
+              <td style={{paddingRight:'4px'}}>En Creación (Sedes y otros)</td>
+              <td>{creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</td>
+            </tr>
+            <tr>
+              <td style={{paddingRight:'4px'}}>Otros</td>
+              <td>{otrosCount !== 0 ? otrosCount : <CircularProgress size={20} /> }</td>
+            </tr>
+            <tr>
+              <td style={{paddingRight:'4px'}}><strong>SUB-TOTAL:</strong></td>
+              <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount }</td>
+            </tr>
+            <tr>
+              <td style={{paddingRight:'4px'}}>Inactivos - Desistidos - Rechazados</td>
+              <td>{inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} /> }</td>
+            </tr>
+            <tr>
+              <td style={{paddingRight:'4px'}}><strong>TOTAL:</strong></td>
+              <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount + inactivosCount}</td>
+            </tr>
+          </tbody>
+        </table>
+
       </div>
       )}
       </div>
       {selectedValue === 'option1' && (
         <>
-        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         <Semaforo />
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}
       {selectedValue === 'option2' && (
         <>
-        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         <SemaforoAc />
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}
       {selectedValue === 'option4' && (
         <>
-        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         <Crea />
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}
       {/* {selectedValue === 'option6' && (

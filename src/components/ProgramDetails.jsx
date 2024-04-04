@@ -82,7 +82,6 @@ const ProgramDetails = () => {
     return (
         <div>
         <Header/>
-        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         <div className='title-program'><h2>{programaAcademico}</h2></div>
         <div className='about-program'>
         <div className='about-program'><strong>Facultad-</strong> {facultad}</div>
@@ -110,6 +109,7 @@ const ProgramDetails = () => {
         </div>
         <Seguimiento key={reloadSeguimiento}/>
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </div>
     );
 };

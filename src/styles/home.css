@@ -69,6 +69,7 @@
 .programas{
     height: fit-content;
     display: flex;
+    width: 25%;
     flex-direction: column;
     margin-left: 80px;
     margin-top: 10px;
@@ -135,14 +136,14 @@
 }
 
 .programas2{
-    height: fit-content;
-    width: fit-content;
     display: flex;
+    height: fit-content;
+    width: 30%;
     flex-direction: column;
     margin-top: 20px;
     padding: 10px;
-    /* border: 2px solid #808080;
-    border-radius: 8px ; */
+    border: 2px solid #808080;
+    border-radius: 8px;
 }
 
 @media screen and (max-width: 768px) {

@@ -1,9 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header"
 import { Button, ButtonGroup } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { styled } from '@mui/material/styles';
-import { Filtro4 } from "../service/data";
+import { Filtro4, Filtro5 } from "../service/data";
 import CircularProgress from '@mui/material/CircularProgress';
 import CollapsibleButton from "./CollapsibleButton";
 import '/src/styles/home.css'; 
@@ -17,9 +17,37 @@ const Programas = () => {
     const [filteredData, setFilteredData] = useState(rowData);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
+    const [activosCount, setActivosCount]= useState(0);
+    const [creacionCount, setCreacionCount]= useState(0);
+    const [creacionSedesCount, setCreacionSedesCount]= useState(0);
+    const [activoSedesCount, setActivoSedesCount]= useState(0);
+    const [inactivosCount, setInactivosCount]= useState(0);
+    const [otrosCount, setOtrosCount]= useState(0);
 
     console.log('datos', rowData);
-    
+
+    useEffect(() => {
+        const fetchData = async () => {
+          try {
+            const response = await Filtro5(); 
+            setActivosCount(response.filter(item => item['estado'] === 'Activo').length);   
+            setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);   
+            setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);  
+            setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);     
+            setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);  
+            setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);  
+            setRowData(response);         
+          } catch (error) {
+            console.error('Error al filtrar datos:', error);
+          }
+        };
+        const buttonGoogle = document.getElementById("buttonDiv")
+        if (buttonGoogle){
+          buttonGoogle.classList.add('_display_none');
+        }
+        fetchData();
+      }, []);
+
     const handleRowClick = (rowData) => {
         console.log('Datos de la fila:', rowData);
         navigate('/program_details', { state: rowData });
@@ -136,14 +164,49 @@ const Programas = () => {
     return(
         <>
             <Header/>
-            <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
             <div className='table-buttons'>
             <div className='programas2'>
                 <div className='title'><strong>Programas</strong></div>
-                <div className='activos'><strong>Activos </strong>..... {(rowData.filter(item => item['estado'] === 'Activo').length) !== 0 ? (rowData.filter(item => item['estado'] === 'Activo').length) : <CircularProgress size={20} /> }</div>
-                <div className='creacion'><strong>En Creación</strong>..... {(rowData.filter(item => item['estado'] === 'En Creación').length) !== 0 ? (rowData.filter(item => item['estado'] === 'En Creación').length) : <CircularProgress size={20} /> }</div>
-                <div className='sedes'><strong>En sedes</strong>..... {(rowData.filter(item => item['sede'] !== 'Cali').length) !== 0 ? (rowData.filter(item => item['sede'] !== 'Cali').length) : <CircularProgress size={20} /> }</div>
-                <div className='total-programas'>Total Programas de la Facultad: {(rowData.length) !== 0 ? (rowData.length) : <CircularProgress size={20} /> }</div>
+                <table>
+                <thead>
+                    <tr>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                    <td style={{paddingRight:'4px'}}>Activos Cali</td>
+                    <td>{activosCount !== 0 ? activosCount : <CircularProgress size={20} /> }</td>
+                    </tr>
+                    <tr>
+                    <td style={{paddingRight:'4px'}}>Activos Sedes</td>
+                    <td>{activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} /> }</td>
+                    </tr>
+                    <tr>
+                    <td style={{paddingRight:'4px'}}>En Creación</td>
+                    <td>{creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> }</td>
+                    </tr>
+                    <tr>
+                    <td style={{paddingRight:'4px'}}>En Creación (Sedes y otros)</td>
+                    <td>{creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</td>
+                    </tr>
+                    <tr>
+                    <td style={{paddingRight:'4px'}}>Otros</td>
+                    <td>{otrosCount !== 0 ? otrosCount : <CircularProgress size={20} /> }</td>
+                    </tr>
+                    <tr>
+                    <td style={{paddingRight:'4px'}}><strong>SUB-TOTAL:</strong></td>
+                    <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount }</td>
+                    </tr>
+                    <tr>
+                    <td style={{paddingRight:'4px'}}>Inactivos - Desistidos - Rechazados</td>
+                    <td>{inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} /> }</td>
+                    </tr>
+                    <tr>
+                    <td style={{paddingRight:'4px'}}><strong>TOTAL:</strong></td>
+                    <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount + inactivosCount}</td>
+                    </tr>
+                </tbody>
+                </table>
             </div>
             <ButtonsContainer>
                 <div className="contenedorButtonGroup">
@@ -195,7 +258,8 @@ const Programas = () => {
               </div>
             ) : (
               <p>Ningún progama por mostrar</p>
-            )}        
+            )}      
+            <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>  
         </>
     );
 
