@@ -63,7 +63,15 @@
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    margin-top: -50px;
+    margin-top: -70px;
+}
+
+.alltogetherGeneral{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: -40px;
 }
 
 .programas{
@@ -130,9 +138,11 @@
 .table-buttons{
     display: flex;
     flex-direction: row; 
-    justify-content: center;
+    justify-content: left;
     align-items: center; 
     margin: 0;
+    gap: 50px;
+    width: 100%;
 }
 
 .programas2{

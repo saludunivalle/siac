@@ -93,16 +93,16 @@ const Programas = () => {
     
             let filteredResult = rowData.filter(item => {
                 if (newSelectedValues.includes('option1')) { 
-                    return item['pregrado/posgrado'] === 'Pregrado';
+                    return item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec';
                 } else if (newSelectedValues.includes('option2')) { 
                     return item['pregrado/posgrado'] === 'Posgrado';
                 }
                 return true; 
             }).filter(item => {
                 if (newSelectedValues.includes('option3')) { 
-                    return item['estado'] === 'Activo';
+                    return (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede');
                 } else if (newSelectedValues.includes('option4')) { 
-                    return item['estado'] === 'En Creación';
+                    return (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
                 }
                 return true; 
             }).filter(item => {
@@ -111,6 +111,11 @@ const Programas = () => {
                 }
                 return true; 
             });
+
+            if (newSelectedValues.includes('option6')) {
+                filteredResult = filteredResult.filter(item => item['estado'] === 'Inactivo');
+            }    
+
     
             setFilteredData(filteredResult);
     
@@ -134,7 +139,12 @@ const Programas = () => {
     };
 
     const renderFilteredTable = (data, filter) => {
-    const filteredData = Filtro4(data, filter);
+    let filteredData;
+    if (filter === 'No Aplica'){
+        filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'Dirección de Posgrados' || item['escuela'] === 'SALE PARA TULIÁ' || item['escuela'] === 'Dirección de Posgrados (varias)' ));
+    } else {
+        filteredData = Filtro4(data, filter);
+    }
     if (filteredData.length === 0) {
         return <p>Ningún progama por mostrar</p>;
     }
@@ -147,7 +157,7 @@ const Programas = () => {
             <tbody>
                 {filteredData.map((item, index) => (
                 <tr key={index} onClick={() => handleRowClick(item)}>
-                    <td className="bold">{item['programa académico']}</td> 
+                    <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
                     <td>{item['departamento']}</td> 
                     <td>{item['sección']}</td> 
                     <td>{item['estado']}</td> 
@@ -208,6 +218,8 @@ const Programas = () => {
                 </tbody>
                 </table>
             </div>
+            <div style={{display:'flex', flexDirection:'column', gap: '40px', justifyContent:'center', textAlign:'center'}}>
+                <div style={{fontSize:'18px'}}><strong>Total Progamas: </strong> {filteredData.length}</div>
             <ButtonsContainer>
                 <div className="contenedorButtonGroup">
                 <ButtonGroup >
@@ -227,19 +239,31 @@ const Programas = () => {
                     <Button value="option4" className="custom-radio2" 
                         style={setButtonStyles('option4')}
                         onClick={() => handleButtonClick('option4')} > Creacion </Button>
-                    <Button value="option5" className="custom-radio2" 
-                        style={setButtonStyles('option5')}
-                        onClick={() => handleButtonClick('option5')} > Sedes </Button> 
                 </ButtonGroup>
                 </div>
-            </ButtonsContainer>  
+                <div className="contenedorButtonGroup">
+                <ButtonGroup >
+                    <Button value="option5" className="custom-radio2" 
+                            style={setButtonStyles('option5')}
+                            onClick={() => handleButtonClick('option5')} > Sedes </Button> 
+                </ButtonGroup>
+                </div>
+                <div className="contenedorButtonGroup">
+                <ButtonGroup >
+                    <Button value="option6" 
+                            style={setButtonStyles('option6')}
+                            onClick={() => handleButtonClick('option6')} > Ver Inactivos </Button> 
+                </ButtonGroup>
+                </div>
+            </ButtonsContainer> 
+            </div> 
             </div> 
             {filteredData && filteredData.length > 0 ? (
               <div className='row-container'>
                 <table style={{ width: '100%', textAlign: 'center', marginTop: '10px' }}>
                   <thead>
                     <tr>
-                      <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Programa Académico</th>
+                      <th className="bold" style={{ backgroundColor: headerBackgroundColor}}>Programa Académico</th>
                       <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>  
                       <th style={{ backgroundColor: headerBackgroundColor }}>Sección</th>
                       <th style={{ backgroundColor: headerBackgroundColor }}>Estado</th>
@@ -248,29 +272,27 @@ const Programas = () => {
                   </thead>
                 </table>  
                 {filteredData.some(data => data['escuela'] === 'Bacteriología y Lab. Clínico') && 
-                    <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
+                    <CollapsibleButton buttonText={`Bacteriología y Lab. Clínico (${Filtro4(filteredData, 'Bacteriología y Lab. Clínico').length})`} content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
                 }
                 {filteredData.some(data => data['escuela'] === 'Ciencias Básicas') && 
-                    <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
+                    <CollapsibleButton buttonText={`Ciencias Básicas (${Filtro4(filteredData, 'Ciencias Básicas').length})`} content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
                 }
                 {filteredData.some(data => data['escuela'] === 'Enfermería') && 
-                    <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />
+                    <CollapsibleButton buttonText={`Enfermería (${Filtro4(filteredData, 'Enfermería').length})`} content={renderFilteredTable(filteredData, 'Enfermería')} />
                 }
                 {filteredData.some(data => data['escuela'] === 'Medicina') && 
-                    <CollapsibleButton buttonText="Medicina" content={renderFilteredTable(filteredData, 'Medicina')} />
+                    <CollapsibleButton buttonText={`Medicina (${Filtro4(filteredData, 'Medicina').length})`} content={renderFilteredTable(filteredData, 'Medicina')} />
                 }
                 {filteredData.some(data => data['escuela'] === 'Odontología') && 
-                    <CollapsibleButton buttonText="Odontología" content={renderFilteredTable(filteredData, 'Odontología')} />
+                    <CollapsibleButton buttonText={`Odontología (${Filtro4(filteredData, 'Odontología').length})`} content={renderFilteredTable(filteredData, 'Odontología')} />
                 }
                 {filteredData.some(data => data['escuela'] === 'Rehabilitación Humana') && 
-                    <CollapsibleButton buttonText="Rehabilitación Humana" content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
+                    <CollapsibleButton buttonText={`Rehabilitación Humana (${Filtro4(filteredData, 'Rehabilitación Humana').length})`} content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
                 }
                 {filteredData.some(data => data['escuela'] === 'Salud Pública') && 
-                    <CollapsibleButton buttonText="Salud Pública" content={renderFilteredTable(filteredData, 'Salud Pública')} />
+                    <CollapsibleButton buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
                 }
-                {filteredData.some(data => data['escuela'] === 'No Aplica') && 
-                    <CollapsibleButton buttonText="No Aplica" content={renderFilteredTable(filteredData, 'No Aplica')} />
-                }
+                    <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
                 {/* <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
                 <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
                 <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />

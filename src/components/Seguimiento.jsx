@@ -23,7 +23,7 @@ const Seguimiento = () => {
     const [user, setUser] = useState('');
     const [collapsible, setCollapsible] = useState('');
     const [isPlan, setPlan] = useState(['Plan de Mejoramiento', 'Sistemas']);
-    const [isReg, setReg] = useState(['Registro Calificado', 'Sistemas']);
+    const [isReg, setReg] = useState(['Renovación Registro Calificado', 'Sistemas']);
     const [isAcred, setAcred] = useState(['Acreditación', 'Sistemas']);
     const [isConv, setConv] = useState(['Convenio Docencia Servicio', 'Sistemas']);
     const [isCargo, setCargo] = useState('');
@@ -32,6 +32,8 @@ const Seguimiento = () => {
     const fileInputRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [updateTrigger, setUpdateTrigger] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [formSubmitted, setFormSubmitted] = useState(false);
 
     const handleChange = (event) => {
         setValue(event.target.value);
@@ -113,19 +115,24 @@ const Seguimiento = () => {
                     <th style={{ width: '15%', border: '1px solid grey' }}>Comentario</th>
                     <th style={{ width: '15%', border: '1px solid grey' }}>Riesgo</th>  
                     <th style={{ width: '15%', border: '1px solid grey' }}>Usuario</th>
-                    <th style={{ width: '15%', border: '1px solid grey' }}>Enlace</th>
+                    <th style={{ width: '15%', border: '1px solid grey' }}>Adjunto</th>
                     </tr>
                 </thead>
                 <tbody>
                     {filteredData.map((item, index) => (
-                        <tr key={index}>
+                        <tr key={index} style={{ backgroundColor: getBackgroundColor(item['riesgo']) }}>
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['timestamp']}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['mensaje']}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario']}</td> 
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}><a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
-                                    Enlace
-                                </a>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
+                                {item['url_adjunto'] ? (
+                                    <a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
+                                        Enlace
+                                    </a>
+                                ) : (
+                                    <strong>-</strong>
+                                )}
                             </td> 
                         </tr>
                     ))}
@@ -133,6 +140,19 @@ const Seguimiento = () => {
             </table>
         );
     }; 
+
+    const getBackgroundColor = (riesgo) => {
+        switch (riesgo) {
+            case 'Alto':
+                return '#FED5D1';
+            case 'Medio':
+                return '#FEFBD1';
+            case 'Bajo':
+                return '#E6FFE6';
+            default:
+                return 'white';
+        }
+    };
 
     const handleNewTrackingClick = (collapsibleType) => {
         setShowCollapsible(prevState => ({
@@ -155,6 +175,14 @@ const Seguimiento = () => {
 
                 for (let i = 0; i < files.length; i++) {
                     formData.append("file", files[i]); 
+                }
+
+                if (comment.trim() === '' || value.trim() === '') {
+                    setLoading(false);
+                    const errorMessage = 'Por favor, complete todos los campos obligatorios.';
+                    setErrorMessage(errorMessage);
+                    setFormSubmitted(true); 
+                    return;
                 }
             
                 const response = await fetch("https://siac-server.vercel.app/upload/",{
@@ -187,6 +215,7 @@ const Seguimiento = () => {
                 setUpdateTrigger(true); 
                 setComment('');
                 setValue('');
+                setErrorMessage(null);
             } catch (error) {
                 setLoading(false);
                 console.error('Error al enviar datos:', error);
@@ -196,15 +225,15 @@ const Seguimiento = () => {
         return(
             <>
             <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display:'flex', flexDirection:'row', margin:'5px',  justifyContent: 'center', marginTop: '10px' }}>
-                <div className='comments' style={{ display:'flex', flexDirection:'column', paddingRight:'50px', justifyContent: 'left', textAlign: 'left', marginTop: '5px' }}>
-                   Comentario <br/>
-                   <TextField value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{border: 'none', textAlign: 'start', borderRadius: '4px', backgroundColor: '#f0f0f0', color: 'black'}} />
-                </div>
+            <div className='comments' style={{ display:'flex', flexDirection:'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', width:'35%', paddingRight:'20px'}}>
+                Comentario * <br/>
+                <TextField multiline rows={3} required value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{border: (formSubmitted && comment.trim() === '') ? '1px solid red' : 'none', textAlign: 'start', backgroundColor: '#f0f0f0', color: 'black', blockSize:'100%'}}  />
+            </div>
                 <div className='adj-risk' style={{ display:'flex', flexDirection:'column', justifyContent: 'left',  textAlign: 'left', marginTop: '5px', margin:'5px', }}>
                     <div className='risk'  style={{textAlign: 'left'}}>
-                        Riesgo <br/>
-                        <FormControl component="fieldset">
-                                <RadioGroup value={value} onChange={handleChange} style={{ display:'flex', flexDirection:'row'}}>
+                        Riesgo *<br/>
+                        <FormControl component="fieldset" required error={formSubmitted && value.trim() === ''} style={{border: (formSubmitted && value.trim() === '') ? '1px solid red' : 'none'}}>
+                                <RadioGroup value={value} onChange={handleChange} style={{ display:'flex', flexDirection:'row'}} required>
                                     <FormControlLabel value="Alto" control={<Radio />} label="Alto" />
                                     <FormControlLabel value="Medio" control={<Radio />} label="Medio" />
                                     <FormControlLabel value="Bajo" control={<Radio />} label="Bajo" />
@@ -266,6 +295,11 @@ const Seguimiento = () => {
                     </div>
                 
             </Modal>
+            {errorMessage && (
+                <div style={{ color: 'red', fontSize:'17px', paddingBottom:'10px'}}>
+                    {errorMessage}
+                </div>
+            )}
             </>
         );
     };

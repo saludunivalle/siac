@@ -37,7 +37,8 @@
   }
 
   .table-container tr:hover {
-    background-color: #dbdbdb6e;
+    background-color: #817b7b8f;
+    border: 1px solid #ffffff;
   }
 
   @media screen and (max-width: 768px) {

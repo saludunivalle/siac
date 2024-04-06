@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Filtro4, Filtro5 } from '../service/data';
 import '/src/styles/home.css'; 
 import CollapsibleButton from './CollapsibleButton';
@@ -11,6 +11,7 @@ const Crea = () => {
     const [filteredData, setFilteredData] = useState(rowData);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -75,14 +76,30 @@ const Crea = () => {
                     </tr>
                   </thead>
                 </table>  
-                <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
-                <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
-                <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />
-                <CollapsibleButton buttonText="Medicina" content={renderFilteredTable(filteredData, 'Medicina')} />
-                <CollapsibleButton buttonText="Odontología" content={renderFilteredTable(filteredData, 'Odontología')} />
-                <CollapsibleButton buttonText="Rehabilitación Humana" content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
-                <CollapsibleButton buttonText="Salud Pública" content={renderFilteredTable(filteredData, 'Salud Pública')} />
-                <CollapsibleButton buttonText="No Aplica" content={renderFilteredTable(filteredData, 'No Aplica')} />
+                {filteredData.some(data => data['escuela'] === 'Bacteriología y Lab. Clínico') && 
+                    <CollapsibleButton buttonText={`Bacteriología y Lab. Clínico (${Filtro4(filteredData, 'Bacteriología y Lab. Clínico').length})`} content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Ciencias Básicas') && 
+                    <CollapsibleButton buttonText={`Ciencias Básicas (${Filtro4(filteredData, 'Ciencias Básicas').length})`} content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Enfermería') && 
+                    <CollapsibleButton buttonText={`Enfermería (${Filtro4(filteredData, 'Enfermería').length})`} content={renderFilteredTable(filteredData, 'Enfermería')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Medicina') && 
+                    <CollapsibleButton buttonText={`Medicina (${Filtro4(filteredData, 'Medicina').length})`} content={renderFilteredTable(filteredData, 'Medicina')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Odontología') && 
+                    <CollapsibleButton buttonText={`Odontología (${Filtro4(filteredData, 'Odontología').length})`} content={renderFilteredTable(filteredData, 'Odontología')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Rehabilitación Humana') && 
+                    <CollapsibleButton buttonText={`Rehabilitación Humana (${Filtro4(filteredData, 'Rehabilitación Humana').length})`} content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Salud Pública') && 
+                    <CollapsibleButton buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'No Aplica') && 
+                    <CollapsibleButton buttonText={`No Aplica (${Filtro4(filteredData, 'No Aplica').length})`} content={renderFilteredTable(filteredData, 'No Aplica')} />
+                }
               </div>
             ) : (
               <p>Ningún progama por mostrar</p>

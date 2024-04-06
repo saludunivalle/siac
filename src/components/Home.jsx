@@ -89,6 +89,8 @@ const Home = () => {
     <>
       <Header/>
       <div className='container-general'>
+      <div className='alltogetherGeneral'>
+        <div style={{fontSize: '25px', paddingBottom:'60px'}}>Procesos de Calidad</div>
       <div className='alltogether'>
        <div className='alltogether1'>
         <div className="banner">
@@ -155,6 +157,7 @@ const Home = () => {
             </ButtonGroup> */}
           </div>
         </div>
+      </div>
       </div>
       {programasVisible && (
       <div className='programas' onClick={handleClick}>
