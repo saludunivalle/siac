@@ -39,6 +39,11 @@
     margin-bottom: 10px;
 }
 
+.about-program-general{
+    display: flex;
+    flex-direction: row;
+    width: fit-content;
+}
 
 .button-reverse{
     margin-top: 20px;
@@ -55,6 +60,7 @@
 .button-reverse:hover{
     background-color:rgba(163, 163, 163, 0.562);
 }
+
 
 @media screen and (max-width: 768px) {
 
@@ -74,5 +80,12 @@
     .title-program{
         font-size: 15px;
         text-align: center;
+        margin-top: -60px;
+    }
+
+    .about-program-general {
+        display: flex;
+        flex-wrap: wrap; 
+        padding-bottom: 15px;
     }
 }

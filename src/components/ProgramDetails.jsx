@@ -83,12 +83,12 @@ const ProgramDetails = () => {
         <div>
         <Header/>
         <div className='title-program'><h2>{programaAcademico}</h2></div>
-        <div className='about-program'>
-        <div className='about-program'><strong>Facultad-</strong> {facultad}</div>
-        <div className='about-program'><strong>Escuela- </strong> {escuela}</div>
-        <div className='about-program'><strong>Sede- </strong> {sede}</div>
-        <div className='about-program'><strong>Departamento-</strong> {departamento}</div>
-        <div className='about-program'><strong>Sección-</strong> {seccion}</div>
+        <div className='about-program-general'>
+            <div className='about-program'><strong>Facultad-</strong> {facultad}</div>
+            <div className='about-program'><strong>Escuela- </strong> {escuela}</div>
+            <div className='about-program'><strong>Sede- </strong> {sede}</div>
+            <div className='about-program'><strong>Departamento-</strong> {departamento}</div>
+            <div className='about-program'><strong>Sección-</strong> {seccion}</div>
         </div>
         <div className='procesos'>
             <div className='procesosCREA'> 

@@ -158,12 +158,16 @@
 
 @media screen and (max-width: 768px) {
     .radio-group {
-        padding: 10px; 
+        padding: 0px; 
         padding-bottom: 1rem;
     }
 
+    .alltogether1{
+        padding-right: 0.1rem;
+    }
+
     .custom-radio {
-        width: 60px; 
+        width: 58px; 
     }
 
     .total{
@@ -191,6 +195,7 @@
 
     .programas{
         margin-left: 6px;
+        width: fit-content;
     }
 
     .table-buttons{
