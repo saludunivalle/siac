@@ -20,6 +20,7 @@ const ProgramDetails = () => {
     const fechavencrac = rowData['fechavencac'];
     const fechavencrrc = rowData['fechavencrc'];
     const navigate = useNavigate();
+    const [clickedButton, setClickedButton] = useState(null);
 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
 
@@ -31,6 +32,11 @@ const ProgramDetails = () => {
 
         return () => clearTimeout(timeout); 
     }, [rowData]); 
+
+    const handleButtonClick = async (buttonType) => {
+        setClickedButton(buttonType);
+        console.log(clickedButton);
+      };
 
     const getProcesosRRCBackground = () => {
         if (faseRRC === 'Fase 1') {
@@ -52,12 +58,6 @@ const ProgramDetails = () => {
         navigate('/');
     };
 
-    const procesosRRCStyle = {
-        backgroundColor: getProcesosRRCBackground(),
-        //cursor: getProcesosRRCBackground() !== 'rgb(241, 241, 241)' ? 'pointer' : 'default',
-    };
-
-
     const getProcesosRACBackground = () => {
         if (faseRAC === 'Fase 1') {
             return '#4caf4f36';
@@ -74,9 +74,36 @@ const ProgramDetails = () => {
         }
     };
 
-    const procesosRACStyle = {
-        backgroundColor: getProcesosRACBackground(),
-        //cursor: getProcesosRRCBackground() !== 'rgb(241, 241, 241)' ? 'pointer' : 'default',
+    const setButtonStyles = (buttonType, isClicked) => {
+        switch (buttonType) {
+            case 'raac':
+              return {
+                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : getProcesosRACBackground(),                color: '#000',
+              };
+            case 'rrc':
+              return {
+                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : getProcesosRRCBackground(),   
+              };
+            case 'crea':
+              return {
+                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : 'rgb(241, 241, 241)',
+              };
+            case 'mod':
+              return {
+                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : 'rgb(241, 241, 241)',
+              };
+            case 'aac':
+              return {
+                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : 'rgb(241, 241, 241)',
+              };
+            case 'conv':
+              return {
+                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : 'rgb(241, 241, 241)',
+              };
+          
+            default:
+              return {}; 
+          }
     };
 
     return (
@@ -91,23 +118,26 @@ const ProgramDetails = () => {
             <div className='about-program'><strong>Sección-</strong> {seccion}</div>
         </div>
         <div className='procesos'>
-            <div className='procesosCREA'> 
+            <div className='procesosCREA' style={setButtonStyles('crea', clickedButton === 'crea')} onClick={() => handleButtonClick('crea')}> 
                 <strong>CREA</strong> N/A
             </div>
-            <div className='procesosRRC' style={procesosRRCStyle}>
-                 <strong>RRC</strong> {fechavencrrc}   
-            </div>
-            <div className='procesosRAC' style={procesosRACStyle}> 
-                <strong>RAAC</strong> {fechavencrac}
-            </div>
-            <div className='procesosAC'>
-                <strong>AAC</strong> N/A
-            </div>
-            <div className='procesosMOD'> 
+            <div className='procesosMOD' style={setButtonStyles('mod', clickedButton === 'mod')} onClick={() => handleButtonClick('mod')}> 
                 <strong>MOD</strong> N/A
             </div>
+            <div className='procesosRRC' style={setButtonStyles('rrc', clickedButton === 'rrc')} onClick={() => handleButtonClick('rrc')}>
+                 <strong>RRC</strong> {fechavencrrc}   
+            </div>
+            <div className='procesosAC' style={setButtonStyles('aac', clickedButton === 'aac')} onClick={() => handleButtonClick('aac')}>
+                <strong>AAC</strong> N/A
+            </div>
+            <div className='procesosRAC' style={setButtonStyles('raac', clickedButton === 'raac')} onClick={() => handleButtonClick('raac')}> 
+                <strong>RAAC</strong> {fechavencrac}
+            </div>
+            <div className='procesosCONV' style={setButtonStyles('conv', clickedButton === 'conv')} onClick={() => handleButtonClick('conv')}>
+                <strong>Convenio Docencia</strong> N/A
+            </div>
         </div>
-        <Seguimiento key={reloadSeguimiento}/>
+        <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}/>
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </div>

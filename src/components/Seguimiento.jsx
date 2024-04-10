@@ -8,7 +8,8 @@ import { Modal, CircularProgress  } from '@mui/material';
 
 
 
-const Seguimiento = () => {
+const Seguimiento = ({handleButtonClick}) => {
+    console.log("en seguimiento",handleButtonClick)
     const location = useLocation();
     const rowData = location.state; 
     const programaAcademico = rowData['programa académico'];
@@ -25,6 +26,8 @@ const Seguimiento = () => {
     const [isReg, setReg] = useState(['Renovación Registro Calificado', 'Sistemas']);
     const [isAcred, setAcred] = useState(['Acreditación', 'Sistemas']);
     const [isConv, setConv] = useState(['Convenio Docencia Servicio', 'Sistemas']);
+    const [isCrea, setCrea] = useState(['Creación', 'Sistemas']);
+    const [isMod, setMod] = useState(['Modificación', 'Sistemas']);
     const [isCargo, setCargo] = useState('');
     const [openModal, setOpenModal] = useState(false);
     const [fileData, setfileData] = useState(null);
@@ -309,16 +312,17 @@ const Seguimiento = () => {
                 {/* <Header />
                 <h2>{programaAcademico}</h2> */}
                 <h3>Seguimiento</h3>
-                        <CollapsibleButton buttonText="Plan de Mejoramiento" content={
+                        {handleButtonClick=='rrc' &&(
+                        <CollapsibleButton buttonText="Plan de Mejoramiento RRC" content={
                             <>
                                 <div className='contenido' style={{ textAlign: 'center' }}>
-                                    {renderFilteredTable(filteredData, 'Plan de Mejoramiento')}
+                                    {renderFilteredTable(filteredData, 'Plan de Mejoramiento RRC')}
                                     {avaibleRange(isPlan) &&
                                     (
-                                        <Button onClick={() => handleNewTrackingClick('Plan de Mejoramiento')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                                        <Button onClick={() => handleNewTrackingClick('Plan de Mejoramiento RRC')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                     )
                                     }
-                                    {showCollapsible['Plan de Mejoramiento'] && (
+                                    {showCollapsible['Plan de Mejoramiento RRC'] && (
                                         <>  
                                             {contenido_seguimiento()}
                                         </>
@@ -326,12 +330,32 @@ const Seguimiento = () => {
                                 </div>
                             </>
                         } />
-                
+                    )}
+                {handleButtonClick=='raac' &&(
+                        <CollapsibleButton buttonText="Plan de Mejoramiento RAAC" content={
+                            <>
+                                <div className='contenido' style={{ textAlign: 'center' }}>
+                                    {renderFilteredTable(filteredData, 'Plan de Mejoramiento RAAC')}
+                                    {avaibleRange(isPlan) &&
+                                    (
+                                        <Button onClick={() => handleNewTrackingClick('Plan de Mejoramiento RAAC')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                                    )
+                                    }
+                                    {showCollapsible['Plan de Mejoramiento RAAC'] && (
+                                        <>  
+                                            {contenido_seguimiento()}
+                                        </>
+                                    )}
+                                </div>
+                            </>
+                        } />
+                    )}
+                {handleButtonClick=='rrc' &&(
                 <CollapsibleButton buttonText="Registro Calificado" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center' }}>
                             {renderFilteredTable(filteredData, 'Registro Calificado')}
-                            {avaibleRange(isReg) &&
+                            {avaibleRange(isReg) && 
                             (
                             <Button onClick={() => handleNewTrackingClick('Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                             )
@@ -344,11 +368,13 @@ const Seguimiento = () => {
                         </div>
                     </>
                 } />
+                )}
+                {(handleButtonClick=='aac' || handleButtonClick=='raac') &&(
                 <CollapsibleButton buttonText="Acreditación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center' }}>
                             {renderFilteredTable(filteredData, 'Acreditación')}
-                            {avaibleRange(isAcred) &&
+                            {avaibleRange(isAcred) && 
                             (
                             <Button onClick={() => handleNewTrackingClick('Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                             )
@@ -361,6 +387,8 @@ const Seguimiento = () => {
                         </div>
                     </>
                 } />
+                )}
+                {handleButtonClick=='conv' &&(
                 <CollapsibleButton buttonText="Convenio Docencia Servicio" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center' }}>
@@ -378,6 +406,45 @@ const Seguimiento = () => {
                         </div>
                     </>
                 } />
+                )}
+                {handleButtonClick=='crea' &&(
+                <CollapsibleButton buttonText="Creación" content={
+                    <>
+                        <div className='contenido' style={{ textAlign: 'center' }}>
+                            {renderFilteredTable(filteredData, 'Creación')}
+                            {avaibleRange(isCrea) &&
+                            (
+                            <Button onClick={() => handleNewTrackingClick('Creación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                            )
+                            }
+                            {showCollapsible['Creación'] && (
+                                <>
+                                    {contenido_seguimiento()}
+                                </>
+                            )}
+                        </div>
+                    </>
+                } />
+                )}
+                {handleButtonClick=='mod' &&(
+                <CollapsibleButton buttonText="Modificación" content={
+                    <>
+                        <div className='contenido' style={{ textAlign: 'center' }}>
+                            {renderFilteredTable(filteredData, 'Modificación')}
+                            {avaibleRange(isCrea) &&
+                            (
+                            <Button onClick={() => handleNewTrackingClick('Modificación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                            )
+                            }
+                            {showCollapsible['Modificación'] && (
+                                <>
+                                    {contenido_seguimiento()}
+                                </>
+                            )}
+                        </div>
+                    </>
+                } />
+                )}
             </div>
 
             

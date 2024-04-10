@@ -26,6 +26,17 @@
     border: 1px solid #ffffff;
     text-align: center;
     width: 170px; 
+    cursor: pointer;
+}
+.procesosCONV {
+    padding: 0.5rem;
+    border-radius: 8px;
+    height: fit-content;
+    background-color: rgb(241, 241, 241);
+    border: 1px solid #ffffff;
+    text-align: center;
+    width: fit-content; 
+    cursor: pointer;
 }
 
 .title-program{
