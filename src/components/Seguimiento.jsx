@@ -28,7 +28,8 @@ const Seguimiento = ({handleButtonClick}) => {
     const [isConv, setConv] = useState(['Convenio Docencia Servicio', 'Sistemas']);
     const [isCrea, setCrea] = useState(['Creación', 'Sistemas']);
     const [isMod, setMod] = useState(['Modificación', 'Sistemas']);
-    const [isCargo, setCargo] = useState('');
+    const [isRenAcred, setRenAcred] = useState(['Renovación Acreditación', 'Sistemas']);
+    const [isCargo, setCargo] = useState([' ']);
     const [openModal, setOpenModal] = useState(false);
     const [fileData, setfileData] = useState(null);
     const fileInputRef = useRef(null);
@@ -74,17 +75,17 @@ const Seguimiento = ({handleButtonClick}) => {
         setTimestamp(formattedDate);
         if (sessionStorage.getItem('logged')){
             let res = JSON.parse(sessionStorage.getItem('logged'));
-            console.log('permiso', res[0].permiso);
-            setCargo(res[0].permiso);
+            console.log('permisos', res.map(item => item.permiso));
+            setCargo(res.map(item => item.permiso).flat());
             setUser(res[0].user);
         }
     }, []);
 
 
-    const avaibleRange = (buscar) =>{
-        return buscar.includes(isCargo);
+    const avaibleRange = (buscar) => {
+        return isCargo.some(cargo => buscar.includes(cargo));
     };
-
+  
     useEffect(() => {
         console.log(filteredData); 
     }, [filteredData]); 
@@ -314,16 +315,16 @@ const Seguimiento = ({handleButtonClick}) => {
                 <h2>{programaAcademico}</h2> */}
                 <h3>Seguimiento</h3>
                 {handleButtonClick=='rrc' &&(
-                <CollapsibleButton buttonText="Registro Calificado" content={
+                <CollapsibleButton buttonText="Renovación Registro Calificado" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center' }}>
-                            {renderFilteredTable(filteredData, 'Registro Calificado')}
+                            {renderFilteredTable(filteredData, 'Renovación Registro Calificado')}
                             {avaibleRange(isReg) && 
                             (
-                            <Button onClick={() => handleNewTrackingClick('Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                            <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                             )
                             }
-                            {showCollapsible['Registro Calificado'] && (
+                            {showCollapsible['Renovación Registro Calificado'] && (
                                 <>  
                                     {contenido_seguimiento()}
                                 </>
@@ -332,7 +333,7 @@ const Seguimiento = ({handleButtonClick}) => {
                     </>
                 } />
                 )}
-                {(handleButtonClick=='aac' || handleButtonClick=='raac') &&(
+                {(handleButtonClick=='aac') &&(
                 <CollapsibleButton buttonText="Acreditación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center' }}>
@@ -343,6 +344,25 @@ const Seguimiento = ({handleButtonClick}) => {
                             )
                             }
                             {showCollapsible['Acreditación'] && (
+                                <>
+                                    {contenido_seguimiento()}
+                                </>
+                            )}
+                        </div>
+                    </>
+                } />
+                )}
+                {(handleButtonClick=='raac') &&(
+                <CollapsibleButton buttonText="Renovación Acreditación" content={
+                    <>
+                        <div className='contenido' style={{ textAlign: 'center' }}>
+                            {renderFilteredTable(filteredData, 'Renovación Acreditación')}
+                            {avaibleRange(isRenAcred) && 
+                            (
+                            <Button onClick={() => handleNewTrackingClick('Renovación Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                            )
+                            }
+                            {showCollapsible['Renovación Acreditación'] && (
                                 <>
                                     {contenido_seguimiento()}
                                 </>
@@ -432,7 +452,7 @@ const Seguimiento = ({handleButtonClick}) => {
                     <>
                         <div className='contenido' style={{ textAlign: 'center' }}>
                             {renderFilteredTable(filteredData, 'Modificación')}
-                            {avaibleRange(isCrea) &&
+                            {avaibleRange(isMod) &&
                             (
                             <Button onClick={() => handleNewTrackingClick('Modificación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                             )
