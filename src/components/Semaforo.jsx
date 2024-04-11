@@ -88,12 +88,12 @@ const Semaforo = () => {
         setLoading(true);
         const response = await Filtro2({ searchTerm: '' }); 
         setFilteredData(response);
-        setWhiteProgramsCount(response.filter(item => item['fase rrc'] === 'N/A').length);
-        setGreenProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 1').length);
-        setYellowProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 2').length);
-        setOrangeProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 3').length);
-        setOrange2ProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 4').length);
-        setRedProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 5').length);
+        setWhiteProgramsCount(response.filter(item => item['fase rrc'] === 'N/A' && item['rc vigente'] == 'SI').length);
+        setGreenProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 1' && item['rc vigente'] == 'SI').length);
+        setYellowProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] == 'SI').length);
+        setOrangeProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] == 'SI').length);
+        setOrange2ProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] == 'SI').length);
+        setRedProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] == 'SI').length);
         setLoading(false);
       } catch (error) {
         console.error('Error al filtrar datos:', error);
@@ -138,14 +138,19 @@ const Semaforo = () => {
     try {
       setLoading(true);
       const response = await Filtro2({ searchTerm });
-      setFilteredData(response);
+      setFilteredData(response.filter(item => item['rc vigente'] == 'SI'));
     } catch (error) {
       console.error('Error al filtrar datos:', error);
     }
   };
 
   const renderFilteredTable = (data, filter) => {
-    const filteredData = Filtro4(data, filter);
+    let filteredData;
+    if (filter === 'No Aplica'){
+        filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ'));
+    } else {
+        filteredData = Filtro4(data, filter);
+    }
     if (filteredData.length === 0) {
       return <p>Ningún progama por mostrar</p>;
     }
@@ -221,9 +226,8 @@ const Semaforo = () => {
                 {filteredData.some(data => data['escuela'] === 'Salud Pública') && 
                     <CollapsibleButton buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
                 }
-                {filteredData.some(data => data['escuela'] === 'No Aplica') && 
-                    <CollapsibleButton buttonText={`No Aplica (${Filtro4(filteredData, 'No Aplica').length})`} content={renderFilteredTable(filteredData, 'No Aplica')} />
-                }
+                    <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
+
               </div>
             ) : (
               <p>Ningún progama por mostrar</p>

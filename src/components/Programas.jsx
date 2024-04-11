@@ -141,7 +141,7 @@ const Programas = () => {
     const renderFilteredTable = (data, filter) => {
     let filteredData;
     if (filter === 'No Aplica'){
-        filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'Dirección de Posgrados' || item['escuela'] === 'SALE PARA TULIÁ' || item['escuela'] === 'Dirección de Posgrados (varias)' ));
+        filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ'));
     } else {
         filteredData = Filtro4(data, filter);
     }
@@ -291,6 +291,9 @@ const Programas = () => {
                 }
                 {filteredData.some(data => data['escuela'] === 'Salud Pública') && 
                     <CollapsibleButton buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
+                }
+                {filteredData.some(data => data['escuela'] === 'Dirección de Posgrados') && 
+                    <CollapsibleButton buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
                 }
                     <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
                 {/* <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />

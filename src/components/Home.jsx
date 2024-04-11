@@ -8,6 +8,7 @@ import { Filtro5 } from '../service/data';
 import Header from './Header';
 import '/src/styles/home.css'; 
 import Crea from './Crea';
+import Aac from './Aac';
 
 const Home = () => {
   const [selectedValue, setSelectedValue] = useState();
@@ -19,6 +20,9 @@ const Home = () => {
   const [activoSedesCount, setActivoSedesCount]= useState(0);
   const [inactivosCount, setInactivosCount]= useState(0);
   const [otrosCount, setOtrosCount]= useState(0);
+  const [aacCount, setAacCount]= useState(0);
+  const [rrcCount, setRrcCount]= useState(0);
+  const [raacCount, setRaacCount]= useState(0);
   const navigate = useNavigate();
   const [programasVisible, setProgramasVisible] = useState(true); 
   const [rowData, setRowData] = useState(null);
@@ -33,6 +37,9 @@ const Home = () => {
         setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);     
         setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);  
         setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);  
+        setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);  
+        setRrcCount(response.filter(item => item['rc vigente'] === 'SI').length); 
+        setRaacCount(response.filter(item => item['ac vigente'] === 'SI').length); 
         setRowData(response);         
       } catch (error) {
         console.error('Error al filtrar datos:', error);
@@ -107,13 +114,17 @@ const Home = () => {
             <Button value="option4" className="custom-radio"
                 style={setButtonStyles('option4')}
                 onClick={() => handleButtonClick('option4')} 
-                > CREA </Button>
+                > CREA <br/>
+                {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} />}
+                </Button>
             <Button value="option5" className="custom-radio"
               style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> MOD </Button>
             <Button value="option1" className="custom-radio" 
               style={setButtonStyles('option1')}
               onClick={() => handleButtonClick('option1')} 
-            > RRC </Button>
+            > RRC <br/>
+              {rrcCount !== 0 ? rrcCount : <CircularProgress size={20} />}
+            </Button>
             </ButtonGroup>
             </div>
         </div>
@@ -130,11 +141,17 @@ const Home = () => {
               className='radio-group'
             >
               <Button value="option3" className="custom-radio"
-                style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> AAC </Button>
+                style={setButtonStyles('option3')}
+                onClick={() => handleButtonClick('option3')} 
+                > AAC <br/>
+                  {aacCount !== 0 ? aacCount : <CircularProgress size={20} />}
+                </Button>
               <Button value="option2" className="custom-radio" 
                 style={setButtonStyles('option2')}
                 onClick={() => handleButtonClick('option2')} 
-              > RAAC </Button>
+              > RAAC  <br/>
+                {raacCount !== 0 ? raacCount : <CircularProgress size={20} />}
+              </Button>
               <Button value="option3" className="custom-radio"
                 style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> INT </Button>
             </ButtonGroup>
@@ -221,6 +238,12 @@ const Home = () => {
       {selectedValue === 'option4' && (
         <>
         <Crea />
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
+        </>
+      )}
+      {selectedValue === 'option3' && (
+        <>
+        <Aac />
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}

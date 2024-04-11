@@ -5,7 +5,7 @@ import '/src/styles/home.css';
 import CollapsibleButton from './CollapsibleButton';
 
 
-const Crea = () => {
+const Aac = () => {
     const location = useLocation();
     const rowData = location.state; 
     const [filteredData, setFilteredData] = useState(rowData);
@@ -17,7 +17,7 @@ const Crea = () => {
         const fetchData = async () => {
           try {
             const response = await Filtro5(); 
-            setFilteredData(response.filter(item => item['estado'] === 'En Creación'));
+            setFilteredData(response.filter(item => item['aac_1a'] === 'SI'));
           } catch (error) {
             console.error('Error al filtrar datos:', error);
           }
@@ -116,4 +116,4 @@ const Crea = () => {
     );
 };
 
-export default Crea;
+export default Aac;
