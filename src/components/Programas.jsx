@@ -112,12 +112,15 @@ const Programas = () => {
                 return true; 
             });
 
-            if (newSelectedValues.includes('option6')) {
-                filteredResult = filteredResult.filter(item => item['estado'] === 'Inactivo');
-            }    
+            setFilteredData(filteredResult.filter(item => {
+                if (newSelectedValues.includes('option6')) {
+                    return (item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado');
+                } else {
+                    return (item['estado'] !== 'Inactivo' && item['estado'] !== 'Desistido' && item['estado'] !== 'Rechazado');
+                }
+            }));
 
-    
-            setFilteredData(filteredResult);
+            //setFilteredData(filteredResult);
     
             return newSelectedValues; 
         });
