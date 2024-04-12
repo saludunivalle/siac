@@ -9,6 +9,7 @@ import Header from './Header';
 import '/src/styles/home.css'; 
 import Crea from './Crea';
 import Aac from './Aac';
+import Mod from './Mod';
 
 const Home = () => {
   const [selectedValue, setSelectedValue] = useState();
@@ -23,6 +24,7 @@ const Home = () => {
   const [aacCount, setAacCount]= useState(0);
   const [rrcCount, setRrcCount]= useState(0);
   const [raacCount, setRaacCount]= useState(0);
+  const [modCount, setModCount]= useState(0);
   const navigate = useNavigate();
   const [programasVisible, setProgramasVisible] = useState(true); 
   const [rowData, setRowData] = useState(null);
@@ -40,6 +42,7 @@ const Home = () => {
         setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);  
         setRrcCount(response.filter(item => item['rc vigente'] === 'SI').length); 
         setRaacCount(response.filter(item => item['ac vigente'] === 'SI').length); 
+        setModCount(response.filter(item => item['mod'] === 'SI').length);  
         setRowData(response);         
       } catch (error) {
         console.error('Error al filtrar datos:', error);
@@ -116,9 +119,13 @@ const Home = () => {
                 onClick={() => handleButtonClick('option4')} 
                 > CREA <br/>
                 {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} />}
-                </Button>
+            </Button>
             <Button value="option5" className="custom-radio"
-              style={{color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> MOD </Button>
+                style={setButtonStyles('option5')}
+                onClick={() => handleButtonClick('option5')} 
+                > MOD <br/>
+                {modCount !== 0 ? modCount : <CircularProgress size={20} />}
+            </Button>
             <Button value="option1" className="custom-radio" 
               style={setButtonStyles('option1')}
               onClick={() => handleButtonClick('option1')} 
@@ -244,6 +251,12 @@ const Home = () => {
       {selectedValue === 'option3' && (
         <>
         <Aac />
+        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
+        </>
+      )}
+      {selectedValue === 'option5' && (
+        <>
+        <Mod />
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}

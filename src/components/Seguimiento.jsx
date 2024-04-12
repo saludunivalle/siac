@@ -250,7 +250,7 @@ const Seguimiento = ({handleButtonClick}) => {
                     </div>
                 </div>
             </div>
-            <Button variant="contained" style={{textAlign: 'center', margin: '8px'}} onClick={handleGuardarClick}>Guardar</Button>
+            <Button variant="contained" style={{textAlign: 'center', margin: '8px', paddingBottom:'10px'}} onClick={handleGuardarClick}>Guardar</Button>
             {loading && (
                 <div
                     style={{
