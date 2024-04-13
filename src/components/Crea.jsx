@@ -34,9 +34,9 @@ const Crea = () => {
     const renderFilteredTable = (data, filter) => {
         let filteredData;
         if (filter === 'No Aplica'){
-            filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ'));
+            filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ')).filter(item => item['sede'] === 'Cali');
         } else {
-            filteredData = Filtro4(data, filter);
+            filteredData = (Filtro4(data, filter)).filter(item => item['sede'] === 'Cali' || item['estado'] !== 'Inactivo' || item['estado'] !== 'Desistido' || item['estado'] !== 'Rechazado');
         }
         if (filteredData.length === 0) {
             return <p>Ningún progama por mostrar</p>;

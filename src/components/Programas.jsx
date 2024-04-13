@@ -13,16 +13,10 @@ const Programas = () => {
     const location = useLocation();
     const rowData = location.state; 
     const navigate = useNavigate();
-    const [selectedValues, setSelectedValues] = useState([]);
+    const [selectedValues, setSelectedValues] = useState(['option3', 'option4']);
     const [filteredData, setFilteredData] = useState(rowData);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
-    const [activosCount, setActivosCount]= useState(0);
-    const [creacionCount, setCreacionCount]= useState(0);
-    const [creacionSedesCount, setCreacionSedesCount]= useState(0);
-    const [activoSedesCount, setActivoSedesCount]= useState(0);
-    const [inactivosCount, setInactivosCount]= useState(0);
-    const [otrosCount, setOtrosCount]= useState(0);
 
     console.log('datos', rowData);
 
@@ -30,13 +24,7 @@ const Programas = () => {
         const fetchData = async () => {
           try {
             const response = await Filtro5(); 
-            setActivosCount(response.filter(item => item['estado'] === 'Activo').length);   
-            setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);   
-            setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);  
-            setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);     
-            setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);  
-            setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);  
-            setRowData(response);         
+            //setRowData(response);         
           } catch (error) {
             console.error('Error al filtrar datos:', error);
           }
@@ -45,6 +33,8 @@ const Programas = () => {
         if (buttonGoogle){
           buttonGoogle.classList.add('_display_none');
         }
+        setFilteredData(rowData.filter(item => item['estado'] === 'Activo' || item['estado'] === 'En Creación'));
+        console.log("console del filtro", filteredData);
         fetchData();
       }, []);
 
@@ -55,7 +45,7 @@ const Programas = () => {
 
     const ButtonsContainer = styled('div')({
         display: 'flex',
-        flexDirection: 'row',
+        flexDirection: 'column',
         placeItems: 'center',
         justifyContent: 'center',
         width: '100%',
@@ -78,8 +68,13 @@ const Programas = () => {
                 (buttonValue === 'option2' && prevSelectedValues.includes('option1'))) {
                 newSelectedValues = [buttonValue];
             }
-            else if ((buttonValue === 'option3' && prevSelectedValues.includes('option4')) ||
-                     (buttonValue === 'option4' && prevSelectedValues.includes('option3'))) {
+            else if ((buttonValue === 'option3' && (prevSelectedValues.includes('option4') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option5') || prevSelectedValues.includes('option6'))) ||
+                     (buttonValue === 'option4' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option5') || prevSelectedValues.includes('option6'))) ||
+                     (buttonValue === 'option7' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option4') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option5') || prevSelectedValues.includes('option6'))) ||
+                     (buttonValue === 'option8' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option4') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option5') || prevSelectedValues.includes('option6'))) ||
+                     (buttonValue === 'option5' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option4') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option6'))) ||
+                     (buttonValue === 'option6' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option4') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option5')))
+                    ) {
                 newSelectedValues = [buttonValue, ...prevSelectedValues.filter(val => val === 'option1' || val === 'option2')];
             }
             else if (buttonValue === 'option5' && prevSelectedValues.includes('option5')) {
@@ -100,17 +95,19 @@ const Programas = () => {
                 return true; 
             }).filter(item => {
                 if (newSelectedValues.includes('option3')) { 
-                    return (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede');
+                    return (item['estado'] === 'Activo');
                 } else if (newSelectedValues.includes('option4')) { 
-                    return (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
+                    return (item['estado'] === 'En Creación');
+                } else if (newSelectedValues.includes('option7')) { 
+                    return (item['estado'] === 'Activo - Sede');
+                } else if (newSelectedValues.includes('option8')) { 
+                    return (item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
+                } else if (newSelectedValues.includes('option5')) { 
+                    return (item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR');
                 }
+                
                 return true; 
-            }).filter(item => {
-                if (newSelectedValues.includes('option5')) { 
-                    return item['sede'] !== 'Cali';
-                }
-                return true; 
-            });
+            })
 
             setFilteredData(filteredResult.filter(item => {
                 if (newSelectedValues.includes('option6')) {
@@ -178,54 +175,11 @@ const Programas = () => {
         <>
             <Header/>
             <div className='table-buttons'>
-            <div className='programas2'>
-                <div className='title'><strong>Programas</strong></div>
-                <table>
-                <thead>
-                    <tr>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                    <td style={{paddingRight:'4px'}}>Activos Cali</td>
-                    <td>{activosCount !== 0 ? activosCount : <CircularProgress size={20} /> }</td>
-                    </tr>
-                    <tr>
-                    <td style={{paddingRight:'4px'}}>Activos Sedes</td>
-                    <td>{activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} /> }</td>
-                    </tr>
-                    <tr>
-                    <td style={{paddingRight:'4px'}}>En Creación</td>
-                    <td>{creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> }</td>
-                    </tr>
-                    <tr>
-                    <td style={{paddingRight:'4px'}}>En Creación (Sedes y otros)</td>
-                    <td>{creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</td>
-                    </tr>
-                    <tr>
-                    <td style={{paddingRight:'4px'}}>Otros</td>
-                    <td>{otrosCount !== 0 ? otrosCount : <CircularProgress size={20} /> }</td>
-                    </tr>
-                    <tr>
-                    <td style={{paddingRight:'4px'}}><strong>SUB-TOTAL:</strong></td>
-                    <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount }</td>
-                    </tr>
-                    <tr>
-                    <td style={{paddingRight:'4px'}}>Inactivos - Desistidos - Rechazados</td>
-                    <td>{inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} /> }</td>
-                    </tr>
-                    <tr>
-                    <td style={{paddingRight:'4px'}}><strong>TOTAL:</strong></td>
-                    <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount + inactivosCount}</td>
-                    </tr>
-                </tbody>
-                </table>
-            </div>
-            <div style={{display:'flex', flexDirection:'column', gap: '40px', justifyContent:'center', textAlign:'center'}}>
-                <div style={{fontSize:'18px'}}><strong>Total Progamas: </strong> {filteredData.length}</div>
+            <div style={{display:'flex', flexDirection:'column', gap: '20px', justifyContent:'center', textAlign:'center'}}>
+                <div style={{fontSize:'18px'}}><strong>Total Progamas: </strong> {filteredData.length} </div>
             <ButtonsContainer>
                 <div className="contenedorButtonGroup">
-                <ButtonGroup >
+                <ButtonGroup style={{gap:'10px'}} >
                     <Button value="option1" className="custom-radio2"
                         style={setButtonStyles('option1')}
                         onClick={() => handleButtonClick('option1')} > Pregrado </Button>
@@ -235,27 +189,25 @@ const Programas = () => {
                 </ButtonGroup>
                 </div>
                 <div className="contenedorButtonGroup">
-                <ButtonGroup>
+                <ButtonGroup style={{gap:'10px'}}>
                     <Button value="option3" className="custom-radio2" 
                         style={setButtonStyles('option3')}
                         onClick={() => handleButtonClick('option3')} > Activos </Button>
+                    <Button value="option7" className="custom-radio2" 
+                        style={setButtonStyles('option7')}
+                        onClick={() => handleButtonClick('option7')} > Activos Sedes </Button>
                     <Button value="option4" className="custom-radio2" 
                         style={setButtonStyles('option4')}
                         onClick={() => handleButtonClick('option4')} > Creacion </Button>
-                </ButtonGroup>
-                </div>
-                <div className="contenedorButtonGroup">
-                <ButtonGroup >
+                    <Button value="option8" className="custom-radio2" 
+                        style={setButtonStyles('option8')}
+                        onClick={() => handleButtonClick('option8')} > Creacion (Sedes y otros)</Button>
                     <Button value="option5" className="custom-radio2" 
                             style={setButtonStyles('option5')}
-                            onClick={() => handleButtonClick('option5')} > Sedes </Button> 
-                </ButtonGroup>
-                </div>
-                <div className="contenedorButtonGroup">
-                <ButtonGroup >
+                            onClick={() => handleButtonClick('option5')} > Otros </Button>
                     <Button value="option6" 
                             style={setButtonStyles('option6')}
-                            onClick={() => handleButtonClick('option6')} > Ver Inactivos </Button> 
+                            onClick={() => handleButtonClick('option6')} > Inactivos </Button> 
                 </ButtonGroup>
                 </div>
             </ButtonsContainer> 
@@ -299,14 +251,6 @@ const Programas = () => {
                     <CollapsibleButton buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
                 }
                     <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
-                {/* <CollapsibleButton buttonText="Bacteriología y Lab. Clínico" content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
-                <CollapsibleButton buttonText="Ciencias Básicas" content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
-                <CollapsibleButton buttonText="Enfermería" content={renderFilteredTable(filteredData, 'Enfermería')} />
-                <CollapsibleButton buttonText="Medicina" content={renderFilteredTable(filteredData, 'Medicina')} />
-                <CollapsibleButton buttonText="Odontología" content={renderFilteredTable(filteredData, 'Odontología')} />
-                <CollapsibleButton buttonText="Rehabilitación Humana" content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
-                <CollapsibleButton buttonText="Salud Pública" content={renderFilteredTable(filteredData, 'Salud Pública')} />
-                <CollapsibleButton buttonText="No Aplica" content={renderFilteredTable(filteredData, 'No Aplica')} /> */}
               </div>
             ) : (
               <p>Ningún progama por mostrar</p>
