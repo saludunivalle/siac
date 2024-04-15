@@ -40,8 +40,8 @@ const Home = () => {
         setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);  
         setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);  
         setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);  
-        setRrcCount(response.filter(item => item['rc vigente'] === 'SI').length); 
-        setRaacCount(response.filter(item => item['ac vigente'] === 'SI').length); 
+        setRrcCount(response.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A'  ).length); 
+        setRaacCount(response.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A' ).length); 
         setModCount(response.filter(item => item['mod'] === 'SI').length);  
         setRowData(response);         
       } catch (error) {

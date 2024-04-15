@@ -1,3 +1,7 @@
+.containerTotal{
+    padding-left: 20px;
+}
+
 .procesos {
     display: flex;
     /*flex-direction: row;*/

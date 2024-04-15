@@ -17,6 +17,12 @@ const Programas = () => {
     const [filteredData, setFilteredData] = useState(rowData);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
+    const [activosCount, setActivosCount]= useState(0);
+    const [creacionCount, setCreacionCount]= useState(0);
+    const [creacionSedesCount, setCreacionSedesCount]= useState(0);
+    const [activoSedesCount, setActivoSedesCount]= useState(0);
+    const [inactivosCount, setInactivosCount]= useState(0);
+    const [otrosCount, setOtrosCount]= useState(0);
 
     console.log('datos', rowData);
 
@@ -24,6 +30,13 @@ const Programas = () => {
         const fetchData = async () => {
           try {
             const response = await Filtro5(); 
+            setActivosCount(response.filter(item => item['estado'] === 'Activo').length);   
+            setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);   
+            setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);  
+            setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);     
+            setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);  
+            setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);  
+            //setRowData(response);  
             //setRowData(response);         
           } catch (error) {
             console.error('Error al filtrar datos:', error);
@@ -192,22 +205,22 @@ const Programas = () => {
                 <ButtonGroup style={{gap:'10px'}}>
                     <Button value="option3" className="custom-radio2" 
                         style={setButtonStyles('option3')}
-                        onClick={() => handleButtonClick('option3')} > Activos </Button>
+                        onClick={() => handleButtonClick('option3')} > Activos <br/> {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> } </Button>
                     <Button value="option7" className="custom-radio2" 
                         style={setButtonStyles('option7')}
-                        onClick={() => handleButtonClick('option7')} > Activos Sedes </Button>
+                        onClick={() => handleButtonClick('option7')} > Activos Sedes <br/> {activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} /> }</Button>
                     <Button value="option4" className="custom-radio2" 
                         style={setButtonStyles('option4')}
-                        onClick={() => handleButtonClick('option4')} > Creacion </Button>
+                        onClick={() => handleButtonClick('option4')} > Creacion <br/> {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> } </Button>
                     <Button value="option8" className="custom-radio2" 
                         style={setButtonStyles('option8')}
-                        onClick={() => handleButtonClick('option8')} > Creacion (Sedes y otros)</Button>
+                        onClick={() => handleButtonClick('option8')} > Creacion (Sedes y otros) <br/> {creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</Button>
                     <Button value="option5" className="custom-radio2" 
                             style={setButtonStyles('option5')}
-                            onClick={() => handleButtonClick('option5')} > Otros </Button>
+                            onClick={() => handleButtonClick('option5')} > Otros <br/> {otrosCount !== 0 ? otrosCount : <CircularProgress size={20} /> } </Button>
                     <Button value="option6" 
                             style={setButtonStyles('option6')}
-                            onClick={() => handleButtonClick('option6')} > Inactivos </Button> 
+                            onClick={() => handleButtonClick('option6')} > Inactivos <br/> {inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} /> }</Button> 
                 </ButtonGroup>
                 </div>
             </ButtonsContainer> 

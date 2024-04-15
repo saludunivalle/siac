@@ -88,7 +88,7 @@ const Semaforo = () => {
         setLoading(true);
         const response = await Filtro2({ searchTerm: '' }); 
         setFilteredData(response);
-        setWhiteProgramsCount(response.filter(item => item['fase rrc'] === 'N/A' && item['rc vigente'] == 'SI').length);
+        setWhiteProgramsCount(response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] == 'SI').length);
         setGreenProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 1' && item['rc vigente'] == 'SI').length);
         setYellowProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] == 'SI').length);
         setOrangeProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] == 'SI').length);
@@ -109,7 +109,7 @@ const Semaforo = () => {
     let searchTerm = '';
     switch (buttonType) {
       case 'white':
-        searchTerm = 'N/A';
+        searchTerm = 'Vencido';
         setHeaderBackgroundColor('#f2f2f2');
         break;
       case 'green':
@@ -246,7 +246,7 @@ const Semaforo = () => {
               style={setButtonStyles('white', clickedButton === 'white')}
               onClick={() => handleButtonClick('white')}
             >
-              NO APLICA / SIN INFORMACIÓN <br/>
+              PROGRAMAS VENCIDOS <br/>
               {whiteProgramsCount !== 0 ? whiteProgramsCount : loading ? <CircularProgress size={20} /> : ''}
             </button>
             {clickedButton === 'white' && (
@@ -323,7 +323,7 @@ const Semaforo = () => {
             style={setButtonStyles('white', clickedButton === 'white')}
             onClick={() => handleButtonClick('white')}
           >
-            NO APLICA / SIN INFORMACIÓN <br/>
+            PROGRAMAS VENCIDOS<br/>
             {whiteProgramsCount !== 0 ? whiteProgramsCount : loading ? <CircularProgress size={20} /> : ''}
           </button>
           <button className='custom-button'

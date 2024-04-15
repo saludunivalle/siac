@@ -12,10 +12,12 @@ const HeaderContainer = styled('div')({
   placeItems: 'center',
   justifyContent: 'space-between',
   width: '100%',
-  margin: '2px',
-  position: 'relative', 
-  paddingBottom: '60px',
-  zIndex: 1,
+  position: 'sticky', 
+  top: 0, 
+  marginBottom: '60px',
+  zIndex: 2,
+  backgroundColor: '#F2F2F2',
+  boxShadow: '1px 2px 6px #BFB9A6',
   '@media (max-width:600px)': {
     flexDirection: 'column', 
   },
@@ -33,9 +35,11 @@ const Title = styled('div')(({ theme }) => ({
 }));
 
 const SearchBar = styled('div')({
+  position: 'relative',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-end', 
+  paddingRight: '10px',
 });
 
 const SearchInput = styled(InputBase)({
@@ -49,15 +53,18 @@ const SearchInput = styled(InputBase)({
 const SearchResultLabel = styled('label')({
   padding: '0.5rem',
   border: '1px solid #ccc',
-  marginTop: '-65px',
+  marginTop: '-10px',
+  marginRight: '20px',
   borderRadius: '5px',
   backgroundColor: '#ffffff',
   cursor: 'pointer',
-  width:'320px',
+  width:'300px',
   alignSelf:'flex-end',
   position: 'absolute', 
-  top: '100%', 
-  zIndex: 2, 
+  top: 'calc(100% + 10px)',
+  //top: '100%', 
+  //right: 0,
+  zIndex: 3,
   maxHeight: '200px', 
   overflowY: 'auto',
   display: 'none', 
@@ -153,7 +160,7 @@ const Header = () => {
   return (
     <HeaderContainer>
       <Link to="/">
-        <div className='logo'><img src={logo} alt="Logo" /></div>
+        <div className='logo' style={{paddingLeft:'10px'}}><img src={logo} alt="Logo" /></div>
       </Link>
       <Title>Sistema SIAC Facultad de Salud</Title>
       <SearchBar>

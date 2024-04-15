@@ -37,6 +37,7 @@ const Seguimiento = ({handleButtonClick}) => {
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [formSubmitted, setFormSubmitted] = useState(false);
+    
 
     const handleChange = (event) => {
         setValue(event.target.value);
@@ -321,7 +322,7 @@ const Seguimiento = ({handleButtonClick}) => {
                             {renderFilteredTable(filteredData, 'Renovación Registro Calificado')}
                             {avaibleRange(isReg) && 
                             (
-                            <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                            <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center',  marginBottom:'25px'}} >Nuevo Seguimiento</Button>
                             )
                             }
                             {showCollapsible['Renovación Registro Calificado'] && (
