@@ -120,22 +120,22 @@ const ProgramDetails = () => {
         </div>
         <div className='procesos'>
             <div className='procesosCREA' style={setButtonStyles('crea', clickedButton === 'crea')} onClick={() => handleButtonClick('crea')}> 
-                <strong>CREA</strong> N/A
+                <strong>CREA</strong>
             </div>
             <div className='procesosMOD' style={setButtonStyles('mod', clickedButton === 'mod')} onClick={() => handleButtonClick('mod')}> 
-                <strong>MOD</strong> N/A
+                <strong>MOD</strong>
             </div>
             <div className='procesosRRC' style={setButtonStyles('rrc', clickedButton === 'rrc')} onClick={() => handleButtonClick('rrc')}>
                  <strong>RRC</strong> {fechavencrrc}   
             </div>
             <div className='procesosAC' style={setButtonStyles('aac', clickedButton === 'aac')} onClick={() => handleButtonClick('aac')}>
-                <strong>AAC</strong> N/A
+                <strong>AAC</strong>
             </div>
             <div className='procesosRAC' style={setButtonStyles('raac', clickedButton === 'raac')} onClick={() => handleButtonClick('raac')}> 
                 <strong>RAAC</strong> {fechavencrac}
             </div>
             <div className='procesosCONV' style={setButtonStyles('conv', clickedButton === 'conv')} onClick={() => handleButtonClick('conv')}>
-                <strong>Convenio Docencia</strong> N/A
+                <strong>Convenio Docencia</strong>
             </div>
         </div>
         <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}/>

@@ -50,7 +50,7 @@ const Mod = () => {
                 <tbody>
                     {filteredData.map((item, index) => (
                     <tr key={index} onClick={() => handleRowClick(item)}>
-                        <td className="bold">{item['programa académico']}</td> 
+                        <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
                         <td>{item['departamento']}</td> 
                         <td>{item['sección']}</td> 
                         <td>{item['estado']}</td> 
@@ -105,8 +105,9 @@ const Mod = () => {
                 {filteredData.some(data => data['escuela'] === 'Dirección de Posgrados') && 
                     <CollapsibleButton buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
                 }
-                    <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
-
+                {filteredData.some(data => data['escuela'] === ' ' && data['escuela'] === '???' && data['escuela'] === 'SALE PARA TULIÁ') &&
+                  <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
+                }
               </div>
             ) : (
               <p>Ningún progama por mostrar</p>

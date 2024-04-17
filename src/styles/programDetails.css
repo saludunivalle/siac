@@ -1,5 +1,6 @@
 .containerTotal{
     padding-left: 20px;
+    margin-top: -25px;
 }
 
 .procesos {
@@ -45,6 +46,7 @@
 
 .title-program{
     font-size: 20px;
+
 }
 
 .about-program{

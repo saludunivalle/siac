@@ -85,12 +85,12 @@ const SemaforoAC = () => {
         setLoading(true);
         const response = await Filtro6({ searchTerm: '' }); 
         setFilteredData(response);
-        setWhiteProgramsCount(response.filter(item => item['fase rac'] === 'Vencido' && item['ac vigente'] == 'SI').length);
-        setGreenProgramsCount(response.filter(item => item['fase rac'] === 'Fase 1' && item['ac vigente'] == 'SI').length);
-        setYellowProgramsCount(response.filter(item => item['fase rac'] === 'Fase 2' && item['ac vigente'] == 'SI').length);
-        setOrangeProgramsCount(response.filter(item => item['fase rac'] === 'Fase 3' && item['ac vigente'] == 'SI').length);
-        setOrange2ProgramsCount(response.filter(item => item['fase rac'] === 'Fase 4' && item['ac vigente'] == 'SI').length);
-        setRedProgramsCount(response.filter(item => item['fase rac'] === 'Fase 5' && item['ac vigente'] == 'SI').length);
+        setWhiteProgramsCount(response.filter(item => item['fase rac'] === 'Vencido' && item['ac vigente'] == 'SI' && item['sede'] === 'Cali').length);
+        setGreenProgramsCount(response.filter(item => item['fase rac'] === 'Fase 1' && item['ac vigente'] == 'SI' && item['sede'] === 'Cali').length);
+        setYellowProgramsCount(response.filter(item => item['fase rac'] === 'Fase 2' && item['ac vigente'] == 'SI' && item['sede'] === 'Cali').length);
+        setOrangeProgramsCount(response.filter(item => item['fase rac'] === 'Fase 3' && item['ac vigente'] == 'SI' && item['sede'] === 'Cali').length);
+        setOrange2ProgramsCount(response.filter(item => item['fase rac'] === 'Fase 4' && item['ac vigente'] == 'SI' && item['sede'] === 'Cali').length);
+        setRedProgramsCount(response.filter(item => item['fase rac'] === 'Fase 5' && item['ac vigente'] == 'SI' && item['sede'] === 'Cali').length);
         setLoading(false);
       } catch (error) {
         console.error('Error al filtrar datos:', error);
@@ -160,7 +160,7 @@ const SemaforoAC = () => {
             <tbody>
               {filteredData.map((item, index) => (
                 <tr key={index} onClick={() => handleRowClick(item)}>
-                  <td className="bold">{item['programa académico']}</td> 
+                  <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
                   <td>{item['sede']}</td> 
                   <td>{item['escuela']}</td> 
                   <td>{item['departamento']}</td> 
@@ -181,7 +181,7 @@ const SemaforoAC = () => {
 
   return (
     <>
-      <div className='semaforo-container'>
+      <div className='semaforo-container' >
         <button className='custom-button'
           style={setButtonStyles('white', clickedButton === 'white')}
           onClick={() => handleButtonClick('white')}
@@ -266,7 +266,13 @@ const SemaforoAC = () => {
                 {filteredData.some(data => data['escuela'] === 'Salud Pública') && 
                     <CollapsibleButton buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
                 }
-                    <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
+                {filteredData.some(data => data['escuela'] === 'Dirección de Posgrados') && 
+                    <CollapsibleButton buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
+                }
+                {filteredData.some(data => data['escuela'] === ' ' && data['escuela'] === '???' && data['escuela'] === 'SALE PARA TULIÁ') &&
+                  <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
+                }
+                    
 
           </div>
         ) : (

@@ -3,12 +3,14 @@ import { useLocation } from 'react-router-dom';
 import { Radio, RadioGroup, FormControl, FormControlLabel, TextField } from '@mui/material';
 import { Button, Typography } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro7, Filtro8, Filtro9, sendDataToServer} from '../service/data';
+import { Filtro10, Filtro7, Filtro8, Filtro9, sendDataToServer} from '../service/data';
 import { Modal, CircularProgress  } from '@mui/material';
+import { Select, MenuItem} from '@mui/material';
 
 
 
 const Seguimiento = ({handleButtonClick}) => {
+    const [selectedOption, setSelectedOption] = useState('');
     console.log("en seguimiento",handleButtonClick)
     const location = useLocation();
     const rowData = location.state; 
@@ -37,11 +39,30 @@ const Seguimiento = ({handleButtonClick}) => {
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [formSubmitted, setFormSubmitted] = useState(false);
-    
+    const [menuItems, setMenuItems] = useState([]);
+
+    useEffect(() => {
+        fetchMenuItems();
+    }, []);
+
+    const fetchMenuItems = async () => {
+        try {
+        const response = await Filtro10();
+        const items = response.filter(item => item['fase'] !== ' '); 
+        setMenuItems(items);
+        } catch (error) {
+        console.error('Error fetching menu items:', error);
+        }
+    };
 
     const handleChange = (event) => {
         setValue(event.target.value);
     };
+
+    const handleOptionChange = (event) => {
+        setSelectedOption(event.target.value);
+      };
+    
 
     // const handleFileUpload = async () => {
     //     const files = fileInputRef.current.files;
@@ -229,27 +250,47 @@ const Seguimiento = ({handleButtonClick}) => {
 
         return(
             <>
-            <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display:'flex', flexDirection:'row', margin:'5px',  justifyContent: 'center', marginTop: '10px' }}>
-            <div className='comments' style={{ display:'flex', flexDirection:'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', width:'35%', paddingRight:'20px'}}>
-                Comentario * <br/>
-                <TextField multiline rows={3} required value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{border: (formSubmitted && comment.trim() === '') ? '1px solid red' : 'none', textAlign: 'start', backgroundColor: '#f0f0f0', color: 'black', blockSize:'100%'}}  />
-            </div>
-                <div className='adj-risk' style={{ display:'flex', flexDirection:'column', justifyContent: 'left',  textAlign: 'left', marginTop: '5px', margin:'5px', }}>
-                    <div className='risk'  style={{textAlign: 'left'}}>
-                        Riesgo *<br/>
-                        <FormControl component="fieldset" required error={formSubmitted && value.trim() === ''} style={{border: (formSubmitted && value.trim() === '') ? '1px solid red' : 'none'}}>
-                                <RadioGroup value={value} onChange={handleChange} style={{ display:'flex', flexDirection:'row'}} required>
-                                    <FormControlLabel value="Alto" control={<Radio />} label="Alto" />
-                                    <FormControlLabel value="Medio" control={<Radio />} label="Medio" />
-                                    <FormControlLabel value="Bajo" control={<Radio />} label="Bajo" />
-                                </RadioGroup>
-                        </FormControl>
-                    </div>
-                    <div className='adj'>
-                        Adjunto <br/>
-                        <input type="file" multiple ref={fileInputRef} placeholder="Seleccionar archivo..." />
-                    </div>
+            <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display:'flex', flexDirection:'row', margin:'5px',  justifyContent: 'center', marginTop: '10px', alignItems:'center'}}>
+                <div className='comments' style={{ display:'flex', flexDirection:'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', width:'35%', paddingRight:'20px'}}>
+                    Comentario * <br/>
+                    <TextField multiline rows={3} required value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{border: (formSubmitted && comment.trim() === '') ? '1px solid red' : 'none', textAlign: 'start', backgroundColor: '#f0f0f0', color: 'black', blockSize:'100%'}}  />
                 </div>
+                    <div className='adj-risk' style={{ display:'flex', flexDirection:'column', justifyContent: 'left',  textAlign: 'left', marginTop: '5px', margin:'5px', }}>
+                        <div className='risk'  style={{textAlign: 'left'}}>
+                            Riesgo *<br/>
+                            <FormControl component="fieldset" required error={formSubmitted && value.trim() === ''} style={{border: (formSubmitted && value.trim() === '') ? '1px solid red' : 'none'}}>
+                                    <RadioGroup value={value} onChange={handleChange} style={{ display:'flex', flexDirection:'row'}} required>
+                                        <FormControlLabel value="Alto" control={<Radio />} label="Alto" />
+                                        <FormControlLabel value="Medio" control={<Radio />} label="Medio" />
+                                        <FormControlLabel value="Bajo" control={<Radio />} label="Bajo" />
+                                    </RadioGroup>
+                            </FormControl>
+                        </div>
+                        <div className='adj'>
+                            Adjunto <br/>
+                            <input type="file" multiple ref={fileInputRef} placeholder="Seleccionar archivo..." />
+                        </div>
+                    </div>
+                    {handleButtonClick === 'crea' && (
+                        <>
+                            <div style={{ marginTop: '-45px', marginLeft: '10px', width: 'auto' }}>
+                                <Select
+                                    value={selectedOption}
+                                    onChange={handleOptionChange}
+                                    displayEmpty
+                                    style={{ width: '250px' }}
+                                >
+                                    <MenuItem value="">
+                                        {selectedOption ? "Deseleccionar": "Pasar a"}
+                                    </MenuItem>
+                                    {menuItems.map((item, index) => (
+                                        <MenuItem key={index} value={item}>{item['fase']}</MenuItem>
+                                    ))}
+                                </Select>
+                            </div>
+                        </>
+                    )}
+
             </div>
             <Button variant="contained" style={{textAlign: 'center', margin: '8px', paddingBottom:'10px'}} onClick={handleGuardarClick}>Guardar</Button>
             {loading && (
@@ -311,14 +352,15 @@ const Seguimiento = ({handleButtonClick}) => {
 
     return (
         <>
-            <div>
+            <div style={{marginRight:'20px', width:'auto'}}>
                 {/* <Header />
                 <h2>{programaAcademico}</h2> */}
                 <h3>Seguimiento</h3>
+                <div>
                 {handleButtonClick=='rrc' &&(
                 <CollapsibleButton buttonText="Renovación Registro Calificado" content={
                     <>
-                        <div className='contenido' style={{ textAlign: 'center' }}>
+                        <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                             {renderFilteredTable(filteredData, 'Renovación Registro Calificado')}
                             {avaibleRange(isReg) && 
                             (
@@ -337,7 +379,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 {(handleButtonClick=='aac') &&(
                 <CollapsibleButton buttonText="Acreditación" content={
                     <>
-                        <div className='contenido' style={{ textAlign: 'center' }}>
+                        <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                             {renderFilteredTable(filteredData, 'Acreditación')}
                             {avaibleRange(isAcred) && 
                             (
@@ -356,7 +398,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 {(handleButtonClick=='raac') &&(
                 <CollapsibleButton buttonText="Renovación Acreditación" content={
                     <>
-                        <div className='contenido' style={{ textAlign: 'center' }}>
+                        <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                             {renderFilteredTable(filteredData, 'Renovación Acreditación')}
                             {avaibleRange(isRenAcred) && 
                             (
@@ -375,7 +417,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 {handleButtonClick=='rrc' &&(
                     <CollapsibleButton buttonText="Plan de Mejoramiento RRC" content={
                         <>
-                            <div className='contenido' style={{ textAlign: 'center' }}>
+                            <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                 {renderFilteredTable(filteredData, 'Plan de Mejoramiento RRC')}
                                 {avaibleRange(isPlan) &&
                                 (
@@ -394,7 +436,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 {handleButtonClick=='raac' &&(
                         <CollapsibleButton buttonText="Plan de Mejoramiento RAAC" content={
                             <>
-                                <div className='contenido' style={{ textAlign: 'center' }}>
+                                <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                     {renderFilteredTable(filteredData, 'Plan de Mejoramiento RAAC')}
                                     {avaibleRange(isPlan) &&
                                     (
@@ -413,7 +455,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 {handleButtonClick=='conv' &&(
                 <CollapsibleButton buttonText="Convenio Docencia Servicio" content={
                     <>
-                        <div className='contenido' style={{ textAlign: 'center' }}>
+                        <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                             {renderFilteredTable(filteredData, 'Convenio Docencia Servicio')}
                             {avaibleRange(isConv) &&
                             (
@@ -432,7 +474,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 {handleButtonClick=='crea' &&(
                 <CollapsibleButton buttonText="Creación" content={
                     <>
-                        <div className='contenido' style={{ textAlign: 'center' }}>
+                        <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                             {renderFilteredTable(filteredData, 'Creación')}
                             {avaibleRange(isCrea) &&
                             (
@@ -451,7 +493,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 {handleButtonClick=='mod' &&(
                 <CollapsibleButton buttonText="Modificación" content={
                     <>
-                        <div className='contenido' style={{ textAlign: 'center' }}>
+                        <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                             {renderFilteredTable(filteredData, 'Modificación')}
                             {avaibleRange(isMod) &&
                             (
@@ -468,9 +510,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 } />
                 )}
             </div>
-
-            
-
+            </div>
         </>
 
     );

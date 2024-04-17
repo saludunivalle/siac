@@ -73,69 +73,55 @@ const Programas = () => {
         navigate('/');
       };
 
-    const handleButtonClick = (buttonValue) => {
+
+      const handleButtonClick = (buttonValue) => {
         setSelectedValues(prevSelectedValues => {
             let newSelectedValues;
     
-            if ((buttonValue === 'option1' && prevSelectedValues.includes('option2')) ||
-                (buttonValue === 'option2' && prevSelectedValues.includes('option1'))) {
-                newSelectedValues = [buttonValue];
-            }
-            else if ((buttonValue === 'option3' && (prevSelectedValues.includes('option4') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option5') || prevSelectedValues.includes('option6'))) ||
-                     (buttonValue === 'option4' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option5') || prevSelectedValues.includes('option6'))) ||
-                     (buttonValue === 'option7' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option4') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option5') || prevSelectedValues.includes('option6'))) ||
-                     (buttonValue === 'option8' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option4') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option5') || prevSelectedValues.includes('option6'))) ||
-                     (buttonValue === 'option5' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option4') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option6'))) ||
-                     (buttonValue === 'option6' && (prevSelectedValues.includes('option3') || prevSelectedValues.includes('option4') || prevSelectedValues.includes('option7') || prevSelectedValues.includes('option8') || prevSelectedValues.includes('option5')))
-                    ) {
-                newSelectedValues = [buttonValue, ...prevSelectedValues.filter(val => val === 'option1' || val === 'option2')];
-            }
-            else if (buttonValue === 'option5' && prevSelectedValues.includes('option5')) {
-                newSelectedValues = prevSelectedValues.filter(value => value !== buttonValue);
-            }
-            else {
-                newSelectedValues = prevSelectedValues.includes(buttonValue)
-                    ? prevSelectedValues.filter(value => value !== buttonValue)
-                    : [...prevSelectedValues, buttonValue];
+            if (prevSelectedValues.includes(buttonValue)) {
+                newSelectedValues = prevSelectedValues.filter(val => val !== buttonValue);
+            } else {
+                if (buttonValue === 'option1' || buttonValue === 'option2') {
+                    newSelectedValues = [buttonValue];
+                } else {
+                    newSelectedValues = [...prevSelectedValues, buttonValue];
+                }
             }
     
             let filteredResult = rowData.filter(item => {
-                if (newSelectedValues.includes('option1')) { 
-                    return item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec';
-                } else if (newSelectedValues.includes('option2')) { 
-                    return item['pregrado/posgrado'] === 'Posgrado';
-                }
-                return true; 
-            }).filter(item => {
-                if (newSelectedValues.includes('option3')) { 
-                    return (item['estado'] === 'Activo');
-                } else if (newSelectedValues.includes('option4')) { 
-                    return (item['estado'] === 'En Creación');
-                } else if (newSelectedValues.includes('option7')) { 
-                    return (item['estado'] === 'Activo - Sede');
-                } else if (newSelectedValues.includes('option8')) { 
-                    return (item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
-                } else if (newSelectedValues.includes('option5')) { 
-                    return (item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR');
-                }
-                
-                return true; 
-            })
-
-            setFilteredData(filteredResult.filter(item => {
-                if (newSelectedValues.includes('option6')) {
-                    return (item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado');
-                } else {
-                    return (item['estado'] !== 'Inactivo' && item['estado'] !== 'Desistido' && item['estado'] !== 'Rechazado');
-                }
-            }));
-
-            //setFilteredData(filteredResult);
+                const filterByOption = option => {
+                    switch (option) {
+                        case 'option1':
+                            return item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec';
+                        case 'option2':
+                            return item['pregrado/posgrado'] === 'Posgrado';
+                        default:
+                            return true;
+                    }
+                };
     
-            return newSelectedValues; 
+                const filterResults = newSelectedValues.map(filterByOption);
+                return filterResults.every(result => result === true);
+            });
+    
+            if (newSelectedValues.includes('option3') || newSelectedValues.includes('option4') || newSelectedValues.includes('option5') || newSelectedValues.includes('option6') || newSelectedValues.includes('option7') || newSelectedValues.includes('option8')) {
+                filteredResult = filteredResult.filter(item => {
+                    return newSelectedValues.includes('option3') && (item['estado'] === 'Activo') ||
+                           newSelectedValues.includes('option4') && (item['estado'] === 'En Creación') ||
+                           newSelectedValues.includes('option5') && (item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR') ||
+                           newSelectedValues.includes('option6') && (item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado') ||
+                           newSelectedValues.includes('option7') && (item['estado'] === 'Activo - Sede') ||
+                           newSelectedValues.includes('option8') && (item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
+                });
+            }
+    
+            setFilteredData(filteredResult);
+    
+            return newSelectedValues;
         });
     };
-       
+    
+    
     
     
     const isButtonSelected = (buttonValue) => {
@@ -263,7 +249,9 @@ const Programas = () => {
                 {filteredData.some(data => data['escuela'] === 'Dirección de Posgrados') && 
                     <CollapsibleButton buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
                 }
-                    <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
+                {filteredData.some(item => item['escuela'] === ' ' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ') &&
+                  <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
+                }
               </div>
             ) : (
               <p>Ningún progama por mostrar</p>

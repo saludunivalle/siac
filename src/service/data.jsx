@@ -2,6 +2,8 @@ import { fetchPostGeneral } from './fetch';
 const hojaProgramas = 'Programas';
 const hojaSeguimientos = 'Seguimientos';
 const hojaPermisos = 'Permisos';
+const hojaProc_Fases = 'Proc_Fases';
+
 
 
 /**
@@ -336,3 +338,18 @@ export const sendDataToServer = async (data) => {
 //     }
 //     }
 // };
+
+export const Filtro10 = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {}, 
+            sheetName: 'Proc_Fases', 
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+};
