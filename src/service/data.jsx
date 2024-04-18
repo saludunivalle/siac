@@ -3,6 +3,7 @@ const hojaProgramas = 'Programas';
 const hojaSeguimientos = 'Seguimientos';
 const hojaPermisos = 'Permisos';
 const hojaProc_Fases = 'Proc_Fases';
+const hojaProc_X_Prog='Proc_X_Prog';
 
 
 
@@ -351,5 +352,29 @@ export const Filtro10 = async () => {
     } catch (error) {
         console.error('Error en la solicitud:', error);
         throw error; 
+    }
+};
+
+export const sendDataToServerCrea = async (data) => {
+    try {
+        const dataSend = {
+            insertData:[
+                data
+            ]
+        };
+        console.log(dataSend, data);
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: hojaProc_X_Prog, 
+            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+        });
+        console.log(response);
+        if (response.status) {
+            console.log('Datos enviados correctamente al servidor.');
+        } else {
+            console.error('Error al enviar datos al servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
     }
 };

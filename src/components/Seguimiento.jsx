@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Radio, RadioGroup, FormControl, FormControlLabel, TextField } from '@mui/material';
+import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel } from '@mui/material';
 import { Button, Typography } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro7, Filtro8, Filtro9, sendDataToServer} from '../service/data';
+import { Filtro10, Filtro7, Filtro8, Filtro9, sendDataToServer, sendDataToServerCrea} from '../service/data';
 import { Modal, CircularProgress  } from '@mui/material';
 import { Select, MenuItem} from '@mui/material';
 
 
 
 const Seguimiento = ({handleButtonClick}) => {
-    const [selectedOption, setSelectedOption] = useState('');
+    const [menuItems, setMenuItems] = useState([]);
+    const [selectedOption, setSelectedOption] = useState(menuItems.length > 0 ? menuItems[0].id : '');
     console.log("en seguimiento",handleButtonClick)
     const location = useLocation();
     const rowData = location.state; 
@@ -39,7 +40,6 @@ const Seguimiento = ({handleButtonClick}) => {
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [formSubmitted, setFormSubmitted] = useState(false);
-    const [menuItems, setMenuItems] = useState([]);
 
     useEffect(() => {
         fetchMenuItems();
@@ -48,48 +48,12 @@ const Seguimiento = ({handleButtonClick}) => {
     const fetchMenuItems = async () => {
         try {
         const response = await Filtro10();
-        const items = response.filter(item => item['fase'] !== ' '); 
-        setMenuItems(items);
+        //const items = response.filter(item => item['fase'] !== ' '); 
+        setMenuItems(response);
         } catch (error) {
         console.error('Error fetching menu items:', error);
         }
     };
-
-    const handleChange = (event) => {
-        setValue(event.target.value);
-    };
-
-    const handleOptionChange = (event) => {
-        setSelectedOption(event.target.value);
-      };
-    
-
-    // const handleFileUpload = async () => {
-    //     const files = fileInputRef.current.files;
-    //     const formData = new FormData();
-
-    //     for (let i = 0; i < files.length; i++) {
-    //         formData.append("file", files[i]); 
-    //     }
-    
-    //     try {
-    //         const response = await fetch("https://siac-server.vercel.app/upload/",{
-    //             method: 'POST',
-    //             body: formData, 
-    //             headers: {
-    //                 enctype: 'multipart/form-data',
-    //             }
-    //         })
-    //         const data = await response.json();
-    //         console.log("uploaded files: ", data);
-    //         console.log("enlace:", data.enlace);
-    //         setfileData(data.enlace);
-    //         console.log("enlace del setfile:", fileData );
-    //     } catch (error) {
-    //         console.log("error archivo");
-    //     }
-        
-    // };
 
     useEffect(() => {
         const currentDate = new Date();
@@ -192,6 +156,7 @@ const Seguimiento = ({handleButtonClick}) => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
+        console.log('opcion:', selectedOption.id);
 
         const handleGuardarClick = async () => {
             try {
@@ -230,10 +195,18 @@ const Seguimiento = ({handleButtonClick}) => {
                     value,
                     user,
                     collapsible,
-                    data.enlace,
+                    data.enlace,       
                 ];
+
+                const dataSendCrea=[
+                    idPrograma,
+                    selectedOption.id,
+                    timestamp,
+                ];
+
                 //await handleFileUpload();
                 await sendDataToServer(dataSend);
+                await sendDataToServerCrea(dataSendCrea);
                 setLoading(false);
                 setOpenModal(true);
                 console.log('Datos enviados correctamente');
@@ -259,7 +232,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         <div className='risk'  style={{textAlign: 'left'}}>
                             Riesgo *<br/>
                             <FormControl component="fieldset" required error={formSubmitted && value.trim() === ''} style={{border: (formSubmitted && value.trim() === '') ? '1px solid red' : 'none'}}>
-                                    <RadioGroup value={value} onChange={handleChange} style={{ display:'flex', flexDirection:'row'}} required>
+                                    <RadioGroup value={value} onChange={e => {setValue(e.target.value)}} style={{ display:'flex', flexDirection:'row'}} required>
                                         <FormControlLabel value="Alto" control={<Radio />} label="Alto" />
                                         <FormControlLabel value="Medio" control={<Radio />} label="Medio" />
                                         <FormControlLabel value="Bajo" control={<Radio />} label="Bajo" />
@@ -274,23 +247,26 @@ const Seguimiento = ({handleButtonClick}) => {
                     {handleButtonClick === 'crea' && (
                         <>
                             <div style={{ marginTop: '-45px', marginLeft: '10px', width: 'auto' }}>
-                                <Select
+                            <FormControl style={{ width: '250px' }}>
+                                <InputLabel id="select-label">Pasar a...</InputLabel>
+                                <Select 
+                                    labelId="select-label"
+                                    id="select-label"
                                     value={selectedOption}
-                                    onChange={handleOptionChange}
+                                    label="Pasar a..."
+                                    onChange={e => {setSelectedOption(e.target.value)}}
                                     displayEmpty
                                     style={{ width: '250px' }}
                                 >
-                                    <MenuItem value="">
-                                        {selectedOption ? "Deseleccionar": "Pasar a"}
-                                    </MenuItem>
                                     {menuItems.map((item, index) => (
-                                        <MenuItem key={index} value={item}>{item['fase']}</MenuItem>
+                                        <MenuItem key={index} value={item}>{item.fase}</MenuItem>
                                     ))}
                                 </Select>
+
+                            </FormControl>                            
                             </div>
                         </>
-                    )}
-
+                    )}                  
             </div>
             <Button variant="contained" style={{textAlign: 'center', margin: '8px', paddingBottom:'10px'}} onClick={handleGuardarClick}>Guardar</Button>
             {loading && (
