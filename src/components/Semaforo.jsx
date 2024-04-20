@@ -58,7 +58,7 @@ const setButtonStyles = (buttonType, isClicked) => {
   }
 };
 
-const Semaforo = () => {
+const Semaforo = ({ globalVariable }) => {
   const [clickedButton, setClickedButton] = useState(null);
   const [filteredData, setFilteredData] = useState(null); 
   const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2'); 
@@ -74,7 +74,7 @@ const Semaforo = () => {
 
   const handleRowClick = (rowData) => {
     console.log('Datos de la fila:', rowData);
-    navigate('/program_details', { state: rowData });
+    navigate('/program_details', { state: { ...rowData, globalVariable } });
   };
 
   useEffect(() => {

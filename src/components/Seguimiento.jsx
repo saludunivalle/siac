@@ -6,13 +6,16 @@ import CollapsibleButton from './CollapsibleButton';
 import { Filtro10, Filtro7, Filtro8, Filtro9, sendDataToServer, sendDataToServerCrea} from '../service/data';
 import { Modal, CircularProgress  } from '@mui/material';
 import { Select, MenuItem} from '@mui/material';
-
-
+import dayjs from 'dayjs';
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 const Seguimiento = ({handleButtonClick}) => {
+    const [selectedDate, setSelectedDate] = useState(null);
     const [menuItems, setMenuItems] = useState([]);
     const [selectedOption, setSelectedOption] = useState(menuItems.length > 0 ? menuItems[0].id : '');
-    console.log("en seguimiento",handleButtonClick)
     const location = useLocation();
     const rowData = location.state; 
     const programaAcademico = rowData['programa académico'];
@@ -21,7 +24,6 @@ const Seguimiento = ({handleButtonClick}) => {
     const [value, setValue] = useState('');
     const [showCollapsible, setShowCollapsible] = useState({}); 
     const [filteredData, setFilteredData] = useState([]);
-    const [timestamp, setTimestamp] = useState(null);
     const [comment, setComment] = useState(''); 
     const [user, setUser] = useState('');
     const [collapsible, setCollapsible] = useState('');
@@ -48,20 +50,16 @@ const Seguimiento = ({handleButtonClick}) => {
     const fetchMenuItems = async () => {
         try {
         const response = await Filtro10();
-        //const items = response.filter(item => item['fase'] !== ' '); 
-        setMenuItems(response);
+        const result = response.filter(item => item['proceso'] === 'Creación'); 
+        setMenuItems(result);
         } catch (error) {
         console.error('Error fetching menu items:', error);
         }
     };
 
     useEffect(() => {
-        const currentDate = new Date();
-        const formattedDate = currentDate.toLocaleDateString();
-        setTimestamp(formattedDate);
         if (sessionStorage.getItem('logged')){
             let res = JSON.parse(sessionStorage.getItem('logged'));
-            console.log('permisos', res.map(item => item.permiso));
             setCargo(res.map(item => item.permiso).flat());
             setUser(res[0].user);
         }
@@ -72,17 +70,12 @@ const Seguimiento = ({handleButtonClick}) => {
         return isCargo.some(cargo => buscar.includes(cargo));
     };
   
-    useEffect(() => {
-        console.log(filteredData); 
-    }, [filteredData]); 
 
     useEffect(() => {
         const fetchData = async () => {
             try {
             const response = await Filtro7({idPrograma}); 
             const response2 = await Filtro9(response.filter(item => item['id_programa'] === idPrograma), idPrograma);
-            console.log('response',response);
-            console.log('response2',response2);
             setFilteredData(response2);
             } catch (error) {
             console.error('Error al filtrar datos:', error);
@@ -131,6 +124,30 @@ const Seguimiento = ({handleButtonClick}) => {
         );
     }; 
 
+    // const filteredTableCrea = () => {
+    //     const filteredData = Filtro12(idPrograma);
+    //     console.log('filtrito', filteredData)
+    //     // if (filteredData.length === 0) {
+    //     //   return <p>Ningún progama por mostrar</p>;
+    //     // }
+    //     // return (
+    //     //     <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
+    //     //         <thead>
+    //     //             <tr>
+    //     //             <th style={{ width: '15%', border: '1px solid grey' }}>Fases</th>
+    //     //             </tr>
+    //     //         </thead>
+    //     //         <tbody>
+    //     //             {filteredData.map((item, index) => (
+    //     //                 <tr key={index}>
+    //     //                     <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['fase']}</td>                          
+    //     //                 </tr>
+    //     //             ))}
+    //     //         </tbody>
+    //     //     </table>
+    //     // );
+    // }; 
+
     const getBackgroundColor = (riesgo) => {
         switch (riesgo) {
             case 'Alto':
@@ -156,7 +173,6 @@ const Seguimiento = ({handleButtonClick}) => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
-        console.log('opcion:', selectedOption.id);
 
         const handleGuardarClick = async () => {
             try {
@@ -184,13 +200,18 @@ const Seguimiento = ({handleButtonClick}) => {
                     }
                 });
                 const data = await response.json();
-                console.log("uploaded files: ", data);
-                console.log("enlace:", data.enlace);
                 setfileData(data.enlace);
+
+                let formattedDate;
+                if (selectedDate) {
+                    formattedDate = dayjs(selectedDate).format('MM/DD/YYYY');
+                } else {
+                    formattedDate = dayjs().format('MM/DD/YYYY'); 
+                }
 
                 const dataSend=[
                     idPrograma,
-                    timestamp,
+                    formattedDate,                
                     comment,
                     value,
                     user,
@@ -201,16 +222,20 @@ const Seguimiento = ({handleButtonClick}) => {
                 const dataSendCrea=[
                     idPrograma,
                     selectedOption.id,
-                    timestamp,
+                    formattedDate, 
                 ];
+
+                console.log('que esta pasando aqui:', dataSendCrea)
 
                 //await handleFileUpload();
                 await sendDataToServer(dataSend);
-                await sendDataToServerCrea(dataSendCrea);
+                if (selectedOption.id === undefined) {
+                    console.log("Opción seleccionada -> Ninguna");
+                } else {
+                    await sendDataToServerCrea(dataSendCrea);
+                }
                 setLoading(false);
                 setOpenModal(true);
-                console.log('Datos enviados correctamente');
-                console.log(dataSend);
                 setUpdateTrigger(true); 
                 setComment('');
                 setValue('');
@@ -224,6 +249,15 @@ const Seguimiento = ({handleButtonClick}) => {
         return(
             <>
             <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display:'flex', flexDirection:'row', margin:'5px',  justifyContent: 'center', marginTop: '10px', alignItems:'center'}}>
+                <div className='date-picker' style={{paddingRight:'10px'}}>
+                        Fecha <br/>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                            value={selectedDate}
+                            onChange={(date) => setSelectedDate(date)}
+                            />
+                        </LocalizationProvider>   
+                </div>
                 <div className='comments' style={{ display:'flex', flexDirection:'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', width:'35%', paddingRight:'20px'}}>
                     Comentario * <br/>
                     <TextField multiline rows={3} required value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{border: (formSubmitted && comment.trim() === '') ? '1px solid red' : 'none', textAlign: 'start', backgroundColor: '#f0f0f0', color: 'black', blockSize:'100%'}}  />
@@ -261,9 +295,9 @@ const Seguimiento = ({handleButtonClick}) => {
                                     {menuItems.map((item, index) => (
                                         <MenuItem key={index} value={item}>{item.fase}</MenuItem>
                                     ))}
+                                    <MenuItem value={0}>Ninguna</MenuItem>
                                 </Select>
-
-                            </FormControl>                            
+                            </FormControl>    
                             </div>
                         </>
                     )}                  
@@ -333,7 +367,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 <h2>{programaAcademico}</h2> */}
                 <h3>Seguimiento</h3>
                 <div>
-                {handleButtonClick=='rrc' &&(
+                {(handleButtonClick=='rrc') &&(
                 <CollapsibleButton buttonText="Renovación Registro Calificado" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -390,7 +424,7 @@ const Seguimiento = ({handleButtonClick}) => {
                     </>
                 } />
                 )}
-                {handleButtonClick=='rrc' &&(
+                {(handleButtonClick=='rrc' ) &&(
                     <CollapsibleButton buttonText="Plan de Mejoramiento RRC" content={
                         <>
                             <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -409,7 +443,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         </>
                     } />
                 )}
-                {handleButtonClick=='raac' &&(
+                {(handleButtonClick=='raac' ) &&(
                         <CollapsibleButton buttonText="Plan de Mejoramiento RAAC" content={
                             <>
                                 <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -447,14 +481,17 @@ const Seguimiento = ({handleButtonClick}) => {
                     </>
                 } />
                 )}
-                {handleButtonClick=='crea' &&(
+                {(handleButtonClick=='crea') &&(
                 <CollapsibleButton buttonText="Creación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                             {renderFilteredTable(filteredData, 'Creación')}
                             {avaibleRange(isCrea) &&
                             (
-                            <Button onClick={() => handleNewTrackingClick('Creación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                                <>
+                                {/* <div>{filteredTableCrea()}</div>              */}
+                                <Button onClick={() => handleNewTrackingClick('Creación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                                </>
                             )
                             }
                             {showCollapsible['Creación'] && (
@@ -466,7 +503,7 @@ const Seguimiento = ({handleButtonClick}) => {
                     </>
                 } />
                 )}
-                {handleButtonClick=='mod' &&(
+                {(handleButtonClick=='mod') &&(
                 <CollapsibleButton buttonText="Modificación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>

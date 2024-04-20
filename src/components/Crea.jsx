@@ -5,14 +5,13 @@ import '/src/styles/home.css';
 import CollapsibleButton from './CollapsibleButton';
 
 
-const Crea = () => {
+const Crea = ({ globalVariable }) => {
     const location = useLocation();
     const rowData = location.state; 
     const [filteredData, setFilteredData] = useState(rowData);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-
     useEffect(() => {
         const fetchData = async () => {
           try {
@@ -28,7 +27,7 @@ const Crea = () => {
 
     const handleRowClick = (rowData) => {
         console.log('Datos de la fila:', rowData);
-        navigate('/program_details', { state: rowData });
+        navigate('/program_details',  { state: { ...rowData, globalVariable } });
     };
 
     const renderFilteredTable = (data, filter) => {

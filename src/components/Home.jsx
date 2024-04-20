@@ -11,7 +11,9 @@ import Crea from './Crea';
 import Aac from './Aac';
 import Mod from './Mod';
 
+
 const Home = () => {
+  const [globalVariable, setGlobalVariable] = useState(); // Variable global
   const [selectedValue, setSelectedValue] = useState();
   const [semaforoVisible, setSemaforoVisible] = useState(false);
   const [semaforoAcVisible, setSemaforoAcVisible] = useState(false);
@@ -80,13 +82,14 @@ const Home = () => {
       setSemaforoVisible(true);
     } else if ( (buttonValue === 'option2')){
       setSemaforoAcVisible(true);
-    }
+    } 
     setProgramasVisible(false);
     // else if (buttonValue === 'option6') {
     //   setIsNivelVisible(true);
     // } else if (buttonValue === 'option7') {
     //   setIsEscuelasVisible(true);
     // }
+
   };
   
   const handleClick = () => {
@@ -116,19 +119,19 @@ const Home = () => {
             >
             <Button value="option4" className="custom-radio"
                 style={setButtonStyles('option4')}
-                onClick={() => handleButtonClick('option4')} 
+                onClick={() => {handleButtonClick('option4'), setGlobalVariable('CREA')}} 
                 > CREA <br/>
                 {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} />}
             </Button>
             <Button value="option5" className="custom-radio"
                 style={setButtonStyles('option5')}
-                onClick={() => handleButtonClick('option5')} 
+                onClick={() => {handleButtonClick('option5'), setGlobalVariable('MOD')}} 
                 > MOD <br/>
                 {modCount !== 0 ? modCount : <CircularProgress size={20} />}
             </Button>
             <Button value="option1" className="custom-radio" 
               style={setButtonStyles('option1')}
-              onClick={() => handleButtonClick('option1')} 
+              onClick={() => {handleButtonClick('option1'), setGlobalVariable('RRC')}} 
             > RRC <br/>
               {rrcCount !== 0 ? rrcCount : <CircularProgress size={20} />}
             </Button>
@@ -149,13 +152,13 @@ const Home = () => {
             >
               <Button value="option3" className="custom-radio"
                 style={setButtonStyles('option3')}
-                onClick={() => handleButtonClick('option3')} 
+                onClick={() => {handleButtonClick('option3'), setGlobalVariable('AAC')}} 
                 > AAC <br/>
                   {aacCount !== 0 ? aacCount : <CircularProgress size={20} />}
                 </Button>
               <Button value="option2" className="custom-radio" 
                 style={setButtonStyles('option2')}
-                onClick={() => handleButtonClick('option2')} 
+                onClick={() => {handleButtonClick('option2'), setGlobalVariable('RAAC')}} 
               > RAAC  <br/>
                 {raacCount !== 0 ? raacCount : <CircularProgress size={20} />}
               </Button>
@@ -232,31 +235,31 @@ const Home = () => {
       </div>
       {selectedValue === 'option1' && (
         <>
-        <Semaforo />
+        <Semaforo globalVariable={globalVariable}/>
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}
       {selectedValue === 'option2' && (
         <>
-        <SemaforoAc />
+        <SemaforoAc globalVariable={globalVariable} />
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}
       {selectedValue === 'option4' && (
         <>
-        <Crea />
+        <Crea globalVariable={globalVariable} />
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}
       {selectedValue === 'option3' && (
         <>
-        <Aac />
+        <Aac globalVariable={globalVariable}/>
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}
       {selectedValue === 'option5' && (
         <>
-        <Mod />
+        <Mod globalVariable={globalVariable}/>
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </>
       )}

@@ -9,6 +9,7 @@ import Seguimiento from './Seguimiento';
 const ProgramDetails = () => {
     const location = useLocation();
     const rowData = location.state; 
+    const { state: { globalVariable } } = location;
     const programaAcademico = rowData['programa académico'];
     const departamento = rowData['departamento'];
     const escuela = rowData['escuela'];
@@ -23,7 +24,31 @@ const ProgramDetails = () => {
     const [clickedButton, setClickedButton] = useState(null);
 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
-
+    
+    useEffect(() => {
+        switch (globalVariable) {
+            case 'RRC':
+                setClickedButton('rrc');
+                break;
+            case 'RAAC':
+                setClickedButton('raac');
+                break;
+            case 'CREA':
+                setClickedButton('crea');
+                break;
+            case 'AAC':
+                setClickedButton('aac');
+                break;
+            case 'MOD':
+                setClickedButton('mod');
+                break;
+            default:
+                setClickedButton(null);
+                break;
+        }
+        setReloadSeguimiento(prevState => !prevState); 
+    }, [globalVariable]);
+    
     useEffect(() => {
 
         const timeout = setTimeout(() => {
@@ -138,7 +163,7 @@ const ProgramDetails = () => {
                 <strong>Convenio Docencia</strong>
             </div>
         </div>
-        <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}/>
+        <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}  />
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
         <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         </div>
