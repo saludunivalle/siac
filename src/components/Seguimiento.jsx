@@ -425,7 +425,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 } />
                 )}
                 {(handleButtonClick=='rrc' ) &&(
-                    <CollapsibleButton buttonText="Plan de Mejoramiento RRC" content={
+                    <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                         <>
                             <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                 {renderFilteredTable(filteredData, 'Plan de Mejoramiento RRC')}
@@ -444,7 +444,7 @@ const Seguimiento = ({handleButtonClick}) => {
                     } />
                 )}
                 {(handleButtonClick=='raac' ) &&(
-                        <CollapsibleButton buttonText="Plan de Mejoramiento RAAC" content={
+                        <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                             <>
                                 <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                     {renderFilteredTable(filteredData, 'Plan de Mejoramiento RAAC')}
