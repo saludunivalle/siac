@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Filtro4, Filtro5 } from '../service/data';
 import '/src/styles/home.css'; 
 import CollapsibleButton from './CollapsibleButton';
-
+import { Button, ButtonGroup } from "@mui/material";
+import { styled } from '@mui/material/styles';
+import { Height, MarginTwoTone } from '@mui/icons-material';
 
 const Mod = ({ globalVariable }) => {
     const location = useLocation();
@@ -12,6 +14,8 @@ const Mod = ({ globalVariable }) => {
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [selectedValues, setSelectedValues] = useState(['option1', 'option2']);
+    console.log('datosssss:', rowData)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -29,6 +33,62 @@ const Mod = ({ globalVariable }) => {
     const handleRowClick = (rowData) => {
         console.log('Datos de la fila:', rowData);
         navigate('/program_details', { state: { ...rowData, globalVariable } });
+    };
+
+    const handleButtonClick = async (buttonValue) => {
+        const response = await Filtro5(); 
+        const result = response.filter(item => item['mod'] === 'SI');
+        setSelectedValues(prevSelectedValues => {
+            let newSelectedValues;
+    
+            if (prevSelectedValues.includes(buttonValue)) {
+                newSelectedValues = prevSelectedValues.filter(val => val !== buttonValue);
+            } else {
+                    newSelectedValues = [...prevSelectedValues, buttonValue];
+            }
+
+            let filteredResult = result.filter(item => {
+                const filterByOption = option => {
+                    switch (option) {
+                        default:
+                            return true;
+                    }
+                };
+    
+                const filterResults = newSelectedValues.map(filterByOption);
+                return filterResults.every(result => result === true);
+            });
+            
+            if (newSelectedValues.includes('option1') || newSelectedValues.includes('option2')) {
+                filteredResult = filteredResult.filter(item => {
+                    return newSelectedValues.includes('option1') && (item['mod_sus'] === 'SI') ||
+                           newSelectedValues.includes('option2') && (item['mod_sus'] === 'NO');
+                });
+            }
+    
+            setFilteredData(filteredResult);
+    
+            return newSelectedValues;
+        });
+    };
+    
+    
+    
+    
+    const isButtonSelected = (buttonValue) => {
+        return selectedValues.includes(buttonValue);
+    };
+
+    const setButtonStyles = (buttonValue) => {
+        return {
+          color: isButtonSelected(buttonValue) ? 'white' : 'grey',
+          backgroundColor: isButtonSelected(buttonValue) ? 'grey' : 'transparent',
+          border: `2px solid ${isButtonSelected(buttonValue) ? 'grey' : 'grey'}`,
+          borderRadius: '6px',
+          width:'300px',
+          height: '50px',
+          marginTop: '10px',
+        };
     };
 
     const renderFilteredTable = (data, filter) => {
@@ -67,6 +127,14 @@ const Mod = ({ globalVariable }) => {
 
     return (
         <>
+        <ButtonGroup style={{gap:'10px', marginLeft:'20px', marginTop:'10px'}} >
+                    <Button value="option1" className="custom-radio2"
+                        style={setButtonStyles('option1')}
+                        onClick={() => handleButtonClick('option1')} > Sustanciales </Button>
+                    <Button value="option2" className="custom-radio2" 
+                        style={setButtonStyles('option2')}
+                        onClick={() => handleButtonClick('option2')} > No Sustanciales </Button>
+        </ButtonGroup>
         <div>
             {filteredData && filteredData.length > 0 ? (
               <div className='row-container'>

@@ -15,7 +15,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 const Seguimiento = ({handleButtonClick}) => {
     const [selectedDate, setSelectedDate] = useState(null);
     const [menuItems, setMenuItems] = useState([]);
-    const [selectedOption, setSelectedOption] = useState(menuItems.length > 0 ? menuItems[0].id : '');
+    const [selectedOption, setSelectedOption] = useState(0);
     const location = useLocation();
     const rowData = location.state; 
     const programaAcademico = rowData['programa académico'];
@@ -292,10 +292,11 @@ const Seguimiento = ({handleButtonClick}) => {
                                     displayEmpty
                                     style={{ width: '250px' }}
                                 >
+                                    <MenuItem value={0}>Ninguna</MenuItem>
                                     {menuItems.map((item, index) => (
                                         <MenuItem key={index} value={item}>{item.fase}</MenuItem>
                                     ))}
-                                    <MenuItem value={0}>Ninguna</MenuItem>
+                                    
                                 </Select>
                             </FormControl>    
                             </div>
@@ -365,9 +366,9 @@ const Seguimiento = ({handleButtonClick}) => {
             <div style={{marginRight:'20px', width:'auto'}}>
                 {/* <Header />
                 <h2>{programaAcademico}</h2> */}
-                <h3>Seguimiento</h3>
                 <div>
                 {(handleButtonClick=='rrc') &&(
+                <><h3>Seguimiento del Proceso de Renovación Registro Calificado</h3>
                 <CollapsibleButton buttonText="Renovación Registro Calificado" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -385,8 +386,10 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                </>
                 )}
                 {(handleButtonClick=='aac') &&(
+                <><h3>Seguimiento del Proceso de Acreditación</h3>
                 <CollapsibleButton buttonText="Acreditación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -404,8 +407,10 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                </>
                 )}
                 {(handleButtonClick=='raac') &&(
+                <><h3>Seguimiento del Proceso de Renovación Acreditación</h3>
                 <CollapsibleButton buttonText="Renovación Acreditación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -423,6 +428,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                </>
                 )}
                 {(handleButtonClick=='rrc' ) &&(
                     <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
@@ -463,6 +469,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         } />
                 )}
                 {handleButtonClick=='conv' &&(
+                <><h3>Seguimiento del Proceso de Convenio Docencia Servicio</h3>
                 <CollapsibleButton buttonText="Convenio Docencia Servicio" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -480,8 +487,10 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                </>
                 )}
                 {(handleButtonClick=='crea') &&(
+                <><h3>Seguimiento del Proceso de Creación</h3>
                 <CollapsibleButton buttonText="Creación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -502,8 +511,10 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                </>
                 )}
                 {(handleButtonClick=='mod') &&(
+                <><h3>Seguimiento del Proceso de Modificación</h3>
                 <CollapsibleButton buttonText="Modificación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -521,6 +532,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                </>
                 )}
             </div>
             </div>
