@@ -395,37 +395,43 @@ export const Filtro11 = async () => {
     }
 };
 
-// export const Filtro12 = async (idPrograma) => {
-//     try {
-//         // Paso 1: Filtrar datos en la hoja1 (Proc_X_Prog) por id_programa
-//         const dataSend = { id_programa: idPrograma };
-//         const hoja1Response = await fetchPostGeneral({
-//             dataSend: dataSend,
-//             sheetName: 'Proc_X_Prog',
-//             urlEndPoint: 'https://siac-server.vercel.app/'
-//         });
-//         const hoja1Data = hoja1Response.data;
+export const obtenerFasesProceso = async (idPrograma, proceso) => {
+    try {
+        const dataSend = { id_programa: idPrograma };
+        const hoja1Response = await fetchPostGeneral({
+            dataSend: dataSend,
+            sheetName: 'Proc_X_Prog',
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        const hoja1Data = hoja1Response.data;
 
-//         // Obtener los id_fase correspondientes a los resultados de hoja1
-//         const idFases = hoja1Data.map(row => row.id);
+        const idFases = hoja1Data.map(row => row.id_fase);
 
-//         // Paso 2: Buscar en la hoja2 (Proc_Fases) las celdas con id igual a los obtenidos
-//         const fasesPromises = idFases.map(async (idFase) => {
-//             const hoja2Response = await fetchPostGeneral({
-//                 dataSend: { id: idFase }, // Utilizamos idFase como parámetro para filtrar en hoja2
-//                 sheetName: 'Proc_Fases',
-//                 urlEndPoint: 'https://siac-server.vercel.app/'
-//             });
-//             return hoja2Response.data[0]; // Retornamos solo la primera fila encontrada
-//         });
+        const hoja2Response = await fetchPostGeneral({
+            dataSend: {}, // No necesitamos filtrar en Proc_Fases
+            sheetName: 'Proc_Fases',
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        const hoja2Data = hoja2Response.data;
 
-//         // Esperar todas las solicitudes y obtener las fases de cada una
-//         const fasesResponses = await Promise.all(fasesPromises);
-//         const fases = fasesResponses.map(row => row.fase);
-//         console.log('return', fases);
-//         return fases;
-//     } catch (error) {
-//         console.error('Error en la solicitud:', error);
-//         throw error;
-//     }
-// };
+        const hoja2DataProceso = hoja2Data.filter(row => row.proceso === proceso);
+
+        const hoja1DataFiltrada = hoja1Data.filter(row => idFases.includes(row.id_fase));
+
+        const fasesOrdenadas = hoja1DataFiltrada.sort((a, b) => {
+            const fechaA = new Date(a.fecha);
+            const fechaB = new Date(b.fecha);
+            return fechaB - fechaA;
+        });
+
+        return {
+            fases: fasesOrdenadas
+        };
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error;
+    }
+};
+
+
+

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel } from '@mui/material';
 import { Button, Typography } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro7, Filtro8, Filtro9, sendDataToServer, sendDataToServerCrea} from '../service/data';
+import { Filtro10, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea} from '../service/data';
 import { Modal, CircularProgress  } from '@mui/material';
 import { Select, MenuItem} from '@mui/material';
 import dayjs from 'dayjs';
@@ -20,7 +20,6 @@ const Seguimiento = ({handleButtonClick}) => {
     const rowData = location.state; 
     const programaAcademico = rowData['programa académico'];
     const idPrograma = rowData['id_programa'];
-    //const process = "RRC";
     const [value, setValue] = useState('');
     const [showCollapsible, setShowCollapsible] = useState({}); 
     const [filteredData, setFilteredData] = useState([]);
@@ -38,10 +37,53 @@ const Seguimiento = ({handleButtonClick}) => {
     const [openModal, setOpenModal] = useState(false);
     const [fileData, setfileData] = useState(null);
     const fileInputRef = useRef(null);
+    const [fileLink, setFileLink] = useState(''); 
     const [loading, setLoading] = useState(false);
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [formSubmitted, setFormSubmitted] = useState(false);
+    const [fileType, setFileType] = useState('');
+    //elchat
+    const [fases, setFases] = useState([]);
+
+    useEffect(() => {
+        cargarFases();
+    }, [handleButtonClick]); 
+    
+    const cargarFases = async () => {
+        try {
+            let procesoActual = '';
+            if (handleButtonClick === 'crea') {
+                procesoActual = 'Creación';
+            } else if (handleButtonClick === 'rrc') {
+                procesoActual = 'Renovación Registro Calificado';
+            } else if (handleButtonClick === 'aac') {
+                procesoActual = 'Acreditación';
+            }  else if (handleButtonClick === 'raac') {
+                procesoActual = 'Renovación Acreditación';
+            }  else if (handleButtonClick === 'mod') {
+                procesoActual = 'Modificación';
+            } 
+            const response = await obtenerFasesProceso(idPrograma, procesoActual);
+            //console.log('funciona', response);
+            
+            const fasesFiltradas = response.fases.filter(item => item.id_programa === idPrograma);
+            
+            const filtro10 = await Filtro10();
+            const result2 = fasesFiltradas.map(fase => {
+                const filtro10Item = filtro10.find(item => item.id === fase.id_fase);
+                //console.log('proceso:', filtro10Item);
+                return filtro10Item ? filtro10Item : null;
+            });
+            const result3 = result2.filter(item => item['proceso'] === procesoActual); 
+            setFases(result3);
+            //console.log('resultado', result2);
+            //console.log('resultado2', result3);
+        } catch (error) {
+            console.error('Error al cargar las fases:', error);
+        }
+    };
+
 
     useEffect(() => {
         fetchMenuItems();
@@ -124,29 +166,6 @@ const Seguimiento = ({handleButtonClick}) => {
         );
     }; 
 
-    // const filteredTableCrea = () => {
-    //     const filteredData = Filtro12(idPrograma);
-    //     console.log('filtrito', filteredData)
-    //     // if (filteredData.length === 0) {
-    //     //   return <p>Ningún progama por mostrar</p>;
-    //     // }
-    //     // return (
-    //     //     <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
-    //     //         <thead>
-    //     //             <tr>
-    //     //             <th style={{ width: '15%', border: '1px solid grey' }}>Fases</th>
-    //     //             </tr>
-    //     //         </thead>
-    //     //         <tbody>
-    //     //             {filteredData.map((item, index) => (
-    //     //                 <tr key={index}>
-    //     //                     <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['fase']}</td>                          
-    //     //                 </tr>
-    //     //             ))}
-    //     //         </tbody>
-    //     //     </table>
-    //     // );
-    // }; 
 
     const getBackgroundColor = (riesgo) => {
         switch (riesgo) {
@@ -176,75 +195,78 @@ const Seguimiento = ({handleButtonClick}) => {
 
         const handleGuardarClick = async () => {
             try {
-                setLoading(true);
+              setLoading(true);
+              let enlace;
+              if (fileType === 'upload' && fileInputRef.current) {
                 const files = fileInputRef.current.files;
                 const formData = new FormData();
-
+          
                 for (let i = 0; i < files.length; i++) {
-                    formData.append("file", files[i]); 
+                  formData.append("file", files[i]); 
                 }
+                
+                const response = await fetch("https://siac-server.vercel.app/upload/", {
+                  method: 'POST',
+                  body: formData, 
+                  headers: {
+                    enctype: 'multipart/form-data',
+                  }
+                });
+                const data = await response.json();
+                enlace = data.enlace;
+              } else {
+                enlace = fileLink; 
+              }
 
-                if (comment.trim() === '' || value.trim() === '') {
+              if (comment.trim() === '' || value.trim() === '') {
                     setLoading(false);
                     const errorMessage = 'Por favor, complete todos los campos obligatorios.';
                     setErrorMessage(errorMessage);
                     setFormSubmitted(true); 
                     return;
-                }
-            
-                const response = await fetch("https://siac-server.vercel.app/upload/",{
-                    method: 'POST',
-                    body: formData, 
-                    headers: {
-                        enctype: 'multipart/form-data',
-                    }
-                });
-                const data = await response.json();
-                setfileData(data.enlace);
-
-                let formattedDate;
-                if (selectedDate) {
-                    formattedDate = dayjs(selectedDate).format('MM/DD/YYYY');
-                } else {
-                    formattedDate = dayjs().format('MM/DD/YYYY'); 
-                }
-
-                const dataSend=[
-                    idPrograma,
-                    formattedDate,                
-                    comment,
-                    value,
-                    user,
-                    collapsible,
-                    data.enlace,       
-                ];
-
-                const dataSendCrea=[
-                    idPrograma,
-                    selectedOption.id,
-                    formattedDate, 
-                ];
-
-                console.log('que esta pasando aqui:', dataSendCrea)
-
-                //await handleFileUpload();
-                await sendDataToServer(dataSend);
-                if (selectedOption.id === undefined) {
-                    console.log("Opción seleccionada -> Ninguna");
-                } else {
-                    await sendDataToServerCrea(dataSendCrea);
-                }
-                setLoading(false);
-                setOpenModal(true);
-                setUpdateTrigger(true); 
-                setComment('');
-                setValue('');
-                setErrorMessage(null);
+              }
+              let formattedDate;
+              if (selectedDate) {
+                formattedDate = dayjs(selectedDate).format('MM/DD/YYYY');
+              } else {
+                formattedDate = dayjs().format('MM/DD/YYYY'); 
+              }
+          
+              const dataSend = [
+                idPrograma,
+                formattedDate,                
+                comment,
+                value,
+                user,
+                collapsible,
+                enlace,  
+              ];
+          
+              const dataSendCrea = [
+                idPrograma,
+                selectedOption.id,
+                formattedDate, 
+              ];
+          
+              //console.log('que esta pasando aqui:', dataSendCrea);
+          
+              await sendDataToServer(dataSend);
+              if (selectedOption.id === undefined) {
+                console.log("Opción seleccionada -> Ninguna");
+              } else {
+                await sendDataToServerCrea(dataSendCrea);
+              }
+              setLoading(false);
+              setOpenModal(true);
+              setUpdateTrigger(true); 
+              setComment('');
+              setValue('');
+              setErrorMessage(null);
             } catch (error) {
-                setLoading(false);
-                console.error('Error al enviar datos:', error);
+              setLoading(false);
+              console.error('Error al enviar datos:', error);
             }
-        };
+          };
 
         return(
             <>
@@ -273,10 +295,42 @@ const Seguimiento = ({handleButtonClick}) => {
                                     </RadioGroup>
                             </FormControl>
                         </div>
-                        <div className='adj'>
-                            Adjunto <br/>
-                            <input type="file" multiple ref={fileInputRef} placeholder="Seleccionar archivo..." />
+                        <div className='adj' style={{ textAlign: 'left' }}>
+                            Archivo Adjunto <br />
+                            <FormControl component="fieldset">
+                            <RadioGroup value={fileType} onChange={(e) => setFileType(e.target.value)} style={{ display: 'flex', flexDirection: 'row' }}>
+                                <FormControlLabel value="upload" control={<Radio />} label="Subir" />
+                                <FormControlLabel value="link" control={<Radio />} label="Enlace" />
+                            </RadioGroup>
+                            </FormControl>
                         </div>
+
+                        {fileType === 'upload' ? (
+                            <input
+                            type="file"
+                            multiple
+                            ref={fileInputRef}
+                            placeholder="Seleccionar archivo..."
+                            style={{ marginTop: '5px' }}
+                            />
+                        ) : (
+                            <input
+                            value={fileLink}
+                            onChange={(e) => setFileLink(e.target.value)}
+                            placeholder="Link del archivo"
+                            type="text"
+                            style={{
+                                width: '200px',
+                                height: '30px',
+                                backgroundColor: 'white',
+                                color: 'grey',
+                                marginLeft: '10px',
+                                marginTop: '5px',
+                                border: '1px solid grey',
+                                borderRadius: '5px'
+                            }}
+                            />
+                        )}
                     </div>
                     {handleButtonClick === 'crea' && (
                         <>
@@ -303,6 +357,21 @@ const Seguimiento = ({handleButtonClick}) => {
                         </>
                     )}                  
             </div>
+            {fases.length > 0 && (
+                <div>
+                    <h2>Fases del Programa</h2>
+                    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                        <tbody>
+                            {fases.map((fase, index) => (
+                                <tr key={index}>
+                                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', fontWeight: index === 0 ? 'bold' : 'normal', textDecoration: index === 0 ? 'underline' : 'none' }}>{fase.fase}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
             <Button variant="contained" style={{textAlign: 'center', margin: '8px', paddingBottom:'10px'}} onClick={handleGuardarClick}>Guardar</Button>
             {loading && (
                 <div
