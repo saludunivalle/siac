@@ -4,6 +4,8 @@ const hojaSeguimientos = 'Seguimientos';
 const hojaPermisos = 'Permisos';
 const hojaProc_Fases = 'Proc_Fases';
 const hojaProc_X_Prog='Proc_X_Prog';
+const hojaProc_Fases_Doc = 'Proc_Fases_Doc';
+
 
 
 
@@ -433,5 +435,17 @@ export const obtenerFasesProceso = async (idPrograma, proceso) => {
     }
 };
 
-
-
+export const Filtro12 = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {}, 
+            sheetName: 'Proc_Fases_Doc', 
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+};

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel } from '@mui/material';
 import { Button, Typography } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea} from '../service/data';
+import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea} from '../service/data';
 import { Modal, CircularProgress  } from '@mui/material';
 import { Select, MenuItem} from '@mui/material';
 import dayjs from 'dayjs';
@@ -45,6 +45,9 @@ const Seguimiento = ({handleButtonClick}) => {
     const [fileType, setFileType] = useState('');
     //elchat
     const [fases, setFases] = useState([]);
+    const [fasesName, setFasesName] = useState([]);
+    const [itemActual, setItemActual] = useState([]);
+    const [docs, setDocs] = useState([]);
 
     useEffect(() => {
         cargarFases();
@@ -52,6 +55,7 @@ const Seguimiento = ({handleButtonClick}) => {
     
     const cargarFases = async () => {
         try {
+            setLoading(true);
             let procesoActual = '';
             if (handleButtonClick === 'crea') {
                 procesoActual = 'Creación';
@@ -64,21 +68,27 @@ const Seguimiento = ({handleButtonClick}) => {
             }  else if (handleButtonClick === 'mod') {
                 procesoActual = 'Modificación';
             } 
+
+            const general = await Filtro10();
+            const general2 = general.filter(item => item['proceso'] === procesoActual); 
             const response = await obtenerFasesProceso(idPrograma, procesoActual);
-            //console.log('funciona', response);
-            
             const fasesFiltradas = response.fases.filter(item => item.id_programa === idPrograma);
-            
             const filtro10 = await Filtro10();
             const result2 = fasesFiltradas.map(fase => {
                 const filtro10Item = filtro10.find(item => item.id === fase.id_fase);
-                //console.log('proceso:', filtro10Item);
                 return filtro10Item ? filtro10Item : null;
             });
             const result3 = result2.filter(item => item['proceso'] === procesoActual); 
-            setFases(result3);
-            //console.log('resultado', result2);
-            //console.log('resultado2', result3);
+            setFases(general2);
+            setFasesName(result3);
+            const fase_actual = result3[0];
+            setItemActual(fase_actual);
+
+            //Para documentos
+            const proceso = await Filtro12();
+            const procesoFiltrado = proceso.filter(item => item['proceso'] === procesoActual); 
+            setDocs(procesoFiltrado);
+            setLoading(false);
         } catch (error) {
             console.error('Error al cargar las fases:', error);
         }
@@ -87,12 +97,24 @@ const Seguimiento = ({handleButtonClick}) => {
 
     useEffect(() => {
         fetchMenuItems();
-    }, []);
+    }, [handleButtonClick]);
 
     const fetchMenuItems = async () => {
         try {
+        let procesoActual = '';
+        if (handleButtonClick === 'crea') {
+            procesoActual = 'Creación';
+        } else if (handleButtonClick === 'rrc') {
+            procesoActual = 'Renovación Registro Calificado';
+        } else if (handleButtonClick === 'aac') {
+            procesoActual = 'Acreditación';
+        }  else if (handleButtonClick === 'raac') {
+            procesoActual = 'Renovación Acreditación';
+        }  else if (handleButtonClick === 'mod') {
+            procesoActual = 'Modificación';
+        } 
         const response = await Filtro10();
-        const result = response.filter(item => item['proceso'] === 'Creación'); 
+        const result = response.filter(item => item['proceso'] === procesoActual); 
         setMenuItems(result);
         } catch (error) {
         console.error('Error fetching menu items:', error);
@@ -188,6 +210,63 @@ const Seguimiento = ({handleButtonClick}) => {
         setCollapsible(collapsibleType)
     };
 
+    const contenido_tablaFases = () => {
+        return (
+            <>  <div>
+                {loading ? ( 
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                    <CircularProgress />
+                </div>
+                ) : (
+                    <>
+                    <div style={{display:'flex', justifyContent:'flex-start', gap:'10px', flexDirection:'row'}}>
+                    <div>
+                    {fases.length > 0 && (
+                        <div>
+                            <h2>Fases del Programa</h2>
+                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                                <tbody>
+                                    {fases.map((fase, index) => {
+                                        const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
+                                        const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
+                                        const backgroundColor = isBlackOutline ? '#f0f0f0' : ((itemActual && fase.fase === itemActual.fase) ? '#c8e6c9' : '#ffffff');
+                                        return (
+                                            <tr key={index} style={{ backgroundColor }}>
+                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{fase.fase}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                    </div>
+                    <div>
+                    {docs.length > 0 && (
+                        <div>
+                            <h2>Documentos requeridos</h2>
+                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                                <tbody>
+                                    {docs.map((docs, index) => {
+                                        return (
+                                            <tr key={index}>
+                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{docs.nombre_doc}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                    </div>
+                    </div>
+                    </>
+                    )}
+                </div>
+            </>
+        );
+    };
+    
     const contenido_seguimiento = () => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
@@ -304,16 +383,16 @@ const Seguimiento = ({handleButtonClick}) => {
                             </RadioGroup>
                             </FormControl>
                         </div>
-
+                        <div style={{ marginTop: '0px', height: '30px' }}>
                         {fileType === 'upload' ? (
                             <input
                             type="file"
                             multiple
                             ref={fileInputRef}
                             placeholder="Seleccionar archivo..."
-                            style={{ marginTop: '5px' }}
+                            style={{ height: '30px'}}
                             />
-                        ) : (
+                        ) : fileType === 'link' ? (
                             <input
                             value={fileLink}
                             onChange={(e) => setFileLink(e.target.value)}
@@ -321,57 +400,38 @@ const Seguimiento = ({handleButtonClick}) => {
                             type="text"
                             style={{
                                 width: '200px',
-                                height: '30px',
+                                height: '25px',
                                 backgroundColor: 'white',
                                 color: 'grey',
-                                marginLeft: '10px',
-                                marginTop: '5px',
                                 border: '1px solid grey',
                                 borderRadius: '5px'
                             }}
                             />
-                        )}
+                        ): null}
+                        </div>
                     </div>
-                    {handleButtonClick === 'crea' && (
-                        <>
-                            <div style={{ marginTop: '-45px', marginLeft: '10px', width: 'auto' }}>
-                            <FormControl style={{ width: '250px' }}>
-                                <InputLabel id="select-label">Pasar a...</InputLabel>
-                                <Select 
-                                    labelId="select-label"
-                                    id="select-label"
-                                    value={selectedOption}
-                                    label="Pasar a..."
-                                    onChange={e => {setSelectedOption(e.target.value)}}
-                                    displayEmpty
-                                    style={{ width: '250px' }}
-                                >
-                                    <MenuItem value={0}>Ninguna</MenuItem>
-                                    {menuItems.map((item, index) => (
-                                        <MenuItem key={index} value={item}>{item.fase}</MenuItem>
-                                    ))}
-                                    
-                                </Select>
-                            </FormControl>    
-                            </div>
-                        </>
-                    )}                  
-            </div>
-            {fases.length > 0 && (
-                <div>
-                    <h2>Fases del Programa</h2>
-                    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                        <tbody>
-                            {fases.map((fase, index) => (
-                                <tr key={index}>
-                                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', fontWeight: index === 0 ? 'bold' : 'normal', textDecoration: index === 0 ? 'underline' : 'none' }}>{fase.fase}</td>
-                                </tr>
+                    <div style={{ marginTop: '-45px', marginLeft: '10px', width: 'auto' }}>
+                    <FormControl style={{ width: '250px' }}>
+                        <InputLabel id="select-label">Pasar a...</InputLabel>
+                        <Select 
+                            labelId="select-label"
+                            id="select-label"
+                            value={selectedOption}
+                            label="Pasar a..."
+                            onChange={e => {setSelectedOption(e.target.value)}}
+                            displayEmpty
+                            style={{ width: '250px' }}
+                        >
+                            <MenuItem value={0}>Ninguna</MenuItem>
+                            {menuItems.map((item, index) => (
+                                <MenuItem key={index} value={item}>{item.fase}</MenuItem>
                             ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
+                            
+                        </Select>
+                    </FormControl>    
+                    </div>
+            
+            </div>
             <Button variant="contained" style={{textAlign: 'center', margin: '8px', paddingBottom:'10px'}} onClick={handleGuardarClick}>Guardar</Button>
             {loading && (
                 <div
@@ -476,6 +536,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                {contenido_tablaFases()}
                 </>
                 )}
                 {(handleButtonClick=='raac') &&(
@@ -500,6 +561,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 </>
                 )}
                 {(handleButtonClick=='rrc' ) &&(
+                    <>
                     <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                         <>
                             <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -517,8 +579,11 @@ const Seguimiento = ({handleButtonClick}) => {
                             </div>
                         </>
                     } />
+                    {contenido_tablaFases()}
+                    </>
                 )}
                 {(handleButtonClick=='raac' ) &&(
+                    <>
                         <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                             <>
                                 <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -536,6 +601,8 @@ const Seguimiento = ({handleButtonClick}) => {
                                 </div>
                             </>
                         } />
+                        {contenido_tablaFases()}
+                        </>                        
                 )}
                 {handleButtonClick=='conv' &&(
                 <><h3>Seguimiento del Proceso de Convenio Docencia Servicio</h3>
@@ -559,7 +626,8 @@ const Seguimiento = ({handleButtonClick}) => {
                 </>
                 )}
                 {(handleButtonClick=='crea') &&(
-                <><h3>Seguimiento del Proceso de Creación</h3>
+                <>
+                <h3>Seguimiento del Proceso de Creación</h3>
                 <CollapsibleButton buttonText="Creación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -580,6 +648,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                {contenido_tablaFases()}
                 </>
                 )}
                 {(handleButtonClick=='mod') &&(
@@ -601,6 +670,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                {contenido_tablaFases()}
                 </>
                 )}
             </div>

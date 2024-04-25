@@ -4,8 +4,6 @@ import { Filtro4, Filtro5 } from '../service/data';
 import '/src/styles/home.css'; 
 import CollapsibleButton from './CollapsibleButton';
 import { Button, ButtonGroup } from "@mui/material";
-import { styled } from '@mui/material/styles';
-import { Height, MarginTwoTone } from '@mui/icons-material';
 
 const Mod = ({ globalVariable }) => {
     const location = useLocation();
@@ -127,7 +125,7 @@ const Mod = ({ globalVariable }) => {
 
     return (
         <>
-        <ButtonGroup style={{gap:'10px', marginLeft:'20px', marginTop:'10px'}} >
+        <ButtonGroup style={{gap:'10px', marginLeft:'20px', marginTop:'10px', width: '100%', justifyContent:'center'}} >
                     <Button value="option1" className="custom-radio2"
                         style={setButtonStyles('option1')}
                         onClick={() => handleButtonClick('option1')} > Sustanciales </Button>
