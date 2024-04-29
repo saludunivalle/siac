@@ -43,16 +43,62 @@ const Seguimiento = ({handleButtonClick}) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [formSubmitted, setFormSubmitted] = useState(false);
     const [fileType, setFileType] = useState('');
-    //elchat
     const [fases, setFases] = useState([]);
     const [fasesName, setFasesName] = useState([]);
     const [itemActual, setItemActual] = useState([]);
     const [docs, setDocs] = useState([]);
 
-    useEffect(() => {
-        cargarFases();
-    }, [handleButtonClick]); 
+    function calcularFechas(fechaexpedrc, fechavencrc) {
+        const partesFechaExpedicion = fechaexpedrc.split('/');
+        const partesFechaVencimiento = fechavencrc.split('/');
     
+        const diaExpedicion = parseInt(partesFechaExpedicion[0], 10);
+        const mesExpedicion = parseInt(partesFechaExpedicion[1], 10) - 1; 
+        const añoExpedicion = parseInt(partesFechaExpedicion[2], 10);
+    
+        const diaVencimiento = parseInt(partesFechaVencimiento[0], 10);
+        const mesVencimiento = parseInt(partesFechaVencimiento[1], 10) - 1; 
+        const añoVencimiento = parseInt(partesFechaVencimiento[2], 10);
+    
+        const fechaUnAñoSeisMesesDespues = new Date(añoExpedicion, mesExpedicion + 6, diaExpedicion);
+        fechaUnAñoSeisMesesDespues.setFullYear(fechaUnAñoSeisMesesDespues.getFullYear() + 1);
+    
+        const fechaExpedicion = new Date(añoExpedicion, mesExpedicion, diaExpedicion);
+        const fechaVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
+        const diferenciaMilisegundos = fechaVencimiento - fechaExpedicion;
+        const diferenciaAños = diferenciaMilisegundos / (1000 * 60 * 60 * 24 * 365);
+        const mitadAños = diferenciaAños / 2;
+        const fechaMitad = new Date(fechaExpedicion);
+        fechaMitad.setFullYear(fechaMitad.getFullYear() + Math.floor(mitadAños));
+        fechaMitad.setMonth(fechaMitad.getMonth() - 6);
+    
+        const fechaTresAñosAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
+        fechaTresAñosAntes.setFullYear(fechaTresAñosAntes.getFullYear() - 3);
+    
+        const fechaDieciochoMesesAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
+        fechaDieciochoMesesAntes.setMonth(fechaDieciochoMesesAntes.getMonth() - 18);
+    
+        return {
+            unAñoSeisMesesDespues: fechaUnAñoSeisMesesDespues.toLocaleDateString(),
+            seisMesesAntesMitad: fechaMitad.toLocaleDateString(),
+            tresAñosAntes: fechaTresAñosAntes.toLocaleDateString(),
+            dieciochoMesesAntes: fechaDieciochoMesesAntes.toLocaleDateString()
+        };
+    }
+    
+    const fechasCalculadas = calcularFechas(rowData['fechaexpedrc'], rowData['fechavencrc']);
+    const fechasCalculadasAC = calcularFechas(rowData['fechaexpedac'], rowData['fechavencac']);
+
+    useEffect(() => {
+        if (handleButtonClick != null) {
+            cargarFases();
+        }
+    }, [handleButtonClick]);
+    
+    const clearFileLink = () => {
+        setFileLink('');
+    };
+
     const cargarFases = async () => {
         try {
             setLoading(true);
@@ -71,14 +117,13 @@ const Seguimiento = ({handleButtonClick}) => {
 
             const general = await Filtro10();
             const general2 = general.filter(item => item['proceso'] === procesoActual); 
-            const response = await obtenerFasesProceso(idPrograma, procesoActual);
-            const fasesFiltradas = response.fases.filter(item => item.id_programa === idPrograma);
-            const filtro10 = await Filtro10();
+            const response = await obtenerFasesProceso();
+            const fasesFiltradas = response.filter(item => item.id_programa === idPrograma);
             const result2 = fasesFiltradas.map(fase => {
-                const filtro10Item = filtro10.find(item => item.id === fase.id_fase);
+                const filtro10Item = general.find(item => item.id === fase.id_fase);
                 return filtro10Item ? filtro10Item : null;
             });
-            const result3 = result2.filter(item => item['proceso'] === procesoActual); 
+            const result3 = result2.filter(item => item && item['proceso'] === procesoActual); 
             setFases(general2);
             setFasesName(result3);
             const fase_actual = result3[0];
@@ -138,7 +183,7 @@ const Seguimiento = ({handleButtonClick}) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-            const response = await Filtro7({idPrograma}); 
+            const response = await Filtro7(); 
             const response2 = await Filtro9(response.filter(item => item['id_programa'] === idPrograma), idPrograma);
             setFilteredData(response2);
             } catch (error) {
@@ -219,7 +264,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 </div>
                 ) : (
                     <>
-                    <div style={{display:'flex', justifyContent:'flex-start', gap:'10px', flexDirection:'row'}}>
+                    <div style={{display:'flex', justifyContent:'center', gap:'10px', flexDirection:'row'}}>
                     <div>
                     {fases.length > 0 && (
                         <div>
@@ -304,6 +349,7 @@ const Seguimiento = ({handleButtonClick}) => {
                     setFormSubmitted(true); 
                     return;
               }
+
               let formattedDate;
               if (selectedDate) {
                 formattedDate = dayjs(selectedDate).format('MM/DD/YYYY');
@@ -335,6 +381,7 @@ const Seguimiento = ({handleButtonClick}) => {
               } else {
                 await sendDataToServerCrea(dataSendCrea);
               }
+              clearFileLink();
               setLoading(false);
               setOpenModal(true);
               setUpdateTrigger(true); 
@@ -497,24 +544,33 @@ const Seguimiento = ({handleButtonClick}) => {
                 <h2>{programaAcademico}</h2> */}
                 <div>
                 {(handleButtonClick=='rrc') &&(
-                <><h3>Seguimiento del Proceso de Renovación Registro Calificado</h3>
-                <CollapsibleButton buttonText="Renovación Registro Calificado" content={
-                    <>
-                        <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                            {renderFilteredTable(filteredData, 'Renovación Registro Calificado')}
-                            {avaibleRange(isReg) && 
-                            (
-                            <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center',  marginBottom:'25px'}} >Nuevo Seguimiento</Button>
-                            )
-                            }
-                            {showCollapsible['Renovación Registro Calificado'] && (
-                                <>  
-                                    {contenido_seguimiento()}
-                                </>
-                            )}
-                        </div>
-                    </>
-                } />
+                <>
+                    <h3>Seguimiento del Proceso de Renovación Registro Calificado</h3>
+                    <div style={{display: 'flex', gap:'2px', marginBottom:'20px', color:'black'}}>
+                        <div style={{backgroundColor: '#FFFFF', padding: '10px', borderRadius: '5px', border:'1px solid #7e7e7e', width:'150px', textAlign:'center'}}>{rowData['fechaexpedrc']}</div>
+                        <div style={{backgroundColor: '#4caf4f36', padding: '10px', borderRadius: '5px', border:'1px solid #4caf50',width:'150px', textAlign:'center'}}>{fechasCalculadas.unAñoSeisMesesDespues}</div>
+                        <div style={{backgroundColor: 'rgba(255, 235, 59, 0.288)', padding: '10px', border:'1px solid yellow', borderRadius: '5px', width:'150px', textAlign:'center'}}> {fechasCalculadas.seisMesesAntesMitad}</div>
+                        <div style={{backgroundColor: '#ff990079', padding: '10px', borderRadius: '5px', border:'1px solid orange', width:'150px', textAlign:'center'}}>{fechasCalculadas.tresAñosAntes}</div>
+                        <div style={{backgroundColor: '#ff562275', padding: '10px', borderRadius: '5px', border:'1px solid #ff5722', width:'150px', textAlign:'center'}}>{fechasCalculadas.dieciochoMesesAntes}</div>
+                        <div style={{backgroundColor: '#f443368e', padding: '10px', borderRadius: '5px', border:'1px solid #ee1809', width:'150px', textAlign:'center'}}>{rowData['fechavencrc']}</div>
+                    </div>
+                    <CollapsibleButton buttonText="Renovación Registro Calificado" content={
+                        <>
+                            <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                {renderFilteredTable(filteredData, 'Renovación Registro Calificado')}
+                                {avaibleRange(isReg) && 
+                                (
+                                <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center',  marginBottom:'25px'}} >Nuevo Seguimiento</Button>
+                                )
+                                }
+                                {showCollapsible['Renovación Registro Calificado'] && (
+                                    <>  
+                                        {contenido_seguimiento()}
+                                    </>
+                                )}
+                            </div>
+                        </>
+                    } />
                 </>
                 )}
                 {(handleButtonClick=='aac') &&(
@@ -540,7 +596,16 @@ const Seguimiento = ({handleButtonClick}) => {
                 </>
                 )}
                 {(handleButtonClick=='raac') &&(
-                <><h3>Seguimiento del Proceso de Renovación Acreditación</h3>
+                <>
+                <h3>Seguimiento del Proceso de Renovación Acreditación</h3>
+                <div style={{display: 'flex', gap:'2px', marginBottom:'20px', color:'black'}}>
+                    <div style={{backgroundColor: '#FFFFF', padding: '10px', borderRadius: '5px', border:'1px solid #7e7e7e', width:'150px', textAlign:'center'}}>{rowData['fechaexpedac']}</div>
+                    <div style={{backgroundColor: '#4caf4f36', padding: '10px', borderRadius: '5px', border:'1px solid #4caf50',width:'150px', textAlign:'center'}}>{fechasCalculadasAC.unAñoSeisMesesDespues}</div>
+                    <div style={{backgroundColor: 'rgba(255, 235, 59, 0.288)', padding: '10px', border:'1px solid yellow', borderRadius: '5px', width:'150px', textAlign:'center'}}> {fechasCalculadasAC.seisMesesAntesMitad}</div>
+                    <div style={{backgroundColor: '#ff990079', padding: '10px', borderRadius: '5px', border:'1px solid orange', width:'150px', textAlign:'center'}}>{fechasCalculadasAC.tresAñosAntes}</div>
+                    <div style={{backgroundColor: '#ff562275', padding: '10px', borderRadius: '5px', border:'1px solid #ff5722', width:'150px', textAlign:'center'}}>{fechasCalculadasAC.dieciochoMesesAntes}</div>
+                    <div style={{backgroundColor: '#f443368e', padding: '10px', borderRadius: '5px', border:'1px solid #ee1809', width:'150px', textAlign:'center'}}>{rowData['fechavencac']}</div>
+                </div>
                 <CollapsibleButton buttonText="Renovación Acreditación" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>

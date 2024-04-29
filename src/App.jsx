@@ -12,7 +12,6 @@ import Cookies from 'js-cookie';
 function App() {
   const [isLogged, setLogged] = useState(false);
 
-
   useEffect(
     () =>{
       const token = Cookies.get('token');

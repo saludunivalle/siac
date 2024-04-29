@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Filtro4, Filtro5 } from '../service/data';
+import { Filtro4, Filtro5, Filtro7 } from '../service/data';
 import '/src/styles/home.css'; 
 import CollapsibleButton from './CollapsibleButton';
 
@@ -12,6 +12,24 @@ const Crea = ({ globalVariable }) => {
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [filteredDataSeg, setFilteredDataSeg] = useState(rowData);
+    const [updateTrigger, setUpdateTrigger] = useState(false); 
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const seguimientos = await Filtro7();
+                const response2 = seguimientos.filter(item => item['id_programa']);
+                setFilteredDataSeg(response2);
+            } catch (error) {
+                console.error('Error al filtrar datos:', error);
+            }
+        };
+    
+        fetchData();
+    }, [updateTrigger]);
+
+    
     useEffect(() => {
         const fetchData = async () => {
           try {
@@ -25,12 +43,64 @@ const Crea = ({ globalVariable }) => {
         fetchData();
     }, []);
 
+    const getBackgroundColor = (data) => {
+        if (!data || !data.id_programa) {
+            return 'white'; 
+        }
+    
+        try {
+            console.log('Término de búsqueda:', data.id_programa); 
+            
+            const seguimientos = filteredDataSeg;   
+            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
+            
+            if (response.length === 0) {
+                return 'white';
+            }
+            
+            const seguimientoMasReciente = response.reduce((prev, current) =>
+                new Date(current.timestamp.split('/').reverse().join('-')) > new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
+            );
+            console.log('Seguimiento más reciente:', seguimientoMasReciente);
+            
+            let color;
+            switch (seguimientoMasReciente.riesgo) {
+                case 'Alto':
+                    color = '#FED5D1';
+                    break;
+                case 'Medio':
+                    color = '#FEFBD1';
+                    break;
+                case 'Bajo':
+                    color = '#E6FFE6';
+                    break;
+                default:
+                    color = 'white';
+            }
+            console.log('Color de fondo:', color);
+            return color;
+        } catch (error) {
+            console.error('Error al obtener el color de fondo:', error);
+            return 'white';     
+        }
+    };
+    
     const handleRowClick = (rowData) => {
         console.log('Datos de la fila:', rowData);
         navigate('/program_details',  { state: { ...rowData, globalVariable } });
     };
 
     const renderFilteredTable = (data, filter) => {
+        if (!data || data.length === 0) {
+            return <p>Ningún programa por mostrar</p>;
+        }
+    
+        const colors = {};
+        for (const item of data) {
+            const color = getBackgroundColor(item);
+            colors[item.id_programa] = color;
+        }
+
         let filteredData;
         if (filter === 'No Aplica'){
             filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ')).filter(item => item['sede'] === 'Cali');
@@ -47,15 +117,18 @@ const Crea = ({ globalVariable }) => {
             ) : (
                 <table>
                 <tbody>
-                    {filteredData.map((item, index) => (
-                    <tr key={index} onClick={() => handleRowClick(item)}>
-                        <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
-                        <td>{item['departamento']}</td> 
-                        <td>{item['sección']}</td> 
-                        <td>{item['estado']}</td> 
-                        <td>{item['nivel de formación']}</td> 
-                    </tr>
-                    ))}
+                    {filteredData.map((item, index) => {
+                        const color = colors[item.id_programa] || 'white';
+                        return (
+                            <tr key={index} style={{backgroundColor: color}} onClick={() => handleRowClick(item)}>
+                                <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
+                                <td>{item['departamento']}</td> 
+                                <td>{item['sección']}</td> 
+                                <td>{item['estado']}</td> 
+                                <td>{item['nivel de formación']}</td> 
+                            </tr>
+                        );
+                    })}
                 </tbody>
                 </table>
                 )}

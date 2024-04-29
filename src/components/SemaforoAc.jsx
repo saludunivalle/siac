@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
-import { Filtro6, Filtro4 } from '../service/data'; 
+import { Filtro6, Filtro4, Filtro7} from '../service/data'; 
 import CollapsibleButton from './CollapsibleButton';
 import '/src/styles/home.css';
 import '/src/styles/table.css';
@@ -68,6 +68,64 @@ const SemaforoAC = ({ globalVariable }) => {
   const [orange2ProgramsCount, setOrange2ProgramsCount] = useState(0);
   const [redProgramsCount, setRedProgramsCount] = useState(0);
   const navigate = useNavigate();
+  const [filteredDataSeg, setFilteredDataSeg] = useState(null);
+  const [updateTrigger, setUpdateTrigger] = useState(false); 
+
+  useEffect(() => {
+      const fetchData = async () => {
+          try {
+              const seguimientos = await Filtro7();
+              const response2 = seguimientos.filter(item => item['id_programa']);
+              setFilteredDataSeg(response2);
+          } catch (error) {
+              console.error('Error al filtrar datos:', error);
+          }
+      };
+  
+      fetchData();
+  }, [updateTrigger]);
+
+  const getBackgroundColor = (data) => {
+        if (!data || !data.id_programa) {
+            return 'white'; 
+        }
+
+        try {
+            console.log('Término de búsqueda:', data.id_programa); 
+            
+            const seguimientos = filteredDataSeg;   
+            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
+            
+            if (response.length === 0) {
+                return 'white';
+            }
+            
+            const seguimientoMasReciente = response.reduce((prev, current) =>
+                new Date(current.timestamp.split('/').reverse().join('-')) > new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
+            );
+            console.log('Seguimiento más reciente:', seguimientoMasReciente);
+            
+            let color;
+            switch (seguimientoMasReciente.riesgo) {
+                case 'Alto':
+                    color = '#FED5D1';
+                    break;
+                case 'Medio':
+                    color = '#FEFBD1';
+                    break;
+                case 'Bajo':
+                    color = '#E6FFE6';
+                    break;
+                default:
+                    color = 'white';
+            }
+            console.log('Color de fondo:', color);
+            return color;
+        } catch (error) {
+            console.error('Error al obtener el color de fondo:', error);
+            return 'white';     
+        }
+  };
 
   const handleRowClick = (rowData) => {
     console.log('Datos de la fila:', rowData);
@@ -142,6 +200,16 @@ const SemaforoAC = ({ globalVariable }) => {
   };
 
   const renderFilteredTable = (data, filter) => {
+    if (!data || data.length === 0) {
+        return <p>Ningún programa por mostrar</p>;
+    }
+
+    const colors = {};
+    for (const item of data) {
+        const color = getBackgroundColor(item);
+        colors[item.id_programa] = color;
+    }
+
     let filteredData;
     if (filter === 'No Aplica'){
       filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ')).filter(item => item['sede'] === 'Cali');
@@ -158,20 +226,23 @@ const SemaforoAC = ({ globalVariable }) => {
         ) : (
           <table>
             <tbody>
-              {filteredData.map((item, index) => (
-                <tr key={index} onClick={() => handleRowClick(item)}>
-                  <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
-                  <td>{item['sede']}</td> 
-                  <td>{item['escuela']}</td> 
-                  <td>{item['departamento']}</td> 
-                  <td>{item['pregrado/posgrado']}</td> 
-                  <td>{item['ac vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
-                  <td>{item['fechaexpedac']}</td> 
-                  <td>{item['duracionac']}</td> 
-                  <td className="bold">{item['fechavencac']}</td>                           
-                  <td>{item['rc vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
-                </tr>
-              ))}
+              {filteredData.map((item, index) => {
+                const color = colors[item.id_programa] || 'white';
+                return (
+                    <tr key={index} style={{backgroundColor: color}} onClick={() => handleRowClick(item)}>
+                      <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
+                      <td>{item['sede']}</td> 
+                      <td>{item['escuela']}</td> 
+                      <td>{item['departamento']}</td> 
+                      <td>{item['pregrado/posgrado']}</td> 
+                      <td>{item['ac vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
+                      <td>{item['fechaexpedac']}</td> 
+                      <td>{item['duracionac']}</td> 
+                      <td className="bold">{item['fechavencac']}</td>                           
+                      <td>{item['rc vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px'}} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px'}} />}</td>
+                    </tr>
+                  );
+              })}
             </tbody>
           </table>
             )}

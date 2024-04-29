@@ -15,7 +15,7 @@ const ProgramDetails = () => {
     const escuela = rowData['escuela'];
     const facultad = rowData['facultad'];
     const sede = rowData['sede'];
-    const seccion = rowData['seccion']
+    const seccion = rowData['sección']
     const faseRRC = rowData['fase rrc'];
     const faseRAC = rowData['fase rac'];
     const fechavencrac = rowData['fechavencac'];
@@ -130,18 +130,21 @@ const ProgramDetails = () => {
               return {}; 
           }
     };
-
     return (
         <>
         <Header/>
         <div className='containerTotal'>
         <div className='title-program'><h2>{programaAcademico}</h2></div>
         <div className='about-program-general'>
-            <div className='about-program'><strong>Facultad-</strong> {facultad}</div>
-            <div className='about-program'><strong>Escuela- </strong> {escuela}</div>
-            <div className='about-program'><strong>Sede- </strong> {sede}</div>
-            <div className='about-program'><strong>Departamento-</strong> {departamento}</div>
-            <div className='about-program'><strong>Sección-</strong> {seccion}</div>
+            <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad}</div>
+            <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela}</div>
+            <div className='about-program'><strong>Sede: </strong>&nbsp; {sede}</div>
+            {departamento && (
+                <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento}</div>
+            )}
+            {seccion && (
+                <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion}</div>
+            )}
         </div>
         <div className='procesos'>
             <div className='procesosCREA' style={setButtonStyles('crea', clickedButton === 'crea')} onClick={() => handleButtonClick('crea')}> 
@@ -160,7 +163,7 @@ const ProgramDetails = () => {
                 <strong>RAAC</strong> {fechavencrac}
             </div>
             <div className='procesosCONV' style={setButtonStyles('conv', clickedButton === 'conv')} onClick={() => handleButtonClick('conv')}>
-                <strong>Convenio Docencia</strong>
+                <strong>Docencia Servicio</strong>
             </div>
         </div>
         <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}  />

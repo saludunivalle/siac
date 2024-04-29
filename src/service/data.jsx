@@ -170,7 +170,7 @@ export const Filtro5 = async () => {
             sheetName: 'Programas', 
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
-        console.log(response.data);
+        //console.log(response.data);
         return response.data;
     } catch (error) {
         console.error('Error en la solicitud:', error);
@@ -218,25 +218,14 @@ export const Filtro6 = async (data) => {
  * @param {Object} data
  * @returns {Promise<Object[]>}
  */
-export const Filtro7 = async (data) => {
+export const Filtro7 = async () => {
     try {
         const response = await fetchPostGeneral({
-            dataSend: { ...data},
-            sheetName: hojaSeguimientos,
+            dataSend: {}, 
+            sheetName: 'Seguimientos', 
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
-  
-        if (data) {
-            const searchTerm = data.searchTerm; 
-  
-            if (searchTerm) {
-                const filteredData = response.data.filter(item => {
-                    const propiedadValue = item['id_programa']; 
-                    return propiedadValue && propiedadValue.toLowerCase().includes(searchTerm.toLowerCase());
-                });
-                return filteredData;
-            }
-        }
+        //console.log(response.data);
         return response.data;
     } catch (error) {
         console.error('Error en la solicitud:', error);
@@ -301,13 +290,13 @@ export const sendDataToServer = async (data) => {
                 data
             ]
         };
-        console.log(dataSend, data);
+        //console.log(dataSend, data);
         const response = await fetchPostGeneral({
             dataSend,
             sheetName: hojaSeguimientos, 
             urlEndPoint: 'https://siac-server.vercel.app/sendData', 
         });
-        console.log(response);
+        //console.log(response);
         if (response.status) {
             console.log('Datos enviados correctamente al servidor.');
         } else {
@@ -349,7 +338,7 @@ export const Filtro10 = async () => {
             sheetName: 'Proc_Fases', 
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
-        console.log(response.data);
+        //console.log(response.data);
         return response.data;
     } catch (error) {
         console.error('Error en la solicitud:', error);
@@ -364,13 +353,13 @@ export const sendDataToServerCrea = async (data) => {
                 data
             ]
         };
-        console.log(dataSend, data);
+        //console.log(dataSend, data);
         const response = await fetchPostGeneral({
             dataSend,
             sheetName: hojaProc_X_Prog, 
             urlEndPoint: 'https://siac-server.vercel.app/sendData', 
         });
-        console.log(response);
+        //console.log(response);
         if (response.status) {
             console.log('Datos enviados correctamente al servidor.');
         } else {
@@ -389,7 +378,7 @@ export const Filtro11 = async () => {
             sheetName: 'Proc_X_Prog', 
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
-        console.log(response.data);
+        console.log("hoja de nuevo esta es",response.data);
         return response.data;
     } catch (error) {
         console.error('Error en la solicitud:', error);
@@ -397,38 +386,23 @@ export const Filtro11 = async () => {
     }
 };
 
-export const obtenerFasesProceso = async (idPrograma, proceso) => {
+export const obtenerFasesProceso = async () => {
     try {
-        const dataSend = { id_programa: idPrograma };
         const hoja1Response = await fetchPostGeneral({
-            dataSend: dataSend,
+            dataSend: {},
             sheetName: 'Proc_X_Prog',
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
         const hoja1Data = hoja1Response.data;
+        //console.log("hoja 1:",hoja1Data );
 
-        const idFases = hoja1Data.map(row => row.id_fase);
-
-        const hoja2Response = await fetchPostGeneral({
-            dataSend: {}, // No necesitamos filtrar en Proc_Fases
-            sheetName: 'Proc_Fases',
-            urlEndPoint: 'https://siac-server.vercel.app/'
-        });
-        const hoja2Data = hoja2Response.data;
-
-        const hoja2DataProceso = hoja2Data.filter(row => row.proceso === proceso);
-
-        const hoja1DataFiltrada = hoja1Data.filter(row => idFases.includes(row.id_fase));
-
-        const fasesOrdenadas = hoja1DataFiltrada.sort((a, b) => {
+        const fasesOrdenadas = hoja1Data.sort((a, b) => {
             const fechaA = new Date(a.fecha);
             const fechaB = new Date(b.fecha);
             return fechaB - fechaA;
         });
-
-        return {
-            fases: fasesOrdenadas
-        };
+        //console.log("hoja final:",fasesOrdenadas);
+        return fasesOrdenadas
     } catch (error) {
         console.error('Error en la solicitud:', error);
         throw error;
