@@ -13,6 +13,7 @@ const GoogleLogin = ({
 }) => {
     const navigate = useNavigate();
     const [showLoginButton, setShowLoginButton] = useState(true); // Estado para controlar la visibilidad del botón de inicio de sesión
+    const [userEmail, setUserEmail] = useState(null); // Estado para almacenar el email del usuario
 
     const have_permision = ({ data, dataToken }) => {
         const result = data?.filter(item => item['user'] === dataToken['email']);
@@ -41,6 +42,7 @@ const GoogleLogin = ({
 
                 if (resultPermisos.result) {
                     setIsLogin(true);
+                    setUserEmail(data_decode.email); // Almacenar el email del usuario
                     const expiracion = new Date();
                     expiracion.setDate(expiracion.getDate() + 5);
                     Cookies.set('token', JSON.stringify(data_decode), { expires: expiracion });
@@ -59,10 +61,10 @@ const GoogleLogin = ({
             if (programasResponse) {
                 const programasData = programasResponse.data;
                 const programaPermitido = programasData.find(item => item['accesos'].includes(data_decode['email']));
-
                 if (programaPermitido) {
-                    navigate('/program_details', { state: programaPermitido });
+                    navigate('/program_details', { state: { ...programaPermitido, userEmail: data_decode.email } });
                     setIsLogin(true);
+                    setUserEmail(data_decode.email); // Almacenar el email del usuario
                     setShowLoginButton(false); 
                     return;
                 }

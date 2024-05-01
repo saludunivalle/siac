@@ -9,7 +9,7 @@ import Seguimiento from './Seguimiento';
 const ProgramDetails = () => {
     const location = useLocation();
     const rowData = location.state; 
-    const { state: { globalVariable } } = location;
+    const { state: { globalVariable, userEmail } } = location; // Extrae el userEmail del estado
     const programaAcademico = rowData['programa académico'];
     const departamento = rowData['departamento'];
     const escuela = rowData['escuela'];
@@ -22,6 +22,9 @@ const ProgramDetails = () => {
     const fechavencrrc = rowData['fechavencrc'];
     const navigate = useNavigate();
     const [clickedButton, setClickedButton] = useState(null);
+    const isemail = rowData['accesos']
+    console.log("datos:::", isemail);
+    console.log("user:", userEmail);
 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
     
@@ -168,7 +171,9 @@ const ProgramDetails = () => {
         </div>
         <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}  />
         {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
-        <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
+        {!userEmail && !isemail && (
+            <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
+        )}
         </div>
         </>
     );
