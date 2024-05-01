@@ -23,8 +23,6 @@ const ProgramDetails = () => {
     const navigate = useNavigate();
     const [clickedButton, setClickedButton] = useState(null);
     const isemail = rowData['accesos']
-    console.log("datos:::", isemail);
-    console.log("user:", userEmail);
 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
     

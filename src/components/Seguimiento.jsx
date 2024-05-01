@@ -11,6 +11,7 @@ import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import esLocale from 'dayjs/locale/es'; 
 
 const Seguimiento = ({handleButtonClick}) => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -352,10 +353,10 @@ const Seguimiento = ({handleButtonClick}) => {
 
               let formattedDate;
               if (selectedDate) {
-                formattedDate = dayjs(selectedDate).format('MM/DD/YYYY');
-              } else {
-                formattedDate = dayjs().format('MM/DD/YYYY'); 
-              }
+                    formattedDate = dayjs(selectedDate).format('DD/MM/YYYY');
+                } else {
+                    formattedDate = dayjs().format('DD/MM/YYYY'); 
+                }
           
               const dataSend = [
                 idPrograma,
@@ -399,10 +400,11 @@ const Seguimiento = ({handleButtonClick}) => {
             <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display:'flex', flexDirection:'row', margin:'5px',  justifyContent: 'center', marginTop: '10px', alignItems:'center'}}>
                 <div className='date-picker' style={{paddingRight:'10px'}}>
                         Fecha <br/>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs} locale={esLocale}>
                             <DatePicker
                             value={selectedDate}
                             onChange={(date) => setSelectedDate(date)}
+                            format="DD/MM/YYYY"
                             />
                         </LocalizationProvider>   
                 </div>
@@ -547,12 +549,12 @@ const Seguimiento = ({handleButtonClick}) => {
                 <>
                     <h3>Seguimiento del Proceso de Renovación Registro Calificado</h3>
                     <div style={{display: 'flex', gap:'2px', marginBottom:'20px', color:'black'}}>
-                        <div style={{backgroundColor: '#FFFFF', padding: '10px', borderRadius: '5px', border:'1px solid #7e7e7e', width:'200px', textAlign:'center'}}><strong>FECHA INICIAL</strong> <br/>{rowData['fechaexpedrc']}</div>
+                        <div style={{backgroundColor: '#FFFFF', padding: '10px', borderRadius: '5px', border:'1px solid #7e7e7e', width:'200px', textAlign:'center'}}><strong>FECHA INICIAL RRC</strong> <br/>{rowData['fechaexpedrc']}</div>
                         <div style={{backgroundColor: '#4caf4f36', padding: '10px', borderRadius: '5px', border:'1px solid #4caf50',width:'200px', textAlign:'center'}}><strong>AÑO Y 6 MESES </strong><br/>{fechasCalculadas.unAñoSeisMesesDespues}</div>
                         <div style={{backgroundColor: 'rgba(255, 235, 59, 0.288)', padding: '10px', border:'1px solid yellow', borderRadius: '5px', width:'200px', textAlign:'center'}}><strong>6 MESES ANTES DE LA MITAD</strong><br/>{fechasCalculadas.seisMesesAntesMitad}</div>
                         <div style={{backgroundColor: '#ff990079', padding: '10px', borderRadius: '5px', border:'1px solid orange', width:'200px', textAlign:'center'}}><strong>3 AÑOS ANTES DEL VENCIMIENTO </strong><br/>{fechasCalculadas.tresAñosAntes}</div>
                         <div style={{backgroundColor: '#ff562275', padding: '10px', borderRadius: '5px', border:'1px solid #ff5722', width:'200px', textAlign:'center'}}><strong> 18 MESES ANTES DEL VENCIMIENTO</strong><br/>{fechasCalculadas.dieciochoMesesAntes}</div>
-                        <div style={{backgroundColor: '#f443368e', padding: '10px', borderRadius: '5px', border:'1px solid #ee1809', width:'200px', textAlign:'center'}}><strong> AÑO DE VENCIMIENTO </strong><br/>{rowData['fechavencrc']}</div>
+                        <div style={{backgroundColor: '#f443368e', padding: '10px', borderRadius: '5px', border:'1px solid #ee1809', width:'200px', textAlign:'center'}}><strong> AÑO DE VENCIMIENTO RRC</strong><br/>{rowData['fechavencrc']}</div>
                     </div>
                     <CollapsibleButton buttonText="Renovación Registro Calificado" content={
                         <>
@@ -599,12 +601,12 @@ const Seguimiento = ({handleButtonClick}) => {
                 <>
                 <h3>Seguimiento del Proceso de Renovación Acreditación</h3>
                 <div style={{display: 'flex', gap:'2px', marginBottom:'20px', color:'black'}}>
-                    <div style={{backgroundColor: '#FFFFF', padding: '10px', borderRadius: '5px', border:'1px solid #7e7e7e', width:'200px', textAlign:'center'}}><strong>FECHA INICIAL </strong><br/>{rowData['fechaexpedac']}</div>
+                    <div style={{backgroundColor: '#FFFFF', padding: '10px', borderRadius: '5px', border:'1px solid #7e7e7e', width:'200px', textAlign:'center'}}><strong>FECHA INICIAL RAAC </strong><br/>{rowData['fechaexpedac']}</div>
                     <div style={{backgroundColor: '#4caf4f36', padding: '10px', borderRadius: '5px', border:'1px solid #4caf50',width:'200px', textAlign:'center'}}><strong>AÑO Y 6 MESES </strong><br/>{fechasCalculadasAC.unAñoSeisMesesDespues}</div>
                     <div style={{backgroundColor: 'rgba(255, 235, 59, 0.288)', padding: '10px', border:'1px solid yellow', borderRadius: '5px', width:'200px', textAlign:'center'}}><strong>6 MESES ANTES DE LA MITAD</strong><br/>{fechasCalculadasAC.seisMesesAntesMitad}</div>
                     <div style={{backgroundColor: '#ff990079', padding: '10px', borderRadius: '5px', border:'1px solid orange', width:'200px', textAlign:'center'}}><strong>3 AÑOS ANTES DEL VENCIMIENTO </strong><br/>{fechasCalculadasAC.tresAñosAntes}</div>
                     <div style={{backgroundColor: '#ff562275', padding: '10px', borderRadius: '5px', border:'1px solid #ff5722', width:'200px', textAlign:'center'}}><strong> 18 MESES ANTES DEL VENCIMIENTO</strong><br/>{fechasCalculadasAC.dieciochoMesesAntes}</div>
-                    <div style={{backgroundColor: '#f443368e', padding: '10px', borderRadius: '5px', border:'1px solid #ee1809', width:'200px', textAlign:'center'}}><strong> AÑO DE VENCIMIENTO</strong><br/> {rowData['fechavencac']}</div>
+                    <div style={{backgroundColor: '#f443368e', padding: '10px', borderRadius: '5px', border:'1px solid #ee1809', width:'200px', textAlign:'center'}}><strong> AÑO DE VENCIMIENTO RAAC</strong><br/> {rowData['fechavencac']}</div>
                 </div>
                 <CollapsibleButton buttonText="Renovación Acreditación" content={
                     <>

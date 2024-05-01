@@ -251,7 +251,7 @@ export const Filtro7 = async () => {
 
         const filteredData = datos.filter(item => {
             const propiedadValue = item['topic'];
-            return propiedadValue && propiedadValue.toLowerCase().includes(termino_a_filtrar.toLowerCase());
+            return propiedadValue && propiedadValue.toLowerCase() === termino_a_filtrar.toLowerCase();
         });
 
         return filteredData;

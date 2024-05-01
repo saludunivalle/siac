@@ -77,7 +77,6 @@ const Programas = () => {
         }
     
         try {
-            console.log('Término de búsqueda:', data.id_programa); 
             
             const seguimientos = filteredDataSeg;   
             const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
@@ -89,7 +88,6 @@ const Programas = () => {
             const seguimientoMasReciente = response.reduce((prev, current) =>
                 new Date(current.timestamp.split('/').reverse().join('-')) > new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
             );
-            console.log('Seguimiento más reciente:', seguimientoMasReciente);
             
             let color;
             switch (seguimientoMasReciente.riesgo) {
@@ -105,7 +103,6 @@ const Programas = () => {
                 default:
                     color = 'white';
             }
-            console.log('Color de fondo:', color);
             return color;
         } catch (error) {
             console.error('Error al obtener el color de fondo:', error);
