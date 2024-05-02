@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel } from '@mui/material';
+import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, Input, Box, Checkbox, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Paper  } from '@mui/material';
 import { Button, Typography } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
 import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea} from '../service/data';
@@ -48,6 +48,25 @@ const Seguimiento = ({handleButtonClick}) => {
     const [fasesName, setFasesName] = useState([]);
     const [itemActual, setItemActual] = useState([]);
     const [docs, setDocs] = useState([]);
+
+    const [horasPorDia, setHorasPorDia] = useState({
+        lunes: 0,
+        martes: 0,
+        miercoles: 0,
+        jueves: 0,
+        viernes: 0
+    });
+    
+      const [totalHorasSemanal, setTotalHorasSemanal] = useState(0);
+    
+      const handleCheck = (dia, hora, isChecked) => {
+        const horasPorDiaCopy = { ...horasPorDia };
+        horasPorDiaCopy[dia] += isChecked ? 1 : -1;
+        setHorasPorDia(horasPorDiaCopy);
+    
+        const totalHorasSemanal = Object.values(horasPorDiaCopy).reduce((acc, curr) => acc + curr, 0);
+        setTotalHorasSemanal(totalHorasSemanal);
+    };
 
     function calcularFechas(fechaexpedrc, fechavencrc) {
         const partesFechaExpedicion = fechaexpedrc.split('/');
@@ -682,6 +701,108 @@ const Seguimiento = ({handleButtonClick}) => {
                 )}
                 {handleButtonClick=='conv' &&(
                 <><h3>Seguimiento del Proceso de Convenio Docencia Servicio</h3>
+                <CollapsibleButton buttonText="Datos Generales para Anexos Técnicos" content={
+                    <>
+                        <div >
+                        <Box display="flex" justifyContent="center" marginTop='25px' marginBottom='25px'>
+                        <form style={{ width: '80%' }}>
+                            <FormControl fullWidth sx={{ mb: 2 }}>
+                            <InputLabel htmlFor="campo1">Campo 1</InputLabel>
+                            <Input id="campo1" type="text" />
+                            </FormControl>
+
+                            <FormControl fullWidth sx={{ mb: 2 }}>
+                            <InputLabel htmlFor="campo2">Campo 2</InputLabel>
+                            <Input id="campo2" type="text" />
+                            </FormControl>
+
+                            <FormControl fullWidth sx={{ mb: 2 }}>
+                            <InputLabel id="opciones-label">Seleccione una opción</InputLabel>
+                            <Select
+                                labelId="opciones-label"
+                                id="opciones"
+                                defaultValue=""
+                            >
+                                <MenuItem value="opcion1">Opción 1</MenuItem>
+                                <MenuItem value="opcion2">Opción 2</MenuItem>
+                            </Select>
+                            </FormControl>
+
+                            <FormControl component="fieldset" sx={{ mb: 2 }}>
+                            <RadioGroup aria-label="gender" name="gender1">
+                                <FormControlLabel value="opcion1" control={<Radio />} label="Opción 1" />
+                                <FormControlLabel value="opcion2" control={<Radio />} label="Opción 2" />
+                            </RadioGroup>
+                            </FormControl>
+
+                            <FormControl fullWidth sx={{ mb: 2 }}>
+                            <InputLabel htmlFor="firma">Firma</InputLabel>
+                            <Input id="firma" type="text" />
+                            </FormControl>
+
+                            <Button variant="contained" color="primary" type="button" >
+                            Generar Anexo
+                            </Button>
+                        </form>
+                        </Box>
+                        </div>
+                    </>
+                } />
+                <CollapsibleButton buttonText="Escenario de Practica 1 - Sede 1     Cantidad de estudiantes: XX " content={
+                    <>
+                        <div style={{marginBottom:'30px', marginTop:'15px', marginLeft:'200px', marginRight:'200px'}}>
+                        <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                            <TableRow>
+                                <TableCell>Hora</TableCell>
+                                <TableCell>Lunes <br/> (Total: {horasPorDia.lunes} horas)</TableCell>
+                                <TableCell>Martes <br/> (Total: {horasPorDia.martes} horas)</TableCell>
+                                <TableCell>Miércoles <br/> (Total: {horasPorDia.miercoles} horas)</TableCell>
+                                <TableCell>Jueves <br/> (Total: {horasPorDia.jueves} horas)</TableCell>
+                                <TableCell>Viernes <br/> (Total: {horasPorDia.viernes} horas)</TableCell>
+                            </TableRow>
+                            </TableHead>
+                            <TableBody>
+                            {[...Array(8).keys()].map((hour) => (
+                                <TableRow key={hour}>
+                                <TableCell>{`${8 + hour}:00`}</TableCell>
+                                <TableCell>
+                                    <Checkbox
+                                    onChange={(e) => handleCheck('lunes', `${8 + hour}:00`, e.target.checked)}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Checkbox
+                                    onChange={(e) => handleCheck('martes', `${8 + hour}:00`, e.target.checked)}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Checkbox
+                                    onChange={(e) => handleCheck('miercoles', `${8 + hour}:00`, e.target.checked)}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Checkbox
+                                    onChange={(e) => handleCheck('jueves', `${8 + hour}:00`, e.target.checked)}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Checkbox
+                                    onChange={(e) => handleCheck('viernes', `${8 + hour}:00`, e.target.checked)}
+                                    />
+                                </TableCell>
+                                </TableRow>
+                            ))}
+                            </TableBody>
+                        </Table>
+                        <div>
+                            <strong>Total Horas Semanal:</strong> {totalHorasSemanal} horas
+                        </div>
+                        </TableContainer>
+                        </div>
+                    </>
+                } />
                 <CollapsibleButton buttonText="Convenio Docencia Servicio" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
