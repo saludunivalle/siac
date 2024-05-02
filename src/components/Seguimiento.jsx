@@ -103,19 +103,28 @@ const Seguimiento = ({handleButtonClick}) => {
     const cargarFases = async () => {
         try {
             setLoading(true);
+            let documentoproceso = '';
             let procesoActual = '';
             if (handleButtonClick === 'crea') {
                 procesoActual = 'Creación';
+                documentoproceso = 'Creación';
             } else if (handleButtonClick === 'rrc') {
                 procesoActual = 'Renovación Registro Calificado';
+                documentoproceso = 'Renovación Registro Calificado';
             } else if (handleButtonClick === 'aac') {
                 procesoActual = 'Acreditación';
+                documentoproceso = 'Acreditación';
             }  else if (handleButtonClick === 'raac') {
                 procesoActual = 'Renovación Acreditación';
+                documentoproceso = 'Renovación Acreditación';
             }  else if (handleButtonClick === 'mod') {
                 procesoActual = 'Modificación';
+                if (rowData['mod_sus'] === 'SI'){
+                    documentoproceso = 'Modificación Reforma Curricular - sustancial';
+                } else if (rowData['mod_sus'] === 'NO'){
+                    documentoproceso = 'Modiciación No Sustancial';
+                }
             } 
-
             const general = await Filtro10();
             const general2 = general.filter(item => item['proceso'] === procesoActual); 
             const response = await obtenerFasesProceso();
@@ -132,7 +141,7 @@ const Seguimiento = ({handleButtonClick}) => {
 
             //Para documentos
             const proceso = await Filtro12();
-            const procesoFiltrado = proceso.filter(item => item['proceso'] === procesoActual); 
+            const procesoFiltrado = proceso.filter(item => item['proceso'] === documentoproceso); 
             setDocs(procesoFiltrado);
             setLoading(false);
         } catch (error) {
