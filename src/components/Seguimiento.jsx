@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, Input, Box, Checkbox, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Paper  } from '@mui/material';
 import { Button, Typography } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea} from '../service/data';
+import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc} from '../service/data';
 import { Modal, CircularProgress  } from '@mui/material';
 import { Select, MenuItem} from '@mui/material';
 import dayjs from 'dayjs';
@@ -48,6 +48,50 @@ const Seguimiento = ({handleButtonClick}) => {
     const [fasesName, setFasesName] = useState([]);
     const [itemActual, setItemActual] = useState([]);
     const [docs, setDocs] = useState([]);
+    const [calendarOpen, setCalendarOpen] = useState(false);
+    
+    const [open, setOpen] = useState(false);
+    const [selectedDoc, setSelectedDoc] = useState(null);
+    const [inputValue, setInputValue] = useState('');
+
+    const handleOpen = (doc) => {
+        setSelectedDoc(doc);
+        setOpen(true);
+    };
+
+    const handleClose = () => {
+        setSelectedDoc(null);
+        setOpen(false);
+    };
+
+    const handleInputChange = (e) => {
+        setInputValue(e.target.value);
+    };
+
+    const handleSubmit = async () => {
+        const date = new Date();
+        const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+    
+        const dataSendDoc = [
+          idPrograma,
+          selectedDoc.id,
+          inputValue,
+          formattedDate, 
+        ];
+    
+        await sendDataToServerDoc(dataSendDoc);
+        console.log("Documento:", selectedDoc.id, "idPrograma", idPrograma, "Input:", inputValue, "Fecha:", formattedDate);
+        handleClose();
+    };
+
+    const handleToggleCalendar = () => {
+        setCalendarOpen((prev) => !prev);
+      };
+
+    const handleDateChange = (date) => {
+    setSelectedDate(date);
+    setCalendarOpen(false);
+    };
 
     const [horasPorDia, setHorasPorDia] = useState({
         lunes: 0,
@@ -232,20 +276,20 @@ const Seguimiento = ({handleButtonClick}) => {
             <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
                 <thead>
                     <tr>
-                    <th style={{ width: '15%', border: '1px solid grey' }}>Fecha</th>
+                    <th style={{ width: '3%', border: '1px solid grey' }}>Fecha</th>
                     <th style={{ width: '15%', border: '1px solid grey' }}>Comentario</th>
-                    <th style={{ width: '15%', border: '1px solid grey' }}>Riesgo</th>  
-                    <th style={{ width: '15%', border: '1px solid grey' }}>Usuario</th>
-                    <th style={{ width: '15%', border: '1px solid grey' }}>Adjunto</th>
+                    <th style={{ width: '2%', border: '1px solid grey' }}>Riesgo</th>  
+                    <th style={{ width: '4%', border: '1px solid grey' }}>Usuario</th>
+                    <th style={{ width: '2%', border: '1px solid grey' }}>Adjunto</th>
                     </tr>
                 </thead>
                 <tbody>
                     {filteredData.map((item, index) => (
                         <tr key={index} style={{ backgroundColor: getBackgroundColor(item['riesgo']) }}>
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['timestamp']}</td> 
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['mensaje']}</td> 
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', paddingLeft:'6px', paddingRight:'6px' }}>{item['mensaje']}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td> 
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario']}</td> 
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario'].split('@')[0]}</td> 
                             <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
                                 {item['url_adjunto'] ? (
                                     <a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
@@ -315,16 +359,16 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     )}
                     </div>
-                    <div>
+                    <div> 
                     {docs.length > 0 && (
                         <div>
                             <h2>Documentos requeridos</h2>
                             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                                 <tbody>
-                                    {docs.map((docs, index) => {
+                                    {docs.map((doc, index) => {
                                         return (
-                                            <tr key={index}>
-                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{docs.nombre_doc}</td>
+                                            <tr key={index} onClick={() => handleOpen(doc)}>
+                                                <td style={{ cursor: 'pointer', border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{doc.nombre_doc}</td>
                                             </tr>
                                         );
                                     })}
@@ -332,6 +376,24 @@ const Seguimiento = ({handleButtonClick}) => {
                             </table>
                         </div>
                     )}
+                    <Modal open={open} onClose={handleClose}>
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
+                        <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
+                        <TextField
+                            label="Link del documento"
+                            value={inputValue}
+                            onChange={handleInputChange}
+                            fullWidth
+                            margin="normal"
+                        />
+                        <Button variant="contained" color="primary" onClick={handleSubmit}>
+                            Enviar
+                        </Button>
+                        <Button variant="contained" onClick={handleClose} style={{ marginLeft: '10px' }}>
+                            Cancelar
+                        </Button>
+                        </div>
+                    </Modal>
                     </div>
                     </div>
                     </>
@@ -393,7 +455,8 @@ const Seguimiento = ({handleButtonClick}) => {
                 value,
                 user,
                 collapsible,
-                enlace,  
+                enlace,
+                selectedOption.id,  
               ];
           
               const dataSendCrea = [
@@ -410,6 +473,7 @@ const Seguimiento = ({handleButtonClick}) => {
               } else {
                 await sendDataToServerCrea(dataSendCrea);
               }
+
               clearFileLink();
               setLoading(false);
               setOpenModal(true);
@@ -428,13 +492,20 @@ const Seguimiento = ({handleButtonClick}) => {
             <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display:'flex', flexDirection:'row', margin:'5px',  justifyContent: 'center', marginTop: '10px', alignItems:'center'}}>
                 <div className='date-picker' style={{paddingRight:'10px'}}>
                         Fecha <br/>
-                        <LocalizationProvider dateAdapter={AdapterDayjs} locale={esLocale}>
-                            <DatePicker
-                            value={selectedDate}
-                            onChange={(date) => setSelectedDate(date)}
-                            format="DD/MM/YYYY"
-                            />
-                        </LocalizationProvider>   
+                        <div style={{ display: 'inline-block' }}>
+                            <button onClick={handleToggleCalendar} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs} locale={esLocale}>
+                                <DatePicker
+                                    value={selectedDate}
+                                    onChange={handleDateChange}
+                                    open={calendarOpen}
+                                    onClose={() => setCalendarOpen(false)}
+                                    format="DD/MM/YYYY"
+                                    renderInput={() => <input readOnly />}
+                                />
+                                </LocalizationProvider>
+                            </button>
+                        </div>  
                 </div>
                 <div className='comments' style={{ display:'flex', flexDirection:'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', width:'35%', paddingRight:'20px'}}>
                     Comentario * <br/>
@@ -750,50 +821,59 @@ const Seguimiento = ({handleButtonClick}) => {
                 } />
                 <CollapsibleButton buttonText="Escenario de Practica 1 - Sede 1     Cantidad de estudiantes: XX " content={
                     <>
-                        <div style={{marginBottom:'30px', marginTop:'15px', marginLeft:'200px', marginRight:'200px'}}>
-                        <TableContainer component={Paper}>
-                        <Table>
+                        <div style={{marginBottom:'30px', marginTop:'15px', display:'flex', justifyContent:'center'}}>
+                        <TableContainer component={Paper} style={{width:'28%'}}>
+                        <Table style={{ width: '50%'}}>
                             <TableHead>
                             <TableRow>
-                                <TableCell>Hora</TableCell>
-                                <TableCell>Lunes <br/> (Total: {horasPorDia.lunes} horas)</TableCell>
-                                <TableCell>Martes <br/> (Total: {horasPorDia.martes} horas)</TableCell>
-                                <TableCell>Miércoles <br/> (Total: {horasPorDia.miercoles} horas)</TableCell>
-                                <TableCell>Jueves <br/> (Total: {horasPorDia.jueves} horas)</TableCell>
-                                <TableCell>Viernes <br/> (Total: {horasPorDia.viernes} horas)</TableCell>
+                                <TableCell style={{padding: '6px'}}>Hora</TableCell>
+                                <TableCell style={{padding: '6px'}}>Lunes </TableCell>
+                                <TableCell style={{padding: '6px'}}>Martes </TableCell>
+                                <TableCell style={{padding: '6px'}}>Miércoles </TableCell>
+                                <TableCell style={{padding: '6px'}}>Jueves </TableCell>
+                                <TableCell style={{padding: '6px'}}>Viernes </TableCell>
                             </TableRow>
                             </TableHead>
-                            <TableBody>
+                            <TableBody >
                             {[...Array(8).keys()].map((hour) => (
                                 <TableRow key={hour}>
-                                <TableCell>{`${8 + hour}:00`}</TableCell>
-                                <TableCell>
-                                    <Checkbox
+                                <TableCell style={{padding: '6px', textAlign:'center'}}>{`${8 + hour}:00`}</TableCell>
+                                <TableCell style={{padding: '6px', textAlign:'center'}}>
+                                    <Checkbox style={{padding: '5px'}}
                                     onChange={(e) => handleCheck('lunes', `${8 + hour}:00`, e.target.checked)}
                                     />
                                 </TableCell>
-                                <TableCell>
-                                    <Checkbox
+                                <TableCell style={{padding: '6px', textAlign:'center'}}>
+                                    <Checkbox style={{padding: '5px'}}
                                     onChange={(e) => handleCheck('martes', `${8 + hour}:00`, e.target.checked)}
                                     />
                                 </TableCell>
-                                <TableCell>
-                                    <Checkbox
+                                <TableCell style={{padding: '6px', textAlign:'center'}}>
+                                    <Checkbox style={{padding: '5px'}}
                                     onChange={(e) => handleCheck('miercoles', `${8 + hour}:00`, e.target.checked)}
                                     />
                                 </TableCell>
-                                <TableCell>
-                                    <Checkbox
+                                <TableCell style={{padding: '6px', textAlign:'center'}}>
+                                    <Checkbox style={{padding: '5px'}}
                                     onChange={(e) => handleCheck('jueves', `${8 + hour}:00`, e.target.checked)}
                                     />
                                 </TableCell>
-                                <TableCell>
-                                    <Checkbox
+                                <TableCell style={{padding: '6px', textAlign:'center'}}>
+                                    <Checkbox style={{padding: '5px'}}
                                     onChange={(e) => handleCheck('viernes', `${8 + hour}:00`, e.target.checked)}
                                     />
                                 </TableCell>
                                 </TableRow>
                             ))}
+                            <TableRow>
+                                <TableCell style={{padding: '6px'}}>Total horas:</TableCell>
+                                <TableCell style={{padding: '6px'}}> {horasPorDia.lunes} </TableCell>
+                                <TableCell style={{padding: '6px'}}> {horasPorDia.martes} </TableCell>
+                                <TableCell style={{padding: '6px'}}> {horasPorDia.miercoles} </TableCell>
+                                <TableCell style={{padding: '6px'}}> {horasPorDia.jueves} </TableCell>
+                                <TableCell style={{padding: '6px'}}> {horasPorDia.viernes} </TableCell>
+                            </TableRow>
+
                             </TableBody>
                         </Table>
                         <div>

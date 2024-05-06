@@ -4,6 +4,7 @@ const hojaSeguimientos = 'Seguimientos';
 const hojaPermisos = 'Permisos';
 const hojaProc_Fases = 'Proc_Fases';
 const hojaProc_X_Prog='Proc_X_Prog';
+const hojaProc_X_Prog_Doc='Proc_X_Doc';
 const hojaProc_Fases_Doc = 'Proc_Fases_Doc';
 
 
@@ -370,6 +371,29 @@ export const sendDataToServerCrea = async (data) => {
     }
 };
 
+export const sendDataToServerDoc = async (data) => {
+    try {
+        const dataSend = {
+            insertData:[
+                data
+            ]
+        };
+        console.log(dataSend, data);
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: 'Proc_X_Doc', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+        });
+        //console.log(response);
+        if (response.status) {
+            console.log('Datos enviados correctamente al servidor.');
+        } else {
+            console.error('Error al enviar datos al servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+    }
+};
 
 export const Filtro11 = async () => {
     try {
@@ -397,11 +421,19 @@ export const obtenerFasesProceso = async () => {
         //console.log("hoja 1:",hoja1Data );
 
         const fasesOrdenadas = hoja1Data.sort((a, b) => {
-            const fechaA = new Date(a.fecha);
-            const fechaB = new Date(b.fecha);
+            const fechaA = convertirFecha(a.fecha);
+            const fechaB = convertirFecha(b.fecha);
             return fechaB - fechaA;
         });
-        //console.log("hoja final:",fasesOrdenadas);
+        
+        function convertirFecha(fechaStr) {
+            const partes = fechaStr.split('/');
+            const fecha = new Date(partes[2], partes[1] - 1, partes[0]); 
+            return fecha;
+        }
+        
+        //console.log("hoja final:", fasesOrdenadas);
+        
         return fasesOrdenadas
     } catch (error) {
         console.error('Error en la solicitud:', error);
