@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, Input, Box, Checkbox, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Paper  } from '@mui/material';
 import { Button, Typography } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc} from '../service/data';
+import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21} from '../service/data';
 import { Modal, CircularProgress  } from '@mui/material';
 import { Select, MenuItem} from '@mui/material';
 import dayjs from 'dayjs';
@@ -49,10 +49,25 @@ const Seguimiento = ({handleButtonClick}) => {
     const [itemActual, setItemActual] = useState([]);
     const [docs, setDocs] = useState([]);
     const [calendarOpen, setCalendarOpen] = useState(false);
-    
     const [open, setOpen] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState(null);
     const [inputValue, setInputValue] = useState('');
+    const [Filtro21Data, setFiltro21Data] = useState({ id_doc: '', url: '' });
+
+    useEffect(() => {
+        const obtenerDatosFiltro = async () => {
+            try {
+                const filtroData = await Filtro21();
+                setFiltro21Data(filtroData);
+                console.log('ladateakmj,:', Filtro21Data);
+            } catch (error) {
+                console.error('Error al obtener los datos del filtro:', error);
+            }
+        };
+
+        obtenerDatosFiltro();
+    }, [docs]); // Dependencias para volver a ejecutar el useEffect cuando cambian los docs
+
 
     const handleOpen = (doc) => {
         setSelectedDoc(doc);
@@ -366,9 +381,20 @@ const Seguimiento = ({handleButtonClick}) => {
                             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                                 <tbody>
                                     {docs.map((doc, index) => {
+                                        const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idPrograma);
+                                        const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'pointer' } : { cursor: 'pointer' };
+                                        const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idPrograma);
+                                        const filtroUrl = filtro ? filtro.url : null;
+                                        const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
+                                        const handleLinkClick = (event) => {
+                                            event.stopPropagation();
+                                        };
+
                                         return (
-                                            <tr key={index} onClick={() => handleOpen(doc)}>
-                                                <td style={{ cursor: 'pointer', border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{doc.nombre_doc}</td>
+                                            <tr key={index} style={fondoVerde} onClick={handleClick}>
+                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
+                                                    {filtroUrl ? <a href={filtroUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }} onClick={handleLinkClick}>{doc.nombre_doc}</a> : doc.nombre_doc}
+                                                </td>
                                             </tr>
                                         );
                                     })}

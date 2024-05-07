@@ -381,7 +381,7 @@ export const sendDataToServerDoc = async (data) => {
         console.log(dataSend, data);
         const response = await fetchPostGeneral({
             dataSend,
-            sheetName: 'Proc_X_Doc', 
+            sheetName: 'PROC_X_PROG_DOCS', 
             urlEndPoint: 'https://siac-server.vercel.app/sendData', 
         });
         //console.log(response);
@@ -400,6 +400,21 @@ export const Filtro11 = async () => {
         const response = await fetchPostGeneral({
             dataSend: {}, 
             sheetName: 'Proc_X_Prog', 
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        console.log("hoja de nuevo esta es",response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+};
+
+export const Filtro21 = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {}, 
+            sheetName: hojaProc_X_Prog_Doc, 
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
         console.log("hoja de nuevo esta es",response.data);
