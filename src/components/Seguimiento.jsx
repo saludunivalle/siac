@@ -66,7 +66,7 @@ const Seguimiento = ({handleButtonClick}) => {
         };
 
         obtenerDatosFiltro();
-    }, [docs]); // Dependencias para volver a ejecutar el useEffect cuando cambian los docs
+    }, [docs]); 
 
 
     const handleOpen = (doc) => {
@@ -108,25 +108,33 @@ const Seguimiento = ({handleButtonClick}) => {
     setCalendarOpen(false);
     };
 
+    
+    const [totalHorasSemanal, setTotalHorasSemanal] = useState(0);
+
     const [horasPorDia, setHorasPorDia] = useState({
-        lunes: 0,
-        martes: 0,
-        miercoles: 0,
-        jueves: 0,
-        viernes: 0
+        lunes: [],
+        martes: [],
+        miercoles: [],
+        jueves: [],
+        viernes: []
     });
-    
-      const [totalHorasSemanal, setTotalHorasSemanal] = useState(0);
-    
-      const handleCheck = (dia, hora, isChecked) => {
-        const horasPorDiaCopy = { ...horasPorDia };
-        horasPorDiaCopy[dia] += isChecked ? 1 : -1;
-        setHorasPorDia(horasPorDiaCopy);
-    
-        const totalHorasSemanal = Object.values(horasPorDiaCopy).reduce((acc, curr) => acc + curr, 0);
-        setTotalHorasSemanal(totalHorasSemanal);
+
+    const handleCheck = (dia, hora, isChecked) => {
+        setHorasPorDia(prevHorasPorDia => {
+            const horasPorDiaCopy = { ...prevHorasPorDia };
+            if (isChecked) {
+                horasPorDiaCopy[dia] = [...horasPorDiaCopy[dia], hora];
+            } else {
+                horasPorDiaCopy[dia] = horasPorDiaCopy[dia].filter(h => h !== hora);
+            }
+            const totalHorasSemanal = Object.values(horasPorDiaCopy).reduce((acc, curr) => acc + curr.length, 0);
+            setTotalHorasSemanal(totalHorasSemanal);
+
+            return horasPorDiaCopy;
+        });
     };
 
+       
     function calcularFechas(fechaexpedrc, fechavencrc) {
         const partesFechaExpedicion = fechaexpedrc.split('/');
         const partesFechaVencimiento = fechavencrc.split('/');
@@ -848,63 +856,43 @@ const Seguimiento = ({handleButtonClick}) => {
                 <CollapsibleButton buttonText="Escenario de Practica 1 - Sede 1     Cantidad de estudiantes: XX " content={
                     <>
                         <div style={{marginBottom:'30px', marginTop:'15px', display:'flex', justifyContent:'center'}}>
-                        <TableContainer component={Paper} style={{width:'28%'}}>
-                        <Table style={{ width: '50%'}}>
-                            <TableHead>
-                            <TableRow>
-                                <TableCell style={{padding: '6px'}}>Hora</TableCell>
-                                <TableCell style={{padding: '6px'}}>Lunes </TableCell>
-                                <TableCell style={{padding: '6px'}}>Martes </TableCell>
-                                <TableCell style={{padding: '6px'}}>Miércoles </TableCell>
-                                <TableCell style={{padding: '6px'}}>Jueves </TableCell>
-                                <TableCell style={{padding: '6px'}}>Viernes </TableCell>
-                            </TableRow>
-                            </TableHead>
-                            <TableBody >
-                            {[...Array(8).keys()].map((hour) => (
-                                <TableRow key={hour}>
-                                <TableCell style={{padding: '6px', textAlign:'center'}}>{`${8 + hour}:00`}</TableCell>
-                                <TableCell style={{padding: '6px', textAlign:'center'}}>
-                                    <Checkbox style={{padding: '5px'}}
-                                    onChange={(e) => handleCheck('lunes', `${8 + hour}:00`, e.target.checked)}
-                                    />
-                                </TableCell>
-                                <TableCell style={{padding: '6px', textAlign:'center'}}>
-                                    <Checkbox style={{padding: '5px'}}
-                                    onChange={(e) => handleCheck('martes', `${8 + hour}:00`, e.target.checked)}
-                                    />
-                                </TableCell>
-                                <TableCell style={{padding: '6px', textAlign:'center'}}>
-                                    <Checkbox style={{padding: '5px'}}
-                                    onChange={(e) => handleCheck('miercoles', `${8 + hour}:00`, e.target.checked)}
-                                    />
-                                </TableCell>
-                                <TableCell style={{padding: '6px', textAlign:'center'}}>
-                                    <Checkbox style={{padding: '5px'}}
-                                    onChange={(e) => handleCheck('jueves', `${8 + hour}:00`, e.target.checked)}
-                                    />
-                                </TableCell>
-                                <TableCell style={{padding: '6px', textAlign:'center'}}>
-                                    <Checkbox style={{padding: '5px'}}
-                                    onChange={(e) => handleCheck('viernes', `${8 + hour}:00`, e.target.checked)}
-                                    />
-                                </TableCell>
-                                </TableRow>
-                            ))}
-                            <TableRow>
-                                <TableCell style={{padding: '6px'}}>Total horas:</TableCell>
-                                <TableCell style={{padding: '6px'}}> {horasPorDia.lunes} </TableCell>
-                                <TableCell style={{padding: '6px'}}> {horasPorDia.martes} </TableCell>
-                                <TableCell style={{padding: '6px'}}> {horasPorDia.miercoles} </TableCell>
-                                <TableCell style={{padding: '6px'}}> {horasPorDia.jueves} </TableCell>
-                                <TableCell style={{padding: '6px'}}> {horasPorDia.viernes} </TableCell>
-                            </TableRow>
-
-                            </TableBody>
-                        </Table>
-                        <div>
-                            <strong>Total Horas Semanal:</strong> {totalHorasSemanal} horas
-                        </div>
+                        <TableContainer component={Paper} style={{ width: 'fit-content' }}>
+                            <Table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid black' }}>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell style={{ padding: '6px', textAlign: 'center' }}>Hora</TableCell>
+                                        {[...Array(15).keys()].map((hour) => (
+                                            <TableCell key={hour} style={{ padding: '6px', textAlign: 'center' }}>{`${6 + hour}:00`}</TableCell>
+                                        ))}
+                                        <TableCell style={{ padding: '6px', textAlign: 'center' }}>Total</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].map((day, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell style={{ padding: '6px', textAlign: 'center' }}>{day}</TableCell>
+                                            {[...Array(15).keys()].map((hour) => (
+                                                <TableCell key={`${day}-${hour}`} style={{ padding: '6px', textAlign: 'center' }}>
+                                                    <Checkbox
+                                                        style={{ padding: '5px' }}
+                                                        checked={horasPorDia[day].includes(`${hour + 6}:00`)}
+                                                        onChange={(e) => handleCheck(day, `${hour + 6}:00`, e.target.checked)}
+                                                    />
+                                                </TableCell>
+                                            ))}
+                                            <TableCell style={{ padding: '6px', textAlign: 'center' }}>
+                                                {horasPorDia[day].length}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    <TableRow>
+                                        <TableCell style={{ padding: '6px', textAlign: 'center' }}>Total Semana:</TableCell>
+                                        <TableCell colSpan={7} style={{ padding: '6px', textAlign: 'center' }}>
+                                            {totalHorasSemanal}
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
                         </TableContainer>
                         </div>
                     </>
