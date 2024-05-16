@@ -25,6 +25,29 @@ const Programas = () => {
     const [otrosCount, setOtrosCount]= useState(0);
     const [filteredDataSeg, setFilteredDataSeg] = useState(rowData);
     const [updateTrigger, setUpdateTrigger] = useState(false); 
+    // Permisos
+    const [user, setUser] = useState('');
+    const [isCargo, setCargo] = useState([' ']);
+
+    useEffect(() => {
+        if (sessionStorage.getItem('logged')) {
+        let res = JSON.parse(sessionStorage.getItem('logged'));
+        const permisos = res.map(item => item.permiso).flat();
+        setCargo(permisos);
+        setUser(res[0].user);
+        console.log("Permisos del usuario:", permisos);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isCargo.includes('Posgrados')) {
+        const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+        setFilteredData(filtered);
+        } else {
+        setFilteredData(rowData);
+        }
+    }, []);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -43,7 +66,14 @@ const Programas = () => {
     useEffect(() => {
         const fetchData = async () => {
           try {
-            const response = await Filtro5(); 
+            let response;
+            if (isCargo.includes('Posgrados')) {
+            const filtered = await Filtro5();
+            response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+            
+            } else {
+            response = await Filtro5();
+            }
             setActivosCount(response.filter(item => item['estado'] === 'Activo').length);   
             setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);   
             setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);  
@@ -60,7 +90,12 @@ const Programas = () => {
         if (buttonGoogle){
           buttonGoogle.classList.add('_display_none');
         }
-        setFilteredData(rowData.filter(item => item['estado'] === 'Activo' || item['estado'] === 'En Creación'));
+        if (isCargo.includes('Posgrados')) {
+                const filtered = rowData.filter(item => item['estado'] === 'Activo' || item['estado'] === 'En Creación');
+                setFilteredData(filtered)            
+            } else {
+                setFilteredData(rowData.filter(item => item['estado'] === 'Activo' || item['estado'] === 'En Creación'));
+        }
         console.log("console del filtro", filteredData);
         fetchData();
       }, []);
@@ -211,6 +246,13 @@ const Programas = () => {
     if (filteredData.length === 0) {
         return <p>Ningún progama por mostrar</p>;
     }
+    if (isCargo.includes('Posgrados')) {
+        filteredData = filteredData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+        
+    } else {
+        filteredData;
+    }
+
     return (
         <div className='table-container'>
         {loading ? (

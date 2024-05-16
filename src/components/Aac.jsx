@@ -12,11 +12,41 @@ const Aac = ({ globalVariable }) => {
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    // Permisos
+    const [user, setUser] = useState('');
+    const [isCargo, setCargo] = useState([' ']);
+
+    useEffect(() => {
+        if (sessionStorage.getItem('logged')) {
+        let res = JSON.parse(sessionStorage.getItem('logged'));
+        const permisos = res.map(item => item.permiso).flat();
+        setCargo(permisos);
+        setUser(res[0].user);
+        console.log("Permisos del usuario:", permisos);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isCargo.includes('Posgrados')) {
+        const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+        setFilteredData(filtered);
+        } else {
+        setFilteredData(rowData);
+        }
+    }, []);
+
 
     useEffect(() => {
         const fetchData = async () => {
           try {
-            const response = await Filtro5(); 
+            let response;
+            if (isCargo.includes('Posgrados')) {
+            const filtered = await Filtro5();
+            response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+            
+            } else {
+            response = await Filtro5();
+            }
             setFilteredData(response.filter(item => item['aac_1a'] === 'SI'));
           } catch (error) {
             console.error('Error al filtrar datos:', error);
@@ -40,6 +70,12 @@ const Aac = ({ globalVariable }) => {
         }
         if (filteredData.length === 0) {
             return <p>Ningún progama por mostrar</p>;
+        }
+        if (isCargo.includes('Posgrados')) {
+            filteredData = filteredData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+            
+        } else {
+            filteredData;
         }
         return (
             <div className='table-container'>

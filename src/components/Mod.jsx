@@ -16,6 +16,29 @@ const Mod = ({ globalVariable }) => {
     const [filteredDataSeg, setFilteredDataSeg] = useState(rowData);
     const [updateTrigger, setUpdateTrigger] = useState(false); 
 
+    // Permisos
+    const [user, setUser] = useState('');
+    const [isCargo, setCargo] = useState([' ']);
+
+    useEffect(() => {
+        if (sessionStorage.getItem('logged')) {
+        let res = JSON.parse(sessionStorage.getItem('logged'));
+        const permisos = res.map(item => item.permiso).flat();
+        setCargo(permisos);
+        setUser(res[0].user);
+        console.log("Permisos del usuario:", permisos);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isCargo.includes('Posgrados')) {
+        const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+        setFilteredData(filtered);
+        } else {
+        setFilteredData(rowData);
+        }
+    }, []);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -34,7 +57,14 @@ const Mod = ({ globalVariable }) => {
     useEffect(() => {
         const fetchData = async () => {
           try {
-            const response = await Filtro5(); 
+            let response;
+            if (isCargo.includes('Posgrados')) {
+            const filtered = await Filtro5();
+            response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+            
+            } else {
+            response = await Filtro5();
+            }
             setFilteredData(response.filter(item => item['mod'] === 'SI'));
           } catch (error) {
             console.error('Error al filtrar datos:', error);
@@ -88,7 +118,14 @@ const Mod = ({ globalVariable }) => {
     };
     
     const handleButtonClick = async (buttonValue) => {
-        const response = await Filtro5(); 
+        let response;
+        if (isCargo.includes('Posgrados')) {
+          const filtered = await Filtro5();
+          response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+          
+        } else {
+          response = await Filtro5();
+        }
         const result = response.filter(item => item['mod'] === 'SI');
         setSelectedValues(prevSelectedValues => {
             let newSelectedValues;
@@ -144,7 +181,12 @@ const Mod = ({ globalVariable }) => {
         if (!data || data.length === 0) {
             return <p>Ningún programa por mostrar</p>;
         }
-    
+        if (isCargo.includes('Posgrados')) {
+            data = data.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+            
+          } else {
+            data;
+        }
         const colors = {};
         for (const item of data) {
             const color = getBackgroundColor(item);

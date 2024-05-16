@@ -25,8 +25,10 @@ const Seguimiento = ({handleButtonClick}) => {
     const [showCollapsible, setShowCollapsible] = useState({}); 
     const [filteredData, setFilteredData] = useState([]);
     const [comment, setComment] = useState(''); 
-    const [user, setUser] = useState('');
     const [collapsible, setCollapsible] = useState('');
+    //Permisos
+    const [user, setUser] = useState('');
+    //const [isPosgrado, setPosgrado] = useState(['Posgrados']);
     const [isPlan, setPlan] = useState(['Plan de Mejoramiento', 'Sistemas']);
     const [isReg, setReg] = useState(['Renovación Registro Calificado', 'Sistemas']);
     const [isAcred, setAcred] = useState(['Acreditación', 'Sistemas']);
@@ -262,6 +264,8 @@ const Seguimiento = ({handleButtonClick}) => {
         }
     };
 
+
+    //Permisos
     useEffect(() => {
         if (sessionStorage.getItem('logged')){
             let res = JSON.parse(sessionStorage.getItem('logged'));

@@ -14,6 +14,29 @@ const Crea = ({ globalVariable }) => {
     const navigate = useNavigate();
     const [filteredDataSeg, setFilteredDataSeg] = useState(rowData);
     const [updateTrigger, setUpdateTrigger] = useState(false); 
+    // Permisos
+    const [user, setUser] = useState('');
+    const [isCargo, setCargo] = useState([' ']);
+
+    useEffect(() => {
+        if (sessionStorage.getItem('logged')) {
+        let res = JSON.parse(sessionStorage.getItem('logged'));
+        const permisos = res.map(item => item.permiso).flat();
+        setCargo(permisos);
+        setUser(res[0].user);
+        console.log("Permisos del usuario:", permisos);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isCargo.includes('Posgrados')) {
+        const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+        setFilteredData(filtered);
+        } else {
+        setFilteredData(rowData);
+        }
+    }, []);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -33,7 +56,14 @@ const Crea = ({ globalVariable }) => {
     useEffect(() => {
         const fetchData = async () => {
           try {
-            const response = await Filtro5(); 
+            let response;
+            if (isCargo.includes('Posgrados')) {
+            const filtered = await Filtro5();
+            response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+            
+            } else {
+            response = await Filtro5();
+            }
             setFilteredData(response.filter(item => item['estado'] === 'En Creación'));
           } catch (error) {
             console.error('Error al filtrar datos:', error);
@@ -90,8 +120,8 @@ const Crea = ({ globalVariable }) => {
     const renderFilteredTable = (data, filter) => {
         if (!data || data.length === 0) {
             return <p>Ningún programa por mostrar</p>;
-        }
-    
+        }    
+        
         const colors = {};
         for (const item of data) {
             const color = getBackgroundColor(item);
@@ -107,6 +137,13 @@ const Crea = ({ globalVariable }) => {
         if (filteredData.length === 0) {
             return <p>Ningún progama por mostrar</p>;
         }
+        if (isCargo.includes('Posgrados')) {
+            filteredData = filteredData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+            
+        } else {
+            filteredData;
+        }
+
         return (
             <div className='table-container'>
             {loading ? (

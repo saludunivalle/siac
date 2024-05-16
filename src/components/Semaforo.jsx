@@ -73,6 +73,29 @@ const Semaforo = ({ globalVariable }) => {
   const isMobile = useMediaQuery('(max-width:768px)');
   const [filteredDataSeg, setFilteredDataSeg] = useState(null);
   const [updateTrigger, setUpdateTrigger] = useState(false); 
+  // Permisos
+  const [user, setUser] = useState('');
+  const [isCargo, setCargo] = useState([' ']);
+
+  useEffect(() => {
+    if (sessionStorage.getItem('logged')) {
+      let res = JSON.parse(sessionStorage.getItem('logged'));
+      const permisos = res.map(item => item.permiso).flat();
+      setCargo(permisos);
+      setUser(res[0].user);
+      console.log("Permisos del usuario:", permisos);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isCargo.includes('Posgrados')) {
+      const filtered = filteredData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+      setFilteredData(filtered);
+      console.log("datos", filteredData)
+    } else {
+      setFilteredData(filteredData);
+    }
+  }, []);
 
   useEffect(() => {
       const fetchData = async () => {
@@ -141,15 +164,22 @@ const Semaforo = ({ globalVariable }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await Filtro2({ searchTerm: '' }); 
-        setFilteredData(response);
-        setWhiteProgramsCount(response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
-        setGreenProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 1' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
-        setYellowProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
-        setOrangeProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
-        setOrange2ProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
-        setRedProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
-        setLoading(false);
+        let response;
+        if (isCargo.includes('Posgrados')) {
+          const filtered = await Filtro2({ searchTerm: '' }); 
+          response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+          
+        } else {
+          response = await Filtro2({ searchTerm: '' });
+        }
+          setFilteredData(response);
+          setWhiteProgramsCount(response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
+          setGreenProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 1' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
+          setYellowProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
+          setOrangeProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
+          setOrange2ProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
+          setRedProgramsCount(response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] == 'SI' && item['sede'] === 'Cali').length);
+          setLoading(false);
       } catch (error) {
         console.error('Error al filtrar datos:', error);
         setLoading(false);
@@ -157,7 +187,7 @@ const Semaforo = ({ globalVariable }) => {
     };
   
     fetchData();
-  }, []);
+  }, [isCargo]);
 
   const handleButtonClick = async (buttonType) => {
     setClickedButton(buttonType === clickedButton ? null : buttonType);
@@ -192,7 +222,15 @@ const Semaforo = ({ globalVariable }) => {
     }
     try {
       setLoading(true);
-      const response = await Filtro2({ searchTerm });
+      let response;
+        if (isCargo.includes('Posgrados')) {
+          const filtered = await Filtro2({ searchTerm });
+          response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+          
+        } else {
+          response = await Filtro2({ searchTerm });
+        }
+
       setFilteredData(response.filter(item => item['rc vigente'] == 'SI'));
     } catch (error) {
       console.error('Error al filtrar datos:', error);
@@ -209,7 +247,6 @@ const Semaforo = ({ globalVariable }) => {
         const color = getBackgroundColor(item);
         colors[item.id_programa] = color;
     }
-
     let filteredData
     if (filter === 'No Aplica'){
         filteredData = (data.filter(item => item['escuela'] === ' ' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ')).filter(item => item['sede'] === 'Cali');
@@ -218,6 +255,12 @@ const Semaforo = ({ globalVariable }) => {
     }
     if (filteredData.length === 0) {
       return <p>Ningún progama por mostrar</p>;
+    }
+    if (isCargo.includes('Posgrados')) {
+      filteredData = filteredData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+      
+    } else {
+      filteredData;
     }
     return (
       <div className='table-container'>

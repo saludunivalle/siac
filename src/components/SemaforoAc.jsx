@@ -70,6 +70,29 @@ const SemaforoAC = ({ globalVariable }) => {
   const navigate = useNavigate();
   const [filteredDataSeg, setFilteredDataSeg] = useState(null);
   const [updateTrigger, setUpdateTrigger] = useState(false); 
+    // Permisos
+    const [user, setUser] = useState('');
+    const [isCargo, setCargo] = useState([' ']);
+  
+    useEffect(() => {
+      if (sessionStorage.getItem('logged')) {
+        let res = JSON.parse(sessionStorage.getItem('logged'));
+        const permisos = res.map(item => item.permiso).flat();
+        setCargo(permisos);
+        setUser(res[0].user);
+        console.log("Permisos del usuario:", permisos);
+      }
+    }, []);
+  
+    useEffect(() => {
+      if (isCargo.includes('Posgrados')) {
+        const filtered = filteredData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+        setFilteredData(filtered);
+        //console.log("datos", filteredData)
+      } else {
+        setFilteredData(filteredData);
+      }
+    }, []);
 
   useEffect(() => {
       const fetchData = async () => {
@@ -138,7 +161,14 @@ const SemaforoAC = ({ globalVariable }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await Filtro6({ searchTerm: '' }); 
+        let response;
+        if (isCargo.includes('Posgrados')) {
+          const filtered = await Filtro6({ searchTerm: '' }); 
+          response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+          
+        } else {
+          response = await Filtro6({ searchTerm: '' });
+        }
         setFilteredData(response);
         setWhiteProgramsCount(response.filter(item => item['fase rac'] === 'Vencido' && item['ac vigente'] == 'SI' && item['sede'] === 'Cali').length);
         setGreenProgramsCount(response.filter(item => item['fase rac'] === 'Fase 1' && item['ac vigente'] == 'SI' && item['sede'] === 'Cali').length);
@@ -154,7 +184,7 @@ const SemaforoAC = ({ globalVariable }) => {
     };
   
     fetchData();
-  }, []);
+  }, [isCargo]);
   
   const handleButtonClick = async (buttonType) => {
     setClickedButton(buttonType === clickedButton ? null : buttonType);
@@ -189,7 +219,14 @@ const SemaforoAC = ({ globalVariable }) => {
     }
     try {
       setLoading(true);
-      const response = await Filtro6({ searchTerm });
+      let response;
+        if (isCargo.includes('Posgrados')) {
+          const filtered = await Filtro6({ searchTerm });
+          response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+          
+        } else {
+          response = await Filtro6({ searchTerm });
+        }
       setFilteredData(response.filter(item => item['ac vigente'] == 'SI'));
     } catch (error) {
       console.error('Error al filtrar datos:', error);
@@ -215,6 +252,12 @@ const SemaforoAC = ({ globalVariable }) => {
     }
     if (filteredData.length === 0) {
       return <p>Ningún progama por mostrar</p>;
+    }
+    if (isCargo.includes('Posgrados')) {
+      filteredData = filteredData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+      
+    } else {
+      filteredData;
     }
     return (
       <div className='table-container'>
