@@ -264,7 +264,6 @@ const Seguimiento = ({handleButtonClick}) => {
         }
     };
 
-
     //Permisos
     useEffect(() => {
         if (sessionStorage.getItem('logged')){
