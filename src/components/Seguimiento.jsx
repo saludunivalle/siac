@@ -373,7 +373,7 @@ const Seguimiento = ({handleButtonClick}) => {
                                     {fases.map((fase, index) => {
                                         const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
                                         const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
-                                        const backgroundColor = isBlackOutline ? '#f0f0f0' : ((itemActual && fase.fase === itemActual.fase) ? '#c8e6c9' : '#ffffff');
+                                        const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#ffffff');
                                         return (
                                             <tr key={index} style={{ backgroundColor }}>
                                                 <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{fase.fase}</td>
