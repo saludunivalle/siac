@@ -81,7 +81,7 @@ const Crea = ({ globalVariable }) => {
         try {
             
             const seguimientos = filteredDataSeg;   
-            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
+            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa && item['topic'] === 'Creación');
             
             if (response.length === 0) {
                 return 'white';
@@ -123,11 +123,6 @@ const Crea = ({ globalVariable }) => {
         }    
         
         const colors = {};
-        for (const item of data) {
-            const color = getBackgroundColor(item);
-            colors[item.id_programa] = color;
-        }
-
         let filteredData;
         if (filter === 'No Aplica'){
             filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ')).filter(item => item['sede'] === 'Cali');
@@ -143,7 +138,10 @@ const Crea = ({ globalVariable }) => {
         } else {
             filteredData;
         }
-
+        for (const item of data) {
+            const color = getBackgroundColor(item);
+            colors[item.id_programa] = color;
+        }
         return (
             <div className='table-container'>
             {loading ? (

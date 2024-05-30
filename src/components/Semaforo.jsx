@@ -119,7 +119,7 @@ const Semaforo = ({ globalVariable }) => {
     try {
         
         const seguimientos = filteredDataSeg;   
-        const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
+        const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa && (item['topic'] === 'Renovación Registro Calificado' || item['topic'] === 'Plan de Mejoramiento RRC'));
         
         if (response.length === 0) {
             return 'white';

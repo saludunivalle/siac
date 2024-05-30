@@ -12,6 +12,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import esLocale from 'dayjs/locale/es'; 
+import PracticeScenario from './PracticeScenario';
 
 const Seguimiento = ({handleButtonClick}) => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -55,6 +56,10 @@ const Seguimiento = ({handleButtonClick}) => {
     const [selectedDoc, setSelectedDoc] = useState(null);
     const [inputValue, setInputValue] = useState('');
     const [Filtro21Data, setFiltro21Data] = useState({ id_doc: '', url: '' });
+    const [successMessage, setSuccessMessage] = useState('');
+    const [dataUpdated, setDataUpdated] = useState(false);
+    const [sentDocId, setSentDocId] = useState(null);
+
 
     useEffect(() => {
         const obtenerDatosFiltro = async () => {
@@ -86,21 +91,39 @@ const Seguimiento = ({handleButtonClick}) => {
     };
 
     const handleSubmit = async () => {
+        setLoading(true);
         const date = new Date();
         const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-    
+
         const dataSendDoc = [
-          idPrograma,
-          selectedDoc.id,
-          inputValue,
-          formattedDate, 
+            idPrograma,
+            selectedDoc.id,
+            inputValue,
+            formattedDate,
         ];
-    
-        await sendDataToServerDoc(dataSendDoc);
-        console.log("Documento:", selectedDoc.id, "idPrograma", idPrograma, "Input:", inputValue, "Fecha:", formattedDate);
-        handleClose();
+
+        try {
+            await sendDataToServerDoc(dataSendDoc);
+            console.log("Documento:", selectedDoc.id, "idPrograma", idPrograma, "Input:", inputValue, "Fecha:", formattedDate);
+            setSuccessMessage('Datos enviados correctamente');
+            setSentDocId(selectedDoc.id);
+            Filtro21Data.push({ id_doc: selectedDoc.id, id_programa: idPrograma, url: inputValue });
+        } catch (error) {
+            console.error('Error al enviar los datos:', error);
+        } finally {
+            setLoading(false);
+            handleClose();
+        }
     };
 
+
+    useEffect(() => {
+        if (dataUpdated) {
+            setDataUpdated(false);
+        }
+    }, [dataUpdated]);
+
+    
     const handleToggleCalendar = () => {
         setCalendarOpen((prev) => !prev);
       };
@@ -109,33 +132,6 @@ const Seguimiento = ({handleButtonClick}) => {
     setSelectedDate(date);
     setCalendarOpen(false);
     };
-
-    
-    const [totalHorasSemanal, setTotalHorasSemanal] = useState(0);
-
-    const [horasPorDia, setHorasPorDia] = useState({
-        lunes: [],
-        martes: [],
-        miercoles: [],
-        jueves: [],
-        viernes: []
-    });
-
-    const handleCheck = (dia, hora, isChecked) => {
-        setHorasPorDia(prevHorasPorDia => {
-            const horasPorDiaCopy = { ...prevHorasPorDia };
-            if (isChecked) {
-                horasPorDiaCopy[dia] = [...horasPorDiaCopy[dia], hora];
-            } else {
-                horasPorDiaCopy[dia] = horasPorDiaCopy[dia].filter(h => h !== hora);
-            }
-            const totalHorasSemanal = Object.values(horasPorDiaCopy).reduce((acc, curr) => acc + curr.length, 0);
-            setTotalHorasSemanal(totalHorasSemanal);
-
-            return horasPorDiaCopy;
-        });
-    };
-
        
     function calcularFechas(fechaexpedrc, fechavencrc) {
         const partesFechaExpedicion = fechaexpedrc.split('/');
@@ -415,20 +411,21 @@ const Seguimiento = ({handleButtonClick}) => {
                     )}
                     <Modal open={open} onClose={handleClose}>
                         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
-                        <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
-                        <TextField
-                            label="Link del documento"
-                            value={inputValue}
-                            onChange={handleInputChange}
-                            fullWidth
-                            margin="normal"
-                        />
-                        <Button variant="contained" color="primary" onClick={handleSubmit}>
-                            Enviar
-                        </Button>
-                        <Button variant="contained" onClick={handleClose} style={{ marginLeft: '10px' }}>
-                            Cancelar
-                        </Button>
+                            <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
+                            <TextField
+                                label="Link del documento"
+                                value={inputValue}
+                                onChange={handleInputChange}
+                                fullWidth
+                                margin="normal"
+                            />
+                            <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
+                                {loading ? 'Enviando...' : 'Enviar'}
+                            </Button>
+                            <Button variant="contained" onClick={handleClose} style={{ marginLeft: '10px' }}>
+                                Cancelar
+                            </Button>
+                            {successMessage && <p>{successMessage}</p>}
                         </div>
                     </Modal>
                     </div>
@@ -856,50 +853,6 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
-                <CollapsibleButton buttonText="Escenario de Practica 1 - Sede 1     Cantidad de estudiantes: XX " content={
-                    <>
-                        <div style={{marginBottom:'30px', marginTop:'15px', display:'flex', justifyContent:'center'}}>
-                        <TableContainer component={Paper} style={{ width: 'fit-content' }}>
-                            <Table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid black' }}>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell style={{ padding: '6px', textAlign: 'center' }}>Hora</TableCell>
-                                        {[...Array(15).keys()].map((hour) => (
-                                            <TableCell key={hour} style={{ padding: '6px', textAlign: 'center' }}>{`${6 + hour}:00`}</TableCell>
-                                        ))}
-                                        <TableCell style={{ padding: '6px', textAlign: 'center' }}>Total</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].map((day, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell style={{ padding: '6px', textAlign: 'center' }}>{day}</TableCell>
-                                            {[...Array(15).keys()].map((hour) => (
-                                                <TableCell key={`${day}-${hour}`} style={{ padding: '6px', textAlign: 'center' }}>
-                                                    <Checkbox
-                                                        style={{ padding: '5px' }}
-                                                        checked={horasPorDia[day].includes(`${hour + 6}:00`)}
-                                                        onChange={(e) => handleCheck(day, `${hour + 6}:00`, e.target.checked)}
-                                                    />
-                                                </TableCell>
-                                            ))}
-                                            <TableCell style={{ padding: '6px', textAlign: 'center' }}>
-                                                {horasPorDia[day].length}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    <TableRow>
-                                        <TableCell style={{ padding: '6px', textAlign: 'center' }}>Total Semana:</TableCell>
-                                        <TableCell colSpan={7} style={{ padding: '6px', textAlign: 'center' }}>
-                                            {totalHorasSemanal}
-                                        </TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                        </div>
-                    </>
-                } />
                 <CollapsibleButton buttonText="Convenio Docencia Servicio" content={
                     <>
                         <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -917,6 +870,7 @@ const Seguimiento = ({handleButtonClick}) => {
                         </div>
                     </>
                 } />
+                <PracticeScenario data={rowData}/>
                 </>
                 )}
                 {(handleButtonClick=='crea') &&(

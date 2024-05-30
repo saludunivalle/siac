@@ -60,11 +60,14 @@ const GoogleLogin = ({
 
             if (programasResponse) {
                 const programasData = programasResponse.data;
-                const programaPermitido = programasData.find(item => item['accesos'].includes(data_decode['email']));
+                const programaPermitido = programasData.find(item => {
+                    const accesosArray = item['accesos'].split(',').map(email => email.trim());
+                    return accesosArray.includes(data_decode['email']);
+                });
                 if (programaPermitido) {
                     navigate('/program_details', { state: { ...programaPermitido, userEmail: data_decode.email } });
                     setIsLogin(true);
-                    setUserEmail(data_decode.email); // Almacenar el email del usuario
+                    setUserEmail(data_decode.email); 
                     setShowLoginButton(false); 
                     return;
                 }

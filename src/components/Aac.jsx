@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Filtro4, Filtro5 } from '../service/data';
+import { Filtro4, Filtro5, Filtro7 } from '../service/data';
 import '/src/styles/home.css'; 
 import CollapsibleButton from './CollapsibleButton';
 
@@ -11,6 +11,8 @@ const Aac = ({ globalVariable }) => {
     const [filteredData, setFilteredData] = useState(rowData);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');  
     const [loading, setLoading] = useState(false);
+    const [filteredDataSeg, setFilteredDataSeg] = useState(rowData);
+    const [updateTrigger, setUpdateTrigger] = useState(false); 
     const navigate = useNavigate();
     // Permisos
     const [user, setUser] = useState('');
@@ -35,6 +37,19 @@ const Aac = ({ globalVariable }) => {
         }
     }, []);
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const seguimientos = await Filtro7();
+                const response2 = seguimientos.filter(item => item['id_programa']);
+                setFilteredDataSeg(response2);
+            } catch (error) {
+                console.error('Error al filtrar datos:', error);
+            }
+        };
+    
+        fetchData();
+    }, [updateTrigger]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -55,6 +70,45 @@ const Aac = ({ globalVariable }) => {
       
         fetchData();
     }, []);
+
+    const getBackgroundColor = (data) => {
+        if (!data || !data.id_programa) {
+            return 'white'; 
+        }
+    
+        try {
+            
+            const seguimientos = filteredDataSeg;   
+            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa && item['topic'] === 'Acreditación');
+            
+            if (response.length === 0) {
+                return 'white';
+            }
+            
+            const seguimientoMasReciente = response.reduce((prev, current) =>
+                new Date(current.timestamp.split('/').reverse().join('-')) > new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
+            );
+                        
+            let color;
+            switch (seguimientoMasReciente.riesgo) {
+                case 'Alto':
+                    color = '#FED5D1';
+                    break;
+                case 'Medio':
+                    color = '#FEFBD1';
+                    break;
+                case 'Bajo':
+                    color = '#E6FFE6';
+                    break;
+                default:
+                    color = 'white';
+            }
+            return color;
+        } catch (error) {
+            console.error('Error al obtener el color de fondo:', error);
+            return 'white';     
+        }
+    };
 
     const handleRowClick = (rowData) => {
         console.log('Datos de la fila:', rowData);
@@ -77,6 +131,13 @@ const Aac = ({ globalVariable }) => {
         } else {
             filteredData;
         }
+
+        const colors = {};
+        for (const item of data) {
+            const color = getBackgroundColor(item);
+            colors[item.id_programa] = color;
+        }
+        
         return (
             <div className='table-container'>
             {loading ? (
@@ -84,15 +145,19 @@ const Aac = ({ globalVariable }) => {
             ) : (
                 <table>
                 <tbody>
-                    {filteredData.map((item, index) => (
-                    <tr key={index} onClick={() => handleRowClick(item)}>
-                        <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
-                        <td>{item['departamento']}</td> 
-                        <td>{item['sección']}</td> 
-                        <td>{item['estado']}</td> 
-                        <td>{item['nivel de formación']}</td> 
-                    </tr>
-                    ))}
+                    {data.map((item, index) => {
+                        const color = colors[item.id_programa] || 'white';
+
+                        return (
+                            <tr key={index} style={{backgroundColor: color}} onClick={() => handleRowClick(item)}>
+                                <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
+                                <td>{item['departamento']}</td> 
+                                <td>{item['sección']}</td> 
+                                <td>{item['estado']}</td> 
+                                <td>{item['nivel de formación']}</td> 
+                            </tr>
+                        );
+                    })}
                 </tbody>
                 </table>
                 )}

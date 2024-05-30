@@ -470,3 +470,120 @@ export const Filtro12 = async () => {
         throw error; 
     }
 };
+
+export const Filtro13 = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {}, 
+            sheetName: 'Asig_X_Prog', 
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        //console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+};
+
+export const Filtro14 = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {}, 
+            sheetName: 'Esc_Practica', 
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        //console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+};
+
+export const Filtro15 = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {}, 
+            sheetName: 'Rel_Esc_Practica', 
+            urlEndPoint: 'https://siac-server.vercel.app/'
+        });
+        //console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+};
+
+export const sendDataEscPract = async (data) => {
+    try {
+        const dataSend = {
+            insertData:[
+                data
+            ]
+        };
+        console.log(dataSend, data);
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: 'ESC_PRACTICA', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+        });
+        //console.log(response);
+        if (response.status) {
+            console.log('Datos enviados correctamente al servidor.');
+        } else {
+            console.error('Error al enviar datos al servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+    }
+};
+
+export const sendDataRelEscPract = async (data) => {
+    try {
+        const dataSend = {
+            insertData:[
+                data
+            ]
+        };
+        console.log(dataSend, data);
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: 'REL_ESC_PRACTICA', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+        });
+        //console.log(response);
+        if (response.status) {
+            console.log('Datos enviados correctamente al servidor.');
+        } else {
+            console.error('Error al enviar datos al servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+    }
+};
+
+export const sendDataHorariosPract = async (data) => {
+    try {
+        const dataSend = {
+            insertData:[
+                data
+            ]
+        };
+        console.log(dataSend, data);
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: 'HORARIOS_PRACT', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+        });
+        //console.log(response);
+        if (response.status) {
+            console.log('Datos enviados correctamente al servidor.');
+        } else {
+            console.error('Error al enviar datos al servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+    }
+};
