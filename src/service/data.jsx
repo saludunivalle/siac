@@ -476,7 +476,7 @@ export const Filtro13 = async () => {
         const response = await fetchPostGeneral({
             dataSend: {}, 
             sheetName: 'Asig_X_Prog', 
-            urlEndPoint: 'https://siac-server.vercel.app/'
+            urlEndPoint: 'https://siac-server.vercel.app/docServ'
         });
         //console.log(response.data);
         return response.data;
@@ -491,7 +491,7 @@ export const Filtro14 = async () => {
         const response = await fetchPostGeneral({
             dataSend: {}, 
             sheetName: 'Esc_Practica', 
-            urlEndPoint: 'https://siac-server.vercel.app/'
+            urlEndPoint: 'https://siac-server.vercel.app/docServ'
         });
         //console.log(response.data);
         return response.data;
@@ -506,7 +506,7 @@ export const Filtro15 = async () => {
         const response = await fetchPostGeneral({
             dataSend: {}, 
             sheetName: 'Rel_Esc_Practica', 
-            urlEndPoint: 'https://siac-server.vercel.app/'
+            urlEndPoint: 'https://siac-server.vercel.app/docServ'
         });
         //console.log(response.data);
         return response.data;
@@ -527,7 +527,7 @@ export const sendDataEscPract = async (data) => {
         const response = await fetchPostGeneral({
             dataSend,
             sheetName: 'ESC_PRACTICA', 
-            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendDocServ', 
         });
         //console.log(response);
         if (response.status) {
@@ -551,7 +551,7 @@ export const sendDataRelEscPract = async (data) => {
         const response = await fetchPostGeneral({
             dataSend,
             sheetName: 'REL_ESC_PRACTICA', 
-            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendDocServ', 
         });
         //console.log(response);
         if (response.status) {
@@ -575,7 +575,7 @@ export const sendDataHorariosPract = async (data) => {
         const response = await fetchPostGeneral({
             dataSend,
             sheetName: 'HORARIOS_PRACT', 
-            urlEndPoint: 'https://siac-server.vercel.app/sendData', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendDocServ', 
         });
         //console.log(response);
         if (response.status) {
