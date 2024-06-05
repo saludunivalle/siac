@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import '/src/styles/collapsibleButton.css';
 
-const CollapsibleButton = ({ buttonText, content, nestedButton }) => {
-  const [isOpen, setIsOpen] = useState(true);
+const CollapsibleButton = ({ buttonText, content, nestedButton, defaultClosed  }) => {
+  const [isOpen, setIsOpen] = useState(!defaultClosed);
 
   const toggleCollapsible = () => {
     setIsOpen(!isOpen);
