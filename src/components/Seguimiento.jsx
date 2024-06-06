@@ -676,12 +676,77 @@ const Seguimiento = ({handleButtonClick}) => {
         );
     };
 
+    const [estadoProceso, setEstadoProceso] = React.useState('Diseño');
+    const [porcentaje, setPorcentaje] = React.useState('');
+
+    const handleEstadoProcesoChange = (event) => {
+        setEstadoProceso(event.target.value);
+    };
+
+    const handlePorcentajeChange = (event) => {
+        setPorcentaje(event.target.value);
+    };
+
     return (
         <>
             <div style={{marginRight:'20px', width:'auto'}}>
                 {/* <Header />
                 <h2>{programaAcademico}</h2> */}
                 <div>
+                {(handleButtonClick === 'Seg') && (
+                <>
+                    <h3>Seguimiento del Plan de Mejoramiento</h3>
+
+                    {/* Nueva sección agregada para Estado del Proceso */}
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                        <FormControl variant="outlined" style={{ marginRight: '10px', minWidth: 180 }}>
+                            <InputLabel id="estadoProceso-label">Estado del Proceso</InputLabel>
+                            <Select
+                                labelId="estadoProceso-label"
+                                id="estadoProceso"
+                                value={estadoProceso}
+                                onChange={handleEstadoProcesoChange}
+                                label="Estado del Proceso"
+                            >
+                                <MenuItem value="Diseño">Diseño</MenuItem>
+                                <MenuItem value="Rediseño">Rediseño</MenuItem>
+                                <MenuItem value="Cumplimiento al plan de mejoramiento">Cumplimiento al plan de mejoramiento</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        <TextField
+                            label="Porcentaje"
+                            variant="outlined"
+                            value={porcentaje}
+                            onChange={handlePorcentajeChange}
+                            placeholder="%"
+                            style={{ marginRight: '10px', width: 120 }}
+                        />
+
+                        <Button variant="contained" color="primary">
+                            Guardar
+                        </Button>
+                    </div>
+
+                    <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
+                        <>
+                            <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                {renderFilteredTable(filteredData, 'Plan de Mejoramiento RRC')}
+                                {avaibleRange(isPlan) &&
+                                    (
+                                        <Button onClick={() => handleNewTrackingClick('Plan de Mejoramiento RRC')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
+                                    )
+                                }
+                                {showCollapsible['Plan de Mejoramiento RRC'] && (
+                                    <>
+                                        {contenido_seguimiento()}
+                                    </>
+                                )}
+                            </div>
+                        </>
+                    } />
+                </>
+            )}
                 {(handleButtonClick=='rrc') &&(
                 <>
                     <h3>Seguimiento del Proceso de Renovación Registro Calificado</h3>

@@ -126,6 +126,10 @@ const ProgramDetails = () => {
               return {
                 backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : 'rgb(241, 241, 241)',
               };
+            case 'Seg':
+            return {
+                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : 'rgb(241, 241, 241)',
+            };
           
             default:
               return {}; 
@@ -165,6 +169,9 @@ const ProgramDetails = () => {
             </div>
             <div className='procesosCONV' style={setButtonStyles('conv', clickedButton === 'conv')} onClick={() => handleButtonClick('conv')}>
                 <strong>Docencia Servicio</strong>
+            </div>
+            <div className='procesosSeg' style={setButtonStyles('Seg', clickedButton === 'Seg')} onClick={() => handleButtonClick('Seg')}>
+                <strong>Seguimiento PM</strong>
             </div>
         </div>
         <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}  />
