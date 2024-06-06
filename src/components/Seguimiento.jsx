@@ -17,6 +17,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import esLocale from 'dayjs/locale/es'; 
 import PracticeScenario from './PracticeScenario';
+import FormComponent from './FormComponent';
 
 const Seguimiento = ({handleButtonClick}) => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -63,171 +64,7 @@ const Seguimiento = ({handleButtonClick}) => {
     const [successMessage, setSuccessMessage] = useState('');
     const [dataUpdated, setDataUpdated] = useState(false);
     const [sentDocId, setSentDocId] = useState(null);
-
-
-    //formulario de firmas
-    const FormComponent = () => {
-        const [rows, setRows] = useState([{ nombre: '', cargo: '', tel: '', correo: '', responsable: '' }]);
-        const [filtradoFirmas, setFiltradoFirmas] = useState([]);
-        const responsables = [
-            { value: '', label: 'Sin seleccionar' },
-            { value: 'Responsable de la relación docencia servicio por parte de la Institución de Educación Superior', label: 'Responsable de la relación docencia servicio por parte de la Institución de Educación Superior' },
-            { value: 'Responsable de la coordinación de las prácticas formativas en el escenario (No aplica para escenarios no institucionales)', label: 'Responsable de la coordinación de las prácticas formativas en el escenario (No aplica para escenarios no institucionales)' }
-          ];
-      
-        useEffect(() => {
-          cargarFirmasExistente();
-        }, []);
-      
-        const cargarFirmasExistente = async () => {
-          try {
-            const resultfirmas = await FiltroFirmas();
-            setFiltradoFirmas(resultfirmas);
-          } catch (error) {
-            console.error('Error al cargar las firmas existentes:', error);
-          }
-        };
-      
-        const handleChange = (index, event) => {
-          const newRows = [...rows];
-          newRows[index][event.target.name] = event.target.value;
-          setRows(newRows);
-        };
-      
-        const handleAddRow = () => {
-          setRows([...rows, { nombre: '', cargo: '', tel: '', correo: '', responsable: '' }]);
-        };
-      
-        const handleDeleteRow = (index) => {
-          const newRows = [...rows];
-          newRows.splice(index, 1);
-          setRows(newRows);
-        };
-      
-        const handleSave = async (index) => {
-          try {
-            const row = rows[index];
-            const formData = [
-              idPrograma,
-              row.nombre,
-              row.cargo,
-              row.tel,
-              row.correo,
-              row.responsable
-            ];
-      
-            await sendDataFirma(formData);
-      
-            console.log('Datos enviados:', formData);
-            setSuccessMessage('Datos enviados correctamente');
-            cargarFirmasExistente(); 
-          } catch (error) {
-            console.error('Error al enviar los datos:', error);
-          } finally {
-            handleClose();
-          }
-        };
-      
-        return (
-          <div>
-            <Grid container spacing={1} alignItems="center">
-                    {rows.map((row, index) => (
-                    <Grid item xs={12} key={index}>
-                        <Container style={{ display: 'flex', flexDirection: 'row', alignContent: 'center', gap:'5px' }}>
-                        <TextField
-                            label="Nombre"
-                            name="nombre"
-                            value={row.nombre}
-                            onChange={(e) => handleChange(index, e)}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Cargo"
-                            name="cargo"
-                            value={row.cargo}
-                            onChange={(e) => handleChange(index, e)}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Teléfono"
-                            name="tel"
-                            value={row.tel}
-                            onChange={(e) => handleChange(index, e)}
-                            fullWidth
-                        />
-                        <TextField
-                            label="Correo"
-                            name="correo"
-                            value={row.correo}
-                            onChange={(e) => handleChange(index, e)}
-                            fullWidth
-                        />
-                        <FormControl fullWidth>
-                            <InputLabel>Responsable</InputLabel>
-                            <Select
-                            name="responsable"
-                            value={row.responsable}
-                            onChange={(e) => handleChange(index, e)}
-                            >
-                            {responsables.map((option, idx) => (
-                                <MenuItem key={idx} value={option.value}>
-                                {option.label}
-                                </MenuItem>
-                            ))}
-                            </Select>
-                        </FormControl>
-                        <Box sx={{ display: 'flex', alignItems: 'center', height: '56px', marginLeft: '10px' }}>
-                            <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '70px !important', height: '50px', backgroundColor: 'green' }}>
-                                <IconButton onClick={() => handleSave(index)} sx={{ color: 'white', padding: 0 }}>
-                                    <SaveIcon fontSize="small" />
-                                </IconButton>
-                            </Paper>
-                            <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '70px !important', height: '50px', backgroundColor: 'red' }}>
-                            <IconButton onClick={() => handleDeleteRow(index)} sx={{ color: 'white', padding: 0 }}>
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                            </Paper>
-                            {index === rows.length - 1 && (
-                            <Paper elevation={3} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '70px !important', height: '50px', backgroundColor: 'blue' }}>
-                                <IconButton onClick={handleAddRow} sx={{ color: 'white', padding: 0 }}>
-                                <AddIcon fontSize="small" />
-                                </IconButton>
-                            </Paper>
-                            )}
-                        </Box>
-                        </Container>
-                    </Grid>
-                    ))}
-            </Grid>
-            {/* Tabla */}
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Nombre</TableCell>
-                    <TableCell>Cargo</TableCell>
-                    <TableCell>Teléfono</TableCell>
-                    <TableCell>Correo</TableCell>
-                    <TableCell>Responsable</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filtradoFirmas.map((fila, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{fila.nombre}</TableCell>
-                      <TableCell>{fila.cargo}</TableCell>
-                      <TableCell>{fila.tel}</TableCell>
-                      <TableCell>{fila.correo}</TableCell>
-                      <TableCell>{fila.responsable}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </div>
-        );
-    };
-
+        
     useEffect(() => {
         const obtenerDatosFiltro = async () => {
             try {
@@ -976,7 +813,8 @@ const Seguimiento = ({handleButtonClick}) => {
                 <CollapsibleButton buttonText="Datos Generales para Anexos Técnicos" content={
                     <>
                         <div style={{paddingTop:"20px", paddingBottom:"20px"}}>
-                            <FormComponent />
+                            <div style={{fontSize:"18px", paddingBottom:"20px"}}> <strong>Firmas para el documento</strong></div>
+                            <FormComponent idPrograma={idPrograma} />
                         </div>
                     </>
                 } />

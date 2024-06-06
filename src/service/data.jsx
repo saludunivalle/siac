@@ -516,6 +516,21 @@ export const Filtro15 = async () => {
     }
 };
 
+export const Filtro16 = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {}, 
+            sheetName: 'Horario', 
+            urlEndPoint: 'https://siac-server.vercel.app/docServ'
+        });
+        //console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+};
+
 export const sendDataEscPract = async (data) => {
     try {
         const dataSend = {
