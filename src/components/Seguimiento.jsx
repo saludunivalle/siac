@@ -18,6 +18,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import esLocale from 'dayjs/locale/es'; 
 import PracticeScenario from './PracticeScenario';
 import FormComponent from './FormComponent';
+import SeguimientoPM from './SeguimientoPM';
 
 const Seguimiento = ({handleButtonClick}) => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -676,17 +677,6 @@ const Seguimiento = ({handleButtonClick}) => {
         );
     };
 
-    const [estadoProceso, setEstadoProceso] = React.useState('Diseño');
-    const [porcentaje, setPorcentaje] = React.useState('');
-
-    const handleEstadoProcesoChange = (event) => {
-        setEstadoProceso(event.target.value);
-    };
-
-    const handlePorcentajeChange = (event) => {
-        setPorcentaje(event.target.value);
-    };
-
     return (
         <>
             <div style={{marginRight:'20px', width:'auto'}}>
@@ -695,38 +685,9 @@ const Seguimiento = ({handleButtonClick}) => {
                 <div>
                 {(handleButtonClick === 'Seg') && (
                 <>
-                    <h3>Seguimiento del Plan de Mejoramiento</h3>
+                    <h3>Seguimiento del Plan de Mejoramiento.</h3>
 
-                    {/* Nueva sección agregada para Estado del Proceso */}
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                        <FormControl variant="outlined" style={{ marginRight: '10px', minWidth: 180 }}>
-                            <InputLabel id="estadoProceso-label">Estado del Proceso</InputLabel>
-                            <Select
-                                labelId="estadoProceso-label"
-                                id="estadoProceso"
-                                value={estadoProceso}
-                                onChange={handleEstadoProcesoChange}
-                                label="Estado del Proceso"
-                            >
-                                <MenuItem value="Diseño">Diseño</MenuItem>
-                                <MenuItem value="Rediseño">Rediseño</MenuItem>
-                                <MenuItem value="Cumplimiento al plan de mejoramiento">Cumplimiento al plan de mejoramiento</MenuItem>
-                            </Select>
-                        </FormControl>
-
-                        <TextField
-                            label="Porcentaje"
-                            variant="outlined"
-                            value={porcentaje}
-                            onChange={handlePorcentajeChange}
-                            placeholder="%"
-                            style={{ marginRight: '10px', width: 120 }}
-                        />
-
-                        <Button variant="contained" color="primary">
-                            Guardar
-                        </Button>
-                    </div>
+                    <SeguimientoPM />
 
                     <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                         <>

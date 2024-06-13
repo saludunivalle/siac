@@ -171,7 +171,7 @@ const ProgramDetails = () => {
                 <strong>Docencia Servicio</strong>
             </div>
             <div className='procesosSeg' style={setButtonStyles('Seg', clickedButton === 'Seg')} onClick={() => handleButtonClick('Seg')}>
-                <strong>Seguimiento PM</strong>
+                <strong>Seguimiento P.M</strong>
             </div>
         </div>
         <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}  />
