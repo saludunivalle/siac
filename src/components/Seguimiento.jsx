@@ -687,7 +687,7 @@ const Seguimiento = ({handleButtonClick}) => {
                 <>
                     <h3>Seguimiento del Plan de Mejoramiento.</h3>
 
-                    <SeguimientoPM />
+                    <SeguimientoPM idPrograma={idPrograma} />
 
                     <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                         <>

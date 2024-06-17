@@ -8,6 +8,7 @@ import Seguimientorac from './components/Seguimientorac';
 import Programas from './components/Programas';
 import GoogleLogin from './components/GoogleLogin';
 import Cookies from 'js-cookie';
+import SeguimientoInicio from './components/SeguimientoInicio';
 
 function App() {
   const [isLogged, setLogged] = useState(false);
@@ -32,6 +33,7 @@ function App() {
               <Route path="/seguimiento" element={<Seguimiento />} />
               <Route path="/seguimientorac" element={<Seguimientorac />} />
               <Route path="/programas" element={<Programas />} />
+              <Route path="/seguimiento-inicio" element={<SeguimientoInicio />} />
               <Route
                         path="*"
                         element={

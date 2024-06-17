@@ -239,6 +239,30 @@ const Home = () => {
           </div>
         )}
       </div>
+      <div style={{width:"68%", display:"flex", justifyContent:"center"}}>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => navigate('/seguimiento-inicio')}
+        style={{
+          marginTop: '20px',
+          backgroundColor: '#ffffff',  // Fondo blanco
+          color: '#666666',            // Texto gris
+          border: '2px solid #666666', // Borde gris
+          borderRadius: '6px',
+          width: '200px',              // Ancho del botón
+          margin: '0 auto',            // Centrado horizontal
+        }}
+        sx={{
+          '&:hover': {
+            backgroundColor: '#666666',  // Fondo gris al hover
+            color: '#ffffff',            // Texto blanco al hover
+          },
+        }}
+      >
+        Seguimiento Inicio
+      </Button>
+      </div>
       {selectedValue === 'option1' && (
         <>
           <Semaforo globalVariable={globalVariable} />

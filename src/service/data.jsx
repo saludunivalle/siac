@@ -641,3 +641,43 @@ export const FiltroFirmas = async () => {
         throw error; 
     }
 };
+
+
+export const sendDataSegui= async (data) => {
+    try {
+        const dataSend = {
+            insertData:[
+                data
+            ]
+        };
+        console.log(dataSend, data);
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: 'PROGRAMAS_PM', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendSeguimiento', 
+        });
+        //console.log(response);
+        if (response.status) {
+            console.log('Datos enviados correctamente al servidor.');
+        } else {
+            console.error('Error al enviar datos al servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+    }
+};
+
+export const dataSegui = async () => {
+    try {
+        const response = await fetchPostGeneral({
+            dataSend: {}, 
+            sheetName: 'Programas_pm', 
+            urlEndPoint: 'https://siac-server.vercel.app/seguimiento'
+        });
+        //console.log(response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error en la solicitud:', error);
+        throw error; 
+    }
+};
