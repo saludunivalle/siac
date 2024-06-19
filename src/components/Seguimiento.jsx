@@ -28,6 +28,8 @@ const Seguimiento = ({handleButtonClick}) => {
     const rowData = location.state; 
     const programaAcademico = rowData['programa académico'];
     const idPrograma = rowData['id_programa'];
+    const escuela = rowData['escuela'];
+    const formacion = rowData['pregrado/posgrado'];
     const [value, setValue] = useState('');
     const [showCollapsible, setShowCollapsible] = useState({}); 
     const [filteredData, setFilteredData] = useState([]);
@@ -685,9 +687,13 @@ const Seguimiento = ({handleButtonClick}) => {
                 <div>
                 {(handleButtonClick === 'Seg') && (
                 <>
-                    <h3>Seguimiento del Plan de Mejoramiento.</h3>
+                    <h3>Seguimiento al Plan de Mejoramiento.</h3>
 
-                    <SeguimientoPM idPrograma={idPrograma} />
+                        <SeguimientoPM 
+                            idPrograma={idPrograma} 
+                            escuela={escuela} 
+                            formacion={formacion} 
+                        />
 
                     <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                         <>

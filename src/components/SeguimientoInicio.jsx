@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Button,
     Table,
@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/system';
 import Header from './Header';
+import { format } from 'date-fns';
+import { sendDataEscula, dataEscuelas } from '../service/data'; 
 
 const escuelas = [
     'Bacteriología y Lab. Clínico',
@@ -25,10 +27,9 @@ const escuelas = [
 
 const programas = [
     'Anexos técnicos en consonancia con los registros calificados',
-    'Porcentaje de avance en la recopilación de evidencias en el marco del PM.',
+    'Número de programas académicos de la Facultad de Salud de pregrado y posgrados con registro calificado.',
     'Número de programas académicos de la Facultad de Salud de pregrado y posgrados con acreditación.',
     'Porcentaje de avance en el diseño o rediseño del plan de mejoramiento con base a las recomendaciones de los pares académicos.',
-    'Porcentaje al cumplimiento del seguimiento a resultados de aprendizaje establecidos en microcurrículos del programa académico de pregrado y postgrado.'
 ];
 
 const StyledButton = styled(Button)(({ theme }) => ({
@@ -53,6 +54,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 const SeguimientoInicio = () => {
     const [selectedEscuela, setSelectedEscuela] = useState('');
     const [scores, setScores] = useState({});
+    const [data, setData] = useState([]);
 
     const handleClickOpen = (escuela) => {
         setSelectedEscuela(escuela);
@@ -68,14 +70,65 @@ const SeguimientoInicio = () => {
         }));
     };
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const responseData = await dataEscuelas();
+                setData(responseData);
+            } catch (error) {
+                console.error('Error al cargar los datos:', error);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const getScoresForEscuela = (escuela) => {
+        const escuelaData = data.find(d => d.escuela === escuela) || {};
+        return {
+            diseño: [escuelaData.porc_anexos_diseño_pre, escuelaData.cant_rc_diseño_pre, escuelaData.cant_aac_diseño_pre, escuelaData.porc_pm_diseño_pre],
+            rediseño: [escuelaData.porc_anexos_rediseño_pre, escuelaData.cant_rc_rediseño_pre, escuelaData.cant_aac_rediseño_pre, escuelaData.porc_pm_rediseño_pre],
+            seguimiento: [escuelaData.porc_anexos_seg_pre, escuelaData.cant_rc_seg_pre, escuelaData.cant_aac_seg_pre, escuelaData.porc_pm_seg_pre],
+        };
+    };
+
+    const scoresForSelectedEscuela = getScoresForEscuela(selectedEscuela);
+
+    const handleCorteClick = () => {
+        const today = format(new Date(), 'dd/MM/yyyy');
+        const dataToSend = data
+            .filter(item => item.escuela === selectedEscuela)
+            .map(item => [
+                item.id,
+                item.escuela,
+                item.porc_anexos_diseño_pre,
+                item.cant_rc_diseño_pre,
+                item.cant_aac_diseño_pre,
+                item.porc_pm_diseño_pre,
+                item.porc_anexos_rediseño_pre,
+                item.cant_rc_rediseño_pre,
+                item.cant_aac_rediseño_pre,
+                item.porc_pm_rediseño_pre,
+                item.porc_anexos_seg_pre,
+                item.cant_rc_seg_pre,
+                item.cant_aac_seg_pre,
+                item.porc_pm_seg_pre,
+                scores[programas[0]]?.descripcion || '',
+                today
+            ]);
+
+        console.log(dataToSend); 
+        sendDataEscula(dataToSend); 
+    };
+
     return (
         <>
             <Header />
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: "-40px", marginBottom: "10px" }}>
+                <h1>Seguimiento al Plan de Mejoramiento por Escuelas</h1>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px' }}>
-                    <div style={{width:"100%", display:"flex", justifyContent:"center", marginTop:"-40px", marginBottom:"10px"}}>
-                        <h1>Escuelas</h1>
-                    </div>
                     {escuelas.map(escuela => (
                         <StyledButton
                             key={escuela}
@@ -86,11 +139,11 @@ const SeguimientoInicio = () => {
                         </StyledButton>
                     ))}
                 </div>
-                <div style={{ flex: 1, marginLeft: '50px'}}>
+                <div style={{ flex: 1, marginLeft: '50px' }}>
                     {selectedEscuela && (
                         <div>
                             <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
-                            <Table style={{width:"90%"}}>
+                            <Table style={{ width: "90%" }}>
                                 <TableHead>
                                     <TableRow>
                                         <StyledTableCell>#</StyledTableCell>
@@ -99,6 +152,7 @@ const SeguimientoInicio = () => {
                                         <StyledTableCell>Diseño</StyledTableCell>
                                         <StyledTableCell>Rediseño</StyledTableCell>
                                         <StyledTableCell>Seguimiento</StyledTableCell>
+                                        <StyledTableCell>R. Logrado</StyledTableCell>
                                         <StyledTableCell>Descripción de lo logrado</StyledTableCell>
                                     </TableRow>
                                 </TableHead>
@@ -111,25 +165,41 @@ const SeguimientoInicio = () => {
                                             <TableCell>
                                                 <TextField
                                                     variant="outlined"
-                                                    value={scores[program]?.diseño || ''}
-                                                    onChange={(e) => handleScoreChange(program, 'diseño', e.target.value)}
+                                                    value={scoresForSelectedEscuela.diseño[index] || ''}
                                                     style={{ width: '60px' }}
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                    }}
                                                 />
                                             </TableCell>
                                             <TableCell>
                                                 <TextField
                                                     variant="outlined"
-                                                    value={scores[program]?.rediseño || ''}
-                                                    onChange={(e) => handleScoreChange(program, 'rediseño', e.target.value)}
+                                                    value={scoresForSelectedEscuela.rediseño[index] || ''}
                                                     style={{ width: '60px' }}
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                    }}
                                                 />
                                             </TableCell>
                                             <TableCell>
                                                 <TextField
                                                     variant="outlined"
-                                                    value={scores[program]?.seguimiento || ''}
-                                                    onChange={(e) => handleScoreChange(program, 'seguimiento', e.target.value)}
+                                                    value={scoresForSelectedEscuela.seguimiento[index] || ''}
                                                     style={{ width: '60px' }}
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <TextField
+                                                    variant="outlined"
+                                                    value={scores[program]?.rlogrado || ''}
+                                                    style={{ width: '60px' }}
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                    }}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -144,6 +214,17 @@ const SeguimientoInicio = () => {
                                             </TableCell>
                                         </TableRow>
                                     ))}
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="right">
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                onClick={handleCorteClick}
+                                            >
+                                                Hacer corte
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
                                 </TableBody>
                             </Table>
                         </div>

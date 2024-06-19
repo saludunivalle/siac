@@ -6,19 +6,18 @@ import {
     DialogContent,
     DialogTitle,
     FormControl,
-    FormControlLabel,
     InputLabel,
     MenuItem,
-    Radio,
-    RadioGroup,
     Select,
     Typography,
     TextField,
     CircularProgress,
     Backdrop,
-    Grid,
+    Box,
     Paper,
-    Box
+    RadioGroup,
+    FormControlLabel,
+    Radio
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { sendDataSegui, dataSegui } from '../service/data';
@@ -47,7 +46,7 @@ const RowContainer = styled(Box)(({ theme }) => ({
     flexWrap: 'wrap',
 }));
 
-const SeguimientoPM = ({ idPrograma }) => {
+const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
     const [estadoProceso, setEstadoProceso] = useState('');
     const [porcentaje, setPorcentaje] = useState('');
     const [recopilacionEvidencias, setRecopilacionEvidencias] = useState('No');
@@ -55,23 +54,36 @@ const SeguimientoPM = ({ idPrograma }) => {
     const [loading, setLoading] = useState(false);
     const [successModalOpen, setSuccessModalOpen] = useState(false);
     const [savedRecords, setSavedRecords] = useState([]);
+    const [currentId, setCurrentId] = useState(null);
+    const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
             const response = await dataSegui();
-            const records = response.reduce((acc, record) => {
+            const records = response.filter(record => record.id_programa === idPrograma).reduce((acc, record) => {
                 acc[record.id] = [
                     record.id,
-                    idPrograma,
+                    record.id_programa,
                     record.estado_pm,
                     record.porc_anexos,
                     record.tiene_rc,
                     record.tiene_aac,
+                    record.formacion,
+                    record.escuela,
                     record.fecha || null,
                 ];
                 return acc;
             }, {});
             setSavedRecords(Object.values(records));
+            if (Object.values(records).length > 0) {
+                const lastRecord = Object.values(records)[Object.values(records).length - 1];
+                setCurrentId(lastRecord[0]);
+                setEstadoProceso(lastRecord[2]);
+                setPorcentaje(lastRecord[3]);
+                setRecopilacionEvidencias(lastRecord[4]);
+                setNumeroProgramas(lastRecord[5]);
+                setIsSaved(true);
+            }
         };
         fetchData();
     }, [idPrograma]);
@@ -81,61 +93,43 @@ const SeguimientoPM = ({ idPrograma }) => {
         setPorcentaje(value ? `${value}%` : '');
     };
 
-    const handleGuardar = async (isCorte = false) => {
+    const handleGuardar = async () => {
         setLoading(true);
-        const nuevoId = (parseInt(localStorage.getItem('lastId'), 10) || 0) + 1;
-        localStorage.setItem('lastId', nuevoId.toString());
+        const id = currentId !== null ? currentId : (parseInt(localStorage.getItem('lastId'), 10) || 0) + 1;
+        if (currentId === null) {
+            localStorage.setItem('lastId', id.toString());
+        }
 
-        const fecha = isCorte ? dayjs().format('DD/MM/YYYY') : null;
         const newRecord = [
-            nuevoId,
+            id,
             idPrograma,
             estadoProceso,
             porcentaje,
             recopilacionEvidencias,
             numeroProgramas,
-            fecha,
+            formacion,
+            escuela,
+            null,
         ];
 
         await sendDataSegui(newRecord);
         setLoading(false);
         setSuccessModalOpen(true);
-
-        setSavedRecords([...savedRecords, newRecord]);
-
-        // Reset form
-        setEstadoProceso('');
-        setPorcentaje('');
-        setRecopilacionEvidencias('No');
-        setNumeroProgramas('No');
+        setIsSaved(true);
+        setCurrentId(id);
+        setSavedRecords(prevRecords => {
+            const existingRecordIndex = prevRecords.findIndex(record => record[0] === id);
+            if (existingRecordIndex !== -1) {
+                const updatedRecords = [...prevRecords];
+                updatedRecords[existingRecordIndex] = newRecord;
+                return updatedRecords;
+            }
+            return [...prevRecords, newRecord];
+        });
     };
 
     const handleSuccessModalClose = () => {
         setSuccessModalOpen(false);
-    };
-
-    const handleRecordChange = (id, index, value) => {
-        setSavedRecords(prevRecords =>
-            prevRecords.map(record =>
-                record[0] === id ? record.map((item, idx) => (idx === index ? value : item)) : record
-            )
-        );
-    };
-
-    const handleRecordGuardar = async (id, isCorte = false) => {
-        setLoading(true);
-        const recordToSave = savedRecords.find(record => record[0] === id);
-        const fecha = isCorte ? dayjs().format('DD/MM/YYYY') : recordToSave[6];
-
-        const updatedRecord = recordToSave.map((item, idx) => (idx === 6 ? fecha : item));
-
-        await sendDataSegui(updatedRecord);
-        setLoading(false);
-        setSuccessModalOpen(true);
-
-        setSavedRecords(savedRecords.map(record =>
-            record[0] === id ? updatedRecord : record
-        ));
     };
 
     return (
@@ -146,7 +140,7 @@ const SeguimientoPM = ({ idPrograma }) => {
                         <div style={{ marginTop: '-10px' }}>
                             {/* Sección Estado del Proceso */}
                             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                <FormControl variant="outlined" style={{ marginRight: '10px', minWidth: 200 }}>
+                                <FormControl variant="outlined" style={{ marginRight: '10px', minWidth: 355 }}>
                                     <InputLabel id="estadoProceso-label">Seleccione el estado del programa</InputLabel>
                                     <Select
                                         labelId="estadoProceso-label"
@@ -158,14 +152,14 @@ const SeguimientoPM = ({ idPrograma }) => {
                                         <MenuItem value=""><em>Seleccione el estado del programa</em></MenuItem>
                                         <MenuItem value="Diseño">Diseño</MenuItem>
                                         <MenuItem value="Rediseño">Rediseño</MenuItem>
-                                        <MenuItem value="Cumplimiento al plan de mejoramiento">Cumplimiento al plan de mejoramiento</MenuItem>
+                                        <MenuItem value="Seguimientoo">Seguimientoo</MenuItem>
                                     </Select>
                                 </FormControl>
                             </div>
 
                             {/* Sección para Porcentaje */}
                             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                <Typography variant="body1" style={{ marginRight: '10px', width: 200 }}>
+                                <Typography variant="body1" style={{ marginRight: '10px', width: 300 }}>
                                     Anexos técnicos en consonancia con los registros calificados:
                                 </Typography>
                                 <TextField
@@ -174,10 +168,7 @@ const SeguimientoPM = ({ idPrograma }) => {
                                     value={porcentaje}
                                     onChange={handlePorcentajeChange}
                                     placeholder="%"
-                                    style={{ marginRight: '10px', width: 100 }}
-                                    InputProps={{
-                                        endAdornment: '%',
-                                    }}
+                                    style={{ marginRight: '10px', width: 150 }}
                                 />
                             </div>
 
@@ -215,141 +206,23 @@ const SeguimientoPM = ({ idPrograma }) => {
                                 </FormControl>
                             </div>
 
-                            {/* Botones Guardar y Hacer Corte */}
+                            {/* Botón Guardar */}
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px', position: 'relative' }}>
                                 <Button
                                     variant="contained"
                                     color="primary"
-                                    onClick={() => handleGuardar(false)}
-                                    style={{ marginRight: '10px' }}
+                                    onClick={handleGuardar}
+                                    style={{ marginRight: '10px', opacity: isSaved ? 0.5 : 1 }}
                                     disabled={loading}
                                 >
                                     Guardar
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    color="secondary"
-                                    onClick={() => handleGuardar(true)}
-                                    disabled={loading}
-                                >
-                                    Hacer Corte
                                 </Button>
                             </div>
                         </div>
                     </Paper>
                 </FormWrapper>
-
-                {savedRecords.map(record => (
-                    <StyledPaper key={record[0]}>
-                        {record[6] ? (
-                            <>
-                                <Typography variant="body1" style={{ marginBottom: '20px' }}>
-                                    Estado del Programa: {record[2]}
-                                </Typography>
-                                <Typography variant="body1" style={{ marginBottom: '20px' }}>
-                                    Anexos técnicos: {record[3]}
-                                </Typography>
-                                <Typography variant="body1" style={{ marginBottom: '20px' }}>
-                                    ¿Obtuvo o tiene Registro calificado?: {record[4]}
-                                </Typography>
-                                <Typography variant="body1" style={{ marginBottom: '20px' }}>
-                                    ¿Obtuvo o tiene Acreditación?: {record[5]}
-                                </Typography>
-                                <Typography variant="body1" style={{ marginBottom: '20px' }}>
-                                    Fecha de Corte: {record[6]}
-                                </Typography>
-                            </>
-                        ) : (
-                            <>
-                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                    <FormControl variant="outlined" style={{ marginRight: '10px', minWidth: 200 }}>
-                                        <InputLabel id={`estadoProceso-label-${record[0]}`}>Seleccione el estado del programa</InputLabel>
-                                        <Select
-                                            labelId={`estadoProceso-label-${record[0]}`}
-                                            id={`estadoProceso-${record[0]}`}
-                                            value={record[2]}
-                                            onChange={(e) => handleRecordChange(record[0], 2, e.target.value)}
-                                            label="Seleccione el estado del programa"
-                                        >
-                                            <MenuItem value=""><em>Seleccione el estado del programa</em></MenuItem>
-                                            <MenuItem value="Diseño">Diseño</MenuItem>
-                                            <MenuItem value="Rediseño">Rediseño</MenuItem>
-                                            <MenuItem value="Cumplimiento al plan de mejoramiento">Cumplimiento al plan de mejoramiento</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                    <Typography variant="body1" style={{ marginRight: '10px', width: 200 }}>
-                                        Anexos técnicos en consonancia con los registros calificados:
-                                    </Typography>
-                                    <TextField
-                                        label="Porcentaje"
-                                        variant="outlined"
-                                        value={record[3]}
-                                        onChange={(e) => handleRecordChange(record[0], 3, e.target.value)}
-                                        placeholder="%"
-                                        style={{ marginRight: '10px', width: 100 }}
-                                        InputProps={{
-                                            endAdornment: '%',
-                                        }}
-                                    />
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                    <Typography variant="body1" style={{ marginRight: '10px', width: 200 }}>
-                                        ¿Obtuvo o tiene Registro calificado?
-                                    </Typography>
-                                    <FormControl component="fieldset" style={{ marginRight: '10px' }}>
-                                        <RadioGroup
-                                            row
-                                            value={record[4]}
-                                            onChange={(e) => handleRecordChange(record[0], 4, e.target.value)}
-                                        >
-                                            <FormControlLabel value="Si" control={<Radio />} label="Sí" />
-                                            <FormControlLabel value="No" control={<Radio />} label="No" />
-                                        </RadioGroup>
-                                    </FormControl>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                    <Typography variant="body1" style={{ marginRight: '10px', width: 200 }}>
-                                        ¿Obtuvo o tiene Acreditación?
-                                    </Typography>
-                                    <FormControl component="fieldset" style={{ marginRight: '10px' }}>
-                                        <RadioGroup
-                                            row
-                                            value={record[5]}
-                                            onChange={(e) => handleRecordChange(record[0], 5, e.target.value)}
-                                        >
-                                            <FormControlLabel value="Si" control={<Radio />} label="Sí" />
-                                            <FormControlLabel value="No" control={<Radio />} label="No" />
-                                        </RadioGroup>
-                                    </FormControl>
-                                </div>
-
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={() => handleRecordGuardar(record[0], false)}
-                                    style={{ marginRight: '10px' }}
-                                    disabled={loading}
-                                >
-                                    Guardar
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    color="secondary"
-                                    onClick={() => handleRecordGuardar(record[0], true)}
-                                    disabled={loading}
-                                >
-                                    Hacer Corte
-                                </Button>
-                            </>
-                        )}
-                    </StyledPaper>
-                ))}
             </RowContainer>
+
             <Dialog
                 open={successModalOpen}
                 onClose={handleSuccessModalClose}

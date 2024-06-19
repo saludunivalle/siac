@@ -15,6 +15,7 @@ const ProgramDetails = () => {
     const escuela = rowData['escuela'];
     const facultad = rowData['facultad'];
     const sede = rowData['sede'];
+    const formacion = rowData['pregrado/posgrado'];
     const seccion = rowData['sección']
     const faseRRC = rowData['fase rrc'];
     const faseRAC = rowData['fase rac'];
@@ -150,6 +151,7 @@ const ProgramDetails = () => {
             {seccion && (
                 <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion}</div>
             )}
+            <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion}</div>
         </div>
         <div className='procesos'>
             <div className='procesosCREA' style={setButtonStyles('crea', clickedButton === 'crea')} onClick={() => handleButtonClick('crea')}> 
