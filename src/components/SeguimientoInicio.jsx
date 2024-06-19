@@ -12,7 +12,7 @@ import {
 import { styled } from '@mui/system';
 import Header from './Header';
 import { format } from 'date-fns';
-import { sendDataEscula, dataEscuelas } from '../service/data'; 
+import { sendDataEscula, dataEscuelas } from '../service/data';
 
 const escuelas = [
     'Bacteriología y Lab. Clínico',
@@ -89,36 +89,91 @@ const SeguimientoInicio = () => {
             diseño: [escuelaData.porc_anexos_diseño_pre, escuelaData.cant_rc_diseño_pre, escuelaData.cant_aac_diseño_pre, escuelaData.porc_pm_diseño_pre],
             rediseño: [escuelaData.porc_anexos_rediseño_pre, escuelaData.cant_rc_rediseño_pre, escuelaData.cant_aac_rediseño_pre, escuelaData.porc_pm_rediseño_pre],
             seguimiento: [escuelaData.porc_anexos_seg_pre, escuelaData.cant_rc_seg_pre, escuelaData.cant_aac_seg_pre, escuelaData.porc_pm_seg_pre],
+            diseñoPos: [escuelaData.porc_anexos_diseño_pos, escuelaData.cant_rc_diseño_pos, escuelaData.cant_aac_diseño_pos, escuelaData.porc_pm_diseño_pos],
+            rediseñoPos: [escuelaData.porc_anexos_rediseño_pos, escuelaData.cant_rc_rediseño_pos, escuelaData.cant_aac_rediseño_pos, escuelaData.porc_pm_rediseño_pos],
+            seguimientoPos: [escuelaData.porc_anexos_seg_pos, escuelaData.cant_rc_seg_pos, escuelaData.cant_aac_seg_pos, escuelaData.porc_pm_seg_pos]
         };
     };
 
     const scoresForSelectedEscuela = getScoresForEscuela(selectedEscuela);
 
-    const handleCorteClick = () => {
+    const handleCorteClick = async () => {
         const today = format(new Date(), 'dd/MM/yyyy');
-        const dataToSend = data
-            .filter(item => item.escuela === selectedEscuela)
-            .map(item => [
-                item.id,
-                item.escuela,
-                item.porc_anexos_diseño_pre,
-                item.cant_rc_diseño_pre,
-                item.cant_aac_diseño_pre,
-                item.porc_pm_diseño_pre,
-                item.porc_anexos_rediseño_pre,
-                item.cant_rc_rediseño_pre,
-                item.cant_aac_rediseño_pre,
-                item.porc_pm_rediseño_pre,
-                item.porc_anexos_seg_pre,
-                item.cant_rc_seg_pre,
-                item.cant_aac_seg_pre,
-                item.porc_pm_seg_pre,
-                scores[programas[0]]?.descripcion || '',
-                today
-            ]);
+        const filteredData = data.filter(item => item.escuela === selectedEscuela);
 
-        console.log(dataToSend); 
-        sendDataEscula(dataToSend); 
+        const cleanData = value => (value === "#DIV/0!" || value === undefined ? 0 : value);
+        const dataToSend = filteredData.map(item => {
+            return {
+                id: item.id,
+                escuela: item.escuela,
+                porc_anexos_diseño_pre: cleanData(item.porc_anexos_diseño_pre),
+                cant_rc_diseño_pre: cleanData(item.cant_rc_diseño_pre),
+                cant_aac_diseño_pre: cleanData(item.cant_aac_diseño_pre),
+                porc_pm_diseño_pre: cleanData(item.porc_pm_diseño_pre),
+                porc_anexos_rediseño_pre: cleanData(item.porc_anexos_rediseño_pre),
+                cant_rc_rediseño_pre: cleanData(item.cant_rc_rediseño_pre),
+                cant_aac_rediseño_pre: cleanData(item.cant_aac_rediseño_pre),
+                porc_pm_rediseño_pre: cleanData(item.porc_pm_rediseño_pre),
+                porc_anexos_seg_pre: cleanData(item.porc_anexos_seg_pre),
+                cant_rc_seg_pre: cleanData(item.cant_rc_seg_pre),
+                cant_aac_seg_pre: cleanData(item.cant_aac_seg_pre),
+                porc_pm_seg_pre: cleanData(item.porc_pm_seg_pre),
+                porc_anexos_diseño_pos: cleanData(item.porc_anexos_diseño_pos),
+                cant_rc_diseño_pos: cleanData(item.cant_rc_diseño_pos),
+                cant_aac_diseño_pos: cleanData(item.cant_aac_diseño_pos),
+                porc_pm_diseño_pos: cleanData(item.porc_pm_diseño_pos),
+                porc_anexos_rediseño_pos: cleanData(item.porc_anexos_rediseño_pos),
+                cant_rc_rediseño_pos: cleanData(item.cant_rc_rediseño_pos),
+                cant_aac_rediseño_pos: cleanData(item.cant_aac_rediseño_pos),
+                porc_pm_rediseño_pos: cleanData(item.porc_pm_rediseño_pos),
+                porc_anexos_seg_pos: cleanData(item.porc_anexos_seg_pos),
+                cant_rc_seg_pos: cleanData(item.cant_rc_seg_pos),
+                cant_aac_seg_pos: cleanData(item.cant_aac_seg_pos),
+                porc_pm_seg_pos: cleanData(item.porc_pm_seg_pos),
+                descripcion: scores[programas[0]]?.descripcion || '',
+                fecha_corte: today
+            };
+        });
+
+        const dataSend = [
+            dataToSend[0].id,
+            dataToSend[0].escuela,
+            dataToSend[0].porc_anexos_diseño_pre,
+            dataToSend[0].cant_rc_diseño_pre,
+            dataToSend[0].cant_aac_diseño_pre,
+            dataToSend[0].porc_pm_diseño_pre,
+            dataToSend[0].porc_anexos_rediseño_pre,
+            dataToSend[0].cant_rc_rediseño_pre,
+            dataToSend[0].cant_aac_rediseño_pre,
+            dataToSend[0].porc_pm_rediseño_pre,
+            dataToSend[0].porc_anexos_seg_pre,
+            dataToSend[0].cant_rc_seg_pre,
+            dataToSend[0].cant_aac_seg_pre,
+            dataToSend[0].porc_pm_seg_pre,
+            dataToSend[0].porc_anexos_diseño_pos,
+            dataToSend[0].cant_rc_diseño_pos,
+            dataToSend[0].cant_aac_diseño_pos,
+            dataToSend[0].porc_pm_diseño_pos,
+            dataToSend[0].porc_anexos_rediseño_pos,
+            dataToSend[0].cant_rc_rediseño_pos,
+            dataToSend[0].cant_aac_rediseño_pos,
+            dataToSend[0].porc_pm_rediseño_pos,
+            dataToSend[0].porc_anexos_seg_pos,
+            dataToSend[0].cant_rc_seg_pos,
+            dataToSend[0].cant_aac_seg_pos,
+            dataToSend[0].porc_pm_seg_pos,
+            dataToSend[0].descripcion,
+            dataToSend[0].fecha_corte            
+        ];
+
+        console.log('Data to send:', dataSend);
+        
+        try {
+            const response = await sendDataEscula(dataSend);
+            console.log('Response from server:', response);
+        } catch (error) {
+            console.error('Error al enviar los datos:', error);
+        }
     };
 
     return (
@@ -214,19 +269,16 @@ const SeguimientoInicio = () => {
                                             </TableCell>
                                         </TableRow>
                                     ))}
-                                    <TableRow>
-                                        <TableCell colSpan={8} align="right">
-                                            <Button
-                                                variant="contained"
-                                                color="primary"
-                                                onClick={handleCorteClick}
-                                            >
-                                                Hacer corte
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
                                 </TableBody>
                             </Table>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleCorteClick}
+                                style={{ marginTop: '20px' }}
+                            >
+                                Hacer corte
+                            </Button>
                         </div>
                     )}
                 </div>
