@@ -1,10 +1,12 @@
+// Home.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ButtonGroup, Button } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import Semaforo from './Semaforo';
 import SemaforoAc from './SemaforoAc';
-import { Filtro5 } from '../service/data';
+import { Filtro5, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
 import Header from './Header';
 import '/src/styles/home.css';
 import Crea from './Crea';
@@ -29,7 +31,6 @@ const Home = () => {
   const navigate = useNavigate();
   const [programasVisible, setProgramasVisible] = useState(true);
   const [rowData, setRowData] = useState(null);
-  // Permisos
   const [filteredData, setFilteredData] = useState(null);
   const [user, setUser] = useState('');
   const [isCargo, setCargo] = useState([' ']);
@@ -51,7 +52,7 @@ const Home = () => {
     } else {
       setFilteredData(rowData);
     }
-  }, []);
+  }, [rowData, isCargo]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,7 +61,6 @@ const Home = () => {
         if (isCargo.includes('Posgrados')) {
           const filtered = await Filtro5();
           response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-          
         } else {
           response = await Filtro5();
         }
@@ -74,13 +74,13 @@ const Home = () => {
         setRrcCount(response.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').length);
         setRaacCount(response.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').length);
         setModCount(response.filter(item => item['mod'] === 'SI').length);
-        setRowData(response); // Establecer rowData primero
+        setRowData(response);
         setFilteredData(response);
       } catch (error) {
         console.error('Error al filtrar datos:', error);
       }
     };
-    const buttonGoogle = document.getElementById("buttonDiv")
+    const buttonGoogle = document.getElementById("buttonDiv");
     if (buttonGoogle) {
       buttonGoogle.classList.add('_display_none');
     }
@@ -121,6 +121,84 @@ const Home = () => {
       navigate('/programas', { state: filteredData });
     }
   };
+
+  const prepareReportData = async () => {
+    try {
+        const seguimientos = await Filtro7();
+        const programas = await Filtro5();
+        const fases = await Filtro10();
+
+        const filteredSeguimientos = seguimientos.filter(seg => seg.usuario === user);
+
+        const reportData = filteredSeguimientos.map(seg => {
+            const programa = programas.find(prog => prog.id_programa === seg.id_programa);
+            const fase = fases.find(f => f.id === seg.fase);
+
+            return {
+                timeStamp: seg.timestamp || '', 
+                programaAcademico: programa ? programa['programa académico'] : '', 
+                topic: seg.topic || '', 
+                mensaje: seg.mensaje || '', 
+                riesgo: seg.riesgo || '', 
+                urlAdjunto: seg.url_adjunto || '', 
+                fase: fase ? fase.fase : '' 
+            };
+        });
+
+        return reportData;
+    } catch (error) {
+        console.error('Error al preparar datos del reporte:', error);
+        throw error;
+    }
+};
+  
+
+  const downloadSheet = (spreadsheetId) => {
+    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
+    window.open(url, '_blank');
+  };
+
+  const handleReporteActividades = async () => {
+    try {
+        const spreadsheetId = '1R4Ugfx43AoBjxjsEKYl7qZsAY8AfFNUN_gwcqETwgio';
+        const sheetName = 'REPORTE';
+
+        await clearSheetExceptFirstRow(spreadsheetId, sheetName);
+
+        const reportData = await prepareReportData();
+        console.log('Datos preparados para enviar:', reportData); 
+
+        const dataToSend = reportData.map(item => ({
+            timeStamp: item.timeStamp,
+            programaAcademico: item.programaAcademico,
+            topic: item.topic,
+            mensaje: item.mensaje,
+            riesgo: item.riesgo,
+            urlAdjunto: item.urlAdjunto,
+            fase: item.fase
+        }));
+
+        // Itera sobre cada elemento de dataToSend y envíalo
+        for (const item of dataToSend) {
+            const dataSend = [
+                item.timeStamp,
+                item.programaAcademico,
+                item.topic,
+                item.mensaje,
+                item.riesgo,
+                item.urlAdjunto,
+                item.fase
+            ];
+
+            await sendDataToSheetNew(dataSend);
+        }
+
+        downloadSheet(spreadsheetId);
+        console.log('Todos los datos han sido enviados.');
+    } catch (error) {
+        console.error('Error al generar reporte:', error);
+    }
+};
 
   return (
     <>
@@ -240,28 +318,52 @@ const Home = () => {
         )}
       </div>
       <div style={{width:"68%", display:"flex", justifyContent:"center"}}>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => navigate('/seguimiento-inicio')}
-        style={{
-          marginTop: '20px',
-          backgroundColor: '#ffffff',  // Fondo blanco
-          color: '#666666',            // Texto gris
-          border: '2px solid #666666', // Borde gris
-          borderRadius: '6px',
-          width: '200px',              // Ancho del botón
-          margin: '0 auto',            // Centrado horizontal
-        }}
-        sx={{
-          '&:hover': {
-            backgroundColor: '#666666',  // Fondo gris al hover
-            color: '#ffffff',            // Texto blanco al hover
-          },
-        }}
-      >
-        Seguimiento P.M 
-      </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/seguimiento-inicio')}
+          style={{
+            marginTop: '20px',
+            backgroundColor: '#ffffff',
+            color: '#666666',
+            border: '2px solid #666666',
+            borderRadius: '6px',
+            width: '200px',
+            margin: '0 auto',
+          }}
+          sx={{
+            '&:hover': {
+              backgroundColor: '#666666',
+              color: '#ffffff',
+            },
+          }}
+        >
+          Seguimiento P.M 
+        </Button>
+      </div>
+      <div style={{width:"68%", display:"flex", justifyContent:"center", marginTop:"15px"}}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleReporteActividades}
+          style={{
+            marginTop: '20px',
+            backgroundColor: '#ffffff',
+            color: '#666666',
+            border: '2px solid #666666',
+            borderRadius: '6px',
+            width: '200px',
+            margin: '0 auto',
+          }}
+          sx={{
+            '&:hover': {
+              backgroundColor: '#666666',
+              color: '#ffffff',
+            },
+          }}
+        >
+          Reporte Actividades
+        </Button>
       </div>
       {selectedValue === 'option1' && (
         <>

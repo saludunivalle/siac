@@ -7,9 +7,6 @@ const hojaProc_X_Prog='Proc_X_Prog';
 const hojaProc_X_Prog_Doc='Proc_X_Doc';
 const hojaProc_Fases_Doc = 'Proc_Fases_Doc';
 
-
-
-
 /**
  * Filtro1
  * 
@@ -720,3 +717,47 @@ export const sendDataEscula= async (data) => {
         console.error('Error al procesar la solicitud:', error);
     }
 };
+
+
+export const clearSheetExceptFirstRow = async (spreadsheetId, sheetName) => {
+    try {
+      const response = await fetch('https://siac-server.vercel.app/clearSheet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ spreadsheetId, sheetName })
+      });
+      if (!response.ok) {
+        throw new Error('Error al limpiar la hoja');
+      }
+      console.log('Hoja limpiada correctamente');
+    } catch (error) {
+      console.error('Error al limpiar la hoja:', error);
+    }
+  };
+
+  export const sendDataToSheetNew= async (data) => {
+    try {
+        const dataSend = {
+            insertData:[
+                data
+            ]
+        };
+        console.log(dataSend, data);
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: 'REPORTE', 
+            urlEndPoint: 'https://siac-server.vercel.app/sendReport', 
+        });
+        //console.log(response);
+        if (response.status) {
+            console.log('Datos enviados correctamente al servidor.');
+        } else {
+            console.error('Error al enviar datos al servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+    }
+};
+  
