@@ -260,7 +260,7 @@ const Home = () => {
           },
         }}
       >
-        Seguimiento Inicio
+        Seguimiento P.M 
       </Button>
       </div>
       {selectedValue === 'option1' && (
