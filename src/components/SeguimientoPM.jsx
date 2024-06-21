@@ -20,7 +20,7 @@ import {
     Radio
 } from '@mui/material';
 import { styled } from '@mui/system';
-import { sendDataSegui, dataSegui } from '../service/data';
+import { sendDataSegui, dataSegui, updateDataSegui } from '../service/data';
 import dayjs from 'dayjs';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -56,6 +56,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
     const [savedRecords, setSavedRecords] = useState([]);
     const [currentId, setCurrentId] = useState(null);
     const [isSaved, setIsSaved] = useState(false);
+    const [isEdited, setIsEdited] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -91,17 +92,14 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
     const handlePorcentajeChange = (event) => {
         const value = event.target.value.replace(/[^0-9.,]/g, '');
         setPorcentaje(value ? `${value}%` : '');
+        setIsEdited(true);
+        setIsSaved(false);
     };
 
     const handleGuardar = async () => {
         setLoading(true);
-        const id = currentId !== null ? currentId : (parseInt(localStorage.getItem('lastId'), 10) || 0) + 1;
-        if (currentId === null) {
-            localStorage.setItem('lastId', id.toString());
-        }
-
         const newRecord = [
-            id,
+            currentId,
             idPrograma,
             estadoProceso,
             porcentaje,
@@ -112,13 +110,22 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
             null,
         ];
 
-        await sendDataSegui(newRecord);
+        if (currentId !== null) {
+            await updateDataSegui(newRecord, currentId);
+        } else {
+            const id = (parseInt(localStorage.getItem('lastId'), 10) || 0) + 1;
+            localStorage.setItem('lastId', id.toString());
+            newRecord[0] = id;
+            await sendDataSegui(newRecord);
+            setCurrentId(id);
+        }
+
         setLoading(false);
         setSuccessModalOpen(true);
         setIsSaved(true);
-        setCurrentId(id);
+        setIsEdited(false);
         setSavedRecords(prevRecords => {
-            const existingRecordIndex = prevRecords.findIndex(record => record[0] === id);
+            const existingRecordIndex = prevRecords.findIndex(record => record[0] === newRecord[0]);
             if (existingRecordIndex !== -1) {
                 const updatedRecords = [...prevRecords];
                 updatedRecords[existingRecordIndex] = newRecord;
@@ -130,6 +137,12 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
 
     const handleSuccessModalClose = () => {
         setSuccessModalOpen(false);
+    };
+
+    const handleFieldChange = (setter) => (event) => {
+        setter(event.target.value);
+        setIsEdited(true);
+        setIsSaved(false);
     };
 
     return (
@@ -146,13 +159,13 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
                                         labelId="estadoProceso-label"
                                         id="estadoProceso"
                                         value={estadoProceso}
-                                        onChange={(e) => setEstadoProceso(e.target.value)}
+                                        onChange={handleFieldChange(setEstadoProceso)}
                                         label="Seleccione el estado del programa"
                                     >
                                         <MenuItem value=""><em>Seleccione el estado del programa</em></MenuItem>
                                         <MenuItem value="Diseño">Diseño</MenuItem>
                                         <MenuItem value="Rediseño">Rediseño</MenuItem>
-                                        <MenuItem value="Seguimientoo">Seguimientoo</MenuItem>
+                                        <MenuItem value="Seguimiento">Seguimiento</MenuItem>
                                     </Select>
                                 </FormControl>
                             </div>
@@ -181,7 +194,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
                                     <RadioGroup
                                         row
                                         value={recopilacionEvidencias}
-                                        onChange={(e) => setRecopilacionEvidencias(e.target.value)}
+                                        onChange={handleFieldChange(setRecopilacionEvidencias)}
                                     >
                                         <FormControlLabel value="Si" control={<Radio />} label="Sí" />
                                         <FormControlLabel value="No" control={<Radio />} label="No" />
@@ -198,7 +211,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
                                     <RadioGroup
                                         row
                                         value={numeroProgramas}
-                                        onChange={(e) => setNumeroProgramas(e.target.value)}
+                                        onChange={handleFieldChange(setNumeroProgramas)}
                                     >
                                         <FormControlLabel value="Si" control={<Radio />} label="Sí" />
                                         <FormControlLabel value="No" control={<Radio />} label="No" />

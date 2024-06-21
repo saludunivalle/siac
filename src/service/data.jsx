@@ -737,20 +737,18 @@ export const clearSheetExceptFirstRow = async (spreadsheetId, sheetName) => {
     }
   };
 
-  export const sendDataToSheetNew= async (data) => {
+  export const sendDataToSheetNew = async (data) => {
     try {
         const dataSend = {
-            insertData:[
-                data
-            ]
+            insertData: data 
         };
-        console.log(dataSend, data);
+        console.log('Datos enviados:', dataSend);
         const response = await fetchPostGeneral({
             dataSend,
-            sheetName: 'REPORTE', 
-            urlEndPoint: 'https://siac-server.vercel.app/sendReport', 
+            sheetName: 'REPORTE',
+            urlEndPoint: 'https://siac-server.vercel.app/sendReport',
         });
-        //console.log(response);
+        
         if (response.status) {
             console.log('Datos enviados correctamente al servidor.');
         } else {
@@ -760,4 +758,27 @@ export const clearSheetExceptFirstRow = async (spreadsheetId, sheetName) => {
         console.error('Error al procesar la solicitud:', error);
     }
 };
+
+  
+
+export const updateDataSegui = async (data, id) => {
+    try {
+      const dataSend = {
+        updateData: data,
+        id: id
+      };
+      const response = await fetchPostGeneral({
+        dataSend,
+        sheetName: 'PROGRAMAS_PM',
+        urlEndPoint: 'https://siac-server.vercel.app/updateSeguimiento',
+      });
+      if (response.status) {
+        console.log('Datos actualizados correctamente en el servidor.');
+      } else {
+        console.error('Error al actualizar datos en el servidor.');
+      }
+    } catch (error) {
+      console.error('Error al procesar la solicitud:', error);
+    }
+  };
   

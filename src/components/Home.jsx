@@ -34,6 +34,7 @@ const Home = () => {
   const [filteredData, setFilteredData] = useState(null);
   const [user, setUser] = useState('');
   const [isCargo, setCargo] = useState([' ']);
+  const [isLoading, setIsLoading] = useState(false); // Estado de carga
 
   useEffect(() => {
     if (sessionStorage.getItem('logged')) {
@@ -151,7 +152,6 @@ const Home = () => {
         throw error;
     }
 };
-  
 
   const downloadSheet = (spreadsheetId) => {
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
@@ -159,6 +159,7 @@ const Home = () => {
   };
 
   const handleReporteActividades = async () => {
+    setIsLoading(true); 
     try {
         const spreadsheetId = '1R4Ugfx43AoBjxjsEKYl7qZsAY8AfFNUN_gwcqETwgio';
         const sheetName = 'REPORTE';
@@ -166,42 +167,36 @@ const Home = () => {
         await clearSheetExceptFirstRow(spreadsheetId, sheetName);
 
         const reportData = await prepareReportData();
-        console.log('Datos preparados para enviar:', reportData); 
+        console.log('Datos preparados para enviar:', reportData);
 
-        const dataToSend = reportData.map(item => ({
-            timeStamp: item.timeStamp,
-            programaAcademico: item.programaAcademico,
-            topic: item.topic,
-            mensaje: item.mensaje,
-            riesgo: item.riesgo,
-            urlAdjunto: item.urlAdjunto,
-            fase: item.fase
-        }));
+        const dataToSend = reportData.map(item => [
+            item.timeStamp,
+            item.programaAcademico,
+            item.topic,
+            item.mensaje,
+            item.riesgo,
+            item.urlAdjunto,
+            item.fase
+        ]);
 
-        // Itera sobre cada elemento de dataToSend y envíalo
-        for (const item of dataToSend) {
-            const dataSend = [
-                item.timeStamp,
-                item.programaAcademico,
-                item.topic,
-                item.mensaje,
-                item.riesgo,
-                item.urlAdjunto,
-                item.fase
-            ];
-
-            await sendDataToSheetNew(dataSend);
-        }
+        await sendDataToSheetNew(dataToSend);
 
         downloadSheet(spreadsheetId);
         console.log('Todos los datos han sido enviados.');
     } catch (error) {
         console.error('Error al generar reporte:', error);
+    } finally {
+        setIsLoading(false); 
     }
 };
 
   return (
     <>
+      {isLoading && (
+        <div className="loading-overlay">
+          <CircularProgress color="inherit" />
+        </div>
+      )}
       <Header />
       <div className='container-general'>
         <div className='alltogetherGeneral'>
@@ -338,7 +333,7 @@ const Home = () => {
             },
           }}
         >
-          Seguimiento P.M 
+          Seguimiento PM 
         </Button>
       </div>
       <div style={{width:"68%", display:"flex", justifyContent:"center", marginTop:"15px"}}>
