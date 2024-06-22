@@ -55,6 +55,7 @@ const SeguimientoInicio = () => {
     const [selectedEscuela, setSelectedEscuela] = useState('');
     const [scores, setScores] = useState({});
     const [data, setData] = useState([]);
+    const [selectedProgramType, setSelectedProgramType] = useState('pre');
 
     const handleClickOpen = (escuela) => {
         setSelectedEscuela(escuela);
@@ -86,12 +87,8 @@ const SeguimientoInicio = () => {
     const getScoresForEscuela = (escuela) => {
         const escuelaData = data.find(d => d.escuela === escuela) || {};
         return {
-            diseño: [escuelaData.porc_anexos_diseño_pre, escuelaData.cant_rc_diseño_pre, escuelaData.cant_aac_diseño_pre, escuelaData.porc_pm_diseño_pre],
-            rediseño: [escuelaData.porc_anexos_rediseño_pre, escuelaData.cant_rc_rediseño_pre, escuelaData.cant_aac_rediseño_pre, escuelaData.porc_pm_rediseño_pre],
-            seguimiento: [escuelaData.porc_anexos_seg_pre, escuelaData.cant_rc_seg_pre, escuelaData.cant_aac_seg_pre, escuelaData.porc_pm_seg_pre],
-            diseñoPos: [escuelaData.porc_anexos_diseño_pos, escuelaData.cant_rc_diseño_pos, escuelaData.cant_aac_diseño_pos, escuelaData.porc_pm_diseño_pos],
-            rediseñoPos: [escuelaData.porc_anexos_rediseño_pos, escuelaData.cant_rc_rediseño_pos, escuelaData.cant_aac_rediseño_pos, escuelaData.porc_pm_rediseño_pos],
-            seguimientoPos: [escuelaData.porc_anexos_seg_pos, escuelaData.cant_rc_seg_pos, escuelaData.cant_aac_seg_pos, escuelaData.porc_pm_seg_pos]
+            pre: [escuelaData.porc_anexos_pre, escuelaData.cant_rc_pre, escuelaData.cant_aac_pre, escuelaData.porc_pm_pre],
+            pos: [escuelaData.porc_anexos_pos, escuelaData.cant_rc_pos, escuelaData.cant_aac_pos, escuelaData.porc_pm_pos]
         };
     };
 
@@ -106,31 +103,18 @@ const SeguimientoInicio = () => {
             return {
                 id: item.id,
                 escuela: item.escuela,
-                porc_anexos_diseño_pre: cleanData(item.porc_anexos_diseño_pre),
-                cant_rc_diseño_pre: cleanData(item.cant_rc_diseño_pre),
-                cant_aac_diseño_pre: cleanData(item.cant_aac_diseño_pre),
-                porc_pm_diseño_pre: cleanData(item.porc_pm_diseño_pre),
-                porc_anexos_rediseño_pre: cleanData(item.porc_anexos_rediseño_pre),
-                cant_rc_rediseño_pre: cleanData(item.cant_rc_rediseño_pre),
-                cant_aac_rediseño_pre: cleanData(item.cant_aac_rediseño_pre),
-                porc_pm_rediseño_pre: cleanData(item.porc_pm_rediseño_pre),
-                porc_anexos_seg_pre: cleanData(item.porc_anexos_seg_pre),
-                cant_rc_seg_pre: cleanData(item.cant_rc_seg_pre),
-                cant_aac_seg_pre: cleanData(item.cant_aac_seg_pre),
-                porc_pm_seg_pre: cleanData(item.porc_pm_seg_pre),
-                porc_anexos_diseño_pos: cleanData(item.porc_anexos_diseño_pos),
-                cant_rc_diseño_pos: cleanData(item.cant_rc_diseño_pos),
-                cant_aac_diseño_pos: cleanData(item.cant_aac_diseño_pos),
-                porc_pm_diseño_pos: cleanData(item.porc_pm_diseño_pos),
-                porc_anexos_rediseño_pos: cleanData(item.porc_anexos_rediseño_pos),
-                cant_rc_rediseño_pos: cleanData(item.cant_rc_rediseño_pos),
-                cant_aac_rediseño_pos: cleanData(item.cant_aac_rediseño_pos),
-                porc_pm_rediseño_pos: cleanData(item.porc_pm_rediseño_pos),
-                porc_anexos_seg_pos: cleanData(item.porc_anexos_seg_pos),
-                cant_rc_seg_pos: cleanData(item.cant_rc_seg_pos),
-                cant_aac_seg_pos: cleanData(item.cant_aac_seg_pos),
-                porc_pm_seg_pos: cleanData(item.porc_pm_seg_pos),
-                descripcion: scores[programas[0]]?.descripcion || '',
+                porc_anexos_pre: cleanData(item.porc_anexos_pre),
+                cant_rc_pre: cleanData(item.cant_rc_pre),
+                cant_aac_pre: cleanData(item.cant_aac_pre),
+                porc_pm_pre: cleanData(item.porc_pm_pre),
+                porc_anexos_pos: cleanData(item.porc_anexos_pos),
+                cant_rc_pos: cleanData(item.cant_rc_pos),
+                cant_aac_pos: cleanData(item.cant_aac_pos),
+                porc_pm_pos: cleanData(item.porc_pm_pos),
+                descripcion_1: scores[programas[0]]?.descripcion || '',
+                descripcion_2: scores[programas[1]]?.descripcion || '',
+                descripcion_3: scores[programas[2]]?.descripcion || '',
+                descripcion_4: scores[programas[3]]?.descripcion || '',
                 fecha_corte: today
             };
         });
@@ -138,36 +122,23 @@ const SeguimientoInicio = () => {
         const dataSend = [
             dataToSend[0].id,
             dataToSend[0].escuela,
-            dataToSend[0].porc_anexos_diseño_pre,
-            dataToSend[0].cant_rc_diseño_pre,
-            dataToSend[0].cant_aac_diseño_pre,
-            dataToSend[0].porc_pm_diseño_pre,
-            dataToSend[0].porc_anexos_rediseño_pre,
-            dataToSend[0].cant_rc_rediseño_pre,
-            dataToSend[0].cant_aac_rediseño_pre,
-            dataToSend[0].porc_pm_rediseño_pre,
-            dataToSend[0].porc_anexos_seg_pre,
-            dataToSend[0].cant_rc_seg_pre,
-            dataToSend[0].cant_aac_seg_pre,
-            dataToSend[0].porc_pm_seg_pre,
-            dataToSend[0].porc_anexos_diseño_pos,
-            dataToSend[0].cant_rc_diseño_pos,
-            dataToSend[0].cant_aac_diseño_pos,
-            dataToSend[0].porc_pm_diseño_pos,
-            dataToSend[0].porc_anexos_rediseño_pos,
-            dataToSend[0].cant_rc_rediseño_pos,
-            dataToSend[0].cant_aac_rediseño_pos,
-            dataToSend[0].porc_pm_rediseño_pos,
-            dataToSend[0].porc_anexos_seg_pos,
-            dataToSend[0].cant_rc_seg_pos,
-            dataToSend[0].cant_aac_seg_pos,
-            dataToSend[0].porc_pm_seg_pos,
-            dataToSend[0].descripcion,
-            dataToSend[0].fecha_corte            
+            dataToSend[0].porc_anexos_pre,
+            dataToSend[0].cant_rc_pre,
+            dataToSend[0].cant_aac_pre,
+            dataToSend[0].porc_pm_pre,
+            dataToSend[0].porc_anexos_pos,
+            dataToSend[0].cant_rc_pos,
+            dataToSend[0].cant_aac_pos,
+            dataToSend[0].porc_pm_pos,
+            dataToSend[0].descripcion_1,
+            dataToSend[0].descripcion_2,
+            dataToSend[0].descripcion_3,
+            dataToSend[0].descripcion_4,
+            dataToSend[0].fecha_corte
         ];
 
         console.log('Data to send:', dataSend);
-        
+
         try {
             const response = await sendDataEscula(dataSend);
             console.log('Response from server:', response);
@@ -198,17 +169,29 @@ const SeguimientoInicio = () => {
                     {selectedEscuela && (
                         <div>
                             <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
+                            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' }}>
+                                <Button
+                                    variant={selectedProgramType === 'pre' ? 'contained' : 'outlined'}
+                                    onClick={() => setSelectedProgramType('pre')}
+                                    style={{ marginRight: '10px' }}
+                                >
+                                    Pregrado
+                                </Button>
+                                <Button
+                                    variant={selectedProgramType === 'pos' ? 'contained' : 'outlined'}
+                                    onClick={() => setSelectedProgramType('pos')}
+                                >
+                                    Posgrado
+                                </Button>
+                            </div>
                             <Table style={{ width: "90%" }}>
                                 <TableHead>
                                     <TableRow>
                                         <StyledTableCell>#</StyledTableCell>
-                                        <StyledTableCell>Criterio para la Escuela de {selectedEscuela}</StyledTableCell>
+                                        <StyledTableCell style={{ width: '40%' }}>Criterio para la Escuela de {selectedEscuela}</StyledTableCell>
                                         <StyledTableCell>Ponderación</StyledTableCell>
-                                        <StyledTableCell>Diseño</StyledTableCell>
-                                        <StyledTableCell>Rediseño</StyledTableCell>
-                                        <StyledTableCell>Seguimiento</StyledTableCell>
                                         <StyledTableCell>R. Logrado</StyledTableCell>
-                                        <StyledTableCell>Descripción de lo logrado</StyledTableCell>
+                                        <StyledTableCell style={{ width: '40%' }}>Descripción de lo logrado</StyledTableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -220,38 +203,8 @@ const SeguimientoInicio = () => {
                                             <TableCell>
                                                 <TextField
                                                     variant="outlined"
-                                                    value={scoresForSelectedEscuela.diseño[index] || ''}
-                                                    style={{ width: '60px' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                    }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <TextField
-                                                    variant="outlined"
-                                                    value={scoresForSelectedEscuela.rediseño[index] || ''}
-                                                    style={{ width: '60px' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                    }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <TextField
-                                                    variant="outlined"
-                                                    value={scoresForSelectedEscuela.seguimiento[index] || ''}
-                                                    style={{ width: '60px' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                    }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <TextField
-                                                    variant="outlined"
-                                                    value={scores[program]?.rlogrado || ''}
-                                                    style={{ width: '60px' }}
+                                                    value={scoresForSelectedEscuela[selectedProgramType][index] || ''}
+                                                    style={{ width: '80px' }}
                                                     InputProps={{
                                                         readOnly: true,
                                                     }}
