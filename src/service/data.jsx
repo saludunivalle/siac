@@ -237,27 +237,34 @@ export const Filtro7 = async () => {
  * @param {Object} data
  * @returns {Promise<Object[]>}
  */
-  export const Filtro8 = (datos, termino_a_filtrar) => {
+   export const Filtro8 = (datos, terminos_a_filtrar) => {
     try {
         if (!Array.isArray(datos)) {
             throw new Error('Los datos proporcionados no son un array');
         }
 
-        if (!termino_a_filtrar || typeof termino_a_filtrar !== 'string') {
+        if (!Array.isArray(terminos_a_filtrar) || terminos_a_filtrar.some(term => typeof term !== 'string')) {
             throw new Error('El término de filtrado proporcionado no es válido');
         }
 
+        console.log('Datos antes de filtrar:', datos);
+        console.log('Términos de filtrado:', terminos_a_filtrar);
+
         const filteredData = datos.filter(item => {
             const propiedadValue = item['topic'];
-            return propiedadValue && propiedadValue.toLowerCase() === termino_a_filtrar.toLowerCase();
+            return propiedadValue && terminos_a_filtrar.includes(propiedadValue.toLowerCase());
         });
+
+        console.log('Datos filtrados:', filteredData);
 
         return filteredData;
     } catch (error) {
         console.error('Error en el filtro:', error);
-        throw error;
+        return [];
     }
 };
+
+
 
 export const Filtro9 = (datos, termino_a_filtrar) => {
     try {
