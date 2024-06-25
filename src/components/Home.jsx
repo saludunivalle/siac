@@ -1,5 +1,3 @@
-// Home.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ButtonGroup, Button } from '@mui/material';
@@ -30,6 +28,7 @@ const Home = () => {
   const [modCount, setModCount] = useState(0);
   const navigate = useNavigate();
   const [programasVisible, setProgramasVisible] = useState(true);
+  const [buttonsVisible, setButtonsVisible] = useState(true); // Estado para controlar la visibilidad de los botones Seguimiento PM y Reporte Actividades
   const [rowData, setRowData] = useState(null);
   const [filteredData, setFilteredData] = useState(null);
   const [user, setUser] = useState('');
@@ -93,6 +92,7 @@ const Home = () => {
     setSemaforoVisible(false);
     setSemaforoAcVisible(false);
     setSelectedValue();
+    setButtonsVisible(true); // Mostrar los botones de nuevo
   };
 
   const setButtonStyles = (buttonValue) => {
@@ -115,6 +115,7 @@ const Home = () => {
       setSemaforoAcVisible(true);
     }
     setProgramasVisible(false);
+    setButtonsVisible(false); // Ocultar los botones de Seguimiento PM y Reporte Actividades
   };
 
   const handleClick = () => {
@@ -312,54 +313,58 @@ const Home = () => {
           </div>
         )}
       </div>
-      <div style={{width:"68%", display:"flex", justifyContent:"center"}}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => navigate('/seguimiento-inicio')}
-          style={{
-            marginTop: '20px',
-            backgroundColor: '#ffffff',
-            color: '#666666',
-            border: '2px solid #666666',
-            borderRadius: '6px',
-            width: '200px',
-            margin: '0 auto',
-          }}
-          sx={{
-            '&:hover': {
-              backgroundColor: '#666666',
-              color: '#ffffff',
-            },
-          }}
-        >
-          Seguimiento PM 
-        </Button>
-      </div>
-      <div style={{width:"68%", display:"flex", justifyContent:"center", marginTop:"15px"}}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleReporteActividades}
-          style={{
-            marginTop: '20px',
-            backgroundColor: '#ffffff',
-            color: '#666666',
-            border: '2px solid #666666',
-            borderRadius: '6px',
-            width: '200px',
-            margin: '0 auto',
-          }}
-          sx={{
-            '&:hover': {
-              backgroundColor: '#666666',
-              color: '#ffffff',
-            },
-          }}
-        >
-          Reporte Actividades
-        </Button>
-      </div>
+      {buttonsVisible && ( // Mostrar u ocultar los botones según el estado buttonsVisible
+        <>
+          <div style={{width:"68%", display:"flex", justifyContent:"center"}}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate('/seguimiento-inicio')}
+              style={{
+                marginTop: '20px',
+                backgroundColor: '#ffffff',
+                color: '#666666',
+                border: '2px solid #666666',
+                borderRadius: '6px',
+                width: '200px',
+                margin: '0 auto',
+              }}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#666666',
+                  color: '#ffffff',
+                },
+              }}
+            >
+              Seguimiento PM 
+            </Button>
+          </div>
+          <div style={{width:"68%", display:"flex", justifyContent:"center", marginTop:"15px"}}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleReporteActividades}
+              style={{
+                marginTop: '20px',
+                backgroundColor: '#ffffff',
+                color: '#666666',
+                border: '2px solid #666666',
+                borderRadius: '6px',
+                width: '200px',
+                margin: '0 auto',
+              }}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#666666',
+                  color: '#ffffff',
+                },
+              }}
+            >
+              Reporte Actividades
+            </Button>
+          </div>
+        </>
+      )}
       {selectedValue === 'option1' && (
         <>
           <Semaforo globalVariable={globalVariable} />
