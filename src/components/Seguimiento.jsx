@@ -63,6 +63,7 @@ const Seguimiento = ({ handleButtonClick }) => {
     const [successMessage, setSuccessMessage] = useState('');
     const [dataUpdated, setDataUpdated] = useState(false);
     const [sentDocId, setSentDocId] = useState(null);
+    const [fasesTabla, setFasesTabla] = useState([]);
 
     useEffect(() => {
         const obtenerDatosFiltro = async () => {
@@ -222,7 +223,6 @@ const Seguimiento = ({ handleButtonClick }) => {
             setFasesName(result3);
             const fase_actual = result3[0];
             setItemActual(fase_actual);
-
             const proceso = await Filtro12();
             const procesoFiltrado = proceso.filter(item => item['proceso'] === documentoproceso); 
             setDocs(procesoFiltrado);
@@ -297,6 +297,67 @@ const Seguimiento = ({ handleButtonClick }) => {
                 return 'white';
         }
     };
+
+    const getFaseName = (faseId) => {
+        const fase = fasesName.find(f => f.id === faseId);
+        return fase ? fase.fase : ' - ';
+    };
+
+    const renderFilteredTable = (data, filters, fasesTabla, useTopicAsFase = false) => {
+        if (!Array.isArray(filters)) {
+            filters = [filters]; 
+        }
+        console.log('Renderizando tabla con filtros:', filters);
+        const filteredData = Filtro8(data, filters);
+        if (filteredData.length === 0) {
+            return <p>Ningún programa por mostrar</p>;
+        }
+    
+        
+        filteredData.sort((a, b) => {
+            const dateA = new Date(a.timestamp.split('/').reverse().join('-'));
+            const dateB = new Date(b.timestamp.split('/').reverse().join('-'));
+            return dateB - dateA;
+        });
+    
+        return (
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
+                <thead>
+                    <tr>
+                        <th style={{ width: '3%', border: '1px solid grey' }}>Fecha</th>
+                        <th style={{ width: '15%', border: '1px solid grey' }}>Comentario</th>
+                        <th style={{ width: '2%', border: '1px solid grey' }}>Riesgo</th>
+                        <th style={{ width: '4%', border: '1px solid grey' }}>Usuario</th>
+                        <th style={{ width: '2%', border: '1px solid grey' }}>Adjunto</th>
+                        <th style={{ width: '2%', border: '1px solid grey' }}>Fase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {filteredData.map((item, index) => (
+                        <tr key={index} style={{ backgroundColor: getBackgroundColor(item['riesgo']) }}>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['timestamp']}</td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', paddingLeft: '6px', paddingRight: '6px' }}>{item['mensaje']}</td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario'].split('@')[0]}</td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
+                                {item['url_adjunto'] ? (
+                                    <a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
+                                        Enlace
+                                    </a>
+                                ) : (
+                                    <strong>-</strong>
+                                )}
+                            </td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
+                                {useTopicAsFase ? item['topic'] : getFaseName(item['fase'])}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        );
+    };
+    
 
     const contenido_tablaFases = () => {
         return (
@@ -393,62 +454,11 @@ const Seguimiento = ({ handleButtonClick }) => {
         setCollapsible(collapsibleType)
     };
 
-    const renderFilteredTable = (data, filters) => {
-        if (!Array.isArray(filters)) {
-            filters = [filters]; // Asegúrate de que sea una lista
-        }
-        console.log('Renderizando tabla con filtros:', filters);
-        const filteredData = Filtro8(data, filters);
-        if (filteredData.length === 0) {
-            return <p>Ningún programa por mostrar</p>;
-        }
-    
-        // Convertir las fechas a objetos Date y ordenar en orden descendente
-        filteredData.sort((a, b) => {
-            const dateA = new Date(a.timestamp.split('/').reverse().join('-'));
-            const dateB = new Date(b.timestamp.split('/').reverse().join('-'));
-            return dateB - dateA;
-        });
-    
-        return (
-            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
-                <thead>
-                    <tr>
-                        <th style={{ width: '3%', border: '1px solid grey' }}>Fecha</th>
-                        <th style={{ width: '15%', border: '1px solid grey' }}>Comentario</th>
-                        <th style={{ width: '2%', border: '1px solid grey' }}>Riesgo</th>
-                        <th style={{ width: '4%', border: '1px solid grey' }}>Usuario</th>
-                        <th style={{ width: '2%', border: '1px solid grey' }}>Adjunto</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item, index) => (
-                        <tr key={index} style={{ backgroundColor: getBackgroundColor(item['riesgo']) }}>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['timestamp']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', paddingLeft: '6px', paddingRight: '6px' }}>{item['mensaje']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario'].split('@')[0]}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
-                                {item['url_adjunto'] ? (
-                                    <a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
-                                        Enlace
-                                    </a>
-                                ) : (
-                                    <strong>-</strong>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-    
     const contenido_seguimiento = () => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
-    
+
         const handleGuardarClick = async () => {
             try {
                 if (comment.trim() === '' || value.trim() === '' || selectedPhase.trim() === '') {
@@ -458,16 +468,16 @@ const Seguimiento = ({ handleButtonClick }) => {
                     setFormSubmitted(true);
                     return;
                 }
-    
+
                 let formattedDate;
                 if (selectedDate) {
                     formattedDate = dayjs(selectedDate).format('DD/MM/YYYY');
                 } else {
                     formattedDate = dayjs().format('DD/MM/YYYY');
                 }
-    
+
                 const collapsibleType = selectedPhase === 'RRC' ? 'Plan de Mejoramiento RRC' : 'Plan de Mejoramiento RAAC';
-    
+
                 const dataSend = [
                     idPrograma,
                     formattedDate,
@@ -478,20 +488,20 @@ const Seguimiento = ({ handleButtonClick }) => {
                     enlace,
                     selectedOption.id,
                 ];
-    
+
                 const dataSendCrea = [
                     idPrograma,
                     selectedOption.id,
                     formattedDate, 
                 ];
-    
+
                 await sendDataToServer(dataSend);
                 if (selectedOption.id === undefined) {
                     console.log("Opción seleccionada -> Ninguna");
                 } else {
                     await sendDataToServerCrea(dataSendCrea);
                 }
-    
+
                 clearFileLink();
                 setLoading(false);
                 setOpenModal(true);
@@ -505,7 +515,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                 console.error('Error al enviar datos:', error);
             }
         };
-    
+
         return (
             <>
                 <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '20px', alignItems: 'center', gap: 'px' }}>
@@ -620,7 +630,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             </>
         );
     };
-    
+
     const contenido_seguimiento_default = () => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
@@ -866,7 +876,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                             <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        {renderFilteredTable(filteredData, ['plan de mejoramiento rrc', 'plan de mejoramiento raac'])}
+                                        {renderFilteredTable(filteredData, ['plan de mejoramiento rrc', 'plan de mejoramiento raac'], fasesTabla, true)}
                                         {avaibleRange(isPlan) &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Plan de Mejoramiento')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
@@ -1034,3 +1044,4 @@ const Seguimiento = ({ handleButtonClick }) => {
 };
 
 export default Seguimiento;
+
