@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, Input, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress } from '@mui/material';
+import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, Input, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel } from '@mui/material';
 import { Container, Grid, IconButton, Box, Paper } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -444,36 +444,13 @@ const Seguimiento = ({ handleButtonClick }) => {
         );
     };
     
-    
-
     const contenido_seguimiento = () => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
-
+    
         const handleGuardarClick = async () => {
             try {
-                setLoading(true);
-                let enlace;
-                if (fileType === 'upload' && fileInputRef.current) {
-                    const files = fileInputRef.current.files;
-                    const formData = new FormData();
-                    for (let i = 0; i < files.length; i++) {
-                        formData.append("file", files[i]); 
-                    }
-                    const response = await fetch("https://siac-server.vercel.app/upload/", {
-                        method: 'POST',
-                        body: formData, 
-                        headers: {
-                            enctype: 'multipart/form-data',
-                        }
-                    });
-                    const data = await response.json();
-                    enlace = data.enlace;
-                } else {
-                    enlace = fileLink; 
-                }
-
                 if (comment.trim() === '' || value.trim() === '' || selectedPhase.trim() === '') {
                     setLoading(false);
                     const errorMessage = 'Por favor, complete todos los campos obligatorios.';
@@ -481,16 +458,16 @@ const Seguimiento = ({ handleButtonClick }) => {
                     setFormSubmitted(true);
                     return;
                 }
-
+    
                 let formattedDate;
                 if (selectedDate) {
                     formattedDate = dayjs(selectedDate).format('DD/MM/YYYY');
                 } else {
                     formattedDate = dayjs().format('DD/MM/YYYY');
                 }
-
+    
                 const collapsibleType = selectedPhase === 'RRC' ? 'Plan de Mejoramiento RRC' : 'Plan de Mejoramiento RAAC';
-
+    
                 const dataSend = [
                     idPrograma,
                     formattedDate,
@@ -501,20 +478,20 @@ const Seguimiento = ({ handleButtonClick }) => {
                     enlace,
                     selectedOption.id,
                 ];
-
+    
                 const dataSendCrea = [
                     idPrograma,
                     selectedOption.id,
                     formattedDate, 
                 ];
-
+    
                 await sendDataToServer(dataSend);
                 if (selectedOption.id === undefined) {
                     console.log("Opción seleccionada -> Ninguna");
                 } else {
                     await sendDataToServerCrea(dataSendCrea);
                 }
-
+    
                 clearFileLink();
                 setLoading(false);
                 setOpenModal(true);
@@ -528,12 +505,12 @@ const Seguimiento = ({ handleButtonClick }) => {
                 console.error('Error al enviar datos:', error);
             }
         };
-
+    
         return (
             <>
-                <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '5px', justifyContent: 'center', marginTop: '10px', alignItems: 'center' }}>
-                    <div className='date-picker' style={{ paddingRight: '10px' }}>
-                        Fecha <br />
+                <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '20px', alignItems: 'center', gap: 'px' }}>
+                    <div className='date-picker' style={{ flex: 1 }}>
+                        <Typography variant="h6">Fecha *</Typography>
                         <div style={{ display: 'inline-block' }}>
                             <button onClick={handleToggleCalendar} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
                                 <LocalizationProvider dateAdapter={AdapterDayjs} locale={esLocale}>
@@ -549,77 +526,45 @@ const Seguimiento = ({ handleButtonClick }) => {
                             </button>
                         </div>  
                     </div>
-                    <div className='comments' style={{ display: 'flex', flexDirection: 'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', width: '35%', paddingRight: '20px' }}>
-                        Comentario * <br />
-                        <TextField multiline rows={3} required value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{ border: (formSubmitted && comment.trim() === '') ? '1px solid red' : 'none', textAlign: 'start', backgroundColor: '#f0f0f0', color: 'black', blockSize: '100%' }} />
+                    <div className='comments' style={{ flex: 1 }}>
+                        <Typography variant="h6">Comentario *</Typography>
+                        <TextField
+                            multiline
+                            rows={3}
+                            required
+                            value={comment}
+                            onChange={handleInputChange1}
+                            placeholder="Comentario"
+                            type="text"
+                            variant="outlined"
+                            fullWidth
+                            error={formSubmitted && comment.trim() === ''}
+                            helperText={formSubmitted && comment.trim() === '' ? 'Este campo es obligatorio' : ''}
+                        />
                     </div>
-                    <div className='adj-risk' style={{ display: 'flex', flexDirection: 'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', margin: '5px', }}>
-                        <div className='risk' style={{ textAlign: 'left' }}>
-                            Riesgo *<br />
-                            <FormControl component="fieldset" required error={formSubmitted && value.trim() === ''} style={{ border: (formSubmitted && value.trim() === '') ? '1px solid red' : 'none' }}>
-                                <RadioGroup value={value} onChange={e => { setValue(e.target.value) }} style={{ display: 'flex', flexDirection: 'row' }} required>
+                    <div className='adj-risk-phase' style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div className='risk'>
+                            <Typography variant="h6">Riesgo *</Typography>
+                            <FormControl component="fieldset" required error={formSubmitted && value.trim() === ''}>
+                                <RadioGroup value={value} onChange={e => { setValue(e.target.value) }} style={{ display: 'flex', flexDirection: 'row' }}>
                                     <FormControlLabel value="Alto" control={<Radio />} label="Alto" />
                                     <FormControlLabel value="Medio" control={<Radio />} label="Medio" />
                                     <FormControlLabel value="Bajo" control={<Radio />} label="Bajo" />
                                 </RadioGroup>
                             </FormControl>
                         </div>
-                        <div className='adj' style={{ textAlign: 'left' }}>
-                            Archivo Adjunto <br />
-                            <FormControl component="fieldset">
-                                <RadioGroup value={fileType} onChange={(e) => setFileType(e.target.value)} style={{ display: 'flex', flexDirection: 'row' }}>
-                                    <FormControlLabel value="upload" control={<Radio />} label="Subir" />
-                                    <FormControlLabel value="link" control={<Radio />} label="Enlace" />
+                        <div className='phase'>
+                            <Typography variant="h6">Seleccionar fase *</Typography>
+                            <FormControl component="fieldset" required error={formSubmitted && selectedPhase.trim() === ''}>
+                                <RadioGroup value={selectedPhase} onChange={e => setSelectedPhase(e.target.value)} style={{ display: 'flex', flexDirection: 'row' }}>
+                                    <FormControlLabel value="RRC" control={<Radio />} label="RRC" />
+                                    <FormControlLabel value="RAAC" control={<Radio />} label="RAAC" />
                                 </RadioGroup>
                             </FormControl>
                         </div>
-                        <div style={{ marginTop: '0px', height: '30px' }}>
-                            {fileType === 'upload' ? (
-                                <input
-                                    type="file"
-                                    multiple
-                                    ref={fileInputRef}
-                                    placeholder="Seleccionar archivo..."
-                                    style={{ height: '30px' }}
-                                />
-                            ) : fileType === 'link' ? (
-                                <input
-                                    value={fileLink}
-                                    onChange={(e) => setFileLink(e.target.value)}
-                                    placeholder="Link del archivo"
-                                    type="text"
-                                    style={{
-                                        width: '200px',
-                                        height: '25px',
-                                        backgroundColor: 'white',
-                                        color: 'grey',
-                                        border: '1px solid grey',
-                                        borderRadius: '5px'
-                                    }}
-                                />
-                            ) : null}
-                        </div>
-                    </div>
-                    <div style={{ marginTop: '-45px', marginLeft: '10px', width: 'auto' }}>
-                        <FormControl style={{ width: '250px' }}>
-                            <InputLabel id="select-phase-label">Seleccionar fase</InputLabel>
-                            <Select
-                                labelId="select-phase-label"
-                                id="select-phase"
-                                value={selectedPhase}
-                                label="Seleccionar fase"
-                                onChange={e => setSelectedPhase(e.target.value)}
-                                displayEmpty
-                                style={{ width: '250px' }}
-                            >
-                                <MenuItem value="">Ninguna</MenuItem>
-                                <MenuItem value="RRC">RRC</MenuItem>
-                                <MenuItem value="RAAC">RAAC</MenuItem>
-                            </Select>
-                        </FormControl>
                     </div>
                 </div>
-                <Button variant="contained" style={{ textAlign: 'center', margin: '8px', paddingBottom: '10px' }} onClick={handleGuardarClick}>Guardar</Button>
+                <Button variant="contained" color="primary" onClick={handleGuardarClick} style={{ marginTop: '20px', alignSelf: 'center' }}>Guardar</Button>
                 {loading && (
                     <div
                         style={{
@@ -675,7 +620,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             </>
         );
     };
-
+    
     const contenido_seguimiento_default = () => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
@@ -759,7 +704,7 @@ const Seguimiento = ({ handleButtonClick }) => {
 
         return (
             <>
-                <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '5px', justifyContent: 'center', marginTop: '10px', alignItems: 'center' }}>
+                <div className='container-NS' style={{fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '5px', justifyContent: 'center', marginTop: '10px', alignItems: 'center' }}>
                     <div className='date-picker' style={{ paddingRight: '10px' }}>
                         Fecha <br />
                         <div style={{ display: 'inline-block' }}>
@@ -916,6 +861,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                 idPrograma={idPrograma}
                                 escuela={escuela}
                                 formacion={formacion}
+                                isPlan={avaibleRange(isPlan)}
                             />
                             <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                                 <>

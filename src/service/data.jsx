@@ -725,6 +725,27 @@ export const sendDataEscula= async (data) => {
     }
 };
 
+export const updateDataEscuela = async (data, id) => {
+    try {
+        const dataSend = {
+            updateData: data,
+            id: id
+        };
+        const response = await fetchPostGeneral({
+            dataSend,
+            sheetName: 'ESCUELAS',
+            urlEndPoint: 'https://siac-server.vercel.app/updateSeguimiento',
+        });
+        if (response.status) {
+            console.log('Datos actualizados correctamente en el servidor.');
+        } else {
+            console.error('Error al actualizar datos en el servidor.');
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+    }
+};
+
 
 export const clearSheetExceptFirstRow = async (spreadsheetId, sheetName) => {
     try {

@@ -12,7 +12,7 @@ import {
 import { styled } from '@mui/system';
 import Header from './Header';
 import { format } from 'date-fns';
-import { sendDataEscula, dataEscuelas } from '../service/data';
+import { sendDataEscula, dataEscuelas, updateDataEscuela } from '../service/data';
 
 const escuelas = [
     'Bacteriología y Lab. Clínico',
@@ -25,10 +25,10 @@ const escuelas = [
     'Dirección de Posgrados'
 ];
 
-const programas = [
+const programasBase = [
     'Anexos técnicos en consonancia con los registros calificados',
-    'Número de programas académicos de la Facultad de Salud de pregrado y posgrados con registro calificado.',
-    'Número de programas académicos de la Facultad de Salud de pregrado y posgrados con acreditación.',
+    'Número de programas académicos de la Facultad de Salud de {tipo} con registro calificado.',
+    'Número de programas académicos de la Facultad de Salud de {tipo} con acreditación.',
     'Porcentaje de avance en el diseño o rediseño del plan de mejoramiento con base a las recomendaciones de los pares académicos.',
 ];
 
@@ -59,6 +59,14 @@ const SeguimientoInicio = () => {
 
     const handleClickOpen = (escuela) => {
         setSelectedEscuela(escuela);
+        // Load descriptions for the selected school
+        const escuelaData = data.find(d => d.escuela === escuela) || {};
+        setScores({
+            [programasBase[0]]: { descripcion: escuelaData.descripcion_1 || '' },
+            [programasBase[1]]: { descripcion: escuelaData.descripcion_2 || '' },
+            [programasBase[2]]: { descripcion: escuelaData.descripcion_3 || '' },
+            [programasBase[3]]: { descripcion: escuelaData.descripcion_4 || '' },
+        });
     };
 
     const handleScoreChange = (program, field, value) => {
@@ -111,10 +119,10 @@ const SeguimientoInicio = () => {
                 cant_rc_pos: cleanData(item.cant_rc_pos),
                 cant_aac_pos: cleanData(item.cant_aac_pos),
                 porc_pm_pos: cleanData(item.porc_pm_pos),
-                descripcion_1: scores[programas[0]]?.descripcion || '',
-                descripcion_2: scores[programas[1]]?.descripcion || '',
-                descripcion_3: scores[programas[2]]?.descripcion || '',
-                descripcion_4: scores[programas[3]]?.descripcion || '',
+                descripcion_1: scores[programasBase[0]]?.descripcion || '',
+                descripcion_2: scores[programasBase[1]]?.descripcion || '',
+                descripcion_3: scores[programasBase[2]]?.descripcion || '',
+                descripcion_4: scores[programasBase[3]]?.descripcion || '',
                 fecha_corte: today
             };
         });
@@ -130,11 +138,11 @@ const SeguimientoInicio = () => {
             dataToSend[0].cant_rc_pos,
             dataToSend[0].cant_aac_pos,
             dataToSend[0].porc_pm_pos,
+            dataToSend[0].fecha_corte,
             dataToSend[0].descripcion_1,
             dataToSend[0].descripcion_2,
             dataToSend[0].descripcion_3,
-            dataToSend[0].descripcion_4,
-            dataToSend[0].fecha_corte
+            dataToSend[0].descripcion_4
         ];
 
         console.log('Data to send:', dataSend);
@@ -145,6 +153,52 @@ const SeguimientoInicio = () => {
         } catch (error) {
             console.error('Error al enviar los datos:', error);
         }
+    };
+
+    const handleGuardarClick = async () => {
+        const filteredData = data.find(item => item.escuela === selectedEscuela);
+        if (!filteredData) {
+            console.error('No se encontraron datos para la escuela seleccionada');
+            return;
+        }
+
+        const updatedData = {
+            id: filteredData.id,
+            escuela: filteredData.escuela,
+            descripcion_1: scores[programasBase[0]]?.descripcion || '',
+            descripcion_2: scores[programasBase[1]]?.descripcion || '',
+            descripcion_3: scores[programasBase[2]]?.descripcion || '',
+            descripcion_4: scores[programasBase[3]]?.descripcion || '',
+        };
+
+        const dataupdateescuela = [
+            updatedData.id,
+            updatedData.escuela,
+            filteredData.porc_anexos_pre,
+            filteredData.cant_rc_pre,
+            filteredData.cant_aac_pre,
+            filteredData.porc_pm_pre,
+            filteredData.porc_anexos_pos,
+            filteredData.cant_rc_pos,
+            filteredData.cant_aac_pos,
+            filteredData.porc_pm_pos,
+            updatedData.descripcion_1,
+            updatedData.descripcion_2,
+            updatedData.descripcion_3,
+            updatedData.descripcion_4
+        ];
+
+        try {
+            await updateDataEscuela(dataupdateescuela, filteredData.id);
+            console.log('Datos actualizados correctamente en el servidor.');
+        } catch (error) {
+            console.error('Error al actualizar datos en el servidor:', error);
+        }
+    };
+
+    const getProgramas = () => {
+        const tipo = selectedProgramType === 'pre' ? 'pregrado' : 'posgrado';
+        return programasBase.map(program => program.replace('{tipo}', tipo));
     };
 
     return (
@@ -169,7 +223,7 @@ const SeguimientoInicio = () => {
                     {selectedEscuela && (
                         <div>
                             <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
-                            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '90%', marginBottom: '20px' }}>
                                 <Button
                                     variant={selectedProgramType === 'pre' ? 'contained' : 'outlined'}
                                     onClick={() => setSelectedProgramType('pre')}
@@ -190,12 +244,12 @@ const SeguimientoInicio = () => {
                                         <StyledTableCell>#</StyledTableCell>
                                         <StyledTableCell style={{ width: '40%' }}>Criterio para la Escuela de {selectedEscuela}</StyledTableCell>
                                         <StyledTableCell>Ponderación</StyledTableCell>
-                                        <StyledTableCell>R. Logrado</StyledTableCell>
+                                        <StyledTableCell>Resultado Logrado</StyledTableCell>
                                         <StyledTableCell style={{ width: '40%' }}>Descripción de lo logrado</StyledTableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {programas.map((program, index) => (
+                                    {getProgramas().map((program, index) => (
                                         <TableRow key={program}>
                                             <TableCell>{index + 1}</TableCell>
                                             <TableCell>{program}</TableCell>
@@ -224,14 +278,22 @@ const SeguimientoInicio = () => {
                                     ))}
                                 </TableBody>
                             </Table>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={handleCorteClick}
-                                style={{ marginTop: '20px' }}
-                            >
-                                Hacer corte
-                            </Button>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', width: '90%' }}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleCorteClick}
+                                >
+                                    Hacer corte
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    onClick={handleGuardarClick}
+                                >
+                                    Guardar
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </div>

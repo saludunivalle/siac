@@ -46,7 +46,7 @@ const RowContainer = styled(Box)(({ theme }) => ({
     flexWrap: 'wrap',
 }));
 
-const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
+const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
     const [estadoProceso, setEstadoProceso] = useState('');
     const [porcentaje, setPorcentaje] = useState('');
     const [recopilacionEvidencias, setRecopilacionEvidencias] = useState('No');
@@ -153,7 +153,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
                         <div style={{ marginTop: '-10px' }}>
                             {/* Sección Estado del Proceso */}
                             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                <FormControl variant="outlined" style={{ marginRight: '10px', minWidth: 355 }}>
+                                <FormControl variant="outlined" style={{ marginRight: '10px', minWidth: 355 }} disabled={!isPlan}>
                                     <InputLabel id="estadoProceso-label">Seleccione el estado del programa</InputLabel>
                                     <Select
                                         labelId="estadoProceso-label"
@@ -182,6 +182,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
                                     onChange={handlePorcentajeChange}
                                     placeholder="%"
                                     style={{ marginRight: '10px', width: 150 }}
+                                    disabled={!isPlan}
                                 />
                             </div>
 
@@ -190,7 +191,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
                                 <Typography variant="body1" style={{ marginRight: '10px', width: 200 }}>
                                     ¿Obtuvo o tiene Registro calificado?
                                 </Typography>
-                                <FormControl component="fieldset" style={{ marginRight: '10px' }}>
+                                <FormControl component="fieldset" style={{ marginRight: '10px' }} disabled={!isPlan}>
                                     <RadioGroup
                                         row
                                         value={recopilacionEvidencias}
@@ -207,7 +208,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
                                 <Typography variant="body1" style={{ marginRight: '10px', width: 200 }}>
                                     ¿Obtuvo o tiene Acreditación?
                                 </Typography>
-                                <FormControl component="fieldset" style={{ marginRight: '10px' }}>
+                                <FormControl component="fieldset" style={{ marginRight: '10px' }} disabled={!isPlan}>
                                     <RadioGroup
                                         row
                                         value={numeroProgramas}
@@ -226,7 +227,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion }) => {
                                     color="primary"
                                     onClick={handleGuardar}
                                     style={{ marginRight: '10px', opacity: isSaved ? 0.5 : 1 }}
-                                    disabled={loading}
+                                    disabled={loading || !isPlan}
                                 >
                                     Guardar
                                 </Button>
