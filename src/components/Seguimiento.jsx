@@ -70,7 +70,6 @@ const Seguimiento = ({ handleButtonClick }) => {
             try {
                 const filtroData = await Filtro21();
                 setFiltro21Data(filtroData);
-                console.log('ladateakmj,:', Filtro21Data);
             } catch (error) {
                 console.error('Error al obtener los datos del filtro:', error);
             }
@@ -303,62 +302,6 @@ const Seguimiento = ({ handleButtonClick }) => {
         return fase ? fase.fase : ' - ';
     };
 
-    const renderFilteredTable = (data, filters, fasesTabla, useTopicAsFase = false) => {
-        if (!Array.isArray(filters)) {
-            filters = [filters]; 
-        }
-        console.log('Renderizando tabla con filtros:', filters);
-        const filteredData = Filtro8(data, filters);
-        if (filteredData.length === 0) {
-            return <p>Ningún programa por mostrar</p>;
-        }
-    
-        
-        filteredData.sort((a, b) => {
-            const dateA = new Date(a.timestamp.split('/').reverse().join('-'));
-            const dateB = new Date(b.timestamp.split('/').reverse().join('-'));
-            return dateB - dateA;
-        });
-    
-        return (
-            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
-                <thead>
-                    <tr>
-                        <th style={{ width: '3%', border: '1px solid grey' }}>Fecha</th>
-                        <th style={{ width: '15%', border: '1px solid grey' }}>Comentario</th>
-                        <th style={{ width: '2%', border: '1px solid grey' }}>Riesgo</th>
-                        <th style={{ width: '4%', border: '1px solid grey' }}>Usuario</th>
-                        <th style={{ width: '2%', border: '1px solid grey' }}>Adjunto</th>
-                        <th style={{ width: '2%', border: '1px solid grey' }}>Fase</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item, index) => (
-                        <tr key={index} style={{ backgroundColor: getBackgroundColor(item['riesgo']) }}>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['timestamp']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', paddingLeft: '6px', paddingRight: '6px' }}>{item['mensaje']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario'].split('@')[0]}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
-                                {item['url_adjunto'] ? (
-                                    <a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
-                                        Enlace
-                                    </a>
-                                ) : (
-                                    <strong>-</strong>
-                                )}
-                            </td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
-                                {useTopicAsFase ? item['topic'] : getFaseName(item['fase'])}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-    
-
     const contenido_tablaFases = () => {
         return (
             <>  <div>
@@ -446,6 +389,61 @@ const Seguimiento = ({ handleButtonClick }) => {
         );
     };
 
+    const renderFilteredTable = (data, filters, fasesTabla, useTopicAsFase = false) => {
+        if (!Array.isArray(filters)) {
+            filters = [filters]; 
+        }
+        console.log('Renderizando tabla con filtros:', filters);
+        const filteredData = Filtro8(data, filters);
+        if (filteredData.length === 0) {
+            return <p>Ningún programa por mostrar</p>;
+        }
+    
+        
+        filteredData.sort((a, b) => {
+            const dateA = new Date(a.timestamp.split('/').reverse().join('-'));
+            const dateB = new Date(b.timestamp.split('/').reverse().join('-'));
+            return dateB - dateA;
+        });
+    
+        return (
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
+                <thead>
+                    <tr>
+                        <th style={{ width: '3%', border: '1px solid grey' }}>Fecha</th>
+                        <th style={{ width: '15%', border: '1px solid grey' }}>Comentario</th>
+                        <th style={{ width: '2%', border: '1px solid grey' }}>Riesgo</th>
+                        <th style={{ width: '4%', border: '1px solid grey' }}>Usuario</th>
+                        <th style={{ width: '2%', border: '1px solid grey' }}>Adjunto</th>
+                        <th style={{ width: '2%', border: '1px solid grey' }}>Fase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {filteredData.map((item, index) => (
+                        <tr key={index} style={{ backgroundColor: getBackgroundColor(item['riesgo']) }}>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['timestamp']}</td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', paddingLeft: '6px', paddingRight: '6px' }}>{item['mensaje']}</td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario'].split('@')[0]}</td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
+                                {item['url_adjunto'] ? (
+                                    <a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
+                                        Enlace
+                                    </a>
+                                ) : (
+                                    <strong>-</strong>
+                                )}
+                            </td>
+                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
+                                {useTopicAsFase ? item['topic'] : getFaseName(item['fase'])}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        );
+    };
+    
     const handleNewTrackingClick = (collapsibleType) => {
         setShowCollapsible(prevState => ({
             ...prevState,
@@ -920,6 +918,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                     </div>
                                 </>
                             } />
+                            {contenido_tablaFases()}
                         </>
                     )}
                     {(handleButtonClick === 'aac') && (
@@ -973,6 +972,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                     </div>
                                 </>
                             } />
+                            {contenido_tablaFases()}
                         </>
                     )}
                     {(handleButtonClick === 'crea') && (

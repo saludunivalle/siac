@@ -70,7 +70,7 @@ const Home = () => {
         if (isCargo.includes('Posgrados')) {
           const filtered = await Filtro5();
           response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-          console.log("Datos de Posgrados filtrados en fetchData:", response);
+          //console.log("Datos de Posgrados filtrados en fetchData:", response);
         } else {
           response = await Filtro5();
         }
@@ -87,7 +87,7 @@ const Home = () => {
         setRowData(response);
         setFilteredData(response);
 
-        console.log("Datos de programas filtrados en fetchData:", response);
+        //console.log("Datos de programas filtrados en fetchData:", response);
 
         const seguimientos = await Filtro7();
         processSeguimientos(seguimientos, response);
@@ -111,7 +111,7 @@ const Home = () => {
       RAAC: programas.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').map(item => item.id_programa),
     };
 
-    console.log("Estados procesados:", estados);
+    //console.log("Estados procesados:", estados);
 
     const newCounts = {
       CREA: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
@@ -124,7 +124,7 @@ const Home = () => {
 
     Object.keys(estados).forEach((estado) => {
       const filtered = seguimientos.filter((item) => estados[estado].includes(item.id_programa));
-      console.log(`Seguimientos filtrados para ${estado}:`, filtered);
+      //console.log(`Seguimientos filtrados para ${estado}:`, filtered);
 
       const latestSeguimientos = {};
       filtered.forEach(item => {
@@ -149,7 +149,7 @@ const Home = () => {
       newCounts[estado].SinRegistro += sinRegistro;
     });
 
-    console.log("Conteos actualizados:", newCounts);
+    //console.log("Conteos actualizados:", newCounts);
     setCounts(newCounts);
   };
 
@@ -228,7 +228,7 @@ const Home = () => {
         await clearSheetExceptFirstRow(spreadsheetId, sheetName);
 
         const reportData = await prepareReportData();
-        console.log('Datos preparados para enviar:', reportData);
+        //console.log('Datos preparados para enviar:', reportData);
 
         const dataToSend = reportData.map(item => [
             item.timeStamp,
@@ -243,7 +243,7 @@ const Home = () => {
         await sendDataToSheetNew(dataToSend);
 
         downloadSheet(spreadsheetId);
-        console.log('Todos los datos han sido enviados.');
+        //console.log('Todos los datos han sido enviados.');
     } catch (error) {
         console.error('Error al generar reporte:', error);
     } finally {

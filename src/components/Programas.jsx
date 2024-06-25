@@ -87,7 +87,7 @@ const Programas = () => {
     }, [isCargo]);
 
     const handleRowClick = (rowData) => {
-        console.log('Datos de la fila:', rowData);
+        //console.log('Datos de la fila:', rowData);
         navigate('/program_details', { state: rowData });
     };
 

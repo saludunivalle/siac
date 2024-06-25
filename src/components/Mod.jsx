@@ -74,7 +74,7 @@ const Mod = ({ globalVariable }) => {
     }, []);
 
     const handleRowClick = (rowData) => {
-        console.log('Datos de la fila:', rowData);
+        //console.log('Datos de la fila:', rowData);
         navigate('/program_details', { state: { ...rowData, globalVariable } });
     };
 

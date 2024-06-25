@@ -247,15 +247,15 @@ export const Filtro7 = async () => {
             throw new Error('El término de filtrado proporcionado no es válido');
         }
 
-        console.log('Datos antes de filtrar:', datos);
-        console.log('Términos de filtrado:', terminos_a_filtrar);
+        //console.log('Datos antes de filtrar:', datos);
+        //console.log('Términos de filtrado:', terminos_a_filtrar);
 
         const filteredData = datos.filter(item => {
             const propiedadValue = item['topic'];
             return propiedadValue && terminos_a_filtrar.includes(propiedadValue.toLowerCase());
         });
 
-        console.log('Datos filtrados:', filteredData);
+        //console.log('Datos filtrados:', filteredData);
 
         return filteredData;
     } catch (error) {
@@ -263,7 +263,6 @@ export const Filtro7 = async () => {
         return [];
     }
 };
-
 
 
 export const Filtro9 = (datos, termino_a_filtrar) => {
@@ -406,7 +405,7 @@ export const Filtro11 = async () => {
             sheetName: 'Proc_X_Prog', 
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
-        console.log("hoja de nuevo esta es",response.data);
+        //console.log("hoja de nuevo esta es",response.data);
         return response.data;
     } catch (error) {
         console.error('Error en la solicitud:', error);
@@ -421,7 +420,7 @@ export const Filtro21 = async () => {
             sheetName: hojaProc_X_Prog_Doc, 
             urlEndPoint: 'https://siac-server.vercel.app/'
         });
-        console.log("hoja de nuevo esta es",response.data);
+        //console.log("hoja de nuevo esta es",response.data);
         return response.data;
     } catch (error) {
         console.error('Error en la solicitud:', error);
