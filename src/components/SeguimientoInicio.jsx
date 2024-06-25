@@ -54,28 +54,46 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 const SeguimientoInicio = () => {
     const [selectedEscuela, setSelectedEscuela] = useState('');
     const [scores, setScores] = useState({});
+    const [descriptions, setDescriptions] = useState({});
     const [data, setData] = useState([]);
     const [selectedProgramType, setSelectedProgramType] = useState('pre');
 
     const handleClickOpen = (escuela) => {
         setSelectedEscuela(escuela);
-        // Load descriptions for the selected school
         const escuelaData = data.find(d => d.escuela === escuela) || {};
         setScores({
-            [programasBase[0]]: { descripcion: escuelaData.descripcion_1 || '' },
-            [programasBase[1]]: { descripcion: escuelaData.descripcion_2 || '' },
-            [programasBase[2]]: { descripcion: escuelaData.descripcion_3 || '' },
-            [programasBase[3]]: { descripcion: escuelaData.descripcion_4 || '' },
+            pre: [
+                escuelaData.porc_anexos_pre || '',
+                escuelaData.cant_rc_pre || '',
+                escuelaData.cant_aac_pre || '',
+                escuelaData.porc_pm_pre || ''
+            ],
+            pos: [
+                escuelaData.porc_anexos_pos || '',
+                escuelaData.cant_rc_pos || '',
+                escuelaData.cant_aac_pos || '',
+                escuelaData.porc_pm_pos || ''
+            ]
+        });
+        setDescriptions({
+            descripcion_1: escuelaData.descripcion_1 || '',
+            descripcion_2: escuelaData.descripcion_2 || '',
+            descripcion_3: escuelaData.descripcion_3 || '',
+            descripcion_4: escuelaData.descripcion_4 || ''
         });
     };
 
-    const handleScoreChange = (program, field, value) => {
+    const handleScoreChange = (index, value) => {
         setScores(prevScores => ({
             ...prevScores,
-            [program]: {
-                ...prevScores[program],
-                [field]: value
-            }
+            [selectedProgramType]: prevScores[selectedProgramType].map((score, i) => i === index ? value : score)
+        }));
+    };
+
+    const handleDescriptionChange = (field, value) => {
+        setDescriptions(prevDescriptions => ({
+            ...prevDescriptions,
+            [field]: value
         }));
     };
 
@@ -92,16 +110,6 @@ const SeguimientoInicio = () => {
         fetchData();
     }, []);
 
-    const getScoresForEscuela = (escuela) => {
-        const escuelaData = data.find(d => d.escuela === escuela) || {};
-        return {
-            pre: [escuelaData.porc_anexos_pre, escuelaData.cant_rc_pre, escuelaData.cant_aac_pre, escuelaData.porc_pm_pre],
-            pos: [escuelaData.porc_anexos_pos, escuelaData.cant_rc_pos, escuelaData.cant_aac_pos, escuelaData.porc_pm_pos]
-        };
-    };
-
-    const scoresForSelectedEscuela = getScoresForEscuela(selectedEscuela);
-
     const handleCorteClick = async () => {
         const today = format(new Date(), 'dd/MM/yyyy');
         const filteredData = data.filter(item => item.escuela === selectedEscuela);
@@ -111,18 +119,18 @@ const SeguimientoInicio = () => {
             return {
                 id: item.id,
                 escuela: item.escuela,
-                porc_anexos_pre: cleanData(item.porc_anexos_pre),
-                cant_rc_pre: cleanData(item.cant_rc_pre),
-                cant_aac_pre: cleanData(item.cant_aac_pre),
-                porc_pm_pre: cleanData(item.porc_pm_pre),
-                porc_anexos_pos: cleanData(item.porc_anexos_pos),
-                cant_rc_pos: cleanData(item.cant_rc_pos),
-                cant_aac_pos: cleanData(item.cant_aac_pos),
-                porc_pm_pos: cleanData(item.porc_pm_pos),
-                descripcion_1: scores[programasBase[0]]?.descripcion || '',
-                descripcion_2: scores[programasBase[1]]?.descripcion || '',
-                descripcion_3: scores[programasBase[2]]?.descripcion || '',
-                descripcion_4: scores[programasBase[3]]?.descripcion || '',
+                porc_anexos_pre: cleanData(scores.pre[0]),
+                cant_rc_pre: cleanData(scores.pre[1]),
+                cant_aac_pre: cleanData(scores.pre[2]),
+                porc_pm_pre: cleanData(scores.pre[3]),
+                porc_anexos_pos: cleanData(scores.pos[0]),
+                cant_rc_pos: cleanData(scores.pos[1]),
+                cant_aac_pos: cleanData(scores.pos[2]),
+                porc_pm_pos: cleanData(scores.pos[3]),
+                descripcion_1: descriptions.descripcion_1,
+                descripcion_2: descriptions.descripcion_2,
+                descripcion_3: descriptions.descripcion_3,
+                descripcion_4: descriptions.descripcion_4,
                 fecha_corte: today
             };
         });
@@ -165,10 +173,10 @@ const SeguimientoInicio = () => {
         const updatedData = {
             id: filteredData.id,
             escuela: filteredData.escuela,
-            descripcion_1: scores[programasBase[0]]?.descripcion || '',
-            descripcion_2: scores[programasBase[1]]?.descripcion || '',
-            descripcion_3: scores[programasBase[2]]?.descripcion || '',
-            descripcion_4: scores[programasBase[3]]?.descripcion || '',
+            descripcion_1: descriptions.descripcion_1,
+            descripcion_2: descriptions.descripcion_2,
+            descripcion_3: descriptions.descripcion_3,
+            descripcion_4: descriptions.descripcion_4
         };
 
         const dataupdateescuela = [
@@ -221,6 +229,7 @@ const SeguimientoInicio = () => {
                 </div>
                 <div style={{ flex: 1, marginLeft: '50px' }}>
                     {selectedEscuela && (
+                        <>
                         <div>
                             <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', width: '90%', marginBottom: '20px' }}>
@@ -257,11 +266,9 @@ const SeguimientoInicio = () => {
                                             <TableCell>
                                                 <TextField
                                                     variant="outlined"
-                                                    value={scoresForSelectedEscuela[selectedProgramType][index] || ''}
+                                                    value={scores[selectedProgramType][index] || ''}
+                                                    onChange={(e) => handleScoreChange(index, e.target.value)}
                                                     style={{ width: '80px' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                    }}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -269,8 +276,8 @@ const SeguimientoInicio = () => {
                                                     variant="outlined"
                                                     multiline
                                                     rows={2}
-                                                    value={scores[program]?.descripcion || ''}
-                                                    onChange={(e) => handleScoreChange(program, 'descripcion', e.target.value)}
+                                                    value={descriptions[`descripcion_${index + 1}`] || ''}
+                                                    onChange={(e) => handleDescriptionChange(`descripcion_${index + 1}`, e.target.value)}
                                                     style={{ width: '100%' }}
                                                 />
                                             </TableCell>
@@ -295,6 +302,7 @@ const SeguimientoInicio = () => {
                                 </Button>
                             </div>
                         </div>
+                        </>
                     )}
                 </div>
             </div>

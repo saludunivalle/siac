@@ -81,8 +81,9 @@ const Crea = ({ globalVariable }) => {
         try {
             
             const seguimientos = filteredDataSeg;   
-            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa && item['topic'] === 'Creación');
-            
+            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
+            console.log('datos de crea', response)
+
             if (response.length === 0) {
                 return 'white';
             }

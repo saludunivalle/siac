@@ -116,7 +116,7 @@ const SemaforoAC = ({ globalVariable }) => {
         try {
             
             const seguimientos = filteredDataSeg;   
-            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa && (item['topic'] === 'Renovación Acreditación' || item['topic'] === 'Plan de Mejoramiento RAAC'));
+            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
             
             if (response.length === 0) {
                 return 'white';

@@ -79,7 +79,7 @@ const Aac = ({ globalVariable }) => {
         try {
             
             const seguimientos = filteredDataSeg;   
-            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa && item['topic'] === 'Acreditación');
+            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
             
             if (response.length === 0) {
                 return 'white';

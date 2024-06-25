@@ -86,7 +86,7 @@ const Mod = ({ globalVariable }) => {
         try {
             
             const seguimientos = filteredDataSeg;   
-            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa && item['topic'] === 'Modificación');
+            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
             
             if (response.length === 0) {
                 return 'white';

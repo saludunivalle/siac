@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ButtonGroup, Button } from '@mui/material';
-import CircularProgress from '@mui/material/CircularProgress';
+import { Button, CircularProgress } from '@mui/material';
 import Semaforo from './Semaforo';
 import SemaforoAc from './SemaforoAc';
 import { Filtro5, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
@@ -16,6 +15,14 @@ const Home = () => {
   const [selectedValue, setSelectedValue] = useState();
   const [semaforoVisible, setSemaforoVisible] = useState(false);
   const [semaforoAcVisible, setSemaforoAcVisible] = useState(false);
+  const [counts, setCounts] = useState({
+    CREA: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+    MOD: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+    RRC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+    AAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+    RAAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+    INT: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+  });
   const [activosCount, setActivosCount] = useState(0);
   const [creacionCount, setCreacionCount] = useState(0);
   const [creacionSedesCount, setCreacionSedesCount] = useState(0);
@@ -28,12 +35,13 @@ const Home = () => {
   const [modCount, setModCount] = useState(0);
   const navigate = useNavigate();
   const [programasVisible, setProgramasVisible] = useState(true);
-  const [buttonsVisible, setButtonsVisible] = useState(true); // Estado para controlar la visibilidad de los botones Seguimiento PM y Reporte Actividades
+  const [buttonsVisible, setButtonsVisible] = useState(true);
   const [rowData, setRowData] = useState(null);
   const [filteredData, setFilteredData] = useState(null);
   const [user, setUser] = useState('');
   const [isCargo, setCargo] = useState([' ']);
-  const [isLoading, setIsLoading] = useState(false); // Estado de carga
+  const [isLoading, setIsLoading] = useState(false); 
+  const [selectedRow, setSelectedRow] = useState(null); 
 
   useEffect(() => {
     if (sessionStorage.getItem('logged')) {
@@ -48,6 +56,7 @@ const Home = () => {
   useEffect(() => {
     if (isCargo.includes('Posgrados')) {
       const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+      console.log("Datos filtrados por Posgrados:", filtered);
       setFilteredData(filtered);
     } else {
       setFilteredData(rowData);
@@ -61,6 +70,7 @@ const Home = () => {
         if (isCargo.includes('Posgrados')) {
           const filtered = await Filtro5();
           response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+          console.log("Datos de Posgrados filtrados en fetchData:", response);
         } else {
           response = await Filtro5();
         }
@@ -76,6 +86,11 @@ const Home = () => {
         setModCount(response.filter(item => item['mod'] === 'SI').length);
         setRowData(response);
         setFilteredData(response);
+
+        console.log("Datos de programas filtrados en fetchData:", response);
+
+        const seguimientos = await Filtro7();
+        processSeguimientos(seguimientos, response);
       } catch (error) {
         console.error('Error al filtrar datos:', error);
       }
@@ -87,27 +102,71 @@ const Home = () => {
     fetchData();
   }, [isCargo]);
 
+  const processSeguimientos = (seguimientos, programas) => {
+    const estados = {
+      CREA: programas.filter(item => item['estado'] === 'En Creación').map(item => item.id_programa),
+      MOD: programas.filter(item => item['mod'] === 'SI').map(item => item.id_programa),
+      RRC: programas.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').map(item => item.id_programa),
+      AAC: programas.filter(item => item['aac_1a'] === 'SI').map(item => item.id_programa),
+      RAAC: programas.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').map(item => item.id_programa),
+    };
+
+    console.log("Estados procesados:", estados);
+
+    const newCounts = {
+      CREA: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+      MOD: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+      RRC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+      AAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+      RAAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+      INT: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 }, 
+    };
+
+    Object.keys(estados).forEach((estado) => {
+      const filtered = seguimientos.filter((item) => estados[estado].includes(item.id_programa));
+      console.log(`Seguimientos filtrados para ${estado}:`, filtered);
+
+      const latestSeguimientos = {};
+      filtered.forEach(item => {
+        const idPrograma = item.id_programa;
+        if (!latestSeguimientos[idPrograma] || new Date(item.timestamp) > new Date(latestSeguimientos[idPrograma].timestamp)) {
+          latestSeguimientos[idPrograma] = item;
+        }
+      });
+
+      Object.values(latestSeguimientos).forEach(item => {
+        const riesgo = item.riesgo;
+        if (riesgo === 'Alto') {
+          newCounts[estado].Alto += 1;
+        } else if (riesgo === 'Medio') {
+          newCounts[estado].Medio += 1;
+        } else if (riesgo === 'Bajo') {
+          newCounts[estado].Bajo += 1;
+        }
+      });
+
+      const sinRegistro = estados[estado].length - Object.keys(latestSeguimientos).length;
+      newCounts[estado].SinRegistro += sinRegistro;
+    });
+
+    console.log("Conteos actualizados:", newCounts);
+    setCounts(newCounts);
+  };
+
   const handleBackClick = () => {
     setProgramasVisible(true);
     setSemaforoVisible(false);
     setSemaforoAcVisible(false);
     setSelectedValue();
-    setButtonsVisible(true); // Mostrar los botones de nuevo
+    setSelectedRow(null);
+    setButtonsVisible(true); 
   };
 
-  const setButtonStyles = (buttonValue) => {
-    return {
-      color: selectedValue === buttonValue ? 'white' : 'grey',
-      backgroundColor: selectedValue === buttonValue ? 'grey' : 'transparent',
-      border: `2px solid ${selectedValue === buttonValue ? 'grey' : 'grey'}`,
-      borderRadius: '6px',
-    };
-  };
-
-  const handleButtonClick = (buttonValue) => {
+  const handleRowClick = (buttonValue, globalVar, rowKey) => {
     setSelectedValue(buttonValue);
     setSemaforoVisible(false);
     setSemaforoAcVisible(false);
+    setSelectedRow(rowKey); 
 
     if (buttonValue === 'option1') {
       setSemaforoVisible(true);
@@ -115,7 +174,8 @@ const Home = () => {
       setSemaforoAcVisible(true);
     }
     setProgramasVisible(false);
-    setButtonsVisible(false); // Ocultar los botones de Seguimiento PM y Reporte Actividades
+    setButtonsVisible(false); 
+    setGlobalVariable(globalVar);
   };
 
   const handleClick = () => {
@@ -199,76 +259,154 @@ const Home = () => {
         </div>
       )}
       <Header />
-      <div className='container-general'>
-        <div className='alltogetherGeneral'>
-          <div style={{ fontSize: '25px', paddingBottom: '60px' }}>Procesos de Calidad</div>
+      <div className='container-general' style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', width: '100%', paddingTop: '20px' }}>
+        <div className='alltogetherGeneral' style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start'}}>
+          <div style={{ fontSize: '25px', width:'100%', paddingBottom: '60px', display: 'flex', justifyContent:'center' }}>Procesos de Calidad</div>
           <div className='alltogether'>
-            <div className='alltogether1'>
-              <div className="banner">
-                <div className="linea1"></div>
-                <div className="text">Registro Calificado</div>
-                <div className="linea1"></div>
-              </div>
-              <div className='buttons-container'>
-                <ButtonGroup
-                  aria-label="gender"
-                  name="controlled-radio-buttons-group"
-                  className='radio-group'
-                >
-                  <Button value="option4" className="custom-radio"
-                    style={setButtonStyles('option4')}
-                    onClick={() => { handleButtonClick('option4'), setGlobalVariable('CREA') }}
-                  > CREA <br />
-                    {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} />}
-                  </Button>
-                  <Button value="option5" className="custom-radio"
-                    style={setButtonStyles('option5')}
-                    onClick={() => { handleButtonClick('option5'), setGlobalVariable('MOD') }}
-                  > MOD <br />
-                    {modCount !== 0 ? modCount : <CircularProgress size={20} />}
-                  </Button>
-                  <Button value="option1" className="custom-radio"
-                    style={setButtonStyles('option1')}
-                    onClick={() => { handleButtonClick('option1'), setGlobalVariable('RRC') }}
-                  > RRC <br />
-                    {rrcCount !== 0 ? rrcCount : <CircularProgress size={20} />}
-                  </Button>
-                </ButtonGroup>
-              </div>
-            </div>
-            <div className='alltogether1'>
-              <div className="banner">
-                <div className="linea2"></div>
-                <div className="text">Acreditación</div>
-                <div className="linea2"></div>
-              </div>
-              <div className='buttons-container'>
-                <ButtonGroup
-                  aria-label="gender"
-                  name="controlled-radio-buttons-group"
-                  className='radio-group'
-                >
-                  <Button value="option3" className="custom-radio"
-                    style={setButtonStyles('option3')}
-                    onClick={() => { handleButtonClick('option3'), setGlobalVariable('AAC') }}
-                  > AAC <br />
-                    {aacCount !== 0 ? aacCount : <CircularProgress size={20} />}
-                  </Button>
-                  <Button value="option2" className="custom-radio"
-                    style={setButtonStyles('option2')}
-                    onClick={() => { handleButtonClick('option2'), setGlobalVariable('RAAC') }}
-                  > RAAC  <br />
-                    {raacCount !== 0 ? raacCount : <CircularProgress size={20} />}
-                  </Button>
-                  <Button value="option3" className="custom-radio"
-                    style={{ color: 'grey', border: '2px solid grey', borderRadius: '6px' }}> INT </Button>
-                </ButtonGroup>
-              </div>
-            </div>
+            <table className='buttons-table' style={{ marginTop: '20px' }}>
+              <thead>
+                <tr>
+                  <th>Proceso</th>
+                  <th>Alto</th>
+                  <th>Medio</th>
+                  <th>Bajo</th>
+                  <th>Sin registro</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedRow === null && (
+                  <>
+                    <tr>
+                      <td colSpan="6" className="section-header">Registro Calificado</td>
+                    </tr>
+                    <tr onClick={() => handleRowClick('option4', 'CREA', 'CREA')} className="hoverable-row">
+                      <td>CREA</td>
+                      <td>{counts.CREA.Alto}</td>
+                      <td>{counts.CREA.Medio}</td>
+                      <td>{counts.CREA.Bajo}</td>
+                      <td>{counts.CREA.SinRegistro}</td>
+                      <td>{counts.CREA.Alto + counts.CREA.Medio + counts.CREA.Bajo + counts.CREA.SinRegistro}</td>
+                    </tr>
+                    <tr onClick={() => handleRowClick('option5', 'MOD', 'MOD')} className="hoverable-row">
+                      <td>MOD</td>
+                      <td>{counts.MOD.Alto}</td>
+                      <td>{counts.MOD.Medio}</td>
+                      <td>{counts.MOD.Bajo}</td>
+                      <td>{counts.MOD.SinRegistro}</td>
+                      <td>{counts.MOD.Alto + counts.MOD.Medio + counts.MOD.Bajo + counts.MOD.SinRegistro}</td>
+                    </tr>
+                    <tr onClick={() => handleRowClick('option1', 'RRC', 'RRC')} className="hoverable-row">
+                      <td>RRC</td>
+                      <td>{counts.RRC.Alto}</td>
+                      <td>{counts.RRC.Medio}</td>
+                      <td>{counts.RRC.Bajo}</td>
+                      <td>{counts.RRC.SinRegistro}</td>
+                      <td>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan="6" className="section-header">Acreditación de Alta Calidad</td>
+                    </tr>
+                    <tr onClick={() => handleRowClick('option3', 'AAC', 'AAC')} className="hoverable-row">
+                      <td>AAC</td>
+                      <td>{counts.AAC.Alto}</td>
+                      <td>{counts.AAC.Medio}</td>
+                      <td>{counts.AAC.Bajo}</td>
+                      <td>{counts.AAC.SinRegistro}</td>
+                      <td>{counts.AAC.Alto + counts.AAC.Medio + counts.AAC.Bajo + counts.AAC.SinRegistro}</td>
+                    </tr>
+                    <tr onClick={() => handleRowClick('option2', 'RAAC', 'RAAC')} className="hoverable-row">
+                      <td>RAAC</td>
+                      <td>{counts.RAAC.Alto}</td>
+                      <td>{counts.RAAC.Medio}</td>
+                      <td>{counts.RAAC.Bajo}</td>
+                      <td>{counts.RAAC.SinRegistro}</td>
+                      <td>{counts.RAAC.Alto + counts.RAAC.Medio + counts.RAAC.Bajo + counts.RAAC.SinRegistro}</td>
+                    </tr>
+                    <tr className="hoverable-row">
+                      <td>INT</td>
+                      <td>0</td>
+                      <td>0</td>
+                      <td>0</td>
+                      <td>0</td>
+                      <td>0</td>
+                    </tr>
+                    <tr>
+                      <td>TOTAL</td>
+                      <td>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto}</td>
+                      <td>{counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio}</td>
+                      <td>{counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo}</td>
+                      <td>{counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</td>
+                      <td>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto + counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio + counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo + counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</td>
+                    </tr>
+                  </>
+                )}
+                {selectedRow === 'CREA' && (
+                  <>
+                    <tr>
+                      <td>CREA</td>
+                      <td>{counts.CREA.Alto}</td>
+                      <td>{counts.CREA.Medio}</td>
+                      <td>{counts.CREA.Bajo}</td>
+                      <td>{counts.CREA.SinRegistro}</td>
+                      <td>{counts.CREA.Alto + counts.CREA.Medio + counts.CREA.Bajo + counts.CREA.SinRegistro}</td>
+                    </tr>
+                  </>
+                )}
+                {selectedRow === 'MOD' && (
+                  <>
+                    <tr>
+                      <td>MOD</td>
+                      <td>{counts.MOD.Alto}</td>
+                      <td>{counts.MOD.Medio}</td>
+                      <td>{counts.MOD.Bajo}</td>
+                      <td>{counts.MOD.SinRegistro}</td>
+                      <td>{counts.MOD.Alto + counts.MOD.Medio + counts.MOD.Bajo + counts.MOD.SinRegistro}</td>
+                    </tr>
+                  </>
+                )}
+                {selectedRow === 'RRC' && (
+                  <>
+                    <tr>
+                      <td>RRC</td>
+                      <td>{counts.RRC.Alto}</td>
+                      <td>{counts.RRC.Medio}</td>
+                      <td>{counts.RRC.Bajo}</td>
+                      <td>{counts.RRC.SinRegistro}</td>
+                      <td>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</td>
+                    </tr>
+                  </>
+                )}
+                {selectedRow === 'AAC' && (
+                  <>
+                    <tr>
+                      <td>AAC</td>
+                      <td>{counts.AAC.Alto}</td>
+                      <td>{counts.AAC.Medio}</td>
+                      <td>{counts.AAC.Bajo}</td>
+                      <td>{counts.AAC.SinRegistro}</td>
+                      <td>{counts.AAC.Alto + counts.AAC.Medio + counts.AAC.Bajo + counts.AAC.SinRegistro}</td>
+                    </tr>
+                  </>
+                )}
+                {selectedRow === 'RAAC' && (
+                  <>
+                    <tr>
+                      <td>RAAC</td>
+                      <td>{counts.RAAC.Alto}</td>
+                      <td>{counts.RAAC.Medio}</td>
+                      <td>{counts.RAAC.Bajo}</td>
+                      <td>{counts.RAAC.SinRegistro}</td>
+                      <td>{counts.RAAC.Alto + counts.RAAC.Medio + counts.RAAC.Bajo + counts.RAAC.SinRegistro}</td>
+                    </tr>
+                  </>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
         {programasVisible && (
-          <div className='programas' onClick={handleClick}>
+          <div className='programas' onClick={handleClick} style={{ alignSelf: 'flex-start', marginLeft: '20px' }}>
             <div className='title'><strong>Programas</strong></div>
             <table>
               <thead>
@@ -313,9 +451,9 @@ const Home = () => {
           </div>
         )}
       </div>
-      {buttonsVisible && ( // Mostrar u ocultar los botones según el estado buttonsVisible
+      {buttonsVisible && ( 
         <>
-          <div style={{width:"68%", display:"flex", justifyContent:"center"}}>
+          <div  style={{width:"100%", display:"flex", justifyContent:"center", marginTop: '20px', flexDirection:'row', gap:'20px' }}>
             <Button
               variant="contained"
               color="primary"
@@ -327,7 +465,6 @@ const Home = () => {
                 border: '2px solid #666666',
                 borderRadius: '6px',
                 width: '200px',
-                margin: '0 auto',
               }}
               sx={{
                 '&:hover': {
@@ -338,8 +475,6 @@ const Home = () => {
             >
               Seguimiento PM 
             </Button>
-          </div>
-          <div style={{width:"68%", display:"flex", justifyContent:"center", marginTop:"15px"}}>
             <Button
               variant="contained"
               color="primary"
@@ -351,7 +486,6 @@ const Home = () => {
                 border: '2px solid #666666',
                 borderRadius: '6px',
                 width: '200px',
-                margin: '0 auto',
               }}
               sx={{
                 '&:hover': {
@@ -367,32 +501,33 @@ const Home = () => {
       )}
       {selectedValue === 'option1' && (
         <>
+          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
           <Semaforo globalVariable={globalVariable} />
-          <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
+          
         </>
       )}
       {selectedValue === 'option2' && (
         <>
+          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
           <SemaforoAc globalVariable={globalVariable} />
-          <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
         </>
       )}
       {selectedValue === 'option4' && (
         <>
+          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
           <Crea globalVariable={globalVariable} />
-          <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
         </>
       )}
       {selectedValue === 'option3' && (
         <>
+          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
           <Aac globalVariable={globalVariable} />
-          <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
         </>
       )}
       {selectedValue === 'option5' && (
         <>
+          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
           <Mod globalVariable={globalVariable} />
-          <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
         </>
       )}
     </>

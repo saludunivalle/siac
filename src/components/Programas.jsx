@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
-import { Button, ButtonGroup } from "@mui/material";
+import { Button, ButtonGroup, Tooltip } from "@mui/material";
 import { useEffect, useState } from "react";
 import { styled } from '@mui/material/styles';
 import { Filtro4, Filtro5, Filtro7 } from "../service/data";
@@ -16,12 +16,12 @@ const Programas = () => {
     const [filteredData, setFilteredData] = useState(rowData);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');
     const [loading, setLoading] = useState(false);
-    const [activosCount, setActivosCount]= useState(0);
-    const [creacionCount, setCreacionCount]= useState(0);
-    const [creacionSedesCount, setCreacionSedesCount]= useState(0);
-    const [activoSedesCount, setActivoSedesCount]= useState(0);
-    const [inactivosCount, setInactivosCount]= useState(0);
-    const [otrosCount, setOtrosCount]= useState(0);
+    const [activosCount, setActivosCount] = useState(0);
+    const [creacionCount, setCreacionCount] = useState(0);
+    const [creacionSedesCount, setCreacionSedesCount] = useState(0);
+    const [activoSedesCount, setActivoSedesCount] = useState(0);
+    const [inactivosCount, setInactivosCount] = useState(0);
+    const [otrosCount, setOtrosCount] = useState(0);
     const [filteredDataSeg, setFilteredDataSeg] = useState([]);
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [user, setUser] = useState('');
@@ -94,14 +94,13 @@ const Programas = () => {
     const getCellBackgroundColor = (item, process) => {
         const seguimientos = filteredDataSeg.filter(seg => seg.id_programa === item.id_programa);
         if (seguimientos.length === 0) {
-            // No hay seguimientos, pero está en un proceso
             if ((process === 'CREA' && (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*')) ||
                 (process === 'MOD' && item['mod'] === 'SI') ||
                 (process === 'RRC' && item['rc vigente'] === 'SI') ||
                 (process === 'AAC' && item['aac_1a'] === 'SI') ||
                 (process === 'RAAC' && item['ac vigente'] === 'SI') ||
                 (process === 'INT')) {
-                return '#E0E0E0'; // Gris clarito
+                return '#E0E0E0'; 
             }
             return 'white';
         }
@@ -119,14 +118,13 @@ const Programas = () => {
         };
 
         if (recentSeguimiento.topic !== topicMap[process]) {
-            // No hay seguimiento reciente para el proceso, pero está en un proceso
             if ((process === 'CREA' && (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*')) ||
                 (process === 'MOD' && item['mod'] === 'SI') ||
                 (process === 'RRC' && item['rc vigente'] === 'SI') ||
                 (process === 'AAC' && item['aac_1a'] === 'SI') ||
                 (process === 'RAAC' && item['ac vigente'] === 'SI') ||
                 (process === 'INT')) {
-                return '#E0E0E0'; // Gris clarito
+                return '#E0E0E0'; 
             }
             return 'white';
         }
@@ -248,12 +246,24 @@ const Programas = () => {
                                     <td>{item['sección']}</td>
                                     <td>{item['estado']}</td>
                                     <td>{item['nivel de formación']}</td>
-                                    <td style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'CREA') }}>{/* CREA */}</td>
-                                    <td style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'MOD') }}>{/* MOD */}</td>
-                                    <td style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'RRC') }}>{/* RRC */}</td>
-                                    <td style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'AAC') }}>{/* AAC */}</td>
-                                    <td style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'RAAC') }}>{/* RAAC */}</td>
-                                    <td style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'INT') }}>{/* INT */}</td>
+                                    <Tooltip title="CREA" arrow>
+                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'CREA') }}>{/* CREA */}</td>
+                                    </Tooltip>
+                                    <Tooltip title="MOD" arrow>
+                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'MOD') }}>{/* MOD */}</td>
+                                    </Tooltip>
+                                    <Tooltip title="RRC" arrow>
+                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'RRC') }}>{/* RRC */}</td>
+                                    </Tooltip>
+                                    <Tooltip title="AAC" arrow>
+                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'AAC') }}>{/* AAC */}</td>
+                                    </Tooltip>
+                                    <Tooltip title="RAAC" arrow>
+                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'RAAC') }}>{/* RAAC */}</td>
+                                    </Tooltip>
+                                    <Tooltip title="INT" arrow>
+                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'INT') }}>{/* INT */}</td>
+                                    </Tooltip>
                                 </tr>
                             ))}
                         </tbody>
