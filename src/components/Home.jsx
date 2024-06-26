@@ -166,8 +166,14 @@ const Home = () => {
     setSelectedValue(buttonValue);
     setSemaforoVisible(false);
     setSemaforoAcVisible(false);
-    setSelectedRow(rowKey); 
-
+  
+    const validRowKeys = ['CREA', 'MOD', 'RRC', 'AAC', 'RAAC'];
+    if (validRowKeys.includes(rowKey)) {
+      setSelectedRow(rowKey);
+    } else {
+      setSelectedRow(null);
+    }
+  
     if (buttonValue === 'option1') {
       setSemaforoVisible(true);
     } else if (buttonValue === 'option2') {
@@ -212,7 +218,7 @@ const Home = () => {
         console.error('Error al preparar datos del reporte:', error);
         throw error;
     }
-};
+  };
 
   const downloadSheet = (spreadsheetId) => {
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
@@ -249,7 +255,24 @@ const Home = () => {
     } finally {
         setIsLoading(false); 
     }
-};
+  };
+
+  const getTitle = () => {
+    switch (selectedRow) {
+      case 'CREA':
+        return 'Programas en Proceso de Creación';
+      case 'MOD':
+        return 'Programas en Proceso de Modificación';
+      case 'RRC':
+        return 'Programas en Proceso de Renovación Registro Calificado';
+      case 'RAAC':
+        return 'Programas en Proceso de Renovación Acreditación';
+      case 'AAC':
+        return 'Programas en Proceso de Acreditación';
+      default:
+        return 'Procesos de Calidad';
+    }
+  };
 
   return (
     <>
@@ -260,154 +283,109 @@ const Home = () => {
       )}
       <Header />
       <div className='container-general' style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', width: '100%', paddingTop: '20px' }}>
-        <div className='alltogetherGeneral' style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start'}}>
-          <div style={{ fontSize: '25px', width:'100%', paddingBottom: '60px', display: 'flex', justifyContent:'center' }}>Procesos de Calidad</div>
-          <div className='alltogether'>
-            <table className='buttons-table' style={{ marginTop: '20px' }}>
-              <thead>
-                <tr>
-                  <th>Proceso</th>
-                  <th>Alto</th>
-                  <th>Medio</th>
-                  <th>Bajo</th>
-                  <th>Sin registro</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedRow === null && (
-                  <>
-                    <tr>
-                      <td colSpan="6" className="section-header">Registro Calificado</td>
-                    </tr>
-                    <tr onClick={() => handleRowClick('option4', 'CREA', 'CREA')} className="hoverable-row">
-                      <td>CREA</td>
-                      <td>{counts.CREA.Alto}</td>
-                      <td>{counts.CREA.Medio}</td>
-                      <td>{counts.CREA.Bajo}</td>
-                      <td>{counts.CREA.SinRegistro}</td>
-                      <td>{counts.CREA.Alto + counts.CREA.Medio + counts.CREA.Bajo + counts.CREA.SinRegistro}</td>
-                    </tr>
-                    <tr onClick={() => handleRowClick('option5', 'MOD', 'MOD')} className="hoverable-row">
-                      <td>MOD</td>
-                      <td>{counts.MOD.Alto}</td>
-                      <td>{counts.MOD.Medio}</td>
-                      <td>{counts.MOD.Bajo}</td>
-                      <td>{counts.MOD.SinRegistro}</td>
-                      <td>{counts.MOD.Alto + counts.MOD.Medio + counts.MOD.Bajo + counts.MOD.SinRegistro}</td>
-                    </tr>
-                    <tr onClick={() => handleRowClick('option1', 'RRC', 'RRC')} className="hoverable-row">
-                      <td>RRC</td>
-                      <td>{counts.RRC.Alto}</td>
-                      <td>{counts.RRC.Medio}</td>
-                      <td>{counts.RRC.Bajo}</td>
-                      <td>{counts.RRC.SinRegistro}</td>
-                      <td>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</td>
-                    </tr>
-                    <tr>
-                      <td colSpan="6" className="section-header">Acreditación de Alta Calidad</td>
-                    </tr>
-                    <tr onClick={() => handleRowClick('option3', 'AAC', 'AAC')} className="hoverable-row">
-                      <td>AAC</td>
-                      <td>{counts.AAC.Alto}</td>
-                      <td>{counts.AAC.Medio}</td>
-                      <td>{counts.AAC.Bajo}</td>
-                      <td>{counts.AAC.SinRegistro}</td>
-                      <td>{counts.AAC.Alto + counts.AAC.Medio + counts.AAC.Bajo + counts.AAC.SinRegistro}</td>
-                    </tr>
-                    <tr onClick={() => handleRowClick('option2', 'RAAC', 'RAAC')} className="hoverable-row">
-                      <td>RAAC</td>
-                      <td>{counts.RAAC.Alto}</td>
-                      <td>{counts.RAAC.Medio}</td>
-                      <td>{counts.RAAC.Bajo}</td>
-                      <td>{counts.RAAC.SinRegistro}</td>
-                      <td>{counts.RAAC.Alto + counts.RAAC.Medio + counts.RAAC.Bajo + counts.RAAC.SinRegistro}</td>
-                    </tr>
-                    <tr className="hoverable-row">
-                      <td>INT</td>
-                      <td>0</td>
-                      <td>0</td>
-                      <td>0</td>
-                      <td>0</td>
-                      <td>0</td>
-                    </tr>
-                    <tr>
-                      <td>TOTAL</td>
-                      <td>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto}</td>
-                      <td>{counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio}</td>
-                      <td>{counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo}</td>
-                      <td>{counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</td>
-                      <td>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto + counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio + counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo + counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</td>
-                    </tr>
-                  </>
-                )}
-                {selectedRow === 'CREA' && (
-                  <>
-                    <tr>
-                      <td>CREA</td>
-                      <td>{counts.CREA.Alto}</td>
-                      <td>{counts.CREA.Medio}</td>
-                      <td>{counts.CREA.Bajo}</td>
-                      <td>{counts.CREA.SinRegistro}</td>
-                      <td>{counts.CREA.Alto + counts.CREA.Medio + counts.CREA.Bajo + counts.CREA.SinRegistro}</td>
-                    </tr>
-                  </>
-                )}
-                {selectedRow === 'MOD' && (
-                  <>
-                    <tr>
-                      <td>MOD</td>
-                      <td>{counts.MOD.Alto}</td>
-                      <td>{counts.MOD.Medio}</td>
-                      <td>{counts.MOD.Bajo}</td>
-                      <td>{counts.MOD.SinRegistro}</td>
-                      <td>{counts.MOD.Alto + counts.MOD.Medio + counts.MOD.Bajo + counts.MOD.SinRegistro}</td>
-                    </tr>
-                  </>
-                )}
-                {selectedRow === 'RRC' && (
-                  <>
-                    <tr>
-                      <td>RRC</td>
-                      <td>{counts.RRC.Alto}</td>
-                      <td>{counts.RRC.Medio}</td>
-                      <td>{counts.RRC.Bajo}</td>
-                      <td>{counts.RRC.SinRegistro}</td>
-                      <td>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</td>
-                    </tr>
-                  </>
-                )}
-                {selectedRow === 'AAC' && (
-                  <>
-                    <tr>
-                      <td>AAC</td>
-                      <td>{counts.AAC.Alto}</td>
-                      <td>{counts.AAC.Medio}</td>
-                      <td>{counts.AAC.Bajo}</td>
-                      <td>{counts.AAC.SinRegistro}</td>
-                      <td>{counts.AAC.Alto + counts.AAC.Medio + counts.AAC.Bajo + counts.AAC.SinRegistro}</td>
-                    </tr>
-                  </>
-                )}
-                {selectedRow === 'RAAC' && (
-                  <>
-                    <tr>
-                      <td>RAAC</td>
-                      <td>{counts.RAAC.Alto}</td>
-                      <td>{counts.RAAC.Medio}</td>
-                      <td>{counts.RAAC.Bajo}</td>
-                      <td>{counts.RAAC.SinRegistro}</td>
-                      <td>{counts.RAAC.Alto + counts.RAAC.Medio + counts.RAAC.Bajo + counts.RAAC.SinRegistro}</td>
-                    </tr>
-                  </>
-                )}
-              </tbody>
-            </table>
-          </div>
+      <div className='alltogetherGeneral' style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start'}}>
+        <div style={{ fontSize: '25px', width: '100%', paddingBottom: '60px', display: 'flex', justifyContent: 'center' }}>
+          {getTitle()}
         </div>
+        <div className='alltogether'>
+          <table className='buttons-table' style={{ marginTop: '20px' }}>
+            <thead>
+              <tr>
+                {selectedRow === null && <th>Proceso</th>}
+                <th>Alto</th>
+                <th>Medio</th>
+                <th>Bajo</th>
+                <th>Sin registro</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedRow === null ? (
+                <>
+                  <tr>
+                    <td colSpan="6" className="section-header">Registro Calificado</td>
+                  </tr>
+                  <tr onClick={() => handleRowClick('option4', 'CREA', 'CREA')} className="hoverable-row">
+                    <td>CREA</td>
+                    <td>{counts.CREA.Alto}</td>
+                    <td>{counts.CREA.Medio}</td>
+                    <td>{counts.CREA.Bajo}</td>
+                    <td>{counts.CREA.SinRegistro}</td>
+                    <td>{counts.CREA.Alto + counts.CREA.Medio + counts.CREA.Bajo + counts.CREA.SinRegistro}</td>
+                  </tr>
+                  <tr onClick={() => handleRowClick('option5', 'MOD', 'MOD')} className="hoverable-row">
+                    <td>MOD</td>
+                    <td>{counts.MOD.Alto}</td>
+                    <td>{counts.MOD.Medio}</td>
+                    <td>{counts.MOD.Bajo}</td>
+                    <td>{counts.MOD.SinRegistro}</td>
+                    <td>{counts.MOD.Alto + counts.MOD.Medio + counts.MOD.Bajo + counts.MOD.SinRegistro}</td>
+                  </tr>
+                  <tr onClick={() => handleRowClick('option1', 'RRC', 'RRC')} className="hoverable-row">
+                    <td>RRC</td>
+                    <td>{counts.RRC.Alto}</td>
+                    <td>{counts.RRC.Medio}</td>
+                    <td>{counts.RRC.Bajo}</td>
+                    <td>{counts.RRC.SinRegistro}</td>
+                    <td>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan="6" className="section-header">Acreditación de Alta Calidad</td>
+                  </tr>
+                  <tr onClick={() => handleRowClick('option3', 'AAC', 'AAC')} className="hoverable-row">
+                    <td>AAC</td>
+                    <td>{counts.AAC.Alto}</td>
+                    <td>{counts.AAC.Medio}</td>
+                    <td>{counts.AAC.Bajo}</td>
+                    <td>{counts.AAC.SinRegistro}</td>
+                    <td>{counts.AAC.Alto + counts.AAC.Medio + counts.AAC.Bajo + counts.AAC.SinRegistro}</td>
+                  </tr>
+                  <tr onClick={() => handleRowClick('option2', 'RAAC', 'RAAC')} className="hoverable-row">
+                    <td>RAAC</td>
+                    <td>{counts.RAAC.Alto}</td>
+                    <td>{counts.RAAC.Medio}</td>
+                    <td>{counts.RAAC.Bajo}</td>
+                    <td>{counts.RAAC.SinRegistro}</td>
+                    <td>{counts.RAAC.Alto + counts.RAAC.Medio + counts.RAAC.Bajo + counts.RAAC.SinRegistro}</td>
+                  </tr>
+                  <tr className="hoverable-row">
+                    <td>INT</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                  </tr>
+                  <tr>
+                    <td>TOTAL</td>
+                    <td>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto}</td>
+                    <td>{counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio}</td>
+                    <td>{counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo}</td>
+                    <td>{counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</td>
+                    <td>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto + counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio + counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo + counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</td>
+                  </tr>
+                </>
+              ) : counts[selectedRow] ? (
+                <tr>
+                  <td>{counts[selectedRow].Alto}</td>
+                  <td>{counts[selectedRow].Medio}</td>
+                  <td>{counts[selectedRow].Bajo}</td>
+                  <td>{counts[selectedRow].SinRegistro}</td>
+                  <td>{counts[selectedRow].Alto + counts[selectedRow].Medio + counts[selectedRow].Bajo + counts[selectedRow].SinRegistro}</td>
+                </tr>
+              ) : (
+                <tr>
+                  <td colSpan="5">No hay datos disponibles</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+      </div>
+      </div>
         {programasVisible && (
-          <div className='programas' onClick={handleClick} style={{ alignSelf: 'flex-start', marginLeft: '20px' }}>
-            <div className='title'><strong>Programas</strong></div>
+          <div style={{ width:'25%' }}>
+          <div style={{ fontSize: '25px', width:'100%', display: 'flex', justifyContent:'center', marginTop:'-40px' }}>Programas</div>
+          <div className='programas' onClick={handleClick} style={{  width:'100%', alignSelf: 'flex-start', marginLeft: '20px' }}>
             <table>
               <thead>
                 <tr>
@@ -448,6 +426,7 @@ const Home = () => {
                 </tr>
               </tbody>
             </table>
+          </div>
           </div>
         )}
       </div>

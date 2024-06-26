@@ -98,8 +98,7 @@ const Programas = () => {
                 (process === 'MOD' && item['mod'] === 'SI') ||
                 (process === 'RRC' && item['rc vigente'] === 'SI') ||
                 (process === 'AAC' && item['aac_1a'] === 'SI') ||
-                (process === 'RAAC' && item['ac vigente'] === 'SI') ||
-                (process === 'INT')) {
+                (process === 'RAAC' && item['ac vigente'] === 'SI')) {
                 return '#E0E0E0'; 
             }
             return 'white';
@@ -122,8 +121,8 @@ const Programas = () => {
                 (process === 'MOD' && item['mod'] === 'SI') ||
                 (process === 'RRC' && item['rc vigente'] === 'SI') ||
                 (process === 'AAC' && item['aac_1a'] === 'SI') ||
-                (process === 'RAAC' && item['ac vigente'] === 'SI') ||
-                (process === 'INT')) {
+                (process === 'RAAC' && item['ac vigente'] === 'SI'))
+                {
                 return '#E0E0E0'; 
             }
             return 'white';

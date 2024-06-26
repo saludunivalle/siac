@@ -247,25 +247,27 @@
     z-index: 1000;
   }
   
-/* home.css */
 
 .buttons-table {
-    border-collapse: collapse; 
+    border-radius: 8px; 
+    border: 2px solid #808080;
     width: 100%; 
   }
   
   .buttons-table th,
   .buttons-table td {
-    border: 1px solid #666; 
-    padding: 8px; 
+    width: 60px;
+    padding: 6px; 
     text-align: center; 
   }
-  
+
   .buttons-table thead {
+    border-radius: 8px; 
     background-color: #f0f0f0; 
   }
   
   .buttons-table .section-header {
+    border-radius: 8px; 
     background-color: #e0e0e0; 
     font-weight: bold; 
   }
@@ -291,5 +293,4 @@
 .table-container table tr:hover td {
     filter: brightness(0.85); 
 }
-
 

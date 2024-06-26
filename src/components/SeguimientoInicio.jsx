@@ -231,22 +231,25 @@ const SeguimientoInicio = () => {
                     {selectedEscuela && (
                         <>
                         <div>
-                            <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '90%', marginBottom: '20px' }}>
-                                <Button
-                                    variant={selectedProgramType === 'pre' ? 'contained' : 'outlined'}
-                                    onClick={() => setSelectedProgramType('pre')}
-                                    style={{ marginRight: '10px' }}
-                                >
-                                    Pregrado
-                                </Button>
-                                <Button
-                                    variant={selectedProgramType === 'pos' ? 'contained' : 'outlined'}
-                                    onClick={() => setSelectedProgramType('pos')}
-                                >
-                                    Posgrado
-                                </Button>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '90%', marginBottom: '20px' }}>
+                                <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
+                                <div>
+                                    <Button
+                                        variant={selectedProgramType === 'pre' ? 'contained' : 'outlined'}
+                                        onClick={() => setSelectedProgramType('pre')}
+                                        style={{ marginRight: '10px' }}
+                                    >
+                                        Pregrado
+                                    </Button>
+                                    <Button
+                                        variant={selectedProgramType === 'pos' ? 'contained' : 'outlined'}
+                                        onClick={() => setSelectedProgramType('pos')}
+                                    >
+                                        Posgrado
+                                    </Button>
+                                </div>
                             </div>
+
                             <Table style={{ width: "90%" }}>
                                 <TableHead>
                                     <TableRow>
@@ -295,7 +298,7 @@ const SeguimientoInicio = () => {
                                 </Button>
                                 <Button
                                     variant="contained"
-                                    color="secondary"
+                                    color="primary"
                                     onClick={handleGuardarClick}
                                 >
                                     Guardar
