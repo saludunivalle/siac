@@ -311,7 +311,7 @@ const Home = () => {
                     <td>{counts.CREA.Medio}</td>
                     <td>{counts.CREA.Bajo}</td>
                     <td>{counts.CREA.SinRegistro}</td>
-                    <td>{counts.CREA.Alto + counts.CREA.Medio + counts.CREA.Bajo + counts.CREA.SinRegistro}</td>
+                    <td><strong>{counts.CREA.Alto + counts.CREA.Medio + counts.CREA.Bajo + counts.CREA.SinRegistro}</strong></td>
                   </tr>
                   <tr onClick={() => handleRowClick('option5', 'MOD', 'MOD')} className="hoverable-row">
                     <td>MOD</td>
@@ -319,7 +319,7 @@ const Home = () => {
                     <td>{counts.MOD.Medio}</td>
                     <td>{counts.MOD.Bajo}</td>
                     <td>{counts.MOD.SinRegistro}</td>
-                    <td>{counts.MOD.Alto + counts.MOD.Medio + counts.MOD.Bajo + counts.MOD.SinRegistro}</td>
+                    <td><strong>{counts.MOD.Alto + counts.MOD.Medio + counts.MOD.Bajo + counts.MOD.SinRegistro}</strong></td>
                   </tr>
                   <tr onClick={() => handleRowClick('option1', 'RRC', 'RRC')} className="hoverable-row">
                     <td>RRC</td>
@@ -327,7 +327,7 @@ const Home = () => {
                     <td>{counts.RRC.Medio}</td>
                     <td>{counts.RRC.Bajo}</td>
                     <td>{counts.RRC.SinRegistro}</td>
-                    <td>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</td>
+                    <td><strong>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</strong></td>
                   </tr>
                   <tr>
                     <td colSpan="6" className="section-header">Acreditación de Alta Calidad</td>
@@ -338,7 +338,7 @@ const Home = () => {
                     <td>{counts.AAC.Medio}</td>
                     <td>{counts.AAC.Bajo}</td>
                     <td>{counts.AAC.SinRegistro}</td>
-                    <td>{counts.AAC.Alto + counts.AAC.Medio + counts.AAC.Bajo + counts.AAC.SinRegistro}</td>
+                    <td><strong>{counts.AAC.Alto + counts.AAC.Medio + counts.AAC.Bajo + counts.AAC.SinRegistro}</strong></td>
                   </tr>
                   <tr onClick={() => handleRowClick('option2', 'RAAC', 'RAAC')} className="hoverable-row">
                     <td>RAAC</td>
@@ -346,7 +346,7 @@ const Home = () => {
                     <td>{counts.RAAC.Medio}</td>
                     <td>{counts.RAAC.Bajo}</td>
                     <td>{counts.RAAC.SinRegistro}</td>
-                    <td>{counts.RAAC.Alto + counts.RAAC.Medio + counts.RAAC.Bajo + counts.RAAC.SinRegistro}</td>
+                    <td><strong>{counts.RAAC.Alto + counts.RAAC.Medio + counts.RAAC.Bajo + counts.RAAC.SinRegistro}</strong></td>
                   </tr>
                   <tr className="hoverable-row">
                     <td>INT</td>
@@ -354,15 +354,15 @@ const Home = () => {
                     <td>0</td>
                     <td>0</td>
                     <td>0</td>
-                    <td>0</td>
+                    <td><strong>0</strong></td>
                   </tr>
                   <tr>
-                    <td>TOTAL</td>
-                    <td>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto}</td>
-                    <td>{counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio}</td>
-                    <td>{counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo}</td>
-                    <td>{counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</td>
-                    <td>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto + counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio + counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo + counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</td>
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto}</strong></td>
+                    <td><strong>{counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio}</strong></td>
+                    <td><strong>{counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo}</strong></td>
+                    <td><strong>{counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</strong></td>
+                    <td><strong>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto + counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio + counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo + counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</strong></td>
                   </tr>
                 </>
               ) : counts[selectedRow] ? (
