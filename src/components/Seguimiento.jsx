@@ -1025,14 +1025,14 @@ const Seguimiento = ({ handleButtonClick }) => {
                     {handleButtonClick === 'conv' && (
                         <>
                             <h3>Seguimiento del Proceso de Convenio Docencia Servicio</h3>
-                            <CollapsibleButton buttonText="Datos Generales para Anexos Técnicos" content={
+                            {/* <CollapsibleButton buttonText="Datos Generales para Anexos Técnicos" content={
                                 <>
                                     <div style={{ paddingTop: "20px", paddingBottom: "20px" }}>
                                         <div style={{ fontSize: "18px", paddingBottom: "20px" }}> <strong>Firmas para el documento</strong></div>
                                         <FormComponent idPrograma={idPrograma} />
                                     </div>
                                 </>
-                            } />
+                            } /> */}
                             <PracticeScenario data={rowData} />
                         </>
                     )}

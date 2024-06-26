@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop } from '@mui/material';
+import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop, Typography } from '@mui/material';
 import { Filtro13, Filtro14, Filtro15, Filtro16, sendDataRelEscPract, sendDataHorariosPract } from '../service/data';
 import '/src/styles/home.css';
 import CollapsibleButton from './CollapsibleButton';
@@ -240,17 +240,21 @@ const PracticeScenario = ({ data }) => {
                                             <Box key={idx} sx={{ marginBottom: '20px', marginTop: '10px' }}>
                                                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' }}>
                                                     <Box sx={{ width: '30%', padding: '20px', marginLeft: '20px', textAlign: 'center' }}>
-                                                        {tienePermisoDirector() && (
-                                                            <>
-                                                                <TextField
-                                                                    label="Semanas a Rotar"
-                                                                    variant="outlined"
-                                                                    value={f15.semana_rotar}
-                                                                    disabled
-                                                                    style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}
-                                                                />
-                                                            </>
-                                                        )}
+                                                        {/* {tienePermisoDirector() && (
+                                                            <> */}
+                                                                <div>
+                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                        Semanas a Rotar: {f15.semana_rotar}
+                                                                    </Typography>
+                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                        Horas Semanal: {f15.horas_semanales}
+                                                                    </Typography>
+                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                        Total Horas: {f15.total_horas}
+                                                                    </Typography>
+                                                                </div>
+                                                            {/* </>
+                                                        )} */}
                                                         <FormGroup>
                                                             <FormControl fullWidth>
                                                                 <InputLabel htmlFor={`filtro14-${index}-${idx}`}>Escenario</InputLabel>
@@ -296,7 +300,18 @@ const PracticeScenario = ({ data }) => {
                                             <>
                                                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' }}>
                                                     <Box sx={{ width: '30%', padding: '20px', marginLeft: '20px', textAlign: 'center' }}>
-                                                        {tienePermisoDirector() && (
+                                                                <div>
+                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                        Semanas a Rotar: {f15.semana_rotar}
+                                                                    </Typography>
+                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                        Horas Semanal: {f15.horas_semanales}
+                                                                    </Typography>
+                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                        Total Horas: {f15.total_horas}
+                                                                    </Typography>
+                                                                </div>
+                                                        {/* {tienePermisoDirector() && (
                                                             <>
                                                                 <TextField
                                                                     label="Semanas a Rotar"
@@ -306,7 +321,7 @@ const PracticeScenario = ({ data }) => {
                                                                     style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}
                                                                 />
                                                             </>
-                                                        )}
+                                                        )} */}
                                                         <form onSubmit={handleScenarioSubmit}>
                                                             <FormGroup>
                                                                 <FormControl fullWidth>

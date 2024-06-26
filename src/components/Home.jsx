@@ -475,6 +475,27 @@ const Home = () => {
             >
               Reporte Actividades
             </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate('/docencia-servicio')}
+              style={{
+                marginTop: '20px',
+                backgroundColor: '#ffffff',
+                color: '#666666',
+                border: '2px solid #666666',
+                borderRadius: '6px',
+                width: '200px',
+              }}
+              sx={{
+                '&:hover': {
+                  backgroundColor: '#666666',
+                  color: '#ffffff',
+                },
+              }}
+            >
+              Docencia Servicio 
+            </Button>
           </div>
         </>
       )}
