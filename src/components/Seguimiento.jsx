@@ -483,7 +483,6 @@ const Seguimiento = ({ handleButtonClick }) => {
                     value,
                     user,
                     collapsibleType,
-                    enlace,
                     selectedOption.id,
                 ];
 
