@@ -300,7 +300,7 @@ const PracticeScenario = ({ data }) => {
                                             <>
                                                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' }}>
                                                     <Box sx={{ width: '30%', padding: '20px', marginLeft: '20px', textAlign: 'center' }}>
-                                                                <div>
+                                                                {/* <div>
                                                                     <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
                                                                         Semanas a Rotar: {f15.semana_rotar}
                                                                     </Typography>
@@ -310,8 +310,8 @@ const PracticeScenario = ({ data }) => {
                                                                     <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
                                                                         Total Horas: {f15.total_horas}
                                                                     </Typography>
-                                                                </div>
-                                                        {/* {tienePermisoDirector() && (
+                                                                </div> */}
+                                                        {tienePermisoDirector() && (
                                                             <>
                                                                 <TextField
                                                                     label="Semanas a Rotar"
@@ -321,7 +321,7 @@ const PracticeScenario = ({ data }) => {
                                                                     style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}
                                                                 />
                                                             </>
-                                                        )} */}
+                                                        )}
                                                         <form onSubmit={handleScenarioSubmit}>
                                                             <FormGroup>
                                                                 <FormControl fullWidth>
