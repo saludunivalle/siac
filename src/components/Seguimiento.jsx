@@ -203,11 +203,12 @@ const Seguimiento = ({ handleButtonClick }) => {
                 documentoproceso = 'Renovación Acreditación';
             }  else if (handleButtonClick === 'mod') {
                 procesoActual = 'Modificación';
-                if (rowData['mod_sus'] === 'SI'){
-                    documentoproceso = 'Modificación Reforma Curricular - sustancial';
-                } else if (rowData['mod_sus'] === 'NO'){
-                    documentoproceso = 'Modiciación No Sustancial';
-                }
+                documentoproceso = 'Modificación';
+                // if (rowData['mod_sus'] === 'SI'){
+                //     documentoproceso = 'Modificación Reforma Curricular - sustancial';
+                // } else if (rowData['mod_sus'] === 'NO'){
+                //     documentoproceso = 'Modificación No Sustancial';
+                // } 
             } 
             const general = await Filtro10();
             const general2 = general.filter(item => item['proceso'] === procesoActual); 
