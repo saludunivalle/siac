@@ -16,6 +16,7 @@ import esLocale from 'dayjs/locale/es';
 import PracticeScenario from './PracticeScenario';
 import FormComponent from './FormComponent';
 import SeguimientoPM from './SeguimientoPM';
+import SimpleTimeline from './SimpleTimeline';
 
 const Seguimiento = ({ handleButtonClick }) => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -138,14 +139,15 @@ const Seguimiento = ({ handleButtonClick }) => {
         const partesFechaVencimiento = fechavencrc.split('/');
     
         const diaExpedicion = parseInt(partesFechaExpedicion[0], 10);
-        const mesExpedicion = parseInt(partesFechaExpedicion[1], 10) - 1; 
+        const mesExpedicion = parseInt(partesFechaExpedicion[1], 10) - 1;
         const añoExpedicion = parseInt(partesFechaExpedicion[2], 10);
     
         const diaVencimiento = parseInt(partesFechaVencimiento[0], 10);
-        const mesVencimiento = parseInt(partesFechaVencimiento[1], 10) - 1; 
+        const mesVencimiento = parseInt(partesFechaVencimiento[1], 10) - 1;
         const añoVencimiento = parseInt(partesFechaVencimiento[2], 10);
     
-        const fechaUnAñoSeisMesesDespues = new Date(añoExpedicion, mesExpedicion + 6, diaExpedicion);
+        const fechaUnAñoSeisMesesDespues = new Date(añoExpedicion, mesExpedicion, diaExpedicion);
+        fechaUnAñoSeisMesesDespues.setMonth(fechaUnAñoSeisMesesDespues.getMonth() + 6);
         fechaUnAñoSeisMesesDespues.setFullYear(fechaUnAñoSeisMesesDespues.getFullYear() + 1);
     
         const fechaExpedicion = new Date(añoExpedicion, mesExpedicion, diaExpedicion);
@@ -163,11 +165,18 @@ const Seguimiento = ({ handleButtonClick }) => {
         const fechaDieciochoMesesAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
         fechaDieciochoMesesAntes.setMonth(fechaDieciochoMesesAntes.getMonth() - 18);
     
+        const formatDate = (date) => {
+            const day = (`0${date.getDate()}`).slice(-2);
+            const month = (`0${date.getMonth() + 1}`).slice(-2);
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        };
+    
         return {
-            unAñoSeisMesesDespues: fechaUnAñoSeisMesesDespues.toLocaleDateString(),
-            seisMesesAntesMitad: fechaMitad.toLocaleDateString(),
-            tresAñosAntes: fechaTresAñosAntes.toLocaleDateString(),
-            dieciochoMesesAntes: fechaDieciochoMesesAntes.toLocaleDateString()
+            unAñoSeisMesesDespues: formatDate(fechaUnAñoSeisMesesDespues),
+            seisMesesAntesMitad: formatDate(fechaMitad),
+            tresAñosAntes: formatDate(fechaTresAñosAntes),
+            dieciochoMesesAntes: formatDate(fechaDieciochoMesesAntes)
         };
     }
     
@@ -893,14 +902,11 @@ const Seguimiento = ({ handleButtonClick }) => {
                     {(handleButtonClick === 'rrc') && (
                         <>
                             <h3>Seguimiento del Proceso de Renovación Registro Calificado</h3>
-                            <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', color: 'black' }}>
-                                <div style={{ backgroundColor: '#FFFFF', padding: '10px', borderRadius: '5px', border: '1px solid #7e7e7e', width: '200px', textAlign: 'center' }}><strong>FECHA INICIAL RRC</strong> <br />{rowData['fechaexpedrc']}</div>
-                                <div style={{ backgroundColor: '#4caf4f36', padding: '10px', borderRadius: '5px', border: '1px solid #4caf50', width: '200px', textAlign: 'center' }}><strong>AÑO Y 6 MESES </strong><br />{fechasCalculadas.unAñoSeisMesesDespues}</div>
-                                <div style={{ backgroundColor: 'rgba(255, 235, 59, 0.288)', padding: '10px', border: '1px solid yellow', borderRadius: '5px', width: '200px', textAlign: 'center' }}><strong>6 MESES ANTES DE LA MITAD</strong><br />{fechasCalculadas.seisMesesAntesMitad}</div>
-                                <div style={{ backgroundColor: '#ff990079', padding: '10px', borderRadius: '5px', border: '1px solid orange', width: '200px', textAlign: 'center' }}><strong>3 AÑOS ANTES DEL VENCIMIENTO </strong><br />{fechasCalculadas.tresAñosAntes}</div>
-                                <div style={{ backgroundColor: '#ff562275', padding: '10px', borderRadius: '5px', border: '1px solid #ff5722', width: '200px', textAlign: 'center' }}><strong> 18 MESES ANTES DEL VENCIMIENTO</strong><br />{fechasCalculadas.dieciochoMesesAntes}</div>
-                                <div style={{ backgroundColor: '#f443368e', padding: '10px', borderRadius: '5px', border: '1px solid #ee1809', width: '200px', textAlign: 'center' }}><strong> AÑO DE VENCIMIENTO RRC</strong><br />{rowData['fechavencrc']}</div>
-                            </div>
+                            <SimpleTimeline
+                                fechaExpedicion={rowData['fechaexpedrc']}
+                                fechaVencimiento={rowData['fechavencrc']}
+                                fechasCalculadas={fechasCalculadas}
+                            />
                             <CollapsibleButton buttonText="Renovación Registro Calificado" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -947,14 +953,11 @@ const Seguimiento = ({ handleButtonClick }) => {
                     {(handleButtonClick === 'raac') && (
                         <>
                             <h3>Seguimiento del Proceso de Renovación Acreditación</h3>
-                            <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', color: 'black' }}>
-                                <div style={{ backgroundColor: '#FFFFF', padding: '10px', borderRadius: '5px', border: '1px solid #7e7e7e', width: '200px', textAlign: 'center' }}><strong>FECHA INICIAL RAAC </strong><br />{rowData['fechaexpedac']}</div>
-                                <div style={{ backgroundColor: '#4caf4f36', padding: '10px', borderRadius: '5px', border: '1px solid #4caf50', width: '200px', textAlign: 'center' }}><strong>AÑO Y 6 MESES </strong><br />{fechasCalculadasAC.unAñoSeisMesesDespues}</div>
-                                <div style={{ backgroundColor: 'rgba(255, 235, 59, 0.288)', padding: '10px', border: '1px solid yellow', borderRadius: '5px', width: '200px', textAlign: 'center' }}><strong>6 MESES ANTES DE LA MITAD</strong><br />{fechasCalculadasAC.seisMesesAntesMitad}</div>
-                                <div style={{ backgroundColor: '#ff990079', padding: '10px', borderRadius: '5px', border: '1px solid orange', width: '200px', textAlign: 'center' }}><strong>3 AÑOS ANTES DEL VENCIMIENTO </strong><br />{fechasCalculadasAC.tresAñosAntes}</div>
-                                <div style={{ backgroundColor: '#ff562275', padding: '10px', borderRadius: '5px', border: '1px solid #ff5722', width: '200px', textAlign: 'center' }}><strong> 18 MESES ANTES DEL VENCIMIENTO</strong><br />{fechasCalculadasAC.dieciochoMesesAntes}</div>
-                                <div style={{ backgroundColor: '#f443368e', padding: '10px', borderRadius: '5px', border: '1px solid #ee1809', width: '200px', textAlign: 'center' }}><strong> AÑO DE VENCIMIENTO RAAC</strong><br /> {rowData['fechavencac']}</div>
-                            </div>
+                            <SimpleTimeline
+                                fechaExpedicion={rowData['fechaexpedac']}
+                                fechaVencimiento={rowData['fechavencac']}
+                                fechasCalculadas={fechasCalculadasAC}
+                            />
                             <CollapsibleButton buttonText="Renovación Acreditación" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
