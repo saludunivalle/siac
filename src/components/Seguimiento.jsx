@@ -721,94 +721,263 @@ const Seguimiento = ({ handleButtonClick }) => {
 
         return (
             <>
-                <div className='container-NS' style={{fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '5px', justifyContent: 'center', marginTop: '10px', alignItems: 'center' }}>
-                    <div className='date-picker' style={{ paddingRight: '10px' }}>
-                        Fecha <br />
-                        <div style={{ display: 'inline-block' }}>
-                            <button onClick={handleToggleCalendar} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
-                                <LocalizationProvider dateAdapter={AdapterDayjs} locale={esLocale}>
-                                    <DatePicker
-                                        value={selectedDate}
-                                        onChange={handleDateChange}
-                                        open={calendarOpen}
-                                        onClose={() => setCalendarOpen(false)}
-                                        format="DD/MM/YYYY"
-                                        renderInput={() => <input readOnly />}
-                                    />
-                                </LocalizationProvider>
-                            </button>
-                        </div>  
+                <div
+                className="container-NS"
+                style={{
+                    fontWeight: "bold",
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    margin: "5px",
+                    justifyContent: "center",
+                    marginTop: "10px",
+                    alignItems: "center",
+                }}
+                >
+                <div
+                    className="date-picker"
+                    style={{
+                    paddingRight: "10px",
+                    marginBottom: "10px",
+                    width: "100%",
+                    }}
+                >
+                    <div className="main-container">
+                    <div className="date-picker">
+                        Fecha * <br />
+                        <button
+                        onClick={handleToggleCalendar}
+                        style={{
+                            border: "none",
+                            background: "none",
+                            cursor: "pointer",
+                        }}
+                        >
+                        <LocalizationProvider
+                            dateAdapter={AdapterDayjs}
+                            locale={esLocale}
+                        >
+                            <DatePicker
+                            value={selectedDate}
+                            onChange={handleDateChange}
+                            open={calendarOpen}
+                            onClose={() => setCalendarOpen(false)}
+                            format="DD/MM/YYYY"
+                            renderInput={() => <input readOnly />}
+                            />
+                        </LocalizationProvider>
+                        </button>
                     </div>
-                    <div className='comments' style={{ display: 'flex', flexDirection: 'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', width: '35%', paddingRight: '20px' }}>
+                    <div className="comments">
                         Comentario * <br />
-                        <TextField multiline rows={3} required value={comment} onChange={handleInputChange1} placeholder="Comentario" type="text" style={{ border: (formSubmitted && comment.trim() === '') ? '1px solid red' : 'none', textAlign: 'start', backgroundColor: '#f0f0f0', color: 'black', blockSize: '100%' }} />
+                        <TextField
+                        multiline
+                        rows={3}
+                        required
+                        value={comment}
+                        onChange={handleInputChange1}
+                        placeholder="Escribe tu comentario aquí"
+                        type="text"
+                        style={{
+                            border:
+                            formSubmitted && comment.trim() === ""
+                                ? "1px solid red"
+                                : "none",
+                            textAlign: "start",
+                            backgroundColor: "#f0f0f0",
+                            color: "black",
+                            width: "100%",
+                        }}
+                        />
                     </div>
-                    <div className='adj-risk' style={{ display: 'flex', flexDirection: 'column', justifyContent: 'left', textAlign: 'left', marginTop: '5px', margin: '5px', }}>
-                        <div className='risk' style={{ textAlign: 'left' }}>
-                            Riesgo *<br />
-                            <FormControl component="fieldset" required error={formSubmitted && value.trim() === ''} style={{ border: (formSubmitted && value.trim() === '') ? '1px solid red' : 'none' }}>
-                                <RadioGroup value={value} onChange={e => { setValue(e.target.value) }} style={{ display: 'flex', flexDirection: 'row' }} required>
-                                    <FormControlLabel value="Alto" control={<Radio />} label="Alto" />
-                                    <FormControlLabel value="Medio" control={<Radio />} label="Medio" />
-                                    <FormControlLabel value="Bajo" control={<Radio />} label="Bajo" />
-                                </RadioGroup>
-                            </FormControl>
-                        </div>
-                        <div className='adj' style={{ textAlign: 'left' }}>
-                            Archivo Adjunto <br />
-                            <FormControl component="fieldset">
-                                <RadioGroup value={fileType} onChange={(e) => setFileType(e.target.value)} style={{ display: 'flex', flexDirection: 'row' }}>
-                                    <FormControlLabel value="upload" control={<Radio />} label="Subir" />
-                                    <FormControlLabel value="link" control={<Radio />} label="Enlace" />
-                                </RadioGroup>
-                            </FormControl>
-                        </div>
-                        <div style={{ marginTop: '0px', height: '30px' }}>
-                            {fileType === 'upload' ? (
-                                <input
-                                    type="file"
-                                    multiple
-                                    ref={fileInputRef}
-                                    placeholder="Seleccionar archivo..."
-                                    style={{ height: '30px' }}
-                                />
-                            ) : fileType === 'link' ? (
-                                <input
-                                    value={fileLink}
-                                    onChange={(e) => setFileLink(e.target.value)}
-                                    placeholder="Link del archivo"
-                                    type="text"
-                                    style={{
-                                        width: '200px',
-                                        height: '25px',
-                                        backgroundColor: 'white',
-                                        color: 'grey',
-                                        border: '1px solid grey',
-                                        borderRadius: '5px'
-                                    }}
-                                />
-                            ) : null}
-                        </div>
-                    </div>
-                    <div style={{ marginTop: '-45px', marginLeft: '10px', width: 'auto' }}>
-                        <FormControl style={{ width: '250px' }}>
-                            <InputLabel id="select-label">Pasar a...</InputLabel>
-                            <Select
-                                labelId="select-label"
-                                id="select-label"
-                                value={selectedOption}
-                                label="Pasar a..."
-                                onChange={e => { setSelectedOption(e.target.value) }}
-                                displayEmpty
-                                style={{ width: '250px' }}
-                            >
-                                <MenuItem value={0}>Ninguna</MenuItem>
-                                {menuItems.map((item, index) => (
-                                    <MenuItem key={index} value={item}>{item.fase}</MenuItem>
-                                ))}
-                            </Select>
+                    <div className="risk">
+                        Riesgo *<br />
+                        <FormControl
+                        component="fieldset"
+                        required
+                        error={formSubmitted && value.trim() === ""}
+                        style={{
+                            border:
+                            formSubmitted && value.trim() === ""
+                                ? "1px solid red"
+                                : "none",
+                        }}
+                        >
+                        <RadioGroup
+                            value={value}
+                            onChange={(e) => {
+                            setValue(e.target.value);
+                            }}
+                            style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            }}
+                            required
+                        >
+                            <FormControlLabel
+                            value="Alto"
+                            control={<Radio />}
+                            label="Alto"
+                            />
+                            <FormControlLabel
+                            value="Medio"
+                            control={<Radio />}
+                            label="Medio"
+                            />
+                            <FormControlLabel
+                            value="Bajo"
+                            control={<Radio />}
+                            label="Bajo"
+                            />
+                        </RadioGroup>
                         </FormControl>
                     </div>
+                    <div className="attachment">
+                        Archivo Adjunto <br />
+                        <FormControl component="fieldset">
+                        <RadioGroup
+                            value={fileType}
+                            onChange={(e) => setFileType(e.target.value)}
+                            style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            }}
+                        >
+                            <FormControlLabel
+                            value="upload"
+                            control={<Radio />}
+                            label="Subir"
+                            />
+                            <FormControlLabel
+                            value="link"
+                            control={<Radio />}
+                            label="Enlace"
+                            />
+                        </RadioGroup>
+                        </FormControl>
+                        <div style={{ marginTop: "0px", height: "30px" }}>
+                        {fileType === "upload" ? (
+                            <input
+                            type="file"
+                            multiple
+                            ref={fileInputRef}
+                            placeholder="Seleccionar archivo..."
+                            style={{ height: "30px" }}
+                            />
+                        ) : fileType === "link" ? (
+                            <input
+                            value={fileLink}
+                            onChange={(e) => setFileLink(e.target.value)}
+                            placeholder="Link del archivo"
+                            type="text"
+                            style={{
+                                width: "200px",
+                                height: "25px",
+                                backgroundColor: "white",
+                                color: "grey",
+                                border: "1px solid grey",
+                                borderRadius: "5px",
+                            }}
+                            />
+                        ) : null}
+                        </div>
+                    </div>
+                    <div className="select-container">
+                        <FormControl style={{ width: "100%", maxWidth: "100%" }}>
+                        <InputLabel
+                            id="select-label"
+                            style={{
+                            fontSize: "1.5rem",
+                            textAlign: "left",
+                            width: "100%",
+                            }}
+                        >
+                            Pasar a...
+                        </InputLabel>
+                        <Select
+                            labelId="select-label"
+                            id="select-label"
+                            value={selectedOption}
+                            label="Pasar a..."
+                            onChange={(e) => {
+                            setSelectedOption(e.target.value);
+                            }}
+                            displayEmpty
+                            style={{ width: "100%" }}
+                            MenuProps={{
+                            disableScrollLock: "true", // Disable scroll lock
+                            PaperProps: {
+                                style: {
+                                maxHeight: "150px",
+                                overflowY: "auto",
+                                overflowX: "hidden",
+                                maxWidth: "50%", // Ensure the menu matches the width of the Select
+                                },
+                            },
+                            }}
+                            disablePortal // Render the menu inline, avoiding the portal behavior
+                        >
+                            <MenuItem
+                            value={0}
+                            sx={{
+                                display: "flex",
+                                width: "100%",
+                                "&:hover": {
+                                backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                },
+                                whiteSpace: "normal", // Allow text to wrap
+                                overflow: "visible",
+                            }}
+                            >
+                            Ninguna
+                            </MenuItem>
+                            {menuItems.map((item, index) => (
+                            <MenuItem
+                                key={index}
+                                value={item}
+                                sx={{
+                                display: "flex",
+                                width: "100%",
+                                "&:hover": {
+                                    backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                },
+                                whiteSpace: "normal", // Allow text to wrap
+                                overflow: "visible",
+                                }}
+                            >
+                                {item.fase}
+                            </MenuItem>
+                            ))}
+                        </Select>
+                        </FormControl>
+                    </div>
+                    <style jsx>{`
+                        .main-container {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                        width: 100%;
+                        }
+                        .date-picker,
+                        .comments,
+                        .risk,
+                        .attachment,
+                        .select-container {
+                        flex: 1;
+                        min-width: 100px; /* Adjust as necessary */
+                        }
+                        @media (min-width: 768px) {
+                        .main-container {
+                            flex-direction: row;
+                            flex-wrap: wrap;
+                        }
+                        .select-container {
+                            flex-grow: 1;
+                        }
+                        }
+                    `}</style>
+                    </div>
+                </div>
                 </div>
                 <Button variant="contained" style={{ textAlign: 'center', margin: '8px', paddingBottom: '10px' }} onClick={handleGuardarClick}>Guardar</Button>
                 {loading && (
