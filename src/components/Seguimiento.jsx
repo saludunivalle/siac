@@ -196,8 +196,8 @@ const Seguimiento = ({ handleButtonClick }) => {
     const cargarFases = async () => {
         try {
             setLoading(true);
-            let documentoproceso = '';
             let procesoActual = '';
+            let documentoproceso = '';
             if (handleButtonClick === 'crea') {
                 procesoActual = 'Creación';
                 documentoproceso = 'Creación';
@@ -207,44 +207,45 @@ const Seguimiento = ({ handleButtonClick }) => {
             } else if (handleButtonClick === 'aac') {
                 procesoActual = 'Acreditación';
                 documentoproceso = 'Acreditación';
-            }  else if (handleButtonClick === 'raac') {
+            } else if (handleButtonClick === 'raac') {
                 procesoActual = 'Renovación Acreditación';
                 documentoproceso = 'Renovación Acreditación';
-            }  else if (handleButtonClick === 'mod') {
+            } else if (handleButtonClick === 'mod') {
                 procesoActual = 'Modificación';
                 documentoproceso = 'Modificación';
-                // if (rowData['mod_sus'] === 'SI'){
-                //     documentoproceso = 'Modificación Reforma Curricular - sustancial';
-                // } else if (rowData['mod_sus'] === 'NO'){
-                //     documentoproceso = 'Modificación No Sustancial';
-                // } 
-            } 
+            }
+    
             const general = await Filtro10();
-            const general2 = general.filter(item => item['proceso'] === procesoActual); 
+            const general2 = general
+                .filter(item => item['proceso'] === procesoActual)
+                .sort((a, b) => a.orden - b.orden); // Ordenar por orden
+    
             const response = await obtenerFasesProceso();
             const fasesFiltradas = response.filter(item => item.id_programa === idPrograma);
             const result2 = fasesFiltradas.map(fase => {
                 const filtro10Item = general.find(item => item.id === fase.id_fase);
                 return filtro10Item ? filtro10Item : null;
             });
-            const result3 = result2.filter(item => item && item['proceso'] === procesoActual); 
+            const result3 = result2.filter(item => item && item['proceso'] === procesoActual)
+                                    .sort((a, b) => a.orden - b.orden); // Ordenar por orden
+    
             setFases(general2);
             setFasesName(result3);
             const fase_actual = result3[0];
             setItemActual(fase_actual);
             const proceso = await Filtro12();
-            const procesoFiltrado = proceso.filter(item => item['proceso'] === documentoproceso); 
+            const procesoFiltrado = proceso.filter(item => item['proceso'] === documentoproceso);
             setDocs(procesoFiltrado);
             setLoading(false);
         } catch (error) {
             console.error('Error al cargar las fases:', error);
         }
     };
-
+    
     useEffect(() => {
         fetchMenuItems();
     }, [handleButtonClick]);
-
+    
     const fetchMenuItems = async () => {
         try {
             let procesoActual = '';
@@ -254,18 +255,22 @@ const Seguimiento = ({ handleButtonClick }) => {
                 procesoActual = 'Renovación Registro Calificado';
             } else if (handleButtonClick === 'aac') {
                 procesoActual = 'Acreditación';
-            }  else if (handleButtonClick === 'raac') {
+            } else if (handleButtonClick === 'raac') {
                 procesoActual = 'Renovación Acreditación';
-            }  else if (handleButtonClick === 'mod') {
+            } else if (handleButtonClick === 'mod') {
                 procesoActual = 'Modificación';
-            } 
+            }
             const response = await Filtro10();
-            const result = response.filter(item => item['proceso'] === procesoActual); 
+            const result = response
+                .filter(item => item['proceso'] === procesoActual)
+                .sort((a, b) => a.orden - b.orden); // Ordenar por orden
+    
             setMenuItems(result);
         } catch (error) {
             console.error('Error fetching menu items:', error);
         }
     };
+    
 
     useEffect(() => {
         if (sessionStorage.getItem('logged')){
@@ -900,53 +905,53 @@ const Seguimiento = ({ handleButtonClick }) => {
                             value={selectedOption}
                             label="Pasar a..."
                             onChange={(e) => {
-                            setSelectedOption(e.target.value);
+                                setSelectedOption(e.target.value);
                             }}
                             displayEmpty
                             style={{ width: "100%" }}
                             MenuProps={{
-                            disableScrollLock: "true", // Disable scroll lock
-                            PaperProps: {
-                                style: {
-                                maxHeight: "150px",
-                                overflowY: "auto",
-                                overflowX: "hidden",
-                                maxWidth: "50%", // Ensure the menu matches the width of the Select
+                                disableScrollLock: "true", 
+                                PaperProps: {
+                                    style: {
+                                        maxHeight: "150px",
+                                        overflowY: "auto",
+                                        overflowX: "hidden",
+                                        maxWidth: "50%", 
+                                    },
                                 },
-                            },
                             }}
-                            disablePortal // Render the menu inline, avoiding the portal behavior
+                            disablePortal 
                         >
                             <MenuItem
-                            value={0}
-                            sx={{
-                                display: "flex",
-                                width: "100%",
-                                "&:hover": {
-                                backgroundColor: "rgba(0, 0, 0, 0.08)",
-                                },
-                                whiteSpace: "normal", // Allow text to wrap
-                                overflow: "visible",
-                            }}
-                            >
-                            Ninguna
-                            </MenuItem>
-                            {menuItems.map((item, index) => (
-                            <MenuItem
-                                key={index}
-                                value={item}
+                                value={0}
                                 sx={{
-                                display: "flex",
-                                width: "100%",
-                                "&:hover": {
-                                    backgroundColor: "rgba(0, 0, 0, 0.08)",
-                                },
-                                whiteSpace: "normal", // Allow text to wrap
-                                overflow: "visible",
+                                    display: "flex",
+                                    width: "100%",
+                                    "&:hover": {
+                                        backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                    },
+                                    whiteSpace: "normal", 
+                                    overflow: "visible",
                                 }}
                             >
-                                {item.fase}
+                                Ninguna
                             </MenuItem>
+                            {menuItems.map((item, index) => (
+                                <MenuItem
+                                    key={index}
+                                    value={item}
+                                    sx={{
+                                        display: "flex",
+                                        width: "100%",
+                                        "&:hover": {
+                                            backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                        },
+                                        whiteSpace: "normal", 
+                                        overflow: "visible",
+                                    }}
+                                >
+                                    {item.fase}
+                                </MenuItem>
                             ))}
                         </Select>
                         </FormControl>
