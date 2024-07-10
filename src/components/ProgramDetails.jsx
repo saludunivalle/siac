@@ -5,7 +5,6 @@ import '/src/styles/programDetails.css';
 import Header from './Header';
 import Seguimiento from './Seguimiento';
 
-
 const ProgramDetails = () => {
     const location = useLocation();
     const rowData = location.state; 
@@ -21,6 +20,12 @@ const ProgramDetails = () => {
     const faseRAC = rowData['fase rac'];
     const fechavencrac = rowData['fechavencac'];
     const fechavencrrc = rowData['fechavencrc'];
+    const titulo = rowData['titulo a conceder'];
+    const jornada = rowData['jornada'];
+    const modalidad = rowData['modalidad'];
+    const creditos = rowData['créditos'];
+    const periodicidad = rowData['periodicidad'];
+    const duracion = rowData['duración'];
     const navigate = useNavigate();
     const [clickedButton, setClickedButton] = useState(null);
     const isemail = rowData['accesos']
@@ -105,7 +110,8 @@ const ProgramDetails = () => {
         switch (buttonType) {
             case 'raac':
               return {
-                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : getProcesosRACBackground(),                color: '#000',
+                backgroundColor: isClicked ? 'rgba(163, 163, 163, 0.562)' : getProcesosRACBackground(), 
+                color: '#000',
               };
             case 'rrc':
               return {
@@ -152,6 +158,14 @@ const ProgramDetails = () => {
                 <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion}</div>
             )}
             <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion}</div>
+            <div className='about-program'><strong>Titulo a Conceder: </strong>&nbsp; {titulo}</div>
+            <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada}</div>
+            <div className='about-program'><strong>Modalidad: </strong>&nbsp; {modalidad}</div>
+            <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos}</div>
+            <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad}</div>
+            <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion}</div>
+            <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrrc}</div>
+            <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac}</div>
         </div>
         <div className='procesos'>
             <div className='procesosCREA' style={setButtonStyles('crea', clickedButton === 'crea')} onClick={() => handleButtonClick('crea')}> 
@@ -161,13 +175,13 @@ const ProgramDetails = () => {
                 <strong>MOD</strong>
             </div>
             <div className='procesosRRC' style={setButtonStyles('rrc', clickedButton === 'rrc')} onClick={() => handleButtonClick('rrc')}>
-                 <strong>RRC</strong> {fechavencrrc}   
+                 <strong>RRC</strong>
             </div>
             <div className='procesosAC' style={setButtonStyles('aac', clickedButton === 'aac')} onClick={() => handleButtonClick('aac')}>
                 <strong>AAC</strong>
             </div>
             <div className='procesosRAC' style={setButtonStyles('raac', clickedButton === 'raac')} onClick={() => handleButtonClick('raac')}> 
-                <strong>RAAC</strong> {fechavencrac}
+                <strong>RAAC</strong> 
             </div>
             <div className='procesosCONV' style={setButtonStyles('conv', clickedButton === 'conv')} onClick={() => handleButtonClick('conv')}>
                 <strong>Docencia Servicio</strong>
@@ -177,7 +191,6 @@ const ProgramDetails = () => {
             </div>
         </div>
         <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento}  />
-        {/* <pre>{JSON.stringify(rowData, null, 2)}</pre> */}
         {!userEmail && !isemail && (
             <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px'}}>Atras</button>
         )}

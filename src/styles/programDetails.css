@@ -5,7 +5,6 @@
 
 .procesos {
     display: flex;
-    /*flex-direction: row;*/
     flex-wrap: wrap;
     text-align: center;
     align-items: center;
@@ -14,10 +13,6 @@
     font-size: 16.5px;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
-
-/* .procesos > div:hover {
-    filter: brightness(80%);
-} */
 
 .procesosRRC,
 .procesosRAC,
@@ -34,6 +29,7 @@
     width: 170px; 
     cursor: pointer;
 }
+
 .procesosCONV {
     padding: 0.5rem;
     border-radius: 8px;
@@ -47,7 +43,6 @@
 
 .title-program{
     font-size: 20px;
-
 }
 
 .about-program{
@@ -59,15 +54,15 @@
 
 .about-program-general{
     display: flex;
-    flex-direction: row;
+    flex-wrap: wrap;
     width: fit-content;
 }
 
 .button-reverse{
     margin-top: 20px;
     padding: 1rem;
-    border-radius: 15px ;
-    background-color:rgb(255, 253, 253);
+    border-radius: 15px;
+    background-color: rgb(255, 253, 253);
     border: 2px solid #969595;
     text-align: center;
     width: 150px;
@@ -76,12 +71,10 @@
 }
 
 .button-reverse:hover{
-    background-color:rgba(163, 163, 163, 0.562);
+    background-color: rgba(163, 163, 163, 0.562);
 }
 
-
 @media screen and (max-width: 768px) {
-
     .procesos {
         justify-content: center; 
     }
