@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel } from '@mui/material';
+import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel, useMediaQuery } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
 import { Filtro10, Filtro12, Filtro8, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, Filtro7, Filtro9 } from '../service/data';
 import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import esLocale from 'dayjs/locale/es'; 
+import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker} from '@mui/x-date-pickers';
+import esLocale from 'dayjs/locale/es';
 import PracticeScenario from './PracticeScenario';
 import FormComponent from './FormComponent';
 import SeguimientoPM from './SeguimientoPM';
@@ -59,6 +59,7 @@ const Seguimiento = ({ handleButtonClick }) => {
     const [dataUpdated, setDataUpdated] = useState(false);
     const [sentDocId, setSentDocId] = useState(null);
     const [fasesTabla, setFasesTabla] = useState([]);
+    const isMobile = useMediaQuery('(max-width:600px)');
 
     useEffect(() => {
         const obtenerDatosFiltro = async () => {
@@ -119,13 +120,8 @@ const Seguimiento = ({ handleButtonClick }) => {
         }
     }, [dataUpdated]);
 
-    const handleToggleCalendar = () => {
-        setCalendarOpen((prev) => !prev);
-    };
-
     const handleDateChange = (date) => {
         setSelectedDate(date);
-        setCalendarOpen(false);
     };
 
     function calcularFechas(fechaexpedrc, fechavencrc) {
@@ -532,19 +528,32 @@ const Seguimiento = ({ handleButtonClick }) => {
                     <div className='date-picker' style={{ flex: 1 }}>
                         <Typography variant="h6">Fecha *</Typography>
                         <div style={{ display: 'inline-block' }}>
-                            <button onClick={handleToggleCalendar} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
-                                <LocalizationProvider dateAdapter={AdapterDayjs} locale={esLocale}>
-                                    <DatePicker
+                            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
+                                {isMobile ? (
+                                    <MobileDatePicker
                                         value={selectedDate}
                                         onChange={handleDateChange}
-                                        open={calendarOpen}
-                                        onClose={() => setCalendarOpen(false)}
-                                        format="DD/MM/YYYY"
-                                        slots={{ textField: (params) => <TextField {...params} /> }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                inputProps={{ ...params.inputProps, readOnly: true }}
+                                            />
+                                        )}
                                     />
-                                </LocalizationProvider>
-                            </button>
-                        </div>  
+                                ) : (
+                                    <DesktopDatePicker
+                                        value={selectedDate}
+                                        onChange={handleDateChange}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                inputProps={{ ...params.inputProps, readOnly: true }}
+                                            />
+                                        )}
+                                    />
+                                )}
+                            </LocalizationProvider>
+                        </div>
                     </div>
                     <div className='comments' style={{ flex: 1 }}>
                         <Typography variant="h6">Comentario *</Typography>
@@ -746,30 +755,32 @@ const Seguimiento = ({ handleButtonClick }) => {
                     }}
                 >
                     <div className="main-container">
-                    <div className="date-picker">
-                        Fecha * <br />
-                        <button
-                        onClick={handleToggleCalendar}
-                        style={{
-                            border: "none",
-                            background: "none",
-                            cursor: "pointer",
-                        }}
-                        >
-                        <LocalizationProvider
-                            dateAdapter={AdapterDayjs}
-                            locale={esLocale}
-                        >
-                            <DatePicker
-                            value={selectedDate}
-                            onChange={handleDateChange}
-                            open={calendarOpen}
-                            onClose={() => setCalendarOpen(false)}
-                            format="DD/MM/YYYY"
-                            slots={{ textField: (params) => <TextField {...params} /> }}
-                            />
-                        </LocalizationProvider>
-                        </button>
+                    <div className="date-picker"> Fecha * <br />
+                        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
+                                {isMobile ? (
+                                    <MobileDatePicker
+                                        value={selectedDate}
+                                        onChange={handleDateChange}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                inputProps={{ ...params.inputProps, readOnly: true }}
+                                            />
+                                        )}
+                                    />
+                                ) : (
+                                    <DesktopDatePicker
+                                        value={selectedDate}
+                                        onChange={handleDateChange}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                inputProps={{ ...params.inputProps, readOnly: true }}
+                                            />
+                                        )}
+                                    />
+                                )}
+                         </LocalizationProvider>
                     </div>
                     <div className="comments">
                         Comentario * <br />
