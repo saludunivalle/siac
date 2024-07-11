@@ -461,7 +461,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
-
+    
         const handleGuardarClick = async () => {
             setLoading(true);
             try {
@@ -472,16 +472,16 @@ const Seguimiento = ({ handleButtonClick }) => {
                     setLoading(false);
                     return;
                 }
-
+    
                 let formattedDate;
                 if (selectedDate) {
                     formattedDate = dayjs(selectedDate).format('DD/MM/YYYY');
                 } else {
                     formattedDate = dayjs().format('DD/MM/YYYY');
                 }
-
+    
                 const collapsibleType = selectedPhase === 'RRC' ? 'Plan de Mejoramiento RRC' : 'Plan de Mejoramiento RAAC';
-
+    
                 const dataSend = [
                     idPrograma,
                     formattedDate,
@@ -491,23 +491,23 @@ const Seguimiento = ({ handleButtonClick }) => {
                     collapsibleType,
                     selectedOption.id,
                 ];
-
+    
                 const dataSendCrea = [
                     idPrograma,
                     selectedOption.id,
                     formattedDate, 
                 ];
-
+    
                 console.log("Datos a enviar al servidor:", dataSend);
-                await sendDataToServer(dataSend);
+                const response = await sendDataToServer(dataSend);
                 console.log("Respuesta del servidor:", response);
-
+    
                 if (selectedOption.id === undefined) {
                     console.log("Opción seleccionada -> Ninguna");
                 } else {
                     await sendDataToServerCrea(dataSendCrea);
                 }
-
+    
                 clearFileLink();
                 setLoading(false);
                 setOpenModal(true);
@@ -521,7 +521,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                 console.error('Error al enviar datos:', error);
             }
         };
-
+    
         return (
             <>
                 <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '20px', alignItems: 'center', gap: 'px' }}>
@@ -649,6 +649,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             </>
         );
     };
+    
 
     const contenido_seguimiento_default = () => {
         const handleInputChange1 = (event) => {
