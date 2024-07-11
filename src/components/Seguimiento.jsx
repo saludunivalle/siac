@@ -1,17 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, Input, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel } from '@mui/material';
-import { Container, Grid, IconButton, Box, Paper } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
+import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel } from '@mui/material';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas } from '../service/data';
+import { Filtro10, Filtro12, Filtro8, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, Filtro7, Filtro9 } from '../service/data';
 import dayjs from 'dayjs';
-import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import esLocale from 'dayjs/locale/es'; 
 import PracticeScenario from './PracticeScenario';
 import FormComponent from './FormComponent';
@@ -473,12 +467,13 @@ const Seguimiento = ({ handleButtonClick }) => {
         };
 
         const handleGuardarClick = async () => {
+            setLoading(true);
             try {
                 if (comment.trim() === '' || value.trim() === '' || selectedPhase.trim() === '') {
-                    setLoading(false);
                     const errorMessage = 'Por favor, complete todos los campos obligatorios.';
                     setErrorMessage(errorMessage);
                     setFormSubmitted(true);
+                    setLoading(false);
                     return;
                 }
 
@@ -507,7 +502,10 @@ const Seguimiento = ({ handleButtonClick }) => {
                     formattedDate, 
                 ];
 
+                console.log("Datos a enviar al servidor:", dataSend);
                 await sendDataToServer(dataSend);
+                console.log("Respuesta del servidor:", response);
+
                 if (selectedOption.id === undefined) {
                     console.log("Opción seleccionada -> Ninguna");
                 } else {
@@ -542,7 +540,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                         open={calendarOpen}
                                         onClose={() => setCalendarOpen(false)}
                                         format="DD/MM/YYYY"
-                                        renderInput={() => <input readOnly />}
+                                        slots={{ textField: (params) => <TextField {...params} /> }}
                                     />
                                 </LocalizationProvider>
                             </button>
@@ -649,8 +647,8 @@ const Seguimiento = ({ handleButtonClick }) => {
         };
 
         const handleGuardarClick = async () => {
+            setLoading(true);
             try {
-                setLoading(true);
                 let enlace;
                 if (fileType === 'upload' && fileInputRef.current) {
                     const files = fileInputRef.current.files;
@@ -658,7 +656,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                     for (let i = 0; i < files.length; i++) {
                         formData.append("file", files[i]); 
                     }
-                    const response = await fetch("https://siac-server.vercel.app/upload/", {
+                    const response = await fetch("http://localhost:3001/upload/", {
                         method: 'POST',
                         body: formData, 
                         headers: {
@@ -672,10 +670,10 @@ const Seguimiento = ({ handleButtonClick }) => {
                 }
 
                 if (comment.trim() === '' || value.trim() === '') {
-                    setLoading(false);
                     const errorMessage = 'Por favor, complete todos los campos obligatorios.';
                     setErrorMessage(errorMessage);
                     setFormSubmitted(true);
+                    setLoading(false);
                     return;
                 }
 
@@ -768,7 +766,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                             open={calendarOpen}
                             onClose={() => setCalendarOpen(false)}
                             format="DD/MM/YYYY"
-                            renderInput={() => <input readOnly />}
+                            slots={{ textField: (params) => <TextField {...params} /> }}
                             />
                         </LocalizationProvider>
                         </button>
@@ -910,7 +908,6 @@ const Seguimiento = ({ handleButtonClick }) => {
                             displayEmpty
                             style={{ width: "100%" }}
                             MenuProps={{
-                                disableScrollLock: "true", 
                                 PaperProps: {
                                     style: {
                                         maxHeight: "150px",
@@ -920,7 +917,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                     },
                                 },
                             }}
-                            disablePortal 
+                            disablePortal
                         >
                             <MenuItem
                                 value={0}
@@ -1203,14 +1200,6 @@ const Seguimiento = ({ handleButtonClick }) => {
                     {handleButtonClick === 'conv' && (
                         <>
                             <h3>Seguimiento del Proceso de Convenio Docencia Servicio</h3>
-                            {/* <CollapsibleButton buttonText="Datos Generales para Anexos Técnicos" content={
-                                <>
-                                    <div style={{ paddingTop: "20px", paddingBottom: "20px" }}>
-                                        <div style={{ fontSize: "18px", paddingBottom: "20px" }}> <strong>Firmas para el documento</strong></div>
-                                        <FormComponent idPrograma={idPrograma} />
-                                    </div>
-                                </>
-                            } /> */}
                             <PracticeScenario data={rowData} />
                         </>
                     )}
@@ -1221,4 +1210,3 @@ const Seguimiento = ({ handleButtonClick }) => {
 };
 
 export default Seguimiento;
-

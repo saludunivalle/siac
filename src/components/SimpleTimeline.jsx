@@ -2,25 +2,25 @@ import React from 'react';
 import '/src/styles/simpleTimeline.css';
 import logoCircular from '/src/assets/logocircular.png';
 
+const parseDate = (dateString) => dateString ? new Date(dateString.split('/').reverse().join('-') + 'T00:00:00') : null;
+
 const SimpleTimeline = ({ fechaExpedicion, fechaVencimiento, fechasCalculadas }) => {
-    const fechaExpedicionDate = fechaExpedicion ? new Date(fechaExpedicion.split('/').reverse().join('-') + 'T00:00:00') : null;
-    const fechaVencimientoDate = fechaVencimiento ? new Date(fechaVencimiento.split('/').reverse().join('-') + 'T00:00:00') : null;
+    const fechaExpedicionDate = parseDate(fechaExpedicion);
+    const fechaVencimientoDate = parseDate(fechaVencimiento);
     const fechaActual = new Date(); 
 
     const fechas = [
         { label: ['Expedición'], date: fechaExpedicionDate, color: 'blue' },
-        { label: ['1 Año y', '6 Meses Después'], date: fechasCalculadas ? new Date(fechasCalculadas.unAñoSeisMesesDespues.split('/').reverse().join('-') + 'T00:00:00') : null, color: 'green' },
-        { label: ['6 Meses Antes', 'de la Mitad'], date: fechasCalculadas ? new Date(fechasCalculadas.seisMesesAntesMitad.split('/').reverse().join('-') + 'T00:00:00') : null, color: 'yellow' },
-        { label: ['3 Años Antes', 'del Vencimiento'], date: fechasCalculadas ? new Date(fechasCalculadas.tresAñosAntes.split('/').reverse().join('-') + 'T00:00:00') : null, color: 'orange' },
-        { label: ['18 Meses Antes', 'del Vencimiento'], date: fechasCalculadas ? new Date(fechasCalculadas.dieciochoMesesAntes.split('/').reverse().join('-') + 'T00:00:00') : null, color: 'red' },
+        { label: ['1 Año y', '6 Meses Después'], date: parseDate(fechasCalculadas?.unAñoSeisMesesDespues), color: 'green' },
+        { label: ['6 Meses Antes', 'de la Mitad'], date: parseDate(fechasCalculadas?.seisMesesAntesMitad), color: 'yellow' },
+        { label: ['3 Años Antes', 'del Vencimiento'], date: parseDate(fechasCalculadas?.tresAñosAntes), color: 'orange' },
+        { label: ['18 Meses Antes', 'del Vencimiento'], date: parseDate(fechasCalculadas?.dieciochoMesesAntes), color: 'red' },
         { label: ['Fecha del', 'Vencimiento'], date: fechaVencimientoDate, color: 'purple' },
-    ].filter(fecha => fecha.date); 
+    ].filter(fecha => fecha.date);
 
     const totalDuration = fechaVencimientoDate && fechaExpedicionDate ? fechaVencimientoDate - fechaExpedicionDate : null;
 
-    const getPosition = (date) => {
-        return totalDuration ? ((date - fechaExpedicionDate) / totalDuration) * 100 : 0;
-    };
+    const getPosition = (date) => (totalDuration ? ((date - fechaExpedicionDate) / totalDuration) * 100 : 0);
 
     const getYearsArray = (startDate, endDate) => {
         const years = [];

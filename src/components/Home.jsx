@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, CircularProgress } from '@mui/material';
 import Semaforo from './Semaforo';
@@ -33,7 +33,6 @@ const Home = () => {
   const [rrcCount, setRrcCount] = useState(0);
   const [raacCount, setRaacCount] = useState(0);
   const [modCount, setModCount] = useState(0);
-  const navigate = useNavigate();
   const [programasVisible, setProgramasVisible] = useState(true);
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const [rowData, setRowData] = useState(null);
@@ -43,9 +42,11 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(false); 
   const [selectedRow, setSelectedRow] = useState(null); 
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (sessionStorage.getItem('logged')) {
-      let res = JSON.parse(sessionStorage.getItem('logged'));
+      const res = JSON.parse(sessionStorage.getItem('logged'));
       const permisos = res.map(item => item.permiso).flat();
       setCargo(permisos);
       setUser(res[0].user);
@@ -66,35 +67,38 @@ const Home = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let response;
-        if (isCargo.includes('Posgrados')) {
-          const filtered = await Filtro5();
-          response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-          //console.log("Datos de Posgrados filtrados en fetchData:", response);
-        } else {
-          response = await Filtro5();
-        }
-        setActivosCount(response.filter(item => item['estado'] === 'Activo').length);
-        setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
-        setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
-        setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
-        setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);
-        setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);
-        setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);
-        setRrcCount(response.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').length);
-        setRaacCount(response.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').length);
-        setModCount(response.filter(item => item['mod'] === 'SI').length);
-        setRowData(response);
-        setFilteredData(response);
-
-        //console.log("Datos de programas filtrados en fetchData:", response);
-
-        const seguimientos = await Filtro7();
-        processSeguimientos(seguimientos, response);
+          let response;
+          if (isCargo.includes('Posgrados')) {
+              const filtered = await Filtro5();
+              response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+          } else {
+              response = await Filtro5();
+          }
+          
+          if (!response) {
+              throw new Error("response is undefined");
+          }
+          
+          setActivosCount(response.filter(item => item['estado'] === 'Activo').length);
+          setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
+          setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
+          setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
+          setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);
+          setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);
+          setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);
+          setRrcCount(response.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').length);
+          setRaacCount(response.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').length);
+          setModCount(response.filter(item => item['mod'] === 'SI').length);
+          setRowData(response);
+          setFilteredData(response);
+  
+          const seguimientos = await Filtro7();
+          processSeguimientos(seguimientos, response);
       } catch (error) {
-        console.error('Error al filtrar datos:', error);
+          console.error('Error al filtrar datos:', error);
       }
     };
+
     const buttonGoogle = document.getElementById("buttonDiv");
     if (buttonGoogle) {
       buttonGoogle.classList.add('_display_none');
@@ -102,7 +106,7 @@ const Home = () => {
     fetchData();
   }, [isCargo]);
 
-  const processSeguimientos = (seguimientos, programas) => {
+  const processSeguimientos = useCallback((seguimientos, programas) => {
     const estados = {
       CREA: programas.filter(item => item['estado'] === 'En Creación').map(item => item.id_programa),
       MOD: programas.filter(item => item['mod'] === 'SI').map(item => item.id_programa),
@@ -110,8 +114,6 @@ const Home = () => {
       AAC: programas.filter(item => item['aac_1a'] === 'SI').map(item => item.id_programa),
       RAAC: programas.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').map(item => item.id_programa),
     };
-
-    //console.log("Estados procesados:", estados);
 
     const newCounts = {
       CREA: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
@@ -124,8 +126,6 @@ const Home = () => {
 
     Object.keys(estados).forEach((estado) => {
       const filtered = seguimientos.filter((item) => estados[estado].includes(item.id_programa));
-      //console.log(`Seguimientos filtrados para ${estado}:`, filtered);
-
       const latestSeguimientos = {};
       filtered.forEach(item => {
         const idPrograma = item.id_programa;
@@ -149,9 +149,8 @@ const Home = () => {
       newCounts[estado].SinRegistro += sinRegistro;
     });
 
-    //console.log("Conteos actualizados:", newCounts);
     setCounts(newCounts);
-  };
+  }, []);
 
   const handleBackClick = () => {
     setProgramasVisible(true);
@@ -234,8 +233,6 @@ const Home = () => {
         await clearSheetExceptFirstRow(spreadsheetId, sheetName);
 
         const reportData = await prepareReportData();
-        //console.log('Datos preparados para enviar:', reportData);
-
         const dataToSend = reportData.map(item => [
             item.timeStamp,
             item.programaAcademico,
@@ -249,7 +246,6 @@ const Home = () => {
         await sendDataToSheetNew(dataToSend);
 
         downloadSheet(spreadsheetId);
-        //console.log('Todos los datos han sido enviados.');
     } catch (error) {
         console.error('Error al generar reporte:', error);
     } finally {

@@ -21,7 +21,6 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/system';
 import { sendDataSegui, dataSegui, updateDataSegui } from '../service/data';
-import dayjs from 'dayjs';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(2),
@@ -61,23 +60,25 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
     useEffect(() => {
         const fetchData = async () => {
             const response = await dataSegui();
-            const records = response.filter(record => record.id_programa === idPrograma).reduce((acc, record) => {
-                acc[record.id] = [
-                    record.id,
-                    record.id_programa,
-                    record.estado_pm,
-                    record.porc_anexos,
-                    record.tiene_rc,
-                    record.tiene_aac,
-                    record.formacion,
-                    record.escuela,
-                    record.fecha || null,
-                ];
-                return acc;
-            }, {});
+            const records = response
+                .filter(record => record.id_programa === idPrograma)
+                .reduce((acc, record) => {
+                    acc[record.id] = [
+                        record.id,
+                        record.id_programa,
+                        record.estado_pm,
+                        record.porc_anexos,
+                        record.tiene_rc,
+                        record.tiene_aac,
+                        record.formacion,
+                        record.escuela,
+                        record.fecha || null,
+                    ];
+                    return acc;
+                }, {});
             setSavedRecords(Object.values(records));
             if (Object.values(records).length > 0) {
-                const lastRecord = Object.values(records)[Object.values(records).length - 1];
+                const lastRecord = Object.values(records).slice(-1)[0];
                 setCurrentId(lastRecord[0]);
                 setEstadoProceso(lastRecord[2]);
                 setPorcentaje(lastRecord[3]);
@@ -149,11 +150,10 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
         <div style={{ padding: '20px' }}>
             <RowContainer>
                 <FormWrapper>
-                    <Paper style={{ padding: '20px' }}>
-                        <div style={{ marginTop: '-10px' }}>
-                            {/* Sección Estado del Proceso */}
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                <FormControl variant="outlined" style={{ marginRight: '10px', minWidth: 355 }} disabled={!isPlan}>
+                    <StyledPaper>
+                        <div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <FormControl variant="outlined" fullWidth disabled={!isPlan}>
                                     <InputLabel id="estadoProceso-label">Seleccione el estado del programa</InputLabel>
                                     <Select
                                         labelId="estadoProceso-label"
@@ -170,9 +170,8 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
                                 </FormControl>
                             </div>
 
-                            {/* Sección para Porcentaje */}
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                <Typography variant="body1" style={{ marginRight: '10px', width: 300 }}>
+                            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                                <Typography variant="body1" style={{ marginRight: '10px', flexGrow: 1 }}>
                                     Anexos técnicos en consonancia con los registros calificados:
                                 </Typography>
                                 <TextField
@@ -181,17 +180,16 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
                                     value={porcentaje}
                                     onChange={handlePorcentajeChange}
                                     placeholder="%"
-                                    style={{ marginRight: '10px', width: 150 }}
+                                    style={{ width: 150 }}
                                     disabled={!isPlan}
                                 />
                             </div>
 
-                            {/* Sección para Recopilación de Evidencias */}
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                <Typography variant="body1" style={{ marginRight: '10px', width: 200 }}>
+                            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                                <Typography variant="body1" style={{ marginRight: '10px', flexGrow: 1 }}>
                                     ¿Obtuvo o tiene Registro calificado?
                                 </Typography>
-                                <FormControl component="fieldset" style={{ marginRight: '10px' }} disabled={!isPlan}>
+                                <FormControl component="fieldset" disabled={!isPlan}>
                                     <RadioGroup
                                         row
                                         value={recopilacionEvidencias}
@@ -203,12 +201,11 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
                                 </FormControl>
                             </div>
 
-                            {/* Sección para Número de Programas */}
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                                <Typography variant="body1" style={{ marginRight: '10px', width: 200 }}>
+                            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                                <Typography variant="body1" style={{ marginRight: '10px', flexGrow: 1 }}>
                                     ¿Obtuvo o tiene Acreditación?
                                 </Typography>
-                                <FormControl component="fieldset" style={{ marginRight: '10px' }} disabled={!isPlan}>
+                                <FormControl component="fieldset" disabled={!isPlan}>
                                     <RadioGroup
                                         row
                                         value={numeroProgramas}
@@ -220,20 +217,19 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
                                 </FormControl>
                             </div>
 
-                            {/* Botón Guardar */}
-                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px', position: 'relative' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
                                 <Button
                                     variant="contained"
                                     color="primary"
                                     onClick={handleGuardar}
-                                    style={{ marginRight: '10px', opacity: isSaved ? 0.5 : 1 }}
                                     disabled={loading || !isPlan}
+                                    style={{ opacity: isSaved ? 0.5 : 1 }}
                                 >
                                     Guardar
                                 </Button>
                             </div>
                         </div>
-                    </Paper>
+                    </StyledPaper>
                 </FormWrapper>
             </RowContainer>
 

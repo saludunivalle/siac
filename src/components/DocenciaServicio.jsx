@@ -21,19 +21,21 @@ const DocenciaServicio = () => {
     return (
         <>
             <Header />
-            <h1>Escenarios de Practica</h1>
-            {data.map((item, index) => (
-                <CollapsibleButton
-                    key={index}
-                    buttonText={item.nombre}
-                    content={
-                        <div>
-                            <p>Escenario de práctica.</p>
-                        </div>
-                    }
-                    defaultClosed={true}
-                />
-            ))}
+            <div className="content">
+                <h1>Escenarios de Practica</h1>
+                {data.length > 0 ? (
+                    data.map((item, index) => (
+                        <CollapsibleButton
+                            key={index}
+                            buttonText={item.nombre}
+                            content={<p>Escenario de práctica.</p>}
+                            defaultClosed={true}
+                        />
+                    ))
+                ) : (
+                    <p>Cargando datos...</p>
+                )}
+            </div>
         </>
     );
 };

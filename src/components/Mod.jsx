@@ -22,22 +22,22 @@ const Mod = ({ globalVariable }) => {
 
     useEffect(() => {
         if (sessionStorage.getItem('logged')) {
-        let res = JSON.parse(sessionStorage.getItem('logged'));
-        const permisos = res.map(item => item.permiso).flat();
-        setCargo(permisos);
-        setUser(res[0].user);
-        console.log("Permisos del usuario:", permisos);
+            let res = JSON.parse(sessionStorage.getItem('logged'));
+            const permisos = res.map(item => item.permiso).flat();
+            setCargo(permisos);
+            setUser(res[0].user);
+            //console.log("Permisos del usuario:", permisos);
         }
     }, []);
 
     useEffect(() => {
         if (isCargo.includes('Posgrados')) {
-        const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-        setFilteredData(filtered);
+            const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+            setFilteredData(filtered);
         } else {
-        setFilteredData(rowData);
+            setFilteredData(rowData);
         }
-    }, []);
+    }, [rowData, isCargo]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -53,28 +53,25 @@ const Mod = ({ globalVariable }) => {
         fetchData();
     }, [updateTrigger]);
 
-    
     useEffect(() => {
         const fetchData = async () => {
-          try {
-            let response;
-            if (isCargo.includes('Posgrados')) {
-            const filtered = await Filtro5();
-            response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-            
-            } else {
-            response = await Filtro5();
+            try {
+                let response;
+                if (isCargo.includes('Posgrados')) {
+                    const filtered = await Filtro5();
+                    response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+                } else {
+                    response = await Filtro5();
+                }
+                setFilteredData(response.filter(item => item['mod'] === 'SI'));
+            } catch (error) {
+                console.error('Error al filtrar datos:', error);
             }
-            setFilteredData(response.filter(item => item['mod'] === 'SI'));
-          } catch (error) {
-            console.error('Error al filtrar datos:', error);
-          }
         };
         fetchData();
-    }, []);
+    }, [isCargo]);
 
     const handleRowClick = (rowData) => {
-        //console.log('Datos de la fila:', rowData);
         navigate('/program_details', { state: { ...rowData, globalVariable } });
     };
 
@@ -82,11 +79,9 @@ const Mod = ({ globalVariable }) => {
         if (!data || !data.id_programa) {
             return 'white'; 
         }
-    
         try {
-            
             const seguimientos = filteredDataSeg;   
-            const response =  seguimientos.filter(item => item['id_programa'] === data.id_programa);
+            const response = seguimientos.filter(item => item['id_programa'] === data.id_programa);
             
             if (response.length === 0) {
                 return 'white';
@@ -120,16 +115,15 @@ const Mod = ({ globalVariable }) => {
     const handleButtonClick = async (buttonValue) => {
         let response;
         if (isCargo.includes('Posgrados')) {
-          const filtered = await Filtro5();
-          response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-          
+            const filtered = await Filtro5();
+            response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
         } else {
-          response = await Filtro5();
+            response = await Filtro5();
         }
         const result = response.filter(item => item['mod'] === 'SI');
         setSelectedValues(prevSelectedValues => {
             let newSelectedValues;
-    
+
             if (prevSelectedValues.includes(buttonValue)) {
                 newSelectedValues = prevSelectedValues.filter(val => val !== buttonValue);
             } else {
@@ -143,7 +137,7 @@ const Mod = ({ globalVariable }) => {
                             return true;
                     }
                 };
-    
+
                 const filterResults = newSelectedValues.map(filterByOption);
                 return filterResults.every(result => result === true);
             });
@@ -154,9 +148,9 @@ const Mod = ({ globalVariable }) => {
                            newSelectedValues.includes('option2') && (item['mod_sus'] === 'NO');
                 });
             }
-    
+
             setFilteredData(filteredResult);
-    
+
             return newSelectedValues;
         });
     };
@@ -167,13 +161,13 @@ const Mod = ({ globalVariable }) => {
 
     const setButtonStyles = (buttonValue) => {
         return {
-          color: isButtonSelected(buttonValue) ? 'white' : 'grey',
-          backgroundColor: isButtonSelected(buttonValue) ? 'grey' : 'transparent',
-          border: `2px solid ${isButtonSelected(buttonValue) ? 'grey' : 'grey'}`,
-          borderRadius: '6px',
-          width:'300px',
-          height: '50px',
-          marginTop: '10px',
+            color: isButtonSelected(buttonValue) ? 'white' : 'grey',
+            backgroundColor: isButtonSelected(buttonValue) ? 'grey' : 'transparent',
+            border: `2px solid ${isButtonSelected(buttonValue) ? 'grey' : 'grey'}`,
+            borderRadius: '6px',
+            width: '300px',
+            height: '50px',
+            marginTop: '10px',
         };
     };
 
@@ -183,9 +177,6 @@ const Mod = ({ globalVariable }) => {
         }
         if (isCargo.includes('Posgrados')) {
             data = data.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-            
-          } else {
-            data;
         }
         const colors = {};
         for (const item of data) {

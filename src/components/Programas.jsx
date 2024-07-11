@@ -1,10 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
-import { Button, ButtonGroup, Tooltip } from "@mui/material";
+import { Button, ButtonGroup, Tooltip, CircularProgress } from "@mui/material";
 import { useEffect, useState } from "react";
 import { styled } from '@mui/material/styles';
 import { Filtro4, Filtro5, Filtro7 } from "../service/data";
-import CircularProgress from '@mui/material/CircularProgress';
 import CollapsibleButton from "./CollapsibleButton";
 import '/src/styles/home.css';
 
@@ -28,23 +27,21 @@ const Programas = () => {
     const [isCargo, setCargo] = useState([' ']);
 
     useEffect(() => {
-        if (sessionStorage.getItem('logged')) {
-            let res = JSON.parse(sessionStorage.getItem('logged'));
+        const loggedUser = sessionStorage.getItem('logged');
+        if (loggedUser) {
+            const res = JSON.parse(loggedUser);
             const permisos = res.map(item => item.permiso).flat();
             setCargo(permisos);
             setUser(res[0].user);
-            console.log("Permisos del usuario:", permisos);
         }
     }, []);
 
     useEffect(() => {
-        if (isCargo.includes('Posgrados')) {
-            const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-            setFilteredData(filtered);
-        } else {
-            setFilteredData(rowData);
-        }
-    }, []);
+        const filtered = isCargo.includes('Posgrados')
+            ? rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado')
+            : rowData;
+        setFilteredData(filtered);
+    }, [isCargo, rowData]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -61,13 +58,10 @@ const Programas = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                let response;
-                if (isCargo.includes('Posgrados')) {
-                    const filtered = await Filtro5();
-                    response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-                } else {
-                    response = await Filtro5();
-                }
+                const response = isCargo.includes('Posgrados')
+                    ? (await Filtro5()).filter(item => item['pregrado/posgrado'] === 'Posgrado')
+                    : await Filtro5();
+
                 setActivosCount(response.filter(item => item['estado'] === 'Activo').length);
                 setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
                 setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
@@ -79,29 +73,21 @@ const Programas = () => {
                 console.error('Error al filtrar datos:', error);
             }
         };
-        const buttonGoogle = document.getElementById("buttonDiv")
-        if (buttonGoogle){
-          buttonGoogle.classList.add('_display_none');
-        }
         fetchData();
     }, [isCargo]);
 
     const handleRowClick = (rowData) => {
-        //console.log('Datos de la fila:', rowData);
         navigate('/program_details', { state: rowData });
     };
 
     const getCellBackgroundColor = (item, process) => {
         const seguimientos = filteredDataSeg.filter(seg => seg.id_programa === item.id_programa);
         if (seguimientos.length === 0) {
-            if ((process === 'CREA' && (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*')) ||
+            return ((process === 'CREA' && (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*')) ||
                 (process === 'MOD' && item['mod'] === 'SI') ||
                 (process === 'RRC' && item['rc vigente'] === 'SI') ||
                 (process === 'AAC' && item['aac_1a'] === 'SI') ||
-                (process === 'RAAC' && item['ac vigente'] === 'SI')) {
-                return '#E0E0E0'; 
-            }
-            return 'white';
+                (process === 'RAAC' && item['ac vigente'] === 'SI')) ? '#E0E0E0' : 'white';
         }
 
         const recentSeguimiento = seguimientos.reduce((prev, current) =>
@@ -117,24 +103,20 @@ const Programas = () => {
         };
 
         if (recentSeguimiento.topic !== topicMap[process]) {
-            if ((process === 'CREA' && (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*')) ||
+            return ((process === 'CREA' && (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*')) ||
                 (process === 'MOD' && item['mod'] === 'SI') ||
                 (process === 'RRC' && item['rc vigente'] === 'SI') ||
                 (process === 'AAC' && item['aac_1a'] === 'SI') ||
-                (process === 'RAAC' && item['ac vigente'] === 'SI'))
-                {
-                return '#E0E0E0'; 
-            }
-            return 'white';
+                (process === 'RAAC' && item['ac vigente'] === 'SI')) ? '#E0E0E0' : 'white';
         }
 
         switch (recentSeguimiento.riesgo) {
             case 'Alto':
-                return '#FED5D1'; 
+                return '#FED5D1';
             case 'Medio':
-                return '#FEFBD1'; 
+                return '#FEFBD1';
             case 'Bajo':
-                return '#E6FFE6'; 
+                return '#E6FFE6';
             default:
                 return 'white';
         }
@@ -159,16 +141,12 @@ const Programas = () => {
 
     const handleButtonClick = (buttonValue) => {
         setSelectedValues(prevSelectedValues => {
-            let newSelectedValues;
-            if (prevSelectedValues.includes(buttonValue)) {
-                newSelectedValues = prevSelectedValues.filter(val => val !== buttonValue);
-            } else {
-                if (buttonValue === 'option1' || buttonValue === 'option2') {
-                    newSelectedValues = [buttonValue];
-                } else {
-                    newSelectedValues = [...prevSelectedValues, buttonValue];
-                }
-            }
+            let newSelectedValues = prevSelectedValues.includes(buttonValue)
+                ? prevSelectedValues.filter(val => val !== buttonValue)
+                : buttonValue === 'option1' || buttonValue === 'option2'
+                    ? [buttonValue]
+                    : [...prevSelectedValues, buttonValue];
+
             let filteredResult = rowData.filter(item => {
                 const filterByOption = option => {
                     switch (option) {
@@ -180,19 +158,20 @@ const Programas = () => {
                             return true;
                     }
                 };
-                const filterResults = newSelectedValues.map(filterByOption);
-                return filterResults.every(result => result === true);
+                return newSelectedValues.map(filterByOption).every(result => result === true);
             });
-            if (newSelectedValues.includes('option3') || newSelectedValues.includes('option4') || newSelectedValues.includes('option5') || newSelectedValues.includes('option6') || newSelectedValues.includes('option7') || newSelectedValues.includes('option8')) {
+
+            if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8'].includes(option))) {
                 filteredResult = filteredResult.filter(item => {
                     return newSelectedValues.includes('option3') && (item['estado'] === 'Activo') ||
-                           newSelectedValues.includes('option4') && (item['estado'] === 'En Creación') ||
-                           newSelectedValues.includes('option5') && (item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR') ||
-                           newSelectedValues.includes('option6') && (item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado') ||
-                           newSelectedValues.includes('option7') && (item['estado'] === 'Activo - Sede') ||
-                           newSelectedValues.includes('option8') && (item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
+                        newSelectedValues.includes('option4') && (item['estado'] === 'En Creación') ||
+                        newSelectedValues.includes('option5') && (item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR') ||
+                        newSelectedValues.includes('option6') && (item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado') ||
+                        newSelectedValues.includes('option7') && (item['estado'] === 'Activo - Sede') ||
+                        newSelectedValues.includes('option8') && (item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
                 });
             }
+
             setFilteredData(filteredResult);
             return newSelectedValues;
         });
@@ -202,35 +181,26 @@ const Programas = () => {
         return selectedValues.includes(buttonValue);
     };
 
-    const setButtonStyles = (buttonValue) => {
-        return {
-            color: isButtonSelected(buttonValue) ? 'white' : 'grey',
-            backgroundColor: isButtonSelected(buttonValue) ? 'grey' : 'transparent',
-            border: `2px solid ${isButtonSelected(buttonValue) ? 'grey' : 'grey'}`,
-            borderRadius: '6px',
-        };
-    };
+    const setButtonStyles = (buttonValue) => ({
+        color: isButtonSelected(buttonValue) ? 'white' : 'grey',
+        backgroundColor: isButtonSelected(buttonValue) ? 'grey' : 'transparent',
+        border: `2px solid ${isButtonSelected(buttonValue) ? 'grey' : 'grey'}`,
+        borderRadius: '6px',
+    });
 
     const renderFilteredTable = (data, filter) => {
-        if (!data || data.length === 0) {
-            return <p>Ningún programa por mostrar</p>;
-        }
-
-        let filteredData;
-        if (filter === 'No Aplica'){
-            filteredData = (data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ'));
-        } else {
-            filteredData = Filtro4(data, filter);
-        }
-
-        if (filteredData.length === 0) {
-            return <p>Ningún progama por mostrar</p>;
-        }
-
+        if (!data || data.length === 0) return <p>Ningún programa por mostrar</p>;
+    
+        let filteredData = filter === 'No Aplica'
+            ? data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ')
+            : Filtro4(data, filter);
+    
+        if (filteredData.length === 0) return <p>Ningún programa por mostrar</p>;
+    
         if (isCargo.includes('Posgrados')) {
             filteredData = filteredData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
         }
-
+    
         return (
             <div className='table-container'>
                 {loading ? (
@@ -240,28 +210,28 @@ const Programas = () => {
                         <tbody>
                             {filteredData.map((item, index) => (
                                 <tr key={index} onClick={() => handleRowClick(item)}>
-                                    <td className="bold" style={{width:'25%',fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td>
+                                    <td className="bold" style={{ width: '25%', fontSize: '14px', textAlign: 'left', paddingLeft: '5px' }}>{item['programa académico']}</td>
                                     <td>{item['departamento']}</td>
                                     <td>{item['sección']}</td>
                                     <td>{item['estado']}</td>
                                     <td>{item['nivel de formación']}</td>
                                     <Tooltip title="CREA" arrow>
-                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'CREA') }}>{/* CREA */}</td>
+                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'CREA') }}></td>
                                     </Tooltip>
                                     <Tooltip title="MOD" arrow>
-                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'MOD') }}>{/* MOD */}</td>
+                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'MOD') }}></td>
                                     </Tooltip>
                                     <Tooltip title="RRC" arrow>
-                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'RRC') }}>{/* RRC */}</td>
+                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'RRC') }}></td>
                                     </Tooltip>
                                     <Tooltip title="AAC" arrow>
-                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'AAC') }}>{/* AAC */}</td>
+                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'AAC') }}></td>
                                     </Tooltip>
                                     <Tooltip title="RAAC" arrow>
-                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'RAAC') }}>{/* RAAC */}</td>
+                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'RAAC') }}></td>
                                     </Tooltip>
                                     <Tooltip title="INT" arrow>
-                                        <td className="hover-darken" style={{ width:'5%',backgroundColor: getCellBackgroundColor(item, 'INT') }}>{/* INT */}</td>
+                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'INT') }}></td>
                                     </Tooltip>
                                 </tr>
                             ))}
@@ -271,16 +241,17 @@ const Programas = () => {
             </div>
         );
     };
+    
 
     return (
         <>
             <Header />
             <div className='table-buttons'>
-                <div style={{display:'flex', flexDirection:'column', gap: '20px', justifyContent:'center', textAlign:'center'}}>
-                    <div style={{fontSize:'18px'}}><strong>Total Programas: </strong> {filteredData.length} </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center', textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px' }}><strong>Total Programas: </strong> {filteredData.length} </div>
                     <ButtonsContainer>
                         <div className="contenedorButtonGroup">
-                            <ButtonGroup style={{gap:'10px'}} >
+                            <ButtonGroup style={{ gap: '10px' }}>
                                 <Button value="option1" className="custom-radio2"
                                     style={setButtonStyles('option1')}
                                     onClick={() => handleButtonClick('option1')}> Pregrado </Button>
@@ -290,7 +261,7 @@ const Programas = () => {
                             </ButtonGroup>
                         </div>
                         <div className="contenedorButtonGroup">
-                            <ButtonGroup style={{gap:'10px'}}>
+                            <ButtonGroup style={{ gap: '10px' }}>
                                 <Button value="option3" className="custom-radio2"
                                     style={setButtonStyles('option3')}
                                     onClick={() => handleButtonClick('option3')}> Activos <br /> {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> } </Button>
@@ -319,17 +290,17 @@ const Programas = () => {
                     <table style={{ width: '100%', textAlign: 'center', marginTop: '10px' }}>
                         <thead>
                             <tr>
-                                <th className="bold" style={{ width:'25%', backgroundColor: headerBackgroundColor }}>Programa Académico</th>
+                                <th className="bold" style={{ width: '25%', backgroundColor: headerBackgroundColor }}>Programa Académico</th>
                                 <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>
                                 <th style={{ backgroundColor: headerBackgroundColor }}>Sección</th>
                                 <th style={{ backgroundColor: headerBackgroundColor }}>Estado</th>
                                 <th style={{ backgroundColor: headerBackgroundColor }}>Nivel de Formación</th>
-                                <th style={{ width:'5%',backgroundColor: headerBackgroundColor }}>CREA</th>
-                                <th style={{ width:'5%',backgroundColor: headerBackgroundColor }}>MOD</th>
-                                <th style={{ width:'5%', backgroundColor: headerBackgroundColor }}>RRC</th>
-                                <th style={{ width:'5%',backgroundColor: headerBackgroundColor }}>AAC</th>
-                                <th style={{ width:'5%',backgroundColor: headerBackgroundColor }}>RAAC</th>
-                                <th style={{ width:'5%',backgroundColor: headerBackgroundColor }}>INT</th>
+                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>CREA</th>
+                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>MOD</th>
+                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>RRC</th>
+                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>AAC</th>
+                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>RAAC</th>
+                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>INT</th>
                             </tr>
                         </thead>
                     </table>
@@ -362,9 +333,9 @@ const Programas = () => {
                     }
                 </div>
             ) : (
-                <p>Ningún progama por mostrar</p>
+                <p>Ningún programa por mostrar</p>
             )}
-            <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atras</button>
+            <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
         </>
     );
 };

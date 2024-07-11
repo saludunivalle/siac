@@ -15,11 +15,7 @@ const PracticeScenario = ({ data }) => {
     const [totalHorasSemanal, setTotalHorasSemanal] = useState(0);
     const [totalHorasRotacion, setTotalHorasRotacion] = useState(0);
     const [horasPorDia, setHorasPorDia] = useState({
-        lunes: [],
-        martes: [],
-        miercoles: [],
-        jueves: [],
-        viernes: []
+        lunes: [], martes: [], miercoles: [], jueves: [], viernes: []
     });
     const [permisos, setPermisos] = useState([]);
     const [filtro15Data, setFiltro15Data] = useState([]);
@@ -39,8 +35,6 @@ const PracticeScenario = ({ data }) => {
                 setFiltro16Data(data16);
                 const lastIdRel = data15.length > 0 ? Math.max(...data15.map(item => item.id)) : 0;
                 setRelationId(lastIdRel + 1);
-                console.log('Datos cargados:', { data13, data14, data15, data16 });
-                console.log('Contenido de filtro16Data:', data16);
             } catch (error) {
                 console.error('Error al obtener los datos:', error);
             }
@@ -70,9 +64,7 @@ const PracticeScenario = ({ data }) => {
     const tienePermisoConvenio = () => permisos.includes('Convenio Docencia Servicio') || permisos.includes('Sistemas');
     const tienePermisoDirector = () => permisos.includes('Director Programa') || permisos.includes('Director Practica') || permisos.includes('Sistemas');
 
-    const toggleForm = () => {
-        setNewScenario(true);
-    };
+    const toggleForm = () => setNewScenario(true);
 
     const handleCheck = (dia, hora, isChecked) => {
         setHorasPorDia(prevHorasPorDia => {
@@ -84,10 +76,7 @@ const PracticeScenario = ({ data }) => {
             }
             const totalHorasSemanal = Object.values(horasPorDiaCopy).reduce((acc, curr) => acc + curr.length, 0);
             setTotalHorasSemanal(totalHorasSemanal);
-
-            const totalHorasRotacion = totalHorasSemanal * (asignaturaSemanasRotar ? parseInt(asignaturaSemanasRotar) : 0);
-            setTotalHorasRotacion(totalHorasRotacion);
-
+            setTotalHorasRotacion(totalHorasSemanal * (asignaturaSemanasRotar ? parseInt(asignaturaSemanasRotar) : 0));
             return horasPorDiaCopy;
         });
     };
@@ -95,17 +84,13 @@ const PracticeScenario = ({ data }) => {
     const handleScenarioSubmit = async (e) => {
         e.preventDefault();
         setIsScenarioSaved(true);
-        if (isScheduleSaved) {
-            await handleFinalSubmit();
-        }
+        if (isScheduleSaved) await handleFinalSubmit();
     };
 
     const handleScheduleSubmit = async (e) => {
         e.preventDefault();
         setIsScheduleSaved(true);
-        if (isScenarioSaved) {
-            await handleFinalSubmit();
-        }
+        if (isScenarioSaved) await handleFinalSubmit();
     };
 
     const handleFinalSubmit = async () => {
@@ -113,40 +98,10 @@ const PracticeScenario = ({ data }) => {
         try {
             const horario = JSON.stringify(horasPorDia);
             const selectedFiltro14 = filtro14Data.find(item => item.nombre === selectedFiltro14Id);
-
-            const dataSendRel = [
-                relationID,
-                data.id_programa,
-                idAsignatura,
-                selectedFiltro14.id,
-                totalHorasSemanal,
-                asignaturaSemanasRotar,
-                totalHorasRotacion,
-            ];
-
-            const dataSendHor = [
-                relationID,
-                horario,
-            ];
-
-            console.log('Enviando datos:', { dataSendRel, dataSendHor });
-
+            const dataSendRel = [relationID, data.id_programa, idAsignatura, selectedFiltro14.id, totalHorasSemanal, asignaturaSemanasRotar, totalHorasRotacion];
+            const dataSendHor = [relationID, horario];
             await Promise.all([sendDataRelEscPract(dataSendRel), sendDataHorariosPract(dataSendHor)]);
-
-            setHorasPorDia({
-                lunes: [],
-                martes: [],
-                miercoles: [],
-                jueves: [],
-                viernes: []
-            });
-            setTotalHorasSemanal(0);
-            setTotalHorasRotacion(0);
-            setSelectedFiltro14Id('');
-            setAsignaturaSemanasRotar('');
-            setIsScenarioSaved(false);
-            setIsScheduleSaved(false);
-            setNewScenario(false);
+            resetForm();
         } catch (error) {
             console.error('Error al enviar los datos:', error);
         } finally {
@@ -154,29 +109,29 @@ const PracticeScenario = ({ data }) => {
         }
     };
 
+    const resetForm = () => {
+        setHorasPorDia({ lunes: [], martes: [], miercoles: [], jueves: [], viernes: [] });
+        setTotalHorasSemanal(0);
+        setTotalHorasRotacion(0);
+        setSelectedFiltro14Id('');
+        setAsignaturaSemanasRotar('');
+        setIsScenarioSaved(false);
+        setIsScheduleSaved(false);
+        setNewScenario(false);
+    };
+
     const handleInputChange = (value) => {
         setAsignaturaSemanasRotar(value);
-        const totalHorasRotacion = totalHorasSemanal * (value ? parseInt(value) : 0);
-        setTotalHorasRotacion(totalHorasRotacion);
+        setTotalHorasRotacion(totalHorasSemanal * (value ? parseInt(value) : 0));
     };
 
     const calculateTotalHoras = (id_programa, id_asignatura) => {
         const filteredData = filtro15Data.filter(item => item.id_programa === id_programa && item.id_asignatura === id_asignatura);
-        const totalHoras = filteredData.reduce((total, item) => {
-            const horas = parseInt(item.total_horas, 10);
-            return isNaN(horas) ? total : total + horas;
-        }, 0);
-
-        return totalHoras;
+        return filteredData.reduce((total, item) => total + parseInt(item.total_horas, 10), 0);
     };
 
     const getHorario = (relationID) => {
-        console.log('Buscando horario para relationID:', relationID);
         const horarioData = filtro16Data.find(item => item.id_relacion === relationID);
-        console.log('Horario obtenido:', horarioData);
-        if (!horarioData) {
-            console.warn(`No se encontró un horario para relationID: ${relationID}`);
-        }
         try {
             return horarioData ? JSON.parse(horarioData.json_horas) : { lunes: [], martes: [], miercoles: [], jueves: [], viernes: [] };
         } catch (error) {
@@ -185,40 +140,31 @@ const PracticeScenario = ({ data }) => {
         }
     };
 
-    const renderHorario = (horario) => {
-        console.log('Renderizando horario:', horario);
-        return (
-            <TableBody>
-                {['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].map((day, index) => (
-                    <TableRow key={index}>
-                        <TableCell style={{ padding: '6px', textAlign: 'center' }}>{day}</TableCell>
-                        {[...Array(15).keys()].map((hour) => (
-                            <TableCell key={`${day}-${hour}`} style={{ padding: '6px', textAlign: 'center' }}>
-                                <Checkbox
-                                    style={{ padding: '5px' }}
-                                    checked={horario[day]?.includes(`${hour + 6}:00`)}
-                                    disabled
-                                />
-                            </TableCell>
-                        ))}
-                        <TableCell style={{ padding: '6px', textAlign: 'center' }}>
-                            {horario[day]?.length || 0}
+    const renderHorario = (horario) => (
+        <TableBody>
+            {['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].map((day, index) => (
+                <TableRow key={index}>
+                    <TableCell style={{ padding: '6px', textAlign: 'center' }}>{day}</TableCell>
+                    {[...Array(15).keys()].map(hour => (
+                        <TableCell key={`${day}-${hour}`} style={{ padding: '6px', textAlign: 'center' }}>
+                            <Checkbox style={{ padding: '5px' }} checked={horario[day]?.includes(`${hour + 6}:00`)} disabled />
                         </TableCell>
-                    </TableRow>
-                ))}
-                <TableRow>
-                    <TableCell colSpan={15} style={{ padding: '6px', textAlign: 'left', fontSize: '20px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Total horas semanales: {Object.values(horario).reduce((acc, curr) => acc + curr.length, 0)}</span>
-                            {tienePermisoDirector() && (
-                                <span>Total horas rotación: {Object.values(horario).reduce((acc, curr) => acc + curr.length, 0) * (asignaturaSemanasRotar ? parseInt(asignaturaSemanasRotar) : 0)}</span>
-                            )}
-                        </div>
-                    </TableCell>
+                    ))}
+                    <TableCell style={{ padding: '6px', textAlign: 'center' }}>{horario[day]?.length || 0}</TableCell>
                 </TableRow>
-            </TableBody>
-        );
-    };
+            ))}
+            <TableRow>
+                <TableCell colSpan={15} style={{ padding: '6px', textAlign: 'left', fontSize: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Total horas semanales: {Object.values(horario).reduce((acc, curr) => acc + curr.length, 0)}</span>
+                        {tienePermisoDirector() && (
+                            <span>Total horas rotación: {Object.values(horario).reduce((acc, curr) => acc + curr.length, 0) * (asignaturaSemanasRotar ? parseInt(asignaturaSemanasRotar) : 0)}</span>
+                        )}
+                    </div>
+                </TableCell>
+            </TableRow>
+        </TableBody>
+    );
 
     return (
         <>
@@ -240,29 +186,21 @@ const PracticeScenario = ({ data }) => {
                                             <Box key={idx} sx={{ marginBottom: '20px', marginTop: '10px' }}>
                                                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' }}>
                                                     <Box sx={{ width: '30%', padding: '20px', marginLeft: '20px', textAlign: 'center' }}>
-                                                        {/* {tienePermisoDirector() && (
-                                                            <> */}
-                                                                <div>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Semanas a Rotar: {f15.semana_rotar}
-                                                                    </Typography>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Horas Semanal: {f15.horas_semanales}
-                                                                    </Typography>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Total Horas: {f15.total_horas}
-                                                                    </Typography>
-                                                                </div>
-                                                            {/* </>
-                                                        )} */}
+                                                        <div>
+                                                            <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                Semanas a Rotar: {f15.semana_rotar}
+                                                            </Typography>
+                                                            <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                Horas Semanal: {f15.horas_semanales}
+                                                            </Typography>
+                                                            <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
+                                                                Total Horas: {f15.total_horas}
+                                                            </Typography>
+                                                        </div>
                                                         <FormGroup>
                                                             <FormControl fullWidth>
                                                                 <InputLabel htmlFor={`filtro14-${index}-${idx}`}>Escenario</InputLabel>
-                                                                <Select
-                                                                    id={`filtro14-${index}-${idx}`}
-                                                                    value={filtro14Data.find(item => item.id === f15.id_escenario)?.nombre || ''}
-                                                                    disabled
-                                                                >
+                                                                <Select id={`filtro14-${index}-${idx}`} value={filtro14Data.find(item => item.id === f15.id_escenario)?.nombre || ''} disabled>
                                                                     {filtro14Data.map(item => (
                                                                         <MenuItem key={item.id} value={item.nombre}>{item.nombre}</MenuItem>
                                                                     ))}
@@ -293,24 +231,13 @@ const PracticeScenario = ({ data }) => {
                                                         </div>
                                                     </Box>
                                                 </Box>
-                                                <hr/>
+                                                <hr />
                                             </Box>
                                         ))}
                                         {newScenario && (
                                             <>
                                                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' }}>
                                                     <Box sx={{ width: '30%', padding: '20px', marginLeft: '20px', textAlign: 'center' }}>
-                                                                {/* <div>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Semanas a Rotar: {f15.semana_rotar}
-                                                                    </Typography>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Horas Semanal: {f15.horas_semanales}
-                                                                    </Typography>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Total Horas: {f15.total_horas}
-                                                                    </Typography>
-                                                                </div> */}
                                                         {tienePermisoDirector() && (
                                                             <>
                                                                 <TextField
@@ -326,11 +253,7 @@ const PracticeScenario = ({ data }) => {
                                                             <FormGroup>
                                                                 <FormControl fullWidth>
                                                                     <InputLabel htmlFor={`filtro14-${index}`}>Seleccionar Escenario</InputLabel>
-                                                                    <Select
-                                                                        id={`filtro14-${index}`}
-                                                                        value={selectedFiltro14Id}
-                                                                        onChange={(e) => setSelectedFiltro14Id(e.target.value)}
-                                                                    >
+                                                                    <Select id={`filtro14-${index}`} value={selectedFiltro14Id} onChange={(e) => setSelectedFiltro14Id(e.target.value)}>
                                                                         {filtro14Data.map(item => (
                                                                             <MenuItem key={item.id} value={item.nombre}>{item.nombre}</MenuItem>
                                                                         ))}
@@ -370,9 +293,7 @@ const PracticeScenario = ({ data }) => {
                                                                                         />
                                                                                     </TableCell>
                                                                                 ))}
-                                                                                <TableCell style={{ padding: '6px', textAlign: 'center' }}>
-                                                                                    {horasPorDia[day]?.length || 0}
-                                                                                </TableCell>
+                                                                                <TableCell style={{ padding: '6px', textAlign: 'center' }}>{horasPorDia[day]?.length || 0}</TableCell>
                                                                             </TableRow>
                                                                         ))}
                                                                         <TableRow>
@@ -396,7 +317,7 @@ const PracticeScenario = ({ data }) => {
                                                 </Box>
                                             </>
                                         )}
-                                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', marginBottom:'30px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', marginBottom: '30px' }}>
                                             <Button variant="contained" onClick={toggleForm}>Añadir escenario de práctica</Button>
                                         </div>
                                     </>

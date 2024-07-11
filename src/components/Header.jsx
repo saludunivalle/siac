@@ -1,4 +1,3 @@
-// src/components/Header.js
 import React, { useEffect, useRef, useState } from "react";
 import { styled } from "@mui/material/styles";
 import { InputBase } from "@mui/material";
@@ -25,6 +24,7 @@ const HeaderContainer = styled("div")(({ theme }) => ({
     height: "auto",
   },
 }));
+
 const TitleContainer = styled("div")(({ theme }) => ({
   position: "absolute",
   left: "50%",
@@ -38,6 +38,7 @@ const TitleContainer = styled("div")(({ theme }) => ({
     transform: "none",
   },
 }));
+
 const Title = styled("div")(({ theme }) => ({
   fontWeight: 600,
   fontSize: "30px",
@@ -48,6 +49,7 @@ const Title = styled("div")(({ theme }) => ({
     margin: "10px 0",
   },
 }));
+
 const SearchBar = styled("div")(({ theme }) => ({
   display: "flex",
   alignItems: "center",
@@ -59,6 +61,7 @@ const SearchBar = styled("div")(({ theme }) => ({
     justifyContent: "center",
   },
 }));
+
 const SearchInputContainer = styled("div")(({ theme }) => ({
   position: "relative",
   width: "300px",
@@ -67,6 +70,7 @@ const SearchInputContainer = styled("div")(({ theme }) => ({
     maxWidth: "300px",
   },
 }));
+
 const SearchInput = styled(InputBase)(({ theme }) => ({
   width: "100%",
   paddingRight: "20px",
@@ -79,6 +83,7 @@ const SearchInput = styled(InputBase)(({ theme }) => ({
     boxShadow: "0px 4px 8px rgba(0, 123, 255, 0.2)",
   },
 }));
+
 const StyledSearchIcon = styled(SearchIcon)(({ theme }) => ({
   position: "absolute",
   right: "4px",
@@ -89,6 +94,7 @@ const StyledSearchIcon = styled(SearchIcon)(({ theme }) => ({
   borderRadius: "100px",
   fontSize: "27px",
 }));
+
 const Username = styled("div")(({ theme }) => ({
   textAlign: "center",
   fontWeight: 500,
@@ -100,6 +106,7 @@ const Username = styled("div")(({ theme }) => ({
     flexDirection: "column-reverse",
   },
 }));
+
 const SearchResultLabel = styled("label")(({ theme }) => ({
   padding: "0.2rem",
   border: "1px solid #ccc",
@@ -129,12 +136,14 @@ const SearchResultLabel = styled("label")(({ theme }) => ({
     borderRadius: "4px",
   },
 }));
+
 const SearchResultItem = styled("div")(({ theme }) => ({
   padding: "0.5rem",
   "&:hover": {
     backgroundColor: "#d3d3d3",
   },
 }));
+
 const Logo = styled("div")(({ theme }) => ({
   paddingLeft: "10px",
   display: "flex",
@@ -213,13 +222,13 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutsideLabel);
 
     if (sessionStorage.getItem('logged')) {
-      let res = JSON.parse(sessionStorage.getItem('logged'));
+      const res = JSON.parse(sessionStorage.getItem('logged'));
       const permisos = res.map(item => item.permiso).flat();
       setCargo(permisos);
       const email = res[0].user;
       const userName = extractNameFromEmail(email);
       setUser(userName);
-      console.log("Permisos del usuario:", permisos);
+      //console.log("Permisos del usuario:", permisos);
     }
 
     return () => {
@@ -238,7 +247,7 @@ const Header = () => {
   };
 
   return (
-    <HeaderContainer role="navegación" aria-label="Navegación Principal">
+    <HeaderContainer role="navigation" aria-label="Navegación Principal">
       <Logo>
         <Link to="/" alt="Logo Universidad del Valle" aria-label="Homepage de Sistema Siac">
           <img src={logo} loading="lazy" />
