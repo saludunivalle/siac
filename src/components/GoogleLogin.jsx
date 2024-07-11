@@ -31,7 +31,7 @@ const GoogleLogin = ({
             const permisosResponse = await fetchPostGeneral({
                 dataSend: {},
                 sheetName: hojaPermisos,
-                urlEndPoint: 'http://localhost:3001/'
+                urlEndPoint: 'https://siac-server.vercel.app/'
             });
 
             if (permisosResponse) {
@@ -55,7 +55,7 @@ const GoogleLogin = ({
             const programasResponse = await fetchPostGeneral({
                 dataSend: {},
                 sheetName: hojaProgramas,
-                urlEndPoint: 'http://localhost:3001/'
+                urlEndPoint: 'https://siac-server.vercel.app/'
             });
 
             if (programasResponse) {

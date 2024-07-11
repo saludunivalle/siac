@@ -656,7 +656,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                     for (let i = 0; i < files.length; i++) {
                         formData.append("file", files[i]); 
                     }
-                    const response = await fetch("http://localhost:3001/upload/", {
+                    const response = await fetch("https://siac-server.vercel.app/upload/", {
                         method: 'POST',
                         body: formData, 
                         headers: {
