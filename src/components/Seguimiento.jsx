@@ -1,16 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel, useMediaQuery } from '@mui/material';
+import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, Input, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel, useMediaQuery } from '@mui/material';
+import { Container, Grid, IconButton, Box, Paper } from '@mui/material';
+import SaveIcon from '@mui/icons-material/Save';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro12, Filtro8, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, Filtro7, Filtro9 } from '../service/data';
+import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas } from '../service/data';
 import dayjs from 'dayjs';
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker} from '@mui/x-date-pickers';
-import esLocale from 'dayjs/locale/es';
+import esLocale from 'dayjs/locale/es'; 
 import PracticeScenario from './PracticeScenario';
 import FormComponent from './FormComponent';
 import SeguimientoPM from './SeguimientoPM';
 import SimpleTimeline from './SimpleTimeline';
+import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker} from '@mui/x-date-pickers';
 
 const Seguimiento = ({ handleButtonClick }) => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -61,6 +66,7 @@ const Seguimiento = ({ handleButtonClick }) => {
     const [fasesTabla, setFasesTabla] = useState([]);
     const isMobile = useMediaQuery('(max-width:600px)');
 
+    // Obtener datos de Filtro21 al montar el componente
     useEffect(() => {
         const obtenerDatosFiltro = async () => {
             try {
@@ -70,35 +76,32 @@ const Seguimiento = ({ handleButtonClick }) => {
                 console.error('Error al obtener los datos del filtro:', error);
             }
         };
-
         obtenerDatosFiltro();
     }, [docs]); 
 
+    // Abrir modal para un documento específico
     const handleOpen = (doc) => {
         setSelectedDoc(doc);
         setOpen(true);
     };
 
+    // Cerrar modal
     const handleClose = () => {
         setSelectedDoc(null);
         setOpen(false);
     };
 
+    // Manejar cambio en el input del modal
     const handleInputChange = (e) => {
         setInputValue(e.target.value);
     };
 
+    // Manejar envío del formulario del modal
     const handleSubmit = async () => {
         setLoading(true);
         const date = new Date();
         const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-
-        const dataSendDoc = [
-            idPrograma,
-            selectedDoc.id,
-            inputValue,
-            formattedDate,
-        ];
+        const dataSendDoc = [idPrograma, selectedDoc.id, inputValue, formattedDate];
 
         try {
             await sendDataToServerDoc(dataSendDoc);
@@ -114,32 +117,39 @@ const Seguimiento = ({ handleButtonClick }) => {
         }
     };
 
+    // Efecto para actualizar datos
     useEffect(() => {
         if (dataUpdated) {
             setDataUpdated(false);
         }
     }, [dataUpdated]);
 
-    const handleDateChange = (date) => {
-        setSelectedDate(date);
+    // Manejar el calendario
+    const handleToggleCalendar = () => {
+        setCalendarOpen((prev) => !prev);
     };
 
+    // Manejar cambio en la fecha seleccionada
+    const handleDateChange = (date) => {
+        setSelectedDate(date);
+        setCalendarOpen(false);
+    };
+
+    // Función para calcular fechas importantes
     function calcularFechas(fechaexpedrc, fechavencrc) {
         const partesFechaExpedicion = fechaexpedrc.split('/');
         const partesFechaVencimiento = fechavencrc.split('/');
-    
         const diaExpedicion = parseInt(partesFechaExpedicion[0], 10);
         const mesExpedicion = parseInt(partesFechaExpedicion[1], 10) - 1;
         const añoExpedicion = parseInt(partesFechaExpedicion[2], 10);
-    
         const diaVencimiento = parseInt(partesFechaVencimiento[0], 10);
         const mesVencimiento = parseInt(partesFechaVencimiento[1], 10) - 1;
         const añoVencimiento = parseInt(partesFechaVencimiento[2], 10);
-    
+
         const fechaUnAñoSeisMesesDespues = new Date(añoExpedicion, mesExpedicion, diaExpedicion);
         fechaUnAñoSeisMesesDespues.setMonth(fechaUnAñoSeisMesesDespues.getMonth() + 6);
         fechaUnAñoSeisMesesDespues.setFullYear(fechaUnAñoSeisMesesDespues.getFullYear() + 1);
-    
+
         const fechaExpedicion = new Date(añoExpedicion, mesExpedicion, diaExpedicion);
         const fechaVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
         const diferenciaMilisegundos = fechaVencimiento - fechaExpedicion;
@@ -148,20 +158,20 @@ const Seguimiento = ({ handleButtonClick }) => {
         const fechaMitad = new Date(fechaExpedicion);
         fechaMitad.setFullYear(fechaMitad.getFullYear() + Math.floor(mitadAños));
         fechaMitad.setMonth(fechaMitad.getMonth() - 6);
-    
+
         const fechaTresAñosAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
         fechaTresAñosAntes.setFullYear(fechaTresAñosAntes.getFullYear() - 3);
-    
+
         const fechaDieciochoMesesAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
         fechaDieciochoMesesAntes.setMonth(fechaDieciochoMesesAntes.getMonth() - 18);
-    
+
         const formatDate = (date) => {
             const day = (`0${date.getDate()}`).slice(-2);
             const month = (`0${date.getMonth() + 1}`).slice(-2);
             const year = date.getFullYear();
             return `${day}/${month}/${year}`;
         };
-    
+
         return {
             unAñoSeisMesesDespues: formatDate(fechaUnAñoSeisMesesDespues),
             seisMesesAntesMitad: formatDate(fechaMitad),
@@ -169,20 +179,22 @@ const Seguimiento = ({ handleButtonClick }) => {
             dieciochoMesesAntes: formatDate(fechaDieciochoMesesAntes)
         };
     }
-    
+
     const fechasCalculadas = calcularFechas(rowData['fechaexpedrc'], rowData['fechavencrc']);
     const fechasCalculadasAC = calcularFechas(rowData['fechaexpedac'], rowData['fechavencac']);
 
+    // Efecto para cargar fases al seleccionar un botón
     useEffect(() => {
         if (handleButtonClick != null) {
             cargarFases();
         }
     }, [handleButtonClick]);
-    
+
     const clearFileLink = () => {
         setFileLink('');
     };
 
+    // Función para cargar fases del proceso
     const cargarFases = async () => {
         try {
             setLoading(true);
@@ -204,12 +216,12 @@ const Seguimiento = ({ handleButtonClick }) => {
                 procesoActual = 'Modificación';
                 documentoproceso = 'Modificación';
             }
-    
+
             const general = await Filtro10();
             const general2 = general
                 .filter(item => item['proceso'] === procesoActual)
                 .sort((a, b) => a.orden - b.orden); // Ordenar por orden
-    
+
             const response = await obtenerFasesProceso();
             const fasesFiltradas = response.filter(item => item.id_programa === idPrograma);
             const result2 = fasesFiltradas.map(fase => {
@@ -218,7 +230,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             });
             const result3 = result2.filter(item => item && item['proceso'] === procesoActual)
                                     .sort((a, b) => a.orden - b.orden); // Ordenar por orden
-    
+
             setFases(general2);
             setFasesName(result3);
             const fase_actual = result3[0];
@@ -231,11 +243,12 @@ const Seguimiento = ({ handleButtonClick }) => {
             console.error('Error al cargar las fases:', error);
         }
     };
-    
+
+    // Efecto para cargar elementos del menú al seleccionar un botón
     useEffect(() => {
         fetchMenuItems();
     }, [handleButtonClick]);
-    
+
     const fetchMenuItems = async () => {
         try {
             let procesoActual = '';
@@ -254,16 +267,16 @@ const Seguimiento = ({ handleButtonClick }) => {
             const result = response
                 .filter(item => item['proceso'] === procesoActual)
                 .sort((a, b) => a.orden - b.orden); // Ordenar por orden
-    
+
             setMenuItems(result);
         } catch (error) {
             console.error('Error fetching menu items:', error);
         }
     };
-    
 
+    // Efecto para cargar datos de usuario desde el almacenamiento de sesión
     useEffect(() => {
-        if (sessionStorage.getItem('logged')){
+        if (sessionStorage.getItem('logged')) {
             let res = JSON.parse(sessionStorage.getItem('logged'));
             setCargo(res.map(item => item.permiso).flat());
             setUser(res[0].user);
@@ -274,10 +287,11 @@ const Seguimiento = ({ handleButtonClick }) => {
         return isCargo.some(cargo => buscar.includes(cargo));
     };
 
+    // Efecto para cargar datos filtrados
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await Filtro7(); 
+                const response = await Filtro7();
                 const response2 = await Filtro9(response.filter(item => item['id_programa'] === idPrograma), idPrograma);
                 console.log('Datos cargados:', response2);
                 setFilteredData(response2);
@@ -287,8 +301,8 @@ const Seguimiento = ({ handleButtonClick }) => {
         };
         fetchData();
     }, [updateTrigger]);
-    
 
+    // Obtener color de fondo basado en el riesgo
     const getBackgroundColor = (riesgo) => {
         switch (riesgo) {
             case 'Alto':
@@ -302,98 +316,102 @@ const Seguimiento = ({ handleButtonClick }) => {
         }
     };
 
+    // Obtener el nombre de la fase basado en su ID
     const getFaseName = (faseId) => {
         const fase = fasesName.find(f => f.id === faseId);
         return fase ? fase.fase : ' - ';
     };
 
+    // Renderizar la tabla de fases
     const contenido_tablaFases = () => {
         return (
-            <>  <div>
-                {loading ? ( 
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                    <CircularProgress />
-                </div>
-                ) : (
-                    <>
-                    <div style={{display:'flex', justifyContent:'center', gap:'10px', flexDirection:'row'}}>
-                    <div>
-                    {fases.length > 0 && (
-                        <div>
-                            <h2>Fases del Programa</h2>
-                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                                <tbody>
-                                    {fases.map((fase, index) => {
-                                        const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
-                                        const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
-                                        const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#ffffff');
-                                        return (
-                                            <tr key={index} style={{ backgroundColor }}>
-                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{fase.fase}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+            <>  
+                <div>
+                    {loading ? ( 
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                            <CircularProgress />
                         </div>
-                    )}
-                    </div>
-                    <div> 
-                    {docs.length > 0 && (
-                        <div>
-                            <h2>Documentos requeridos</h2>
-                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                                <tbody>
-                                    {docs.map((doc, index) => {
-                                        const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idPrograma);
-                                        const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'pointer' } : { cursor: 'pointer' };
-                                        const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idPrograma);
-                                        const filtroUrl = filtro ? filtro.url : null;
-                                        const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
-                                        const handleLinkClick = (event) => {
-                                            event.stopPropagation();
-                                        };
+                    ) : (
+                        <>
+                            <div style={{display:'flex', justifyContent:'center', gap:'10px', flexDirection:'row'}}>
+                                <div>
+                                    {fases.length > 0 && (
+                                        <div>
+                                            <h2>Fases del Programa</h2>
+                                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                                                <tbody>
+                                                    {fases.map((fase, index) => {
+                                                        const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
+                                                        const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
+                                                        const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#ffffff');
+                                                        return (
+                                                            <tr key={index} style={{ backgroundColor }}>
+                                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{fase.fase}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                                <div> 
+                                    {docs.length > 0 && (
+                                        <div>
+                                            <h2>Documentos requeridos</h2>
+                                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                                                <tbody>
+                                                    {docs.map((doc, index) => {
+                                                        const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idPrograma);
+                                                        const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'pointer' } : { cursor: 'pointer' };
+                                                        const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idPrograma);
+                                                        const filtroUrl = filtro ? filtro.url : null;
+                                                        const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
+                                                        const handleLinkClick = (event) => {
+                                                            event.stopPropagation();
+                                                        };
 
-                                        return (
-                                            <tr key={index} style={fondoVerde} onClick={handleClick}>
-                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
-                                                    {filtroUrl ? <a href={filtroUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }} onClick={handleLinkClick}>{doc.nombre_doc}</a> : doc.nombre_doc}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                    <Modal open={open} onClose={handleClose}>
-                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
-                            <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
-                            <TextField
-                                label="Link del documento"
-                                value={inputValue}
-                                onChange={handleInputChange}
-                                fullWidth
-                                margin="normal"
-                            />
-                            <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
-                                {loading ? 'Enviando...' : 'Enviar'}
-                            </Button>
-                            <Button variant="contained" onClick={handleClose} style={{ marginLeft: '10px' }}>
-                                Cancelar
-                            </Button>
-                            {successMessage && <p>{successMessage}</p>}
-                        </div>
-                    </Modal>
-                    </div>
-                    </div>
-                    </>
+                                                        return (
+                                                            <tr key={index} style={fondoVerde} onClick={handleClick}>
+                                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
+                                                                    {filtroUrl ? <a href={filtroUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }} onClick={handleLinkClick}>{doc.nombre_doc}</a> : doc.nombre_doc}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                    <Modal open={open} onClose={handleClose}>
+                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
+                                            <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
+                                            <TextField
+                                                label="Link del documento"
+                                                value={inputValue}
+                                                onChange={handleInputChange}
+                                                fullWidth
+                                                margin="normal"
+                                            />
+                                            <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
+                                                {loading ? 'Enviando...' : 'Enviar'}
+                                            </Button>
+                                            <Button variant="contained" onClick={handleClose} style={{ marginLeft: '10px' }}>
+                                                Cancelar
+                                            </Button>
+                                            {successMessage && <p>{successMessage}</p>}
+                                        </div>
+                                    </Modal>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
             </>
         );
     };
 
+    // Renderizar tabla filtrada
     const renderFilteredTable = (data, filters, fasesTabla, useTopicAsFase = false) => {
         if (!Array.isArray(filters)) {
             filters = [filters]; 
@@ -403,14 +421,13 @@ const Seguimiento = ({ handleButtonClick }) => {
         if (filteredData.length === 0) {
             return <p>Ningún programa por mostrar</p>;
         }
-    
-        
+
         filteredData.sort((a, b) => {
             const dateA = new Date(a.timestamp.split('/').reverse().join('-'));
             const dateB = new Date(b.timestamp.split('/').reverse().join('-'));
             return dateB - dateA;
         });
-    
+
         return (
             <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
                 <thead>
@@ -448,7 +465,8 @@ const Seguimiento = ({ handleButtonClick }) => {
             </table>
         );
     };
-    
+
+    // Manejar clic para nuevo seguimiento
     const handleNewTrackingClick = (collapsibleType) => {
         setShowCollapsible(prevState => ({
             ...prevState,
@@ -457,31 +475,31 @@ const Seguimiento = ({ handleButtonClick }) => {
         setCollapsible(collapsibleType)
     };
 
+    // Contenido del seguimiento
     const contenido_seguimiento = () => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
-    
+
         const handleGuardarClick = async () => {
-            setLoading(true);
             try {
                 if (comment.trim() === '' || value.trim() === '' || selectedPhase.trim() === '') {
+                    setLoading(false);
                     const errorMessage = 'Por favor, complete todos los campos obligatorios.';
                     setErrorMessage(errorMessage);
                     setFormSubmitted(true);
-                    setLoading(false);
                     return;
                 }
-    
+
                 let formattedDate;
                 if (selectedDate) {
                     formattedDate = dayjs(selectedDate).format('DD/MM/YYYY');
                 } else {
                     formattedDate = dayjs().format('DD/MM/YYYY');
                 }
-    
+
                 const collapsibleType = selectedPhase === 'RRC' ? 'Plan de Mejoramiento RRC' : 'Plan de Mejoramiento RAAC';
-    
+
                 const dataSend = [
                     idPrograma,
                     formattedDate,
@@ -491,23 +509,20 @@ const Seguimiento = ({ handleButtonClick }) => {
                     collapsibleType,
                     selectedOption.id,
                 ];
-    
+
                 const dataSendCrea = [
                     idPrograma,
                     selectedOption.id,
                     formattedDate, 
                 ];
-    
-                console.log("Datos a enviar al servidor:", dataSend);
-                const response = await sendDataToServer(dataSend);
-                console.log("Respuesta del servidor:", response);
-    
+
+                await sendDataToServer(dataSend);
                 if (selectedOption.id === undefined) {
                     console.log("Opción seleccionada -> Ninguna");
                 } else {
                     await sendDataToServerCrea(dataSendCrea);
                 }
-    
+
                 clearFileLink();
                 setLoading(false);
                 setOpenModal(true);
@@ -521,11 +536,11 @@ const Seguimiento = ({ handleButtonClick }) => {
                 console.error('Error al enviar datos:', error);
             }
         };
-    
+
         return (
             <>
                 <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '20px', alignItems: 'center', gap: 'px' }}>
-                    <div className='date-picker' style={{ flex: 1 }}>
+                <div className='date-picker' style={{ flex: 1 }}>
                         <Typography variant="h6">Fecha *</Typography>
                         <div style={{ display: 'inline-block' }}>
                             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
@@ -649,16 +664,16 @@ const Seguimiento = ({ handleButtonClick }) => {
             </>
         );
     };
-    
 
+    // Contenido del seguimiento por defecto
     const contenido_seguimiento_default = () => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
 
         const handleGuardarClick = async () => {
-            setLoading(true);
             try {
+                setLoading(true);
                 let enlace;
                 if (fileType === 'upload' && fileInputRef.current) {
                     const files = fileInputRef.current.files;
@@ -680,10 +695,10 @@ const Seguimiento = ({ handleButtonClick }) => {
                 }
 
                 if (comment.trim() === '' || value.trim() === '') {
+                    setLoading(false);
                     const errorMessage = 'Por favor, complete todos los campos obligatorios.';
                     setErrorMessage(errorMessage);
                     setFormSubmitted(true);
-                    setLoading(false);
                     return;
                 }
 
@@ -756,8 +771,10 @@ const Seguimiento = ({ handleButtonClick }) => {
                     }}
                 >
                     <div className="main-container">
-                    <div className="date-picker"> Fecha * <br />
-                        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
+                    <div className='date-picker' style={{ flex: 1 }}>
+                        <Typography variant="h6">Fecha *</Typography>
+                        <div style={{ display: 'inline-block' }}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
                                 {isMobile ? (
                                     <MobileDatePicker
                                         value={selectedDate}
@@ -781,7 +798,8 @@ const Seguimiento = ({ handleButtonClick }) => {
                                         )}
                                     />
                                 )}
-                         </LocalizationProvider>
+                            </LocalizationProvider>
+                        </div>
                     </div>
                     <div className="comments">
                         Comentario * <br />
@@ -920,6 +938,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                             displayEmpty
                             style={{ width: "100%" }}
                             MenuProps={{
+                                disableScrollLock: "true", 
                                 PaperProps: {
                                     style: {
                                         maxHeight: "150px",
@@ -929,7 +948,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                     },
                                 },
                             }}
-                            disablePortal
+                            disablePortal 
                         >
                             <MenuItem
                                 value={0}
@@ -1050,6 +1069,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         );
     };
 
+    // Render principal basado en el botón seleccionado
     return (
         <>
             <div style={{ marginRight: '20px', width: 'auto' }}>

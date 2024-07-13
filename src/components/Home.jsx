@@ -83,7 +83,7 @@ const Home = () => {
           setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
           setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
           setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
-          setOtrosCount(response.filter(item => item['estado'] === 'En conjunto con otra facultad' || item['estado'] === 'Pte. Acred. ARCOSUR').length);
+          setOtrosCount(response.filter(item => item['estado'] === 'Negación RC').length);
           setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);
           setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);
           setRrcCount(response.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').length);
