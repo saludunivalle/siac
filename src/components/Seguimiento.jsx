@@ -419,7 +419,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         console.log('Renderizando tabla con filtros:', filters);
         const filteredData = Filtro8(data, filters);
         if (filteredData.length === 0) {
-            return <p>Ningún programa por mostrar</p>;
+            return <p>Ningún seguimiento por mostrar</p>;
         }
 
         filteredData.sort((a, b) => {
