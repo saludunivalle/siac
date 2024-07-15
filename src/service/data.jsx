@@ -208,10 +208,66 @@ export const obtenerFasesProceso = async () => {
 };
 
 export const Filtro12 = () => filterByProperty(hojaProc_Fases_Doc, {}, '');
-export const Filtro13 = () => filterByProperty('Asig_X_Prog', {}, 'https://siac-server.vercel.app/docServ');
-export const Filtro14 = () => filterByProperty('Esc_Practica', {}, 'https://siac-server.vercel.app/docServ');
-export const Filtro15 = () => filterByProperty('Rel_Esc_Practica', {}, 'https://siac-server.vercel.app/docServ');
-export const Filtro16 = () => filterByProperty('Horario', {}, 'https://siac-server.vercel.app/docServ');
+export const Filtro13 = async () => {
+  try {
+      const response = await fetchPostGeneral({
+          dataSend: {}, 
+          sheetName: 'Asig_X_Prog', 
+          urlEndPoint: 'https://siac-server.vercel.app/docServ'
+      });
+      //console.log(response.data);
+      return response.data;
+  } catch (error) {
+      console.error('Error en la solicitud:', error);
+      throw error; 
+  }
+};
+
+export const Filtro14 = async () => {
+  try {
+      const response = await fetchPostGeneral({
+          dataSend: {}, 
+          sheetName: 'Esc_Practica', 
+          urlEndPoint: 'https://siac-server.vercel.app/docServ'
+      });
+      //console.log(response.data);
+      return response.data;
+  } catch (error) {
+      console.error('Error en la solicitud:', error);
+      throw error; 
+  }
+};
+
+export const Filtro15 = async () => {
+  try {
+      const response = await fetchPostGeneral({
+          dataSend: {}, 
+          sheetName: 'Rel_Esc_Practica', 
+          urlEndPoint: 'https://siac-server.vercel.app/docServ'
+      });
+      //console.log(response.data);
+      return response.data;
+  } catch (error) {
+      console.error('Error en la solicitud:', error);
+      throw error; 
+  }
+};
+
+export const Filtro16 = async () => {
+  try {
+      const response = await fetchPostGeneral({
+          dataSend: {}, 
+          sheetName: 'Horario', 
+          urlEndPoint: 'https://siac-server.vercel.app/docServ'
+      });
+      //console.log(response.data);
+      return response.data;
+  } catch (error) {
+      console.error('Error en la solicitud:', error);
+      throw error; 
+  }
+};
+
 
 export const sendDataEscPract = async (data) => {
   try {
