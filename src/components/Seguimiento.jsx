@@ -480,7 +480,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
-
+    
         const handleGuardarClick = async () => {
             try {
                 if (comment.trim() === '' || value.trim() === '' || selectedPhase.trim() === '') {
@@ -490,16 +490,18 @@ const Seguimiento = ({ handleButtonClick }) => {
                     setFormSubmitted(true);
                     return;
                 }
-
+    
                 let formattedDate;
                 if (selectedDate) {
                     formattedDate = dayjs(selectedDate).format('DD/MM/YYYY');
                 } else {
                     formattedDate = dayjs().format('DD/MM/YYYY');
                 }
-
-                const collapsibleType = selectedPhase === 'RRC' ? 'Plan de Mejoramiento RRC' : 'Plan de Mejoramiento RAAC';
-
+    
+                const collapsibleType = selectedPhase === 'RRC' 
+                    ? 'Plan de Mejoramiento RRC' 
+                    : (selectedPhase === 'RAAC' ? 'Plan de Mejoramiento RAAC' : 'Plan de Mejoramiento AAC');
+    
                 const dataSend = [
                     idPrograma,
                     formattedDate,
@@ -509,20 +511,20 @@ const Seguimiento = ({ handleButtonClick }) => {
                     collapsibleType,
                     selectedOption.id,
                 ];
-
+    
                 const dataSendCrea = [
                     idPrograma,
                     selectedOption.id,
                     formattedDate, 
                 ];
-
+    
                 await sendDataToServer(dataSend);
                 if (selectedOption.id === undefined) {
                     console.log("Opción seleccionada -> Ninguna");
                 } else {
                     await sendDataToServerCrea(dataSendCrea);
                 }
-
+    
                 clearFileLink();
                 setLoading(false);
                 setOpenModal(true);
@@ -536,11 +538,11 @@ const Seguimiento = ({ handleButtonClick }) => {
                 console.error('Error al enviar datos:', error);
             }
         };
-
+    
         return (
             <>
                 <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '20px', alignItems: 'center', gap: 'px' }}>
-                <div className='date-picker' style={{ flex: 1 }}>
+                    <div className='date-picker' style={{ flex: 1 }}>
                         <Typography variant="h6">Fecha *</Typography>
                         <div style={{ display: 'inline-block' }}>
                             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
@@ -603,6 +605,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                 <RadioGroup value={selectedPhase} onChange={e => setSelectedPhase(e.target.value)} style={{ display: 'flex', flexDirection: 'row' }}>
                                     <FormControlLabel value="RRC" control={<Radio />} label="RRC" />
                                     <FormControlLabel value="RAAC" control={<Radio />} label="RAAC" />
+                                    <FormControlLabel value="AAC" control={<Radio />} label="AAC" />
                                 </RadioGroup>
                             </FormControl>
                         </div>
@@ -664,7 +667,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             </>
         );
     };
-
+    
     // Contenido del seguimiento por defecto
     const contenido_seguimiento_default = () => {
         const handleInputChange1 = (event) => {
@@ -1086,7 +1089,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                             <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        {renderFilteredTable(filteredData, ['plan de mejoramiento rrc', 'plan de mejoramiento raac'], fasesTabla, true)}
+                                        {renderFilteredTable(filteredData, ['plan de mejoramiento rrc', 'plan de mejoramiento raac', 'plan de mejoramiento aac'], fasesTabla, true)}
                                         {avaibleRange(isPlan) &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Plan de Mejoramiento')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>

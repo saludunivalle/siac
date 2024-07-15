@@ -58,18 +58,6 @@ const SeguimientoInicio = () => {
     const [data, setData] = useState([]);
     const [selectedProgramType, setSelectedProgramType] = useState('pre');
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const responseData = await dataEscuelas();
-                setData(responseData);
-            } catch (error) {
-                console.error('Error al cargar los datos:', error);
-            }
-        };
-        fetchData();
-    }, []);
-
     const handleClickOpen = (escuela) => {
         setSelectedEscuela(escuela);
         const escuelaData = data.find(d => d.escuela === escuela) || {};
@@ -109,33 +97,66 @@ const SeguimientoInicio = () => {
         }));
     };
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const responseData = await dataEscuelas();
+                setData(responseData);
+            } catch (error) {
+                console.error('Error al cargar los datos:', error);
+            }
+        };
+
+        fetchData();
+    }, []);
+
     const handleCorteClick = async () => {
         const today = format(new Date(), 'dd/MM/yyyy');
         const filteredData = data.filter(item => item.escuela === selectedEscuela);
 
         const cleanData = value => (value === "#DIV/0!" || value === undefined ? 0 : value);
-        const dataToSend = filteredData.map(item => ({
-            id: item.id,
-            escuela: item.escuela,
-            porc_anexos_pre: cleanData(scores.pre[0]),
-            cant_rc_pre: cleanData(scores.pre[1]),
-            cant_aac_pre: cleanData(scores.pre[2]),
-            porc_pm_pre: cleanData(scores.pre[3]),
-            porc_anexos_pos: cleanData(scores.pos[0]),
-            cant_rc_pos: cleanData(scores.pos[1]),
-            cant_aac_pos: cleanData(scores.pos[2]),
-            porc_pm_pos: cleanData(scores.pos[3]),
-            descripcion_1: descriptions.descripcion_1,
-            descripcion_2: descriptions.descripcion_2,
-            descripcion_3: descriptions.descripcion_3,
-            descripcion_4: descriptions.descripcion_4,
-            fecha_corte: today
-        }));
+        const dataToSend = filteredData.map(item => {
+            return {
+                id: item.id,
+                escuela: item.escuela,
+                porc_anexos_pre: cleanData(scores.pre[0]),
+                cant_rc_pre: cleanData(scores.pre[1]),
+                cant_aac_pre: cleanData(scores.pre[2]),
+                porc_pm_pre: cleanData(scores.pre[3]),
+                porc_anexos_pos: cleanData(scores.pos[0]),
+                cant_rc_pos: cleanData(scores.pos[1]),
+                cant_aac_pos: cleanData(scores.pos[2]),
+                porc_pm_pos: cleanData(scores.pos[3]),
+                descripcion_1: descriptions.descripcion_1,
+                descripcion_2: descriptions.descripcion_2,
+                descripcion_3: descriptions.descripcion_3,
+                descripcion_4: descriptions.descripcion_4,
+                fecha_corte: today
+            };
+        });
 
-        console.log('Data to send:', dataToSend);
+        const dataSend = [
+            dataToSend[0].id,
+            dataToSend[0].escuela,
+            dataToSend[0].porc_anexos_pre,
+            dataToSend[0].cant_rc_pre,
+            dataToSend[0].cant_aac_pre,
+            dataToSend[0].porc_pm_pre,
+            dataToSend[0].porc_anexos_pos,
+            dataToSend[0].cant_rc_pos,
+            dataToSend[0].cant_aac_pos,
+            dataToSend[0].porc_pm_pos,
+            dataToSend[0].fecha_corte,
+            dataToSend[0].descripcion_1,
+            dataToSend[0].descripcion_2,
+            dataToSend[0].descripcion_3,
+            dataToSend[0].descripcion_4
+        ];
+
+        console.log('Data to send:', dataSend);
 
         try {
-            const response = await sendDataEscula(dataToSend);
+            const response = await sendDataEscula(dataSend);
             console.log('Response from server:', response);
         } catch (error) {
             console.error('Error al enviar los datos:', error);
@@ -209,6 +230,7 @@ const SeguimientoInicio = () => {
                 <div style={{ flex: 1, marginLeft: '50px' }}>
                     {selectedEscuela && (
                         <>
+                        <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '90%', marginBottom: '20px' }}>
                                 <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
                                 <div>
@@ -250,6 +272,12 @@ const SeguimientoInicio = () => {
                                                     value={scores[selectedProgramType][index] || ''}
                                                     onChange={(e) => handleScoreChange(index, e.target.value)}
                                                     style={{ width: '80px' }}
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                        style: {
+                                                          color: 'black', // Texto en negro
+                                                        },
+                                                    }}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -267,13 +295,22 @@ const SeguimientoInicio = () => {
                                 </TableBody>
                             </Table>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', width: '90%' }}>
-                                <Button variant="contained" color="primary" onClick={handleCorteClick}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleCorteClick}
+                                >
                                     Hacer corte
                                 </Button>
-                                <Button variant="contained" color="primary" onClick={handleGuardarClick}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleGuardarClick}
+                                >
                                     Guardar
                                 </Button>
                             </div>
+                        </div>
                         </>
                     )}
                 </div>
