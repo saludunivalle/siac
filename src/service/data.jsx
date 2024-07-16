@@ -135,6 +135,26 @@ export const sendDataToServer = async (data) => {
   }
 };
 
+export const sendDataToServerPrograms = async (data) => {
+  try {
+    const dataSend = {
+      insertData: [data]
+    };
+    const response = await fetchPostGeneral({
+      dataSend,
+      sheetName: hojaProgramas,
+      urlEndPoint: 'https://siac-server.vercel.app/sendData',
+    });
+    if (response.status) {
+      console.log('Datos enviados correctamente al servidor.');
+    } else {
+      console.error('Error al enviar datos al servidor.');
+    }
+  } catch (error) {
+    console.error('Error al procesar la solicitud:', error);
+  }
+};
+
 export const Filtro10 = () => filterByProperty(hojaProc_Fases, {}, '');
 export const sendDataToServerCrea = async (data) => {
   try {

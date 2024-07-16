@@ -10,7 +10,7 @@ import GoogleLogin from './components/GoogleLogin';
 import Cookies from 'js-cookie';
 import SeguimientoInicio from './components/SeguimientoInicio';
 import DocenciaServicio from './components/DocenciaServicio';
-import CreacionProgram from './components/CreacionPrograms';
+import CreacionPrograms from './components/CreacionPrograms';
 
 function App() {
   const [isLogged, setLogged] = useState(false);
@@ -37,7 +37,7 @@ function App() {
               <Route path="/programas" element={<Programas />} />
               <Route path="/seguimiento-inicio" element={<SeguimientoInicio />} />
               <Route path="/docencia-servicio" element={<DocenciaServicio />} />
-              <Route path="/creacion-programa" element={<CreacionProgram />} />
+              <Route path="/creacion-programa" element={<CreacionPrograms />} />
               <Route
                         path="*"
                         element={

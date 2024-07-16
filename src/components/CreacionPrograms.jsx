@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { TextField, Button, MenuItem, Select, InputLabel, FormControl, Container, Grid, Typography } from '@mui/material';
+import { TextField, Button, MenuItem, Select, InputLabel, FormControl, Container, Grid, Typography, CircularProgress, Modal, Box } from '@mui/material';
 import Header from './Header';
+import { sendDataToServerPrograms } from '../service/data'; 
 import '/src/styles/home.css';
 
 const CreacionPrograma = () => {
-  const [form, setForm] = useState({
+  const initialFormState = {
     programaAcademico: '',
     sede: '',
+    facultad: '',
     escuela: '',
     departamento: '',
     seccion: '',
@@ -18,17 +20,69 @@ const CreacionPrograma = () => {
     creditos: '',
     periodicidad: '',
     duracion: ''
-  });
+  };
+
+  const [form, setForm] = useState(initialFormState);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm({ ...form, [name]: value });
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    console.log(form);
-    // Aquí puedes añadir la lógica para guardar el formulario
+  const handleGuardarClick = async () => {
+    try {
+      setLoading(true);
+      setErrorMessage(null);
+      setSuccessMessage(null);
+
+      if (Object.values(form).some(value => value.trim() === '')) {
+        setLoading(false);
+        setErrorMessage('Por favor, complete todos los campos obligatorios.');
+        return;
+      }
+
+      const dataenviar = [
+        form.programaAcademico,
+        "En Creación",
+        form.sede,
+        form.facultad,
+        form.escuela,
+        form.departamento,
+        form.seccion,
+        form.tipoPrograma,
+        form.nivelFormacion,
+        form.tituloAConceder,
+        form.jornada,
+        form.modalidad,
+        form.creditos,
+        form.periodicidad,
+        form.duracion,
+        "N/A",
+        "N/A",
+        "En Creación"
+      ];
+
+      console.log("Datos a enviar:", dataenviar); 
+
+      await sendDataToServerPrograms(dataenviar);
+
+      setLoading(false);
+      setSuccessMessage('Datos enviados correctamente al servidor.');
+      setOpenModal(true);
+    } catch (error) {
+      setLoading(false);
+      setErrorMessage('Error al enviar datos: ' + error.message);
+      console.error('Error al enviar datos:', error);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setForm(initialFormState);
   };
 
   return (
@@ -38,7 +92,7 @@ const CreacionPrograma = () => {
         <Typography variant="h4" component="h1" gutterBottom>
           Creación Programa
         </Typography>
-        <form onSubmit={handleSubmit}>
+        <form>
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
@@ -55,6 +109,15 @@ const CreacionPrograma = () => {
                 label="Sede"
                 name="sede"
                 value={form.sede}
+                onChange={handleChange}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Facultad"
+                name="facultad"
+                value={form.facultad}
                 onChange={handleChange}
               />
             </Grid>
@@ -202,12 +265,40 @@ const CreacionPrograma = () => {
               />
             </Grid>
             <Grid item xs={12}>
-              <Button variant="contained" color="primary" type="submit">
-                Guardar
+              <Button variant="contained" color="primary" onClick={handleGuardarClick} disabled={loading}>
+                {loading ? <CircularProgress size={24} color="inherit" /> : 'Guardar'}
               </Button>
             </Grid>
           </Grid>
         </form>
+        {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+        <Modal
+            open={openModal}
+            onClose={() => setOpenModal(false)}
+            aria-labelledby="modal-modal-title"
+            aria-describedby="modal-modal-description"
+        >
+            <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '300px',
+                color: '#423b3b',
+                border: '2px solid grey',
+                borderRadius: '10px',
+                boxShadow: 24,
+                p: 4,
+                padding: '25px',
+                textAlign: 'center',
+                backgroundColor: '#ffffff',
+            }}>
+                <Typography variant="h6" component="h2" style={{ fontFamily: 'Roboto' }} gutterBottom>
+                    Sus datos han sido guardados exitosamente
+                </Typography>
+                <Button style={{ backgroundColor: '#1A80D9', color: '#F2F2F2' }} onClick={handleCloseModal}>Cerrar</Button>
+            </div>
+        </Modal>
       </Container>
     </div>
   );
