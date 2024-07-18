@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, MenuItem, Select, InputLabel, FormControl, Container, Grid, Typography, CircularProgress, Modal, Box } from '@mui/material';
+import { TextField, Button, MenuItem, Select, InputLabel, FormControl, Container, Grid, Typography, CircularProgress, Modal, Box, Radio, RadioGroup, FormControlLabel, FormLabel } from '@mui/material';
 import Header from './Header';
 import { sendDataToServerPrograms } from '../service/data'; 
 import '/src/styles/home.css';
@@ -19,7 +19,8 @@ const CreacionPrograma = () => {
     modalidad: '',
     creditos: '',
     periodicidad: '',
-    duracion: ''
+    duracion: '',
+    tipoCreacion: '' 
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -63,7 +64,8 @@ const CreacionPrograma = () => {
         form.duracion,
         "N/A",
         "N/A",
-        "En Creación"
+        "En Creación",
+        form.tipoCreacion 
       ];
 
       console.log("Datos a enviar:", dataenviar); 
@@ -263,6 +265,21 @@ const CreacionPrograma = () => {
                 value={form.duracion}
                 onChange={handleChange}
               />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl component="fieldset">
+                <FormLabel component="legend">Tipo de creación</FormLabel>
+                <RadioGroup
+                  row // Esto hace que los radio buttons se alineen horizontalmente
+                  name="tipoCreacion"
+                  value={form.tipoCreacion}
+                  onChange={handleChange}
+                >
+                  <FormControlLabel value="Ampliación" control={<Radio />} label="Ampliación" />
+                  <FormControlLabel value="Creación" control={<Radio />} label="Creación" />
+                  <FormControlLabel value="Extensión" control={<Radio />} label="Extensión" />
+                </RadioGroup>
+              </FormControl>
             </Grid>
             <Grid item xs={12}>
               <Button variant="contained" color="primary" onClick={handleGuardarClick} disabled={loading}>

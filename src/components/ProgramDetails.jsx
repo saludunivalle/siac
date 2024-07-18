@@ -3,14 +3,20 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
 import Seguimiento from './Seguimiento';
+import { Filtro7 } from "../service/data";
+import { Tabs, Tab, Box } from '@mui/material';
 
 const ProgramDetails = () => {
     const location = useLocation();
     const rowData = location.state; 
     const { globalVariable, userEmail } = location.state; // Extrae el userEmail del estado
     const navigate = useNavigate();
-    const [clickedButton, setClickedButton] = useState(null);
+    const [clickedButton, setClickedButton] = useState('crea'); // Valor inicial predeterminado
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
+    const [filteredDataSeg, setFilteredDataSeg] = useState(() => {
+        const cachedData = localStorage.getItem('filteredDataSeg');
+        return cachedData ? JSON.parse(cachedData) : [];
+    });
 
     const {
         'programa académico': programaAcademico,
@@ -34,6 +40,22 @@ const ProgramDetails = () => {
     } = rowData;
 
     useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const seguimientos = await Filtro7();
+                setFilteredDataSeg(seguimientos);
+                localStorage.setItem('filteredDataSeg', JSON.stringify(seguimientos));
+            } catch (error) {
+                console.error('Error al obtener los seguimientos:', error);
+            }
+        };
+
+        if (!localStorage.getItem('filteredDataSeg')) {
+            fetchData();
+        }
+    }, [reloadSeguimiento]);
+
+    useEffect(() => {
         switch (globalVariable) {
             case 'RRC':
                 setClickedButton('rrc');
@@ -51,7 +73,7 @@ const ProgramDetails = () => {
                 setClickedButton('mod');
                 break;
             default:
-                setClickedButton(null);
+                setClickedButton('crea'); 
                 break;
         }
         setReloadSeguimiento(prevState => !prevState); 
@@ -65,42 +87,104 @@ const ProgramDetails = () => {
         return () => clearTimeout(timeout); 
     }, [rowData]);
 
-    const handleButtonClick = (buttonType) => {
-        setClickedButton(buttonType);
+    const handleTabChange = (event, newValue) => {
+        setClickedButton(newValue);
     };
 
-    const getBackgroundColor = (fase, type) => {
-        const colors = {
-            'Fase 1': '#4caf4f36',
-            'Fase 2': 'rgba(255, 235, 59, 0.288)',
-            'Fase 3': '#ff990079',
-            'Fase 4': '#ff562275',
-            'Fase 5': '#f443368e',
+    const getSeguimientoBackgroundColor = (process, isSelected) => {
+        const defaultColor = 'rgb(241, 241, 241)';
+        if (!filteredDataSeg || filteredDataSeg.length === 0) {
+            return isSelected ? darkenColor(defaultColor) : defaultColor;
+        }
+        const seguimientos = filteredDataSeg.filter(seg => seg.id_programa === rowData.id_programa);
+
+        const topicMap = {
+            crea: 'Creación',
+            mod: 'Modificación',
+            rrc: 'Renovación Registro Calificado',
+            aac: 'Acreditación',
+            raac: 'Renovación Acreditación'
         };
-        return colors[fase] || 'rgb(241, 241, 241)';
-    };
 
-    const setButtonStyles = (buttonType, isClicked) => {
-        let backgroundColor;
-        switch (buttonType) {
-            case 'raac':
-                backgroundColor = isClicked ? 'rgba(163, 163, 163, 0.562)' : getBackgroundColor(faseRAC, 'RAC');
+        const seguimientosPorProceso = seguimientos.filter(seg => seg.topic === topicMap[process]);
+        
+        if (seguimientosPorProceso.length === 0) {
+            return isSelected ? darkenColor(defaultColor) : defaultColor;
+        }
+
+        const recentSeguimiento = seguimientosPorProceso.reduce((prev, current) =>
+            new Date(current.timestamp.split('/').reverse().join('-')) > new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
+        );
+
+        let color;
+        switch (recentSeguimiento.riesgo) {
+            case 'Alto':
+                color = '#FED5D1';
                 break;
-            case 'rrc':
-                backgroundColor = isClicked ? 'rgba(163, 163, 163, 0.562)' : getBackgroundColor(faseRRC, 'RRC');
+            case 'Medio':
+                color = '#FEFBD1';
+                break;
+            case 'Bajo':
+                color = '#E6FFE6';
                 break;
             default:
-                backgroundColor = isClicked ? 'rgba(163, 163, 163, 0.562)' : 'rgb(241, 241, 241)';
+                color = defaultColor;
+                break;
         }
-        return {
-            backgroundColor,
-            color: '#000',
-        };
+
+        return isSelected ? darkenColor(color) : color;
+    };
+
+    const darkenColor = (color) => {
+        const amount = -25; 
+        return adjustColor(color, amount);
+    };
+
+    const adjustColor = (color, amount) => {
+        let usePound = false;
+
+        if (color[0] === "#") {
+            color = color.slice(1);
+            usePound = true;
+        }
+
+        const num = parseInt(color, 16);
+        let r = (num >> 16) + amount;
+        let b = ((num >> 8) & 0x00FF) + amount;
+        let g = (num & 0x0000FF) + amount;
+
+        if (r > 255) r = 255;
+        else if (r < 0) r = 0;
+
+        if (b > 255) b = 255;
+        else if (b < 0) b = 0;
+
+        if (g > 255) g = 255;
+        else if (g < 0) g = 0;
+
+        const newColor = (g | (b << 8) | (r << 16)).toString(16);
+        return (usePound ? "#" : "") + newColor.padStart(6, '0');
     };
 
     const handleBackClick = () => {
         navigate('/');
     };
+
+    const tabSx = (process) => ({
+        backgroundColor: getSeguimientoBackgroundColor(process, clickedButton === process),
+        color: clickedButton === process ? '#000' : '#555',
+        border: clickedButton === process ? '2px solid darkgreen' : '1px solid #ccc',
+        borderRadius: '6px 6px 0 0',
+        marginRight: '4px',
+        padding: '6px 12px', 
+        flex: 1,
+        '&.Mui-selected': {
+            backgroundColor: getSeguimientoBackgroundColor(process, true),
+            color: '#000',
+            fontWeight: 'bold',
+            borderBottom: 'none',
+        },
+    });
 
     return (
         <>
@@ -123,29 +207,29 @@ const ProgramDetails = () => {
                     <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc}</div>
                     <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac}</div>
                 </div>
-                <div className='procesos'>
-                    <div className='procesosCREA' style={setButtonStyles('crea', clickedButton === 'crea')} onClick={() => handleButtonClick('crea')}>
-                        <strong>CREA</strong>
-                    </div>
-                    <div className='procesosMOD' style={setButtonStyles('mod', clickedButton === 'mod')} onClick={() => handleButtonClick('mod')}>
-                        <strong>MOD</strong>
-                    </div>
-                    <div className='procesosRRC' style={setButtonStyles('rrc', clickedButton === 'rrc')} onClick={() => handleButtonClick('rrc')}>
-                        <strong>RRC</strong>
-                    </div>
-                    <div className='procesosAC' style={setButtonStyles('aac', clickedButton === 'aac')} onClick={() => handleButtonClick('aac')}>
-                        <strong>AAC</strong>
-                    </div>
-                    <div className='procesosRAC' style={setButtonStyles('raac', clickedButton === 'raac')} onClick={() => handleButtonClick('raac')}>
-                        <strong>RAAC</strong>
-                    </div>
-                    <div className='procesosCONV' style={setButtonStyles('conv', clickedButton === 'conv')} onClick={() => handleButtonClick('conv')}>
-                        <strong>Docencia Servicio</strong>
-                    </div>
-                    <div className='procesosSeg' style={setButtonStyles('Seg', clickedButton === 'Seg')} onClick={() => handleButtonClick('Seg')}>
-                        <strong>Seguimiento PM</strong>
-                    </div>
-                </div>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', margin: '30px' }}>
+                    <Tabs
+                        value={clickedButton}
+                        onChange={handleTabChange}
+                        aria-label="Proceso Tabs"
+                        variant="scrollable"
+                        scrollButtons="auto"
+                        TabIndicatorProps={{
+                            style: {
+                                display: 'none'
+                            }
+                        }}
+                        sx={{ width: '100%' }}
+                    >
+                        <Tab label="CREA" value="crea" sx={tabSx('crea')} />
+                        <Tab label="MOD" value="mod" sx={tabSx('mod')} />
+                        <Tab label="RRC" value="rrc" sx={tabSx('rrc')} />
+                        <Tab label="AAC" value="aac" sx={tabSx('aac')} />
+                        <Tab label="RAAC" value="raac" sx={tabSx('raac')} />
+                        <Tab label="Docencia Servicio" value="conv" sx={tabSx('conv')} />
+                        <Tab label="Seguimiento PM" value="Seg" sx={tabSx('Seg')} />
+                    </Tabs>
+                </Box>
                 <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento} />
                 {!userEmail && !isemail && (
                     <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>

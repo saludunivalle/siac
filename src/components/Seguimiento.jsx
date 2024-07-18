@@ -6,7 +6,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas } from '../service/data';
+import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico } from '../service/data';
 import dayjs from 'dayjs';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -16,6 +16,7 @@ import FormComponent from './FormComponent';
 import SeguimientoPM from './SeguimientoPM';
 import SimpleTimeline from './SimpleTimeline';
 import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker} from '@mui/x-date-pickers';
+import { v4 as uuidv4 } from 'uuid';
 
 const Seguimiento = ({ handleButtonClick }) => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -669,12 +670,47 @@ const Seguimiento = ({ handleButtonClick }) => {
     };
     
     // Contenido del seguimiento por defecto
-    const contenido_seguimiento_default = () => {
-        const handleInputChange1 = (event) => {
-            setComment(event.target.value);
-        };
 
-        const handleGuardarClick = async () => {
+    const [openSecondModal, setOpenSecondModal] = useState(false);
+    const [resolutionDate, setResolutionDate] = useState(null);
+    const [duration, setDuration] = useState('');
+    const [resolutionURL, setResolutionURL] = useState('');
+
+    const handleCloseFirstModal = () => {
+        setOpenModal(false);
+        if (selectedOption.fase === "Proceso Finalizado") {
+            setOpenSecondModal(true);
+        }
+    };
+
+    const handleSendHistoricalData = async () => {
+
+        try {
+            const shortUUID = uuidv4().slice(0, 7); // Genera un UUID corto de 7 caracteres
+            const formattedResolutionDate = dayjs(resolutionDate).format('DD/MM/YYYY');
+            const historicalData = [
+                shortUUID,
+                idPrograma,
+                handleButtonClick,
+                formattedResolutionDate,
+                duration,
+                resolutionURL
+            ];
+
+            await sendDataToServerHistorico(historicalData);
+
+            setOpenSecondModal(false);
+            setResolutionDate(null);
+            setDuration('');
+            setResolutionURL('');
+            setUpdateTrigger(true);
+        } catch (error) {
+            console.error('Error al enviar datos históricos:', error);
+        }
+    };
+
+    const contenido_seguimiento_default = () => {
+        const handleGuardarClickDefault = async () => {
             try {
                 setLoading(true);
                 let enlace;
@@ -682,11 +718,11 @@ const Seguimiento = ({ handleButtonClick }) => {
                     const files = fileInputRef.current.files;
                     const formData = new FormData();
                     for (let i = 0; i < files.length; i++) {
-                        formData.append("file", files[i]); 
+                        formData.append("file", files[i]);
                     }
                     const response = await fetch("https://siac-server.vercel.app/upload/", {
                         method: 'POST',
-                        body: formData, 
+                        body: formData,
                         headers: {
                             enctype: 'multipart/form-data',
                         }
@@ -694,7 +730,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                     const data = await response.json();
                     enlace = data.enlace;
                 } else {
-                    enlace = fileLink; 
+                    enlace = fileLink;
                 }
 
                 if (comment.trim() === '' || value.trim() === '') {
@@ -726,7 +762,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                 const dataSendCrea = [
                     idPrograma,
                     selectedOption.id,
-                    formattedDate, 
+                    formattedDate,
                 ];
 
                 await sendDataToServer(dataSend);
@@ -752,270 +788,241 @@ const Seguimiento = ({ handleButtonClick }) => {
 
         return (
             <>
-                <div
-                className="container-NS"
-                style={{
-                    fontWeight: "bold",
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    margin: "5px",
-                    justifyContent: "center",
-                    marginTop: "10px",
-                    alignItems: "center",
-                }}
-                >
-                <div
-                    className="date-picker"
-                    style={{
-                    paddingRight: "10px",
-                    marginBottom: "10px",
-                    width: "100%",
-                    }}
-                >
-                    <div className="main-container">
-                    <div className='date-picker' style={{ flex: 1 }}>
-                        <Typography variant="h6">Fecha *</Typography>
-                        <div style={{ display: 'inline-block' }}>
-                            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
-                                {isMobile ? (
-                                    <MobileDatePicker
-                                        value={selectedDate}
-                                        onChange={handleDateChange}
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                inputProps={{ ...params.inputProps, readOnly: true }}
+                <div className="container-NS" style={{ fontWeight: "bold", width: "100%", display: "flex", flexDirection: "column", margin: "5px", justifyContent: "center", marginTop: "10px", alignItems: "center" }}>
+                    <div className="date-picker" style={{ paddingRight: "10px", marginBottom: "10px", width: "100%" }}>
+                        <div className="main-container">
+                            <div className='date-picker' style={{ flex: 1 }}>
+                                <Typography variant="h6">Fecha *</Typography>
+                                <div style={{ display: 'inline-block' }}>
+                                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
+                                        {isMobile ? (
+                                            <MobileDatePicker
+                                                value={selectedDate}
+                                                onChange={setSelectedDate}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        inputProps={{ ...params.inputProps, readOnly: true }}
+                                                    />
+                                                )}
+                                            />
+                                        ) : (
+                                            <DesktopDatePicker
+                                                value={selectedDate}
+                                                onChange={setSelectedDate}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        inputProps={{ ...params.inputProps, readOnly: true }}
+                                                    />
+                                                )}
                                             />
                                         )}
-                                    />
-                                ) : (
-                                    <DesktopDatePicker
-                                        value={selectedDate}
-                                        onChange={handleDateChange}
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                inputProps={{ ...params.inputProps, readOnly: true }}
-                                            />
-                                        )}
-                                    />
-                                )}
-                            </LocalizationProvider>
-                        </div>
-                    </div>
-                    <div className="comments">
-                        Comentario * <br />
-                        <TextField
-                        multiline
-                        rows={3}
-                        required
-                        value={comment}
-                        onChange={handleInputChange1}
-                        placeholder="Escribe tu comentario aquí"
-                        type="text"
-                        style={{
-                            border:
-                            formSubmitted && comment.trim() === ""
-                                ? "1px solid red"
-                                : "none",
-                            textAlign: "start",
-                            backgroundColor: "#f0f0f0",
-                            color: "black",
-                            width: "100%",
-                        }}
-                        />
-                    </div>
-                    <div className="risk">
-                        Riesgo *<br />
-                        <FormControl
-                        component="fieldset"
-                        required
-                        error={formSubmitted && value.trim() === ""}
-                        style={{
-                            border:
-                            formSubmitted && value.trim() === ""
-                                ? "1px solid red"
-                                : "none",
-                        }}
-                        >
-                        <RadioGroup
-                            value={value}
-                            onChange={(e) => {
-                            setValue(e.target.value);
-                            }}
-                            style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            }}
-                            required
-                        >
-                            <FormControlLabel
-                            value="Alto"
-                            control={<Radio />}
-                            label="Alto"
-                            />
-                            <FormControlLabel
-                            value="Medio"
-                            control={<Radio />}
-                            label="Medio"
-                            />
-                            <FormControlLabel
-                            value="Bajo"
-                            control={<Radio />}
-                            label="Bajo"
-                            />
-                        </RadioGroup>
-                        </FormControl>
-                    </div>
-                    <div className="attachment">
-                        Archivo Adjunto <br />
-                        <FormControl component="fieldset">
-                        <RadioGroup
-                            value={fileType}
-                            onChange={(e) => setFileType(e.target.value)}
-                            style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            }}
-                        >
-                            <FormControlLabel
-                            value="upload"
-                            control={<Radio />}
-                            label="Subir"
-                            />
-                            <FormControlLabel
-                            value="link"
-                            control={<Radio />}
-                            label="Enlace"
-                            />
-                        </RadioGroup>
-                        </FormControl>
-                        <div style={{ marginTop: "0px", height: "30px" }}>
-                        {fileType === "upload" ? (
-                            <input
-                            type="file"
-                            multiple
-                            ref={fileInputRef}
-                            placeholder="Seleccionar archivo..."
-                            style={{ height: "30px" }}
-                            />
-                        ) : fileType === "link" ? (
-                            <input
-                            value={fileLink}
-                            onChange={(e) => setFileLink(e.target.value)}
-                            placeholder="Link del archivo"
-                            type="text"
-                            style={{
-                                width: "200px",
-                                height: "25px",
-                                backgroundColor: "white",
-                                color: "grey",
-                                border: "1px solid grey",
-                                borderRadius: "5px",
-                            }}
-                            />
-                        ) : null}
-                        </div>
-                    </div>
-                    <div className="select-container">
-                        <FormControl style={{ width: "100%", maxWidth: "100%" }}>
-                        <InputLabel
-                            id="select-label"
-                            style={{
-                            fontSize: "1.5rem",
-                            textAlign: "left",
-                            width: "100%",
-                            }}
-                        >
-                            Pasar a...
-                        </InputLabel>
-                        <Select
-                            labelId="select-label"
-                            id="select-label"
-                            value={selectedOption}
-                            label="Pasar a..."
-                            onChange={(e) => {
-                                setSelectedOption(e.target.value);
-                            }}
-                            displayEmpty
-                            style={{ width: "100%" }}
-                            MenuProps={{
-                                disableScrollLock: "true", 
-                                PaperProps: {
-                                    style: {
-                                        maxHeight: "150px",
-                                        overflowY: "auto",
-                                        overflowX: "hidden",
-                                        maxWidth: "50%", 
-                                    },
-                                },
-                            }}
-                            disablePortal 
-                        >
-                            <MenuItem
-                                value={0}
-                                sx={{
-                                    display: "flex",
-                                    width: "100%",
-                                    "&:hover": {
-                                        backgroundColor: "rgba(0, 0, 0, 0.08)",
-                                    },
-                                    whiteSpace: "normal", 
-                                    overflow: "visible",
-                                }}
-                            >
-                                Ninguna
-                            </MenuItem>
-                            {menuItems.map((item, index) => (
-                                <MenuItem
-                                    key={index}
-                                    value={item}
-                                    sx={{
-                                        display: "flex",
+                                    </LocalizationProvider>
+                                </div>
+                            </div>
+                            <div className="comments">
+                                Comentario * <br />
+                                <TextField
+                                    multiline
+                                    rows={3}
+                                    required
+                                    value={comment}
+                                    onChange={(event) => setComment(event.target.value)}
+                                    placeholder="Escribe tu comentario aquí"
+                                    type="text"
+                                    style={{
+                                        border: formSubmitted && comment.trim() === "" ? "1px solid red" : "none",
+                                        textAlign: "start",
+                                        backgroundColor: "#f0f0f0",
+                                        color: "black",
                                         width: "100%",
-                                        "&:hover": {
-                                            backgroundColor: "rgba(0, 0, 0, 0.08)",
-                                        },
-                                        whiteSpace: "normal", 
-                                        overflow: "visible",
+                                    }}
+                                />
+                            </div>
+                            <div className="risk">
+                                Riesgo *<br />
+                                <FormControl
+                                    component="fieldset"
+                                    required
+                                    error={formSubmitted && value.trim() === ""}
+                                    style={{
+                                        border: formSubmitted && value.trim() === "" ? "1px solid red" : "none",
                                     }}
                                 >
-                                    {item.fase}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        </FormControl>
-                    </div>
-                    <style jsx>{`
-                        .main-container {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 10px;
-                        width: 100%;
-                        }
-                        .date-picker,
-                        .comments,
-                        .risk,
-                        .attachment,
-                        .select-container {
-                        flex: 1;
-                        min-width: 100px; /* Adjust as necessary */
-                        }
-                        @media (min-width: 768px) {
-                        .main-container {
-                            flex-direction: row;
-                            flex-wrap: wrap;
-                        }
-                        .select-container {
-                            flex-grow: 1;
-                        }
-                        }
-                    `}</style>
+                                    <RadioGroup
+                                        value={value}
+                                        onChange={(e) => setValue(e.target.value)}
+                                        style={{
+                                            display: "flex",
+                                            flexDirection: "row",
+                                        }}
+                                        required
+                                    >
+                                        <FormControlLabel
+                                            value="Alto"
+                                            control={<Radio />}
+                                            label="Alto"
+                                        />
+                                        <FormControlLabel
+                                            value="Medio"
+                                            control={<Radio />}
+                                            label="Medio"
+                                        />
+                                        <FormControlLabel
+                                            value="Bajo"
+                                            control={<Radio />}
+                                            label="Bajo"
+                                        />
+                                    </RadioGroup>
+                                </FormControl>
+                            </div>
+                            <div className="attachment">
+                                Archivo Adjunto <br />
+                                <FormControl component="fieldset">
+                                    <RadioGroup
+                                        value={fileType}
+                                        onChange={(e) => setFileType(e.target.value)}
+                                        style={{
+                                            display: "flex",
+                                            flexDirection: "row",
+                                        }}
+                                    >
+                                        <FormControlLabel
+                                            value="upload"
+                                            control={<Radio />}
+                                            label="Subir"
+                                        />
+                                        <FormControlLabel
+                                            value="link"
+                                            control={<Radio />}
+                                            label="Enlace"
+                                        />
+                                    </RadioGroup>
+                                </FormControl>
+                                <div style={{ marginTop: "0px", height: "30px" }}>
+                                    {fileType === "upload" ? (
+                                        <input
+                                            type="file"
+                                            multiple
+                                            ref={fileInputRef}
+                                            placeholder="Seleccionar archivo..."
+                                            style={{ height: "30px" }}
+                                        />
+                                    ) : fileType === "link" ? (
+                                        <input
+                                            value={fileLink}
+                                            onChange={(e) => setFileLink(e.target.value)}
+                                            placeholder="Link del archivo"
+                                            type="text"
+                                            style={{
+                                                width: "200px",
+                                                height: "25px",
+                                                backgroundColor: "white",
+                                                color: "grey",
+                                                border: "1px solid grey",
+                                                borderRadius: "5px",
+                                            }}
+                                        />
+                                    ) : null}
+                                </div>
+                            </div>
+                            <div className="select-container">
+                                <FormControl style={{ width: "100%", maxWidth: "100%" }}>
+                                    <InputLabel
+                                        id="select-label"
+                                        style={{
+                                            fontSize: "1.5rem",
+                                            textAlign: "left",
+                                            width: "100%",
+                                        }}
+                                    >
+                                        Pasar a...
+                                    </InputLabel>
+                                    <Select
+                                        labelId="select-label"
+                                        id="select-label"
+                                        value={selectedOption}
+                                        label="Pasar a..."
+                                        onChange={(e) => setSelectedOption(e.target.value)}
+                                        displayEmpty
+                                        style={{ width: "100%" }}
+                                        MenuProps={{
+                                            disableScrollLock: "true",
+                                            PaperProps: {
+                                                style: {
+                                                    maxHeight: "150px",
+                                                    overflowY: "auto",
+                                                    overflowX: "hidden",
+                                                    maxWidth: "50%",
+                                                },
+                                            },
+                                        }}
+                                        disablePortal
+                                    >
+                                        <MenuItem
+                                            value={0}
+                                            sx={{
+                                                display: "flex",
+                                                width: "100%",
+                                                "&:hover": {
+                                                    backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                                },
+                                                whiteSpace: "normal",
+                                                overflow: "visible",
+                                            }}
+                                        >
+                                            Ninguna
+                                        </MenuItem>
+                                        {menuItems.map((item, index) => (
+                                            <MenuItem
+                                                key={index}
+                                                value={item}
+                                                sx={{
+                                                    display: "flex",
+                                                    width: "100%",
+                                                    "&:hover": {
+                                                        backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                                    },
+                                                    whiteSpace: "normal",
+                                                    overflow: "visible",
+                                                }}
+                                            >
+                                                {item.fase}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </div>
+                            <style jsx>{`
+                                .main-container {
+                                    display: flex;
+                                    flex-direction: column;
+                                    gap: 10px;
+                                    width: 100%;
+                                }
+                                .date-picker,
+                                .comments,
+                                .risk,
+                                .attachment,
+                                .select-container {
+                                    flex: 1;
+                                    min-width: 100px; /* Adjust as necessary */
+                                }
+                                @media (min-width: 768px) {
+                                    .main-container {
+                                        flex-direction: row;
+                                        flex-wrap: wrap;
+                                    }
+                                    .select-container {
+                                        flex-grow: 1;
+                                    }
+                                }
+                            `}</style>
+                        </div>
                     </div>
                 </div>
-                </div>
-                <Button variant="contained" style={{ textAlign: 'center', margin: '8px', paddingBottom: '10px' }} onClick={handleGuardarClick}>Guardar</Button>
+                <Button variant="contained" style={{ textAlign: 'center', margin: '8px', paddingBottom: '10px' }} onClick={handleGuardarClickDefault}>Guardar</Button>
                 {loading && (
                     <div
                         style={{
@@ -1038,7 +1045,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                 )}
                 <Modal
                     open={openModal}
-                    onClose={() => setOpenModal(false)}
+                    onClose={handleCloseFirstModal}
                     aria-labelledby="modal-modal-title"
                     aria-describedby="modal-modal-description"
                 >
@@ -1060,7 +1067,56 @@ const Seguimiento = ({ handleButtonClick }) => {
                         <Typography variant="h6" component="h2" style={{ fontFamily: 'Roboto' }} gutterBottom>
                             Sus datos han sido guardados exitosamente
                         </Typography>
-                        <Button style={{ backgroundColor: '#1A80D9', color: '#F2F2F2' }} onClick={() => setOpenModal(false)}>Cerrar</Button>
+                        <Button style={{ backgroundColor: '#1A80D9', color: '#F2F2F2' }} onClick={handleCloseFirstModal}>Cerrar</Button>
+                    </div>
+                </Modal>
+                <Modal
+                    open={openSecondModal}
+                    onClose={() => setOpenSecondModal(false)}
+                    aria-labelledby="modal-modal-title"
+                    aria-describedby="modal-modal-description"
+                >
+                    <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '300px',
+                        color: '#423b3b',
+                        border: '2px solid grey',
+                        borderRadius: '10px',
+                        boxShadow: 24,
+                        p: 4,
+                        padding: '25px',
+                        textAlign: 'center',
+                        backgroundColor: '#ffffff',
+                    }}>
+                        <Typography variant="h6" component="h2" style={{ fontFamily: 'Roboto' }} gutterBottom>
+                            Datos adicionales
+                        </Typography>
+                        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
+                            <DesktopDatePicker
+                                label="Fecha de Resolución"
+                                value={resolutionDate}
+                                onChange={(date) => setResolutionDate(date)}
+                                renderInput={(params) => <TextField {...params} />}
+                            />
+                        </LocalizationProvider>
+                        <TextField
+                            label="Tiempo de duración"
+                            value={duration}
+                            onChange={(e) => setDuration(e.target.value)}
+                            fullWidth
+                            margin="normal"
+                        />
+                        <TextField
+                            label="URL resolución"
+                            value={resolutionURL}
+                            onChange={(e) => setResolutionURL(e.target.value)}
+                            fullWidth
+                            margin="normal"
+                        />
+                        <Button style={{ backgroundColor: '#1A80D9', color: '#F2F2F2', marginTop: '10px' }} onClick={handleSendHistoricalData}>Enviar</Button>
                     </div>
                 </Modal>
                 {errorMessage && (
@@ -1072,7 +1128,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         );
     };
 
-    // Render principal basado en el botón seleccionado
+    
     return (
         <>
             <div style={{ marginRight: '20px', width: 'auto' }}>

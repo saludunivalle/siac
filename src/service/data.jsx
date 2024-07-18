@@ -7,6 +7,7 @@ const hojaProc_Fases = 'Proc_Fases';
 const hojaProc_X_Prog = 'Proc_X_Prog';
 const hojaProc_X_Prog_Doc = 'Proc_X_Doc';
 const hojaProc_Fases_Doc = 'Proc_Fases_Doc';
+const hojaHistorico = 'HISTORICO';
 
 /**
  * Generic filter function
@@ -143,6 +144,26 @@ export const sendDataToServerPrograms = async (data) => {
     const response = await fetchPostGeneral({
       dataSend,
       sheetName: hojaProgramas,
+      urlEndPoint: 'https://siac-server.vercel.app/sendData',
+    });
+    if (response.status) {
+      console.log('Datos enviados correctamente al servidor.');
+    } else {
+      console.error('Error al enviar datos al servidor.');
+    }
+  } catch (error) {
+    console.error('Error al procesar la solicitud:', error);
+  }
+};
+
+export const sendDataToServerHistorico = async (data) => {
+  try {
+    const dataSend = {
+      insertData: [data]
+    };
+    const response = await fetchPostGeneral({
+      dataSend,
+      sheetName: hojaHistorico,
       urlEndPoint: 'https://siac-server.vercel.app/sendData',
     });
     if (response.status) {
