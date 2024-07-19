@@ -45,112 +45,118 @@ const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (sessionStorage.getItem('logged')) {
-      const res = JSON.parse(sessionStorage.getItem('logged'));
-      const permisos = res.map(item => item.permiso).flat();
-      setCargo(permisos);
-      setUser(res[0].user);
-      console.log("Permisos del usuario:", permisos);
-    }
+      if (sessionStorage.getItem('logged')) {
+          const res = JSON.parse(sessionStorage.getItem('logged'));
+          const permisos = res.map(item => item.permiso).flat();
+          setCargo(permisos);
+          setUser(res[0].user);
+          console.log("Permisos del usuario:", permisos);
+      }
   }, []);
 
   useEffect(() => {
-    if (isCargo.includes('Posgrados')) {
-      const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-      console.log("Datos filtrados por Posgrados:", filtered);
-      setFilteredData(filtered);
-    } else {
-      setFilteredData(rowData);
-    }
+      if (isCargo.includes('Posgrados')) {
+          const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+          console.log("Datos filtrados por Posgrados:", filtered);
+          setFilteredData(filtered);
+      } else {
+          setFilteredData(rowData);
+      }
   }, [rowData, isCargo]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-          let response;
-          if (isCargo.includes('Posgrados')) {
-              const filtered = await Filtro5();
-              response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-          } else {
-              response = await Filtro5();
-          }
-          
-          if (!response) {
-              throw new Error("response is undefined");
-          }
-          
-          setActivosCount(response.filter(item => item['estado'] === 'Activo').length);
-          setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
-          setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
-          setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
-          setOtrosCount(response.filter(item => item['estado'] === 'Negación RC').length);
-          setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);
-          setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);
-          setRrcCount(response.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').length);
-          setRaacCount(response.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').length);
-          setModCount(response.filter(item => item['mod'] === 'SI').length);
-          setRowData(response);
-          setFilteredData(response);
-  
-          const seguimientos = await Filtro7();
-          processSeguimientos(seguimientos, response);
-      } catch (error) {
-          console.error('Error al filtrar datos:', error);
-      }
-    };
+      const fetchData = async () => {
+          try {
+              let response;
+              if (isCargo.includes('Posgrados')) {
+                  const filtered = await Filtro5();
+                  response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+              } else {
+                  response = await Filtro5();
+              }
 
-    const buttonGoogle = document.getElementById("buttonDiv");
-    if (buttonGoogle) {
-      buttonGoogle.classList.add('_display_none');
-    }
-    fetchData();
+              if (!response) {
+                  throw new Error("response is undefined");
+              }
+
+              setActivosCount(response.filter(item => item['estado'] === 'Activo').length);
+              setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
+              setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
+              setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
+              setOtrosCount(response.filter(item => item['estado'] === 'Negación RC').length);
+              setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado').length);
+              setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);
+              setRrcCount(response.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').length);
+              setRaacCount(response.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').length);
+              setModCount(response.filter(item => item['mod'] === 'SI').length);
+              setRowData(response);
+              setFilteredData(response);
+
+              const seguimientos = await Filtro7();
+              processSeguimientos(seguimientos, response);
+          } catch (error) {
+              console.error('Error al filtrar datos:', error);
+          }
+      };
+
+      const buttonGoogle = document.getElementById("buttonDiv");
+      if (buttonGoogle) {
+          buttonGoogle.classList.add('_display_none');
+      }
+      fetchData();
   }, [isCargo]);
 
   const processSeguimientos = useCallback((seguimientos, programas) => {
+    if (!seguimientos || !Array.isArray(seguimientos)) {
+        console.error('Seguimientos is undefined or not an array');
+        return;
+    }
+
     const estados = {
-      CREA: programas.filter(item => item['estado'] === 'En Creación').map(item => item.id_programa),
-      MOD: programas.filter(item => item['mod'] === 'SI').map(item => item.id_programa),
-      RRC: programas.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').map(item => item.id_programa),
-      AAC: programas.filter(item => item['aac_1a'] === 'SI').map(item => item.id_programa),
-      RAAC: programas.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').map(item => item.id_programa),
+        CREA: programas.filter(item => item['estado'] === 'En Creación').map(item => item.id_programa),
+        MOD: programas.filter(item => item['mod'] === 'SI').map(item => item.id_programa),
+        RRC: programas.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').map(item => item.id_programa),
+        AAC: programas.filter(item => item['aac_1a'] === 'SI').map(item => item.id_programa),
+        RAAC: programas.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').map(item => item.id_programa),
     };
 
     const newCounts = {
-      CREA: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-      MOD: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-      RRC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-      AAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-      RAAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-      INT: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 }, 
+        CREA: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+        MOD: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+        RRC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+        AAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+        RAAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
+        INT: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
     };
 
     Object.keys(estados).forEach((estado) => {
-      const filtered = seguimientos.filter((item) => estados[estado].includes(item.id_programa));
-      const latestSeguimientos = {};
-      filtered.forEach(item => {
-        const idPrograma = item.id_programa;
-        if (!latestSeguimientos[idPrograma] || new Date(item.timestamp) > new Date(latestSeguimientos[idPrograma].timestamp)) {
-          latestSeguimientos[idPrograma] = item;
-        }
-      });
+        const filtered = seguimientos.filter((item) => estados[estado].includes(item.id_programa));
+        const latestSeguimientos = {};
+        filtered.forEach(item => {
+            const idPrograma = item.id_programa;
+            if (!latestSeguimientos[idPrograma] || new Date(item.timestamp) > new Date(latestSeguimientos[idPrograma].timestamp)) {
+                latestSeguimientos[idPrograma] = item;
+            }
+        });
 
-      Object.values(latestSeguimientos).forEach(item => {
-        const riesgo = item.riesgo;
-        if (riesgo === 'Alto') {
-          newCounts[estado].Alto += 1;
-        } else if (riesgo === 'Medio') {
-          newCounts[estado].Medio += 1;
-        } else if (riesgo === 'Bajo') {
-          newCounts[estado].Bajo += 1;
-        }
-      });
+        Object.values(latestSeguimientos).forEach(item => {
+            const riesgo = item.riesgo;
+            if (riesgo === 'Alto') {
+                newCounts[estado].Alto += 1;
+            } else if (riesgo === 'Medio') {
+                newCounts[estado].Medio += 1;
+            } else if (riesgo === 'Bajo') {
+                newCounts[estado].Bajo += 1;
+            }
+        });
 
-      const sinRegistro = estados[estado].length - Object.keys(latestSeguimientos).length;
-      newCounts[estado].SinRegistro += sinRegistro;
+        const sinRegistro = estados[estado].length - Object.keys(latestSeguimientos).length;
+        newCounts[estado].SinRegistro += sinRegistro;
     });
 
     setCounts(newCounts);
-  }, []);
+}, []);
+
 
   const handleBackClick = () => {
     setProgramasVisible(true);

@@ -9,14 +9,14 @@ import { Tabs, Tab, Box } from '@mui/material';
 const ProgramDetails = () => {
     const location = useLocation();
     const rowData = location.state; 
-    const { globalVariable, userEmail } = location.state; // Extrae el userEmail del estado
+    const { globalVariable, userEmail } = location.state; 
     const navigate = useNavigate();
-    const [clickedButton, setClickedButton] = useState('crea'); // Valor inicial predeterminado
+    const [clickedButton, setClickedButton] = useState(''); 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
     const [filteredDataSeg, setFilteredDataSeg] = useState(() => {
         const cachedData = localStorage.getItem('filteredDataSeg');
         return cachedData ? JSON.parse(cachedData) : [];
-    });
+    });    
 
     const {
         'programa académico': programaAcademico,
@@ -37,7 +37,7 @@ const ProgramDetails = () => {
         periodicidad,
         'duración': duracion,
         accesos: isemail
-    } = rowData;
+    } = rowData || {};    
 
     useEffect(() => {
         const fetchData = async () => {
@@ -93,11 +93,11 @@ const ProgramDetails = () => {
 
     const getSeguimientoBackgroundColor = (process, isSelected) => {
         const defaultColor = 'rgb(241, 241, 241)';
-        if (!filteredDataSeg || filteredDataSeg.length === 0) {
+        if (!Array.isArray(filteredDataSeg) || filteredDataSeg.length === 0) {
             return isSelected ? darkenColor(defaultColor) : defaultColor;
         }
-        const seguimientos = filteredDataSeg.filter(seg => seg.id_programa === rowData.id_programa);
-
+        const seguimientos = Array.isArray(filteredDataSeg) ? filteredDataSeg.filter(seg => seg.id_programa === rowData.id_programa) : [];
+    
         const topicMap = {
             crea: 'Creación',
             mod: 'Modificación',
@@ -105,17 +105,17 @@ const ProgramDetails = () => {
             aac: 'Acreditación',
             raac: 'Renovación Acreditación'
         };
-
+    
         const seguimientosPorProceso = seguimientos.filter(seg => seg.topic === topicMap[process]);
         
         if (seguimientosPorProceso.length === 0) {
             return isSelected ? darkenColor(defaultColor) : defaultColor;
         }
-
+    
         const recentSeguimiento = seguimientosPorProceso.reduce((prev, current) =>
             new Date(current.timestamp.split('/').reverse().join('-')) > new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
         );
-
+    
         let color;
         switch (recentSeguimiento.riesgo) {
             case 'Alto':
@@ -131,9 +131,10 @@ const ProgramDetails = () => {
                 color = defaultColor;
                 break;
         }
-
+    
         return isSelected ? darkenColor(color) : color;
     };
+    
 
     const darkenColor = (color) => {
         const amount = -25; 
@@ -207,7 +208,7 @@ const ProgramDetails = () => {
                     <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc}</div>
                     <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac}</div>
                 </div>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', margin: '30px' }}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', marginLeft:'5px', marginRight:'20px'}}>
                     <Tabs
                         value={clickedButton}
                         onChange={handleTabChange}
