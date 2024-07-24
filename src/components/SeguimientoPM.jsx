@@ -22,12 +22,12 @@ import {
 import { styled } from '@mui/system';
 import { sendDataSegui, dataSegui, updateDataSegui } from '../service/data';
 
-const StyledPaper = styled(Paper)(({ theme }) => ({
+const StyledPaper = styled(Paper)(({ theme, hasData }) => ({
     padding: theme.spacing(2),
     marginBottom: theme.spacing(2),
-    backgroundColor: '#f5f5f5',
+    backgroundColor: hasData ? '#f5f5f5' : '#ffffff',
     flexGrow: 1,
-    maxWidth: 400,
+    maxWidth: 450,
 }));
 
 const FormWrapper = styled(Box)(({ theme }) => ({
@@ -35,7 +35,7 @@ const FormWrapper = styled(Box)(({ theme }) => ({
     flexDirection: 'column',
     gap: theme.spacing(2),
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 450,
 }));
 
 const RowContainer = styled(Box)(({ theme }) => ({
@@ -50,12 +50,16 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
     const [porcentaje, setPorcentaje] = useState('');
     const [recopilacionEvidencias, setRecopilacionEvidencias] = useState('No');
     const [numeroProgramas, setNumeroProgramas] = useState('No');
+    const [tieneHSCPM, setTieneHSCPM] = useState('No');
+    const [urlHSCPM, setUrlHSCPM] = useState('');
+    const [recibioVisitaPares, setRecibioVisitaPares] = useState('No');
     const [loading, setLoading] = useState(false);
     const [successModalOpen, setSuccessModalOpen] = useState(false);
     const [savedRecords, setSavedRecords] = useState([]);
     const [currentId, setCurrentId] = useState(null);
     const [isSaved, setIsSaved] = useState(false);
     const [isEdited, setIsEdited] = useState(false);
+    const [hasData, setHasData] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -73,6 +77,9 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
                         record.formacion,
                         record.escuela,
                         record.fecha || null,
+                        record.tiene_hscpm,
+                        record.url_hscpm,
+                        record.recibio_visita_pares
                     ];
                     return acc;
                 }, {});
@@ -84,7 +91,13 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
                 setPorcentaje(lastRecord[3]);
                 setRecopilacionEvidencias(lastRecord[4]);
                 setNumeroProgramas(lastRecord[5]);
+                setTieneHSCPM(lastRecord[9]);
+                setUrlHSCPM(lastRecord[10] || '');
+                setRecibioVisitaPares(lastRecord[11]);
                 setIsSaved(true);
+                setHasData(true);
+            } else {
+                setHasData(false);
             }
         };
         fetchData();
@@ -99,6 +112,10 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
 
     const handleGuardar = async () => {
         setLoading(true);
+
+        const allData = await dataSegui();
+        const highestId = allData.length > 0 ? Math.max(...allData.map(record => parseInt(record.id))) : 0;
+
         const newRecord = [
             currentId,
             idPrograma,
@@ -109,16 +126,18 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
             formacion,
             escuela,
             null,
+            tieneHSCPM,
+            recibioVisitaPares,
+            urlHSCPM
         ];
 
         if (currentId !== null) {
             await updateDataSegui(newRecord, currentId);
         } else {
-            const id = (parseInt(localStorage.getItem('lastId'), 10) || 0) + 1;
-            localStorage.setItem('lastId', id.toString());
-            newRecord[0] = id;
+            const newId = highestId + 1;
+            newRecord[0] = newId;
             await sendDataSegui(newRecord);
-            setCurrentId(id);
+            setCurrentId(newId);
         }
 
         setLoading(false);
@@ -134,6 +153,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
             }
             return [...prevRecords, newRecord];
         });
+        setHasData(true);
     };
 
     const handleSuccessModalClose = () => {
@@ -150,7 +170,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
         <div style={{ padding: '20px' }}>
             <RowContainer>
                 <FormWrapper>
-                    <StyledPaper>
+                    <StyledPaper hasData={hasData}>
                         <div>
                             <div style={{ marginBottom: '20px' }}>
                                 <FormControl variant="outlined" fullWidth disabled={!isPlan}>
@@ -210,6 +230,55 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
                                         row
                                         value={numeroProgramas}
                                         onChange={handleFieldChange(setNumeroProgramas)}
+                                    >
+                                        <FormControlLabel value="Si" control={<Radio />} label="Sí" />
+                                        <FormControlLabel value="No" control={<Radio />} label="No" />
+                                    </RadioGroup>
+                                </FormControl>
+                            </div>
+
+                            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                                <Typography variant="body1" style={{ marginRight: '10px', flexGrow: 1 }}>
+                                    ¿Tiene HSCPM?
+                                </Typography>
+                                <FormControl component="fieldset" disabled={!isPlan}>
+                                    <RadioGroup
+                                        row
+                                        value={tieneHSCPM}
+                                        onChange={handleFieldChange(setTieneHSCPM)}
+                                    >
+                                        <FormControlLabel value="Si" control={<Radio />} label="Sí" />
+                                        <FormControlLabel value="No" control={<Radio />} label="No" />
+                                    </RadioGroup>
+                                </FormControl>
+                            </div>
+
+                            {tieneHSCPM === 'Si' && (
+                                <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                                    <Typography variant="body1" style={{ marginRight: '10px', flexGrow: 1 }}>
+                                        URL del HSCPM:
+                                    </Typography>
+                                    <TextField
+                                        label="URL"
+                                        variant="outlined"
+                                        value={urlHSCPM}
+                                        onChange={handleFieldChange(setUrlHSCPM)}
+                                        placeholder="http://example.com"
+                                        style={{ width: '100%' }}
+                                        disabled={!isPlan}
+                                    />
+                                </div>
+                            )}
+
+                            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                                <Typography variant="body1" style={{ marginRight: '10px', flexGrow: 1 }}>
+                                    ¿Recibió Visita de Pares?
+                                </Typography>
+                                <FormControl component="fieldset" disabled={!isPlan}>
+                                    <RadioGroup
+                                        row
+                                        value={recibioVisitaPares}
+                                        onChange={handleFieldChange(setRecibioVisitaPares)}
                                     >
                                         <FormControlLabel value="Si" control={<Radio />} label="Sí" />
                                         <FormControlLabel value="No" control={<Radio />} label="No" />

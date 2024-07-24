@@ -27,8 +27,8 @@ const escuelas = [
 
 const programasBase = [
     'Anexos técnicos en consonancia con los registros calificados',
-    'Número de programas académicos de la Facultad de Salud de {tipo} con registro calificado.',
-    'Número de programas académicos de la Facultad de Salud de {tipo} con acreditación.',
+    'Porcentaje de avance en la recopilación de evidencias en el marco del PM.',
+    'Número de programas académicos de la Escuela de {tipo} con Acreditación o con Renovación de Acreditación.',
     'Porcentaje de avance en el diseño o rediseño del plan de mejoramiento con base a las recomendaciones de los pares académicos.',
 ];
 
@@ -64,14 +64,14 @@ const SeguimientoInicio = () => {
         setScores({
             pre: [
                 escuelaData.porc_anexos_pre || '',
-                escuelaData.cant_rc_pre || '',
-                escuelaData.cant_aac_pre || '',
+                escuelaData.porc_evidencias_pre || '',
+                (parseInt(escuelaData.cant_rc_pre || 0) + parseInt(escuelaData.cant_aac_pre || 0)).toString(),
                 escuelaData.porc_pm_pre || ''
             ],
             pos: [
                 escuelaData.porc_anexos_pos || '',
-                escuelaData.cant_rc_pos || '',
-                escuelaData.cant_aac_pos || '',
+                escuelaData.porc_evidencias_pos || '',
+                (parseInt(escuelaData.cant_rc_pos || 0) + parseInt(escuelaData.cant_aac_pos || 0)).toString(),
                 escuelaData.porc_pm_pos || ''
             ]
         });
@@ -120,12 +120,12 @@ const SeguimientoInicio = () => {
                 id: item.id,
                 escuela: item.escuela,
                 porc_anexos_pre: cleanData(scores.pre[0]),
-                cant_rc_pre: cleanData(scores.pre[1]),
-                cant_aac_pre: cleanData(scores.pre[2]),
+                porc_evidencias_pre: cleanData(scores.pre[1]),
+                cant_acred_renov_pre: cleanData(scores.pre[2]),
                 porc_pm_pre: cleanData(scores.pre[3]),
                 porc_anexos_pos: cleanData(scores.pos[0]),
-                cant_rc_pos: cleanData(scores.pos[1]),
-                cant_aac_pos: cleanData(scores.pos[2]),
+                porc_evidencias_pos: cleanData(scores.pos[1]),
+                cant_acred_renov_pos: cleanData(scores.pos[2]),
                 porc_pm_pos: cleanData(scores.pos[3]),
                 descripcion_1: descriptions.descripcion_1,
                 descripcion_2: descriptions.descripcion_2,
@@ -139,12 +139,12 @@ const SeguimientoInicio = () => {
             dataToSend[0].id,
             dataToSend[0].escuela,
             dataToSend[0].porc_anexos_pre,
-            dataToSend[0].cant_rc_pre,
-            dataToSend[0].cant_aac_pre,
+            dataToSend[0].porc_evidencias_pre,
+            dataToSend[0].cant_acred_renov_pre,
             dataToSend[0].porc_pm_pre,
             dataToSend[0].porc_anexos_pos,
-            dataToSend[0].cant_rc_pos,
-            dataToSend[0].cant_aac_pos,
+            dataToSend[0].porc_evidencias_pos,
+            dataToSend[0].cant_acred_renov_pos,
             dataToSend[0].porc_pm_pos,
             dataToSend[0].fecha_corte,
             dataToSend[0].descripcion_1,
@@ -183,12 +183,12 @@ const SeguimientoInicio = () => {
             updatedData.id,
             updatedData.escuela,
             filteredData.porc_anexos_pre,
-            filteredData.cant_rc_pre,
-            filteredData.cant_aac_pre,
+            filteredData.porc_evidencias_pre,
+            filteredData.cant_acred_renov_pre,
             filteredData.porc_pm_pre,
             filteredData.porc_anexos_pos,
-            filteredData.cant_rc_pos,
-            filteredData.cant_aac_pos,
+            filteredData.porc_evidencias_pos,
+            filteredData.cant_acred_renov_pos,
             filteredData.porc_pm_pos,
             updatedData.descripcion_1,
             updatedData.descripcion_2,
@@ -275,7 +275,7 @@ const SeguimientoInicio = () => {
                                                     InputProps={{
                                                         readOnly: true,
                                                         style: {
-                                                          color: 'black', // Texto en negro
+                                                          color: 'black', 
                                                         },
                                                     }}
                                                 />
