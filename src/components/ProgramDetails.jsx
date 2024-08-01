@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
 import Seguimiento from './Seguimiento';
-import { Filtro7 } from "../service/data";
+import { Filtro7, FiltroHistorico } from "../service/data";
 import { Tabs, Tab, Box } from '@mui/material';
 
 const ProgramDetails = () => {
@@ -16,7 +16,11 @@ const ProgramDetails = () => {
     const [filteredDataSeg, setFilteredDataSeg] = useState(() => {
         const cachedData = localStorage.getItem('filteredDataSeg');
         return cachedData ? JSON.parse(cachedData) : [];
-    });    
+    });
+    const [documentLinks, setDocumentLinks] = useState({
+        rrc: '',
+        raac: '',
+    });
 
     const {
         'programa académico': programaAcademico,
@@ -37,7 +41,7 @@ const ProgramDetails = () => {
         periodicidad,
         'duración': duracion,
         accesos: isemail
-    } = rowData || {};    
+    } = rowData || {};
 
     useEffect(() => {
         const fetchData = async () => {
@@ -87,6 +91,40 @@ const ProgramDetails = () => {
         return () => clearTimeout(timeout); 
     }, [rowData]);
 
+    useEffect(() => {
+        const fetchFiltroHistorico = async () => {
+            try {
+                const historial = await FiltroHistorico();
+                console.log('Datos de FiltroHistorico:', historial); // <-- Añadido console.log
+                const filteredHistorial = historial.filter(item => item.id_programa === rowData.id_programa);
+                
+                // Ordenar los elementos por fecha (más reciente a más antiguo)
+                filteredHistorial.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+                let rrcLinks = [];
+                let raacLinks = [];
+
+                filteredHistorial.forEach((item, index) => {
+                    const link = `<a href="${item.url_doc}" target="_blank" style="color: blue;">Enlace${index + 1}</a>`;
+                    if (item.proceso === 'crea' || item.proceso === 'rrc') {
+                        rrcLinks.push(link);
+                    } else if (item.proceso === 'aac' || item.proceso === 'raac') {
+                        raacLinks.push(link);
+                    }
+                });
+
+                setDocumentLinks({
+                    rrc: rrcLinks.join(' '),
+                    raac: raacLinks.join(' '),
+                });
+            } catch (error) {
+                console.error('Error al obtener el historial:', error);
+            }
+        };
+
+        fetchFiltroHistorico();
+    }, [rowData]);
+
     const handleTabChange = (event, newValue) => {
         setClickedButton(newValue);
     };
@@ -134,7 +172,6 @@ const ProgramDetails = () => {
     
         return isSelected ? darkenColor(color) : color;
     };
-    
 
     const darkenColor = (color) => {
         const amount = -25; 
@@ -205,8 +242,10 @@ const ProgramDetails = () => {
                     <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos}</div>
                     <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad}</div>
                     <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion}</div>
-                    <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc}</div>
-                    <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac}</div>
+                    {fechavencrc && <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc}</div>}
+                    {fechavencrac && <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac}</div>}
+                    {documentLinks.rrc && <div className='about-program'><strong>Documento RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc }} /></div>}
+                    {documentLinks.raac && <div className='about-program'><strong>Documento RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac }} /></div>}
                 </div>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', marginLeft:'5px', marginRight:'20px'}}>
                     <Tabs

@@ -80,24 +80,20 @@ const Seguimiento = ({ handleButtonClick }) => {
         obtenerDatosFiltro();
     }, [docs]); 
 
-    // Abrir modal para un documento específico
     const handleOpen = (doc) => {
         setSelectedDoc(doc);
         setOpen(true);
     };
 
-    // Cerrar modal
     const handleClose = () => {
         setSelectedDoc(null);
         setOpen(false);
     };
 
-    // Manejar cambio en el input del modal
     const handleInputChange = (e) => {
         setInputValue(e.target.value);
     };
 
-    // Manejar envío del formulario del modal
     const handleSubmit = async () => {
         setLoading(true);
         const date = new Date();
@@ -118,25 +114,22 @@ const Seguimiento = ({ handleButtonClick }) => {
         }
     };
 
-    // Efecto para actualizar datos
     useEffect(() => {
         if (dataUpdated) {
             setDataUpdated(false);
         }
     }, [dataUpdated]);
 
-    // Manejar el calendario
     const handleToggleCalendar = () => {
         setCalendarOpen((prev) => !prev);
     };
 
-    // Manejar cambio en la fecha seleccionada
     const handleDateChange = (date) => {
         setSelectedDate(date);
         setCalendarOpen(false);
     };
 
-    // Función para calcular fechas importantes
+    // Función para calcular fechas 
     function calcularFechas(fechaexpedrc, fechavencrc) {
         const partesFechaExpedicion = fechaexpedrc.split('/');
         const partesFechaVencimiento = fechavencrc.split('/');
@@ -184,7 +177,6 @@ const Seguimiento = ({ handleButtonClick }) => {
     const fechasCalculadas = calcularFechas(rowData['fechaexpedrc'], rowData['fechavencrc']);
     const fechasCalculadasAC = calcularFechas(rowData['fechaexpedac'], rowData['fechavencac']);
 
-    // Efecto para cargar fases al seleccionar un botón
     useEffect(() => {
         if (handleButtonClick != null) {
             cargarFases();
@@ -195,7 +187,6 @@ const Seguimiento = ({ handleButtonClick }) => {
         setFileLink('');
     };
 
-    // Función para cargar fases del proceso
     const cargarFases = async () => {
         try {
             setLoading(true);
@@ -245,7 +236,6 @@ const Seguimiento = ({ handleButtonClick }) => {
         }
     };
 
-    // Efecto para cargar elementos del menú al seleccionar un botón
     useEffect(() => {
         fetchMenuItems();
     }, [handleButtonClick]);
@@ -675,34 +665,36 @@ const Seguimiento = ({ handleButtonClick }) => {
     const [resolutionDate, setResolutionDate] = useState(null);
     const [duration, setDuration] = useState('');
     const [resolutionURL, setResolutionURL] = useState('');
-
+    const [decision, setDecision] = useState(''); // Nueva variable de estado para la decisión
+    
     const handleCloseFirstModal = () => {
         setOpenModal(false);
         if (selectedOption.fase === "Proceso Finalizado") {
             setOpenSecondModal(true);
         }
     };
-
+    
     const handleSendHistoricalData = async () => {
-
         try {
             const shortUUID = uuidv4().slice(0, 7); // Genera un UUID corto de 7 caracteres
-            const formattedResolutionDate = dayjs(resolutionDate).format('DD/MM/YYYY');
+            const formattedResolutionDate = resolutionDate ? dayjs(resolutionDate).format('DD/MM/YYYY') : '';
             const historicalData = [
                 shortUUID,
                 idPrograma,
                 handleButtonClick,
                 formattedResolutionDate,
                 duration,
-                resolutionURL
+                resolutionURL,
+                decision 
             ];
-
+    
             await sendDataToServerHistorico(historicalData);
-
+    
             setOpenSecondModal(false);
             setResolutionDate(null);
             setDuration('');
             setResolutionURL('');
+            setDecision(''); // Reseteamos la decisión
             setUpdateTrigger(true);
         } catch (error) {
             console.error('Error al enviar datos históricos:', error);
@@ -1094,28 +1086,42 @@ const Seguimiento = ({ handleButtonClick }) => {
                         <Typography variant="h6" component="h2" style={{ fontFamily: 'Roboto' }} gutterBottom>
                             Datos adicionales
                         </Typography>
-                        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
-                            <DesktopDatePicker
-                                label="Fecha de Resolución"
-                                value={resolutionDate}
-                                onChange={(date) => setResolutionDate(date)}
-                                renderInput={(params) => <TextField {...params} />}
-                            />
-                        </LocalizationProvider>
-                        <TextField
-                            label="Tiempo de duración"
-                            value={duration}
-                            onChange={(e) => setDuration(e.target.value)}
-                            fullWidth
-                            margin="normal"
-                        />
-                        <TextField
-                            label="URL resolución"
-                            value={resolutionURL}
-                            onChange={(e) => setResolutionURL(e.target.value)}
-                            fullWidth
-                            margin="normal"
-                        />
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">El proceso fue:</FormLabel>
+                            <RadioGroup
+                                value={decision}
+                                onChange={(e) => setDecision(e.target.value)}
+                            >
+                                <FormControlLabel value="aprobado" control={<Radio />} label="Aprobado" />
+                                <FormControlLabel value="rechazado" control={<Radio />} label="Rechazado" />
+                            </RadioGroup>
+                        </FormControl>
+                        {decision === 'aprobado' && (
+                            <>
+                                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={esLocale}>
+                                    <DesktopDatePicker
+                                        label="Fecha de Resolución"
+                                        value={resolutionDate}
+                                        onChange={(date) => setResolutionDate(date)}
+                                        renderInput={(params) => <TextField {...params} />}
+                                    />
+                                </LocalizationProvider>
+                                <TextField
+                                    label="Tiempo de duración"
+                                    value={duration}
+                                    onChange={(e) => setDuration(e.target.value)}
+                                    fullWidth
+                                    margin="normal"
+                                />
+                                <TextField
+                                    label="URL resolución"
+                                    value={resolutionURL}
+                                    onChange={(e) => setResolutionURL(e.target.value)}
+                                    fullWidth
+                                    margin="normal"
+                                />
+                            </>
+                        )}
                         <Button style={{ backgroundColor: '#1A80D9', color: '#F2F2F2', marginTop: '10px' }} onClick={handleSendHistoricalData}>Enviar</Button>
                     </div>
                 </Modal>

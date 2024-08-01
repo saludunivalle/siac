@@ -551,3 +551,6 @@ export const updateDataSegui = async (data, id) => {
     console.error('Error al procesar la solicitud:', error);
   }
 };
+
+
+export const FiltroHistorico = () => filterByProperty(hojaHistorico, {}, '');
