@@ -25,6 +25,7 @@ const Programas = () => {
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [user, setUser] = useState('');
     const [isCargo, setCargo] = useState([' ']);
+    const [showInactiveButtons, setShowInactiveButtons] = useState(false);
 
     useEffect(() => {
         const loggedUser = sessionStorage.getItem('logged');
@@ -82,19 +83,16 @@ const Programas = () => {
 
     const getCellBackgroundColor = (item, process) => {
         const seguimientos = filteredDataSeg.filter(seg => seg.id_programa === item.id_programa);
-        //console.log('Seguimientos:', seguimientos);
-        
         const defaultGreyCondition = (process === 'CREA' && (item['estado'] === 'En Creación' || item['estado'] === 'En Creación*')) ||
                                      (process === 'MOD' && item['mod'] === 'SI') ||
                                      (process === 'RRC' && item['rc vigente'] === 'SI') ||
                                      (process === 'AAC' && item['aac_1a'] === 'SI') ||
                                      (process === 'RAAC' && item['ac vigente'] === 'SI');
-    
+
         if (seguimientos.length === 0) {
-            //console.log('Default Grey Condition:', defaultGreyCondition);
             return defaultGreyCondition ? '#E0E0E0' : 'white';
         }
-    
+
         const topicMap = {
             CREA: 'Creación',
             MOD: 'Modificación',
@@ -102,20 +100,17 @@ const Programas = () => {
             AAC: 'Acreditación',
             RAAC: 'Renovación Acreditación'
         };
-    
+
         const seguimientosPorProceso = seguimientos.filter(seg => seg.topic === topicMap[process]);
-        //console.log('Seguimientos por Proceso:', seguimientosPorProceso);
-        
+
         if (seguimientosPorProceso.length === 0) {
             return defaultGreyCondition ? '#E0E0E0' : 'white';
         }
-    
+
         const recentSeguimiento = seguimientosPorProceso.reduce((prev, current) =>
             new Date(current.timestamp.split('/').reverse().join('-')) > new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
         );
-    
-        //console.log('Most Recent Seguimiento for', process, ':', recentSeguimiento);
-    
+
         switch (recentSeguimiento.riesgo) {
             case 'Alto':
                 return '#FED5D1';
@@ -127,7 +122,6 @@ const Programas = () => {
                 return 'white';
         }
     };
-    
 
     const ButtonsContainer = styled('div')({
         display: 'flex',
@@ -154,6 +148,14 @@ const Programas = () => {
                     ? [buttonValue]
                     : [...prevSelectedValues, buttonValue];
 
+            // Si se hace clic en "Inactivos", seleccionar automáticamente "Inactivo", "Desistido" y "Rechazado"
+            if (buttonValue === 'option6') {
+                newSelectedValues = newSelectedValues.includes('option6')
+                    ? newSelectedValues.filter(val => !['inactive', 'desistido', 'rechazado'].includes(val))
+                    : [...newSelectedValues, 'inactive', 'desistido', 'rechazado'];
+                setShowInactiveButtons(prevState => !prevState);
+            }
+
             let filteredResult = rowData.filter(item => {
                 const filterByOption = option => {
                     switch (option) {
@@ -168,12 +170,14 @@ const Programas = () => {
                 return newSelectedValues.map(filterByOption).every(result => result === true);
             });
 
-            if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8'].includes(option))) {
+            if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8', 'inactive', 'desistido', 'rechazado'].includes(option))) {
                 filteredResult = filteredResult.filter(item => {
                     return newSelectedValues.includes('option3') && (item['estado'] === 'Activo') ||
                         newSelectedValues.includes('option4') && (item['estado'] === 'En Creación') ||
                         newSelectedValues.includes('option5') && (item['estado'] === 'Negación RC') ||
-                        newSelectedValues.includes('option6') && (item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado') ||
+                        newSelectedValues.includes('inactive') && (item['estado'] === 'Inactivo') ||
+                        newSelectedValues.includes('desistido') && (item['estado'] === 'Desistido') ||
+                        newSelectedValues.includes('rechazado') && (item['estado'] === 'Rechazado') ||
                         newSelectedValues.includes('option7') && (item['estado'] === 'Activo - Sede') ||
                         newSelectedValues.includes('option8') && (item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
                 });
@@ -248,7 +252,6 @@ const Programas = () => {
             </div>
         );
     };
-    
 
     return (
         <>
@@ -283,12 +286,27 @@ const Programas = () => {
                                     onClick={() => handleButtonClick('option8')}> Creación (Sedes y otros) <br /> {creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</Button>
                                 <Button value="option5"
                                     style={setButtonStyles('option5')}
-                                    onClick={() => handleButtonClick('option5')}> Otros <br /> {otrosCount !== 0 ? otrosCount : <CircularProgress size={20} /> } </Button>
+                                    onClick={() => handleButtonClick('option5')}> Negación RC <br /> {otrosCount !== 0 ? otrosCount : <CircularProgress size={20} /> } </Button>
                                 <Button value="option6"
                                     style={setButtonStyles('option6')}
                                     onClick={() => handleButtonClick('option6')}> Inactivos <br /> {inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} /> }</Button>
                             </ButtonGroup>
                         </div>
+                        {showInactiveButtons && (
+                            <div className="contenedorButtonGroup" style={{ marginTop: '10px' }}>
+                                <ButtonGroup style={{ gap: '10px' }}>
+                                    <Button value="inactive"
+                                        style={setButtonStyles('inactive')}
+                                        onClick={() => handleButtonClick('inactive')}> Inactivo </Button>
+                                    <Button value="desistido"
+                                        style={setButtonStyles('desistido')}
+                                        onClick={() => handleButtonClick('desistido')}> Desistido </Button>
+                                    <Button value="rechazado"
+                                        style={setButtonStyles('rechazado')}
+                                        onClick={() => handleButtonClick('rechazado')}> Rechazado </Button>
+                                </ButtonGroup>
+                            </div>
+                        )}
                     </ButtonsContainer>
                 </div>
             </div>
