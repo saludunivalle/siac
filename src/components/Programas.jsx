@@ -12,7 +12,7 @@ const Programas = () => {
     const rowData = location.state;
     const navigate = useNavigate();
     const [selectedValues, setSelectedValues] = useState(['option3', 'option4']);
-    const [filteredData, setFilteredData] = useState(rowData);
+    const [filteredData, setFilteredData] = useState([]);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');
     const [loading, setLoading] = useState(false);
     const [activosCount, setActivosCount] = useState(0);
@@ -21,6 +21,10 @@ const Programas = () => {
     const [activoSedesCount, setActivoSedesCount] = useState(0);
     const [inactivosCount, setInactivosCount] = useState(0);
     const [otrosCount, setOtrosCount] = useState(0);
+    const [inactiveCount, setInactiveCount] = useState(0);
+    const [desistidoMenCount, setDesistidoMenCount] = useState(0);
+    const [desistidoInternoCount, setDesistidoInternoCount] = useState(0);
+    const [rechazadoCount, setRechazadoCount] = useState(0);
     const [filteredDataSeg, setFilteredDataSeg] = useState([]);
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [user, setUser] = useState('');
@@ -67,9 +71,17 @@ const Programas = () => {
                 setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
                 setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
                 setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
-                // // setOtrosCount(response.filter(item => item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC').length);
-                setInactivosCount(response.filter(item => item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' || item['estado'] === 'Inactivo' || item['estado'] === 'Desistido' || item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede' || item['estado'] === 'Rechazado').length);
-                setFilteredData(response);
+                setInactivosCount(response.filter(item => item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' || item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Desistido' || item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede' || item['estado'] === 'Rechazado').length);
+                setInactiveCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Inactivo - Sede').length);
+                setDesistidoMenCount(response.filter(item => item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede').length);
+                setDesistidoInternoCount(response.filter(item => item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede').length);
+                setRechazadoCount(response.filter(item => item['estado'] === 'Rechazado' || item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' ).length);
+
+                const initialFilteredData = response.filter(item =>
+                    item['estado'] === 'Activo' || item['estado'] === 'En Creación'
+                );
+
+                setFilteredData(initialFilteredData);
             } catch (error) {
                 console.error('Error al filtrar datos:', error);
             }
@@ -148,11 +160,12 @@ const Programas = () => {
                     ? [buttonValue]
                     : [...prevSelectedValues, buttonValue];
 
-            // Si se hace clic en "Inactivos", seleccionar automáticamente "Inactivo", "Desistido" y "Rechazado"
             if (buttonValue === 'option6') {
-                newSelectedValues = newSelectedValues.includes('option6')
-                    ? newSelectedValues.filter(val => !['inactive', 'desistido', , 'desistido-int', 'rechazado', 'negacion'].includes(val))
-                    : [...newSelectedValues, 'inactive', 'desistido', , 'desistido-int', 'rechazado', 'negacion'];
+                if (newSelectedValues.includes('option6')) {
+                    newSelectedValues.push('inactive', 'desistido', 'desistido-int', 'rechazado');
+                } else {
+                    newSelectedValues = newSelectedValues.filter(val => !['inactive', 'desistido', 'desistido-int', 'rechazado'].includes(val));
+                }
                 setShowInactiveButtons(prevState => !prevState);
             }
 
@@ -170,16 +183,15 @@ const Programas = () => {
                 return newSelectedValues.map(filterByOption).every(result => result === true);
             });
 
-            if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8', 'inactive', 'desistido','desistido-int', 'rechazado', 'negacion'].includes(option))) {
+            if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8', 'inactive', 'desistido', 'desistido-int', 'rechazado'].includes(option))) {
                 filteredResult = filteredResult.filter(item => {
                     return newSelectedValues.includes('option3') && (item['estado'] === 'Activo') ||
                         newSelectedValues.includes('option4') && (item['estado'] === 'En Creación') ||
-                        newSelectedValues.includes('option5') && (item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' ) ||
-                        newSelectedValues.includes('inactive') && (item['estado'] === 'Inactivo') ||
+                        newSelectedValues.includes('option5') && (item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC') ||
+                        newSelectedValues.includes('inactive') && (item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Inactivo - Sede') ||
                         newSelectedValues.includes('desistido') && (item['estado'] === 'Desistido' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede') ||
                         newSelectedValues.includes('desistido-int') && (item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede') ||
-                        newSelectedValues.includes('rechazado') && (item['estado'] === 'Rechazado') ||
-                        newSelectedValues.includes('negacion') && (item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC') ||
+                        newSelectedValues.includes('rechazado') && (item['estado'] === 'Rechazado' || item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC') ||
                         newSelectedValues.includes('option7') && (item['estado'] === 'Activo - Sede') ||
                         newSelectedValues.includes('option8') && (item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
                 });
@@ -299,19 +311,16 @@ const Programas = () => {
                                 <ButtonGroup style={{ gap: '10px' }}>
                                     <Button value="inactive"
                                         style={setButtonStyles('inactive')}
-                                        onClick={() => handleButtonClick('inactive')}> Inactivo </Button>
+                                        onClick={() => handleButtonClick('inactive')}> Inactivo <br /> {inactiveCount !== 0 ? inactiveCount : <CircularProgress size={20} /> }</Button>
                                     <Button value="desistido"
                                         style={setButtonStyles('desistido')}
-                                        onClick={() => handleButtonClick('desistido')}> Desistido MEN</Button>
+                                        onClick={() => handleButtonClick('desistido')}> Desistido MEN <br /> {desistidoMenCount !== 0 ? desistidoMenCount : <CircularProgress size={20} /> }</Button>
                                     <Button value="desistido-int"
                                         style={setButtonStyles('desistido-int')}
-                                        onClick={() => handleButtonClick('desistido-int')}> Desistido Interno</Button>
+                                        onClick={() => handleButtonClick('desistido-int')}> Desistido Interno <br /> {desistidoInternoCount !== 0 ? desistidoInternoCount : <CircularProgress size={20} /> }</Button>
                                     <Button value="rechazado"
                                         style={setButtonStyles('rechazado')}
-                                        onClick={() => handleButtonClick('rechazado')}> Rechazado </Button>
-                                    <Button value="negacion"
-                                        style={setButtonStyles('negacion')}
-                                        onClick={() => handleButtonClick('negacion')}> Negación </Button>
+                                        onClick={() => handleButtonClick('rechazado')}> Rechazado <br /> {rechazadoCount !== 0 ? rechazadoCount : <CircularProgress size={20} /> }</Button>
                                 </ButtonGroup>
                             </div>
                         )}
