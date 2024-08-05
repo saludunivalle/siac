@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
 import Seguimiento from './Seguimiento';
 import { Filtro7, FiltroHistorico } from "../service/data";
-import { Tabs, Tab, Box } from '@mui/material';
+import { Tabs, Tab, Box, Button, TextField } from '@mui/material';
 
 const ProgramDetails = () => {
     const location = useLocation();
-    const rowData = location.state; 
+    const rowData = location.state;
     const { globalVariable, userEmail } = location.state; 
     const navigate = useNavigate();
     const [clickedButton, setClickedButton] = useState(''); 
@@ -20,7 +21,8 @@ const ProgramDetails = () => {
     const [documentLinks, setDocumentLinks] = useState({
         rrc: '',
         raac: '',
-    });     
+    });
+    const [isEditing, setIsEditing] = useState(false);
 
     const {
         'programa académico': programaAcademico,
@@ -42,6 +44,23 @@ const ProgramDetails = () => {
         'duración': duracion,
         accesos: isemail
     } = rowData || {};
+
+    const [formData, setFormData] = useState({
+        Sede: sede,
+        Facultad: facultad,
+        Escuela: escuela,
+        Departamento: departamento,
+        Sección: seccion,
+        'Nivel de Formación': formacion,
+        'Titulo a Conceder': titulo,
+        Jornada: jornada,
+        Modalidad: modalidad,
+        Créditos: creditos,
+        Periodicidad: periodicidad,
+        Duración: duracion,
+        'Fecha RRC': fechavencrc,
+        'Fecha RAAC': fechavencrac,
+    });
 
     useEffect(() => {
         const fetchData = async () => {
@@ -207,6 +226,34 @@ const ProgramDetails = () => {
         navigate('/');
     };
 
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await axios.post('https://siac-server.vercel.app/updateData', {
+                id: rowData.id_programa,
+                ...formData,
+            });
+            if (response.data.status) {
+                alert('Datos actualizados correctamente');
+                setReloadSeguimiento(!reloadSeguimiento);
+                setIsEditing(false);
+            } else {
+                alert('Error al actualizar datos: ' + response.data.error);
+            }
+        } catch (error) {
+            console.error('Error al actualizar datos:', error);
+            alert('Error al actualizar datos');
+        }
+    };
+    
+
     const tabSx = (process) => ({
         backgroundColor: getSeguimientoBackgroundColor(process, clickedButton === process),
         color: clickedButton === process ? '#000' : '#555',
@@ -227,25 +274,56 @@ const ProgramDetails = () => {
         <>
             <Header />
             <div className='containerTotal'>
-                <div className='title-program'><h2>{programaAcademico || 'N/A'}</h2></div>
-                <div className='about-program-general'>
-                    <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad || 'N/A'}</div>
-                    <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela || 'N/A'}</div>
-                    <div className='about-program'><strong>Sede: </strong>&nbsp; {sede || 'N/A'}</div>
-                    <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento || 'N/A'}</div>
-                    <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion || 'N/A'}</div>
-                    <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion || 'N/A'}</div>
-                    <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {titulo || 'N/A'}</div>
-                    <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada || 'N/A'}</div>
-                    <div className='about-program'><strong>Modalidad: </strong>&nbsp; {modalidad || 'N/A'}</div>
-                    <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos || 'N/A'}</div>
-                    <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad || 'N/A'}</div>
-                    <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion || 'N/A'}</div>
-                    <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc || 'N/A'}</div>
-                    <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
-                    <div className='about-program'><strong>Documento RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
-                    <div className='about-program'><strong>Documento RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
+                <div className='title-program'>
+                    <h2>{programaAcademico || 'N/A'}</h2>
                 </div>
+                {!isEditing ? (
+                    <div className='about-program-general'>
+                        <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad || 'N/A'}</div>
+                        <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela || 'N/A'}</div>
+                        <div className='about-program'><strong>Sede: </strong>&nbsp; {sede || 'N/A'}</div>
+                        <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento || 'N/A'}</div>
+                        <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion || 'N/A'}</div>
+                        <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion || 'N/A'}</div>
+                        <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {titulo || 'N/A'}</div>
+                        <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada || 'N/A'}</div>
+                        <div className='about-program'><strong>Modalidad: </strong>&nbsp; {modalidad || 'N/A'}</div>
+                        <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos || 'N/A'}</div>
+                        <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad || 'N/A'}</div>
+                        <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion || 'N/A'}</div>
+                        <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc || 'N/A'}</div>
+                        <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
+                        <div className='about-program'><strong>Documento RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
+                        <div className='about-program'><strong>Documento RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
+                        {Object.keys(formData).map((key) => (
+                            <div key={key}>
+                                <TextField
+                                    label={key}
+                                    name={key}
+                                    value={formData[key]}
+                                    onChange={handleChange}
+                                    variant="outlined"
+                                    fullWidth
+                                    margin="normal"
+                                />
+                            </div>
+                        ))}
+                        <Button type="submit" variant="contained" color="primary" style={{ margin: '10px 0' }}>
+                            Actualizar Datos
+                        </Button>
+                        <Button onClick={() => setIsEditing(false)} variant="contained" color="secondary" style={{ margin: '10px 0', marginLeft: '10px' }}>
+                            Cancelar
+                        </Button>
+                    </form>
+                )}
+                {!isEditing && (
+                        <Button variant="contained" color="primary" onClick={() => setIsEditing(true)} style={{ marginBottom: '20px' }}>
+                            Actualizar Datos
+                        </Button>
+                )}
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', marginLeft:'5px', marginRight:'20px'}}>
                     <Tabs
                         value={clickedButton}
@@ -271,7 +349,9 @@ const ProgramDetails = () => {
                 </Box>
                 <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento} />
                 {!userEmail && !isemail && (
-                    <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
+                    <Button onClick={handleBackClick} variant="contained" style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', margin: '10px 0px -15px' }}>
+                        Atrás
+                    </Button>
                 )}
             </div>
         </>
