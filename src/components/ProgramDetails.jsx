@@ -20,7 +20,7 @@ const ProgramDetails = () => {
     const [documentLinks, setDocumentLinks] = useState({
         rrc: '',
         raac: '',
-    });
+    });     
 
     const {
         'programa académico': programaAcademico,
@@ -95,10 +95,9 @@ const ProgramDetails = () => {
         const fetchFiltroHistorico = async () => {
             try {
                 const historial = await FiltroHistorico();
-                console.log('Datos de FiltroHistorico:', historial); // <-- Añadido console.log
+                console.log('Datos de FiltroHistorico:', historial); 
                 const filteredHistorial = historial.filter(item => item.id_programa === rowData.id_programa);
                 
-                // Ordenar los elementos por fecha (más reciente a más antiguo)
                 filteredHistorial.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
                 let rrcLinks = [];
@@ -228,24 +227,24 @@ const ProgramDetails = () => {
         <>
             <Header />
             <div className='containerTotal'>
-                <div className='title-program'><h2>{programaAcademico}</h2></div>
+                <div className='title-program'><h2>{programaAcademico || 'N/A'}</h2></div>
                 <div className='about-program-general'>
-                    <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad}</div>
-                    <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela}</div>
-                    <div className='about-program'><strong>Sede: </strong>&nbsp; {sede}</div>
-                    {departamento && <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento}</div>}
-                    {seccion && <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion}</div>}
-                    <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion}</div>
-                    <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {titulo}</div>
-                    <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada}</div>
-                    <div className='about-program'><strong>Modalidad: </strong>&nbsp; {modalidad}</div>
-                    <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos}</div>
-                    <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad}</div>
-                    <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion}</div>
-                    {fechavencrc && <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc}</div>}
-                    {fechavencrac && <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac}</div>}
-                    {documentLinks.rrc && <div className='about-program'><strong>Documento RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc }} /></div>}
-                    {documentLinks.raac && <div className='about-program'><strong>Documento RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac }} /></div>}
+                    <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad || 'N/A'}</div>
+                    <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela || 'N/A'}</div>
+                    <div className='about-program'><strong>Sede: </strong>&nbsp; {sede || 'N/A'}</div>
+                    <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento || 'N/A'}</div>
+                    <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion || 'N/A'}</div>
+                    <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion || 'N/A'}</div>
+                    <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {titulo || 'N/A'}</div>
+                    <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada || 'N/A'}</div>
+                    <div className='about-program'><strong>Modalidad: </strong>&nbsp; {modalidad || 'N/A'}</div>
+                    <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos || 'N/A'}</div>
+                    <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad || 'N/A'}</div>
+                    <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion || 'N/A'}</div>
+                    <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc || 'N/A'}</div>
+                    <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
+                    <div className='about-program'><strong>Documento RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
+                    <div className='about-program'><strong>Documento RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
                 </div>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', marginLeft:'5px', marginRight:'20px'}}>
                     <Tabs
