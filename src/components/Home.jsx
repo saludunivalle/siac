@@ -23,6 +23,14 @@ const Home = () => {
     RAAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
     INT: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
   });
+  const [expiryCounts, setExpiryCounts] = useState({
+    RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+    AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+  });
+  const [expiryPrograms, setExpiryPrograms] = useState({
+    RRC: { oneYear: [], twoYears: [], threeYears: [] },
+    AAC: { oneYear: [], twoYears: [], threeYears: [] },
+  });
   const [activosCount, setActivosCount] = useState(0);
   const [creacionCount, setCreacionCount] = useState(0);
   const [creacionSedesCount, setCreacionSedesCount] = useState(0);
@@ -94,6 +102,7 @@ const Home = () => {
 
               const seguimientos = await Filtro7();
               processSeguimientos(seguimientos, response);
+              countExpiringPrograms(response);
           } catch (error) {
               console.error('Error al filtrar datos:', error);
           }
@@ -106,6 +115,55 @@ const Home = () => {
       fetchData();
   }, [isCargo]);
 
+  const countExpiringPrograms = (programas) => {
+    const currentYear = new Date().getFullYear();
+    const counts = { RRC: { oneYear: 0, twoYears: 0, threeYears: 0 }, AAC: { oneYear: 0, twoYears: 0, threeYears: 0 } };
+  
+    const expiringPrograms = {
+      RRC: { oneYear: [], twoYears: [], threeYears: [] },
+      AAC: { oneYear: [], twoYears: [], threeYears: [] },
+    };
+  
+    programas.forEach(program => {
+      const rrcYear = program['fechavencrc'] ? parseInt(program['fechavencrc'].split('/')[2]) : null;
+      const aacYear = program['fechavencac'] ? parseInt(program['fechavencac'].split('/')[2]) : null;
+  
+      if (rrcYear) {
+        if (rrcYear === currentYear + 1) {
+          counts.RRC.oneYear++;
+          expiringPrograms.RRC.oneYear.push(program);
+        }
+        if (rrcYear === currentYear + 2) {
+          counts.RRC.twoYears++;
+          expiringPrograms.RRC.twoYears.push(program);
+        }
+        if (rrcYear === currentYear + 3) {
+          counts.RRC.threeYears++;
+          expiringPrograms.RRC.threeYears.push(program);
+        }
+      }
+  
+      if (aacYear) {
+        if (aacYear === currentYear + 1) {
+          counts.AAC.oneYear++;
+          expiringPrograms.AAC.oneYear.push(program);
+        }
+        if (aacYear === currentYear + 2) {
+          counts.AAC.twoYears++;
+          expiringPrograms.AAC.twoYears.push(program);
+        }
+        if (aacYear === currentYear + 3) {
+          counts.AAC.threeYears++;
+          expiringPrograms.AAC.threeYears.push(program);
+        }
+      }
+    });
+  
+    console.log('Expiring programs:', expiringPrograms); // Verifica los datos aquí
+    setExpiryCounts(counts);
+    setExpiryPrograms(expiringPrograms);
+  };
+  
   const processSeguimientos = useCallback((seguimientos, programas) => {
     if (!seguimientos || !Array.isArray(seguimientos)) {
         console.error('Seguimientos is undefined or not an array');
@@ -157,7 +215,6 @@ const Home = () => {
     setCounts(newCounts);
 }, []);
 
-
   const handleBackClick = () => {
     setProgramasVisible(true);
     setSemaforoVisible(false);
@@ -194,6 +251,10 @@ const Home = () => {
       navigate('/programas', { state: filteredData });
     }
   };
+
+  const handleExpiryClick = () => {
+    navigate('/programas-venc', { state: { expiryPrograms } });
+  };  
 
   const prepareReportData = async () => {
     try {
@@ -381,16 +442,16 @@ const Home = () => {
               )}
             </tbody>
           </table>
+        </div>
       </div>
-      </div>
+
         {programasVisible && (
           <div style={{ width:'25%' }}>
           <div style={{ fontSize: '25px', width:'100%', display: 'flex', justifyContent:'center', marginTop:'-40px' }}>Programas</div>
           <div className='programas' onClick={handleClick} style={{  width:'100%', alignSelf: 'flex-start', marginLeft: '20px' }}>
             <table>
               <thead>
-                <tr>
-                </tr>
+                <tr></tr>
               </thead>
               <tbody>
                 <tr>
@@ -424,6 +485,32 @@ const Home = () => {
                 <tr>
                   <td style={{ paddingRight: '4px' }}><strong>TOTAL:</strong></td>
                   <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount + inactivosCount}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className='new-table' style={{ width:'100%', alignSelf: 'flex-start', marginLeft: '20px', marginTop: '20px' }}>
+            <table className='buttons-table' style={{ marginTop: '20px' }}>
+              <thead>
+                <tr>
+                  <th>Proceso</th>
+                  <th>1 año</th>
+                  <th>2 años</th>
+                  <th>3 años</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr onClick={handleExpiryClick}>
+                  <td>RRC</td>
+                  <td>{expiryCounts.RRC.oneYear}</td>
+                  <td>{expiryCounts.RRC.twoYears}</td>
+                  <td>{expiryCounts.RRC.threeYears}</td>
+                </tr>
+                <tr onClick={handleExpiryClick}>
+                  <td>AAC</td>
+                  <td>{expiryCounts.AAC.oneYear}</td>
+                  <td>{expiryCounts.AAC.twoYears}</td>
+                  <td>{expiryCounts.AAC.threeYears}</td>
                 </tr>
               </tbody>
             </table>

@@ -11,6 +11,7 @@ import Cookies from 'js-cookie';
 import SeguimientoInicio from './components/SeguimientoInicio';
 import DocenciaServicio from './components/DocenciaServicio';
 import CreacionPrograms from './components/CreacionPrograms';
+import ProgramasVenc from './components/ProgramasVenc';
 
 function App() {
   const [isLogged, setLogged] = useState(false);
@@ -38,6 +39,7 @@ function App() {
               <Route path="/seguimiento-inicio" element={<SeguimientoInicio />} />
               <Route path="/docencia-servicio" element={<DocenciaServicio />} />
               <Route path="/creacion-programa" element={<CreacionPrograms />} />
+              <Route path="/programas-venc" element={<ProgramasVenc />} />
               <Route
                         path="*"
                         element={

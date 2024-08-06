@@ -294,3 +294,7 @@
     filter: brightness(0.85); 
 }
 
+.new-table tr {
+    cursor: pointer;
+  }
+  
