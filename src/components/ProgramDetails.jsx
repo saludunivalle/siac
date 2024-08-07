@@ -10,7 +10,7 @@ import { Tabs, Tab, Box, Button, TextField } from '@mui/material';
 const ProgramDetails = () => {
     const location = useLocation();
     const rowData = location.state;
-    const { globalVariable, userEmail } = location.state; 
+    const { globalVariable, userEmail } = location.state || {}; 
     const navigate = useNavigate();
     const [clickedButton, setClickedButton] = useState(''); 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
