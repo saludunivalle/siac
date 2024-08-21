@@ -42,7 +42,9 @@ const ProgramDetails = () => {
         'créditos': creditos,
         periodicidad,
         'duración': duracion,
-        accesos: isemail
+        accesos: isemail, 
+        acreditable, 
+        contingencia,
     } = rowData || {};
 
     const [formData, setFormData] = useState({
@@ -60,6 +62,8 @@ const ProgramDetails = () => {
         Duración: duracion,
         'Fecha RRC': fechavencrc,
         'Fecha RAAC': fechavencrac,
+        Acreditable: acreditable,
+        Contingencia: contingencia, 
     });
 
     useEffect(() => {
@@ -295,6 +299,8 @@ const ProgramDetails = () => {
                         <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
                         <div className='about-program'><strong>Documento RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
                         <div className='about-program'><strong>Documento RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
+                        <div className='about-program'><strong>Acreditable: </strong>&nbsp; {acreditable || 'N/A'}</div>
+                        <div className='about-program'><strong>Contingencia: </strong>&nbsp; {contingencia || 'N/A'}</div>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
