@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, Input, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel, useMediaQuery } from '@mui/material';
+import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, ListSubheader, Input, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel, useMediaQuery } from '@mui/material';
 import { Container, Grid, IconButton, Box, Paper } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -315,6 +315,15 @@ const Seguimiento = ({ handleButtonClick }) => {
 
     // Renderizar la tabla de fases
     const contenido_tablaFases = () => {
+        const groupedFases = fases.reduce((acc, fase) => {
+            const grupo = fase.fase_sup || 'Sin Agrupar'; 
+            if (!acc[grupo]) {
+                acc[grupo] = [];
+            }
+            acc[grupo].push(fase);
+            return acc;
+        }, {});
+    
         return (
             <>  
                 <div>
@@ -326,23 +335,28 @@ const Seguimiento = ({ handleButtonClick }) => {
                         <>
                             <div style={{display:'flex', justifyContent:'center', gap:'10px', flexDirection:'row'}}>
                                 <div>
-                                    {fases.length > 0 && (
+                                    {Object.keys(groupedFases).length > 0 && (
                                         <div>
                                             <h2>Fases del Programa</h2>
-                                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                                                <tbody>
-                                                    {fases.map((fase, index) => {
-                                                        const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
-                                                        const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
-                                                        const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#ffffff');
-                                                        return (
-                                                            <tr key={index} style={{ backgroundColor }}>
-                                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{fase.fase}</td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
+                                            {Object.entries(groupedFases).map(([grupo, fases]) => (
+                                                <div key={grupo}>
+                                                    {grupo !== 'Sin Agrupar' && <h4>{grupo}</h4>} {/* Subtítulo basado en fase_sup */}
+                                                    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                                                        <tbody>
+                                                            {fases.map((fase, index) => {
+                                                                const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
+                                                                const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
+                                                                const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#ffffff');
+                                                                return (
+                                                                    <tr key={index} style={{ backgroundColor }}>
+                                                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{fase.fase}</td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
@@ -361,7 +375,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                                         const handleLinkClick = (event) => {
                                                             event.stopPropagation();
                                                         };
-
+    
                                                         return (
                                                             <tr key={index} style={fondoVerde} onClick={handleClick}>
                                                                 <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
@@ -400,7 +414,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                 </div>
             </>
         );
-    };
+    };    
 
     // Renderizar tabla filtrada
     const renderFilteredTable = (data, filters, fasesTabla, useTopicAsFase = false) => {
@@ -702,6 +716,15 @@ const Seguimiento = ({ handleButtonClick }) => {
     };
 
     const contenido_seguimiento_default = () => {
+        const groupedFases = menuItems.reduce((acc, item) => {
+            const grupo = item.fase_sup || 'Sin Agrupar';
+            if (!acc[grupo]) {
+                acc[grupo] = [];
+            }
+            acc[grupo].push(item);
+            return acc;
+        }, {});
+    
         const handleGuardarClickDefault = async () => {
             try {
                 setLoading(true);
@@ -966,22 +989,28 @@ const Seguimiento = ({ handleButtonClick }) => {
                                         >
                                             Ninguna
                                         </MenuItem>
-                                        {menuItems.map((item, index) => (
-                                            <MenuItem
-                                                key={index}
-                                                value={item}
-                                                sx={{
-                                                    display: "flex",
-                                                    width: "100%",
-                                                    "&:hover": {
-                                                        backgroundColor: "rgba(0, 0, 0, 0.08)",
-                                                    },
-                                                    whiteSpace: "normal",
-                                                    overflow: "visible",
-                                                }}
-                                            >
-                                                {item.fase}
-                                            </MenuItem>
+                                        {Object.entries(groupedFases).map(([grupo, fases]) => (
+                                            <React.Fragment key={grupo}>
+                                                <ListSubheader>{grupo}</ListSubheader>
+                                                {fases.map((fase, index) => (
+                                                    <MenuItem
+                                                        key={index}
+                                                        value={fase}
+                                                        sx={{
+                                                            display: "flex",
+                                                            width: "100%",
+                                                            paddingLeft: "20px",
+                                                            "&:hover": {
+                                                                backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                                            },
+                                                            whiteSpace: "normal",
+                                                            overflow: "visible",
+                                                        }}
+                                                    >
+                                                        {fase.fase}
+                                                    </MenuItem>
+                                                ))}
+                                            </React.Fragment>
                                         ))}
                                     </Select>
                                 </FormControl>
