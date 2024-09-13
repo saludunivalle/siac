@@ -12,7 +12,7 @@ import {
 import { styled } from '@mui/system';
 import Header from './Header';
 import { format } from 'date-fns';
-import { sendDataEscula, dataEscuelas, updateDataEscuela } from '../service/data';
+import { sendDataEscula, dataEscuelas, updateDataEscuela, dataSegui } from '../service/data';
 
 const escuelas = [
     'Bacteriología y Lab. Clínico',
@@ -52,6 +52,8 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 }));
 
 const SeguimientoInicio = () => {
+    const [resumenData, setResumenData] = useState(null);
+    const [showResumen, setShowResumen] = useState(false);
     const [selectedEscuela, setSelectedEscuela] = useState('');
     const [scores, setScores] = useState({});
     const [descriptions, setDescriptions] = useState({});
@@ -59,6 +61,7 @@ const SeguimientoInicio = () => {
     const [selectedProgramType, setSelectedProgramType] = useState('pre');
 
     const handleClickOpen = (escuela) => {
+        setShowResumen(false); 
         setSelectedEscuela(escuela);
         const escuelaData = data.find(d => d.escuela === escuela) || {};
         setScores({
@@ -209,12 +212,67 @@ const SeguimientoInicio = () => {
         return programasBase.map(program => program.replace('{tipo}', tipo));
     };
 
+    // Función para generar el resumen agrupado por estado (Diseño, Rediseño, Seguimiento)
+    const generateResumen = (data) => {
+        const resumen = {};
+
+        data.forEach((item) => {
+            const { escuela, estado_pm } = item;
+
+            if (!resumen[escuela]) {
+                resumen[escuela] = { diseño: 0, rediseño: 0, seguimiento: 0 };
+            }
+
+            // Contar el estado de cada programa
+            if (estado_pm === 'Diseño') {
+                resumen[escuela].diseño += 1;
+            } else if (estado_pm === 'Rediseño') {
+                resumen[escuela].rediseño += 1;
+            } else if (estado_pm === 'Seguimiento') {
+                resumen[escuela].seguimiento += 1;
+            }
+        });
+
+        return resumen;
+    };
+
+    const handleResumenClick = async () => {
+        setSelectedEscuela(''); 
+        setShowResumen(true); 
+        try {
+            const data = await dataSegui(); 
+            const resumen = generateResumen(data); 
+            setResumenData(resumen);
+        } catch (error) {
+            console.error('Error al obtener datos para el resumen:', error);
+        }
+    };
+
+    const calculateTotals = () => {
+        let totalDiseño = 0;
+        let totalRediseño = 0;
+        let totalSeguimiento = 0;
+
+        if (resumenData) {
+            Object.values(resumenData).forEach((counts) => {
+                totalDiseño += counts.diseño;
+                totalRediseño += counts.rediseño;
+                totalSeguimiento += counts.seguimiento;
+            });
+        }
+
+        return { totalDiseño, totalRediseño, totalSeguimiento };
+    };
+
+    const { totalDiseño, totalRediseño, totalSeguimiento } = calculateTotals();
+
     return (
         <>
             <Header />
             <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: "-40px", marginBottom: "10px" }}>
                 <h1>Seguimiento al Plan de Mejoramiento por Escuelas</h1>
             </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px' }}>
                     {escuelas.map(escuela => (
@@ -226,11 +284,46 @@ const SeguimientoInicio = () => {
                             {escuela}
                         </StyledButton>
                     ))}
+                    <StyledButton
+                        onClick={handleResumenClick}
+                        className={showResumen ? 'active' : ''}
+                    >
+                        Resumen
+                    </StyledButton>
                 </div>
+
                 <div style={{ flex: 1, marginLeft: '50px' }}>
-                    {selectedEscuela && (
+                    {showResumen && resumenData && (
+                        <Table style={{ width: "90%", marginTop: '20px' }}>
+                            <TableHead>
+                                <TableRow>
+                                    <StyledTableCell>Escuela</StyledTableCell>
+                                    <StyledTableCell>Diseño</StyledTableCell>
+                                    <StyledTableCell>Rediseño</StyledTableCell>
+                                    <StyledTableCell>Seguimiento</StyledTableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {Object.keys(resumenData).map((escuela) => (
+                                    <TableRow key={escuela}>
+                                        <TableCell>{escuela}</TableCell>
+                                        <TableCell>{resumenData[escuela].diseño}</TableCell>
+                                        <TableCell>{resumenData[escuela].rediseño}</TableCell>
+                                        <TableCell>{resumenData[escuela].seguimiento}</TableCell>
+                                    </TableRow>
+                                ))}
+                                <TableRow>
+                                    <StyledTableCell><strong>Total</strong></StyledTableCell>
+                                    <StyledTableCell><strong>{totalDiseño}</strong></StyledTableCell>
+                                    <StyledTableCell><strong>{totalRediseño}</strong></StyledTableCell>
+                                    <StyledTableCell><strong>{totalSeguimiento}</strong></StyledTableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    )}
+
+                    {selectedEscuela && !showResumen && (
                         <>
-                        <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '90%', marginBottom: '20px' }}>
                                 <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
                                 <div>
@@ -310,8 +403,7 @@ const SeguimientoInicio = () => {
                                     Guardar
                                 </Button>
                             </div>
-                        </div>
-                        </>
+                            </>
                     )}
                 </div>
             </div>
