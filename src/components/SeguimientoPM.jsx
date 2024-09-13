@@ -64,7 +64,6 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
     useEffect(() => {
         const fetchData = async () => {
             const response = await dataSegui();
-            //console.log
             const records = response
                 .filter(record => record.id_programa === idPrograma)
                 .reduce((acc, record) => {
