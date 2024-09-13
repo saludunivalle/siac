@@ -10,12 +10,12 @@ import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sen
 import dayjs from 'dayjs';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import esLocale from 'dayjs/locale/es'; 
+import esLocale from 'dayjs/locale/es';
 import PracticeScenario from './PracticeScenario';
 import FormComponent from './FormComponent';
 import SeguimientoPM from './SeguimientoPM';
 import SimpleTimeline from './SimpleTimeline';
-import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker} from '@mui/x-date-pickers';
+import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker } from '@mui/x-date-pickers';
 import { v4 as uuidv4 } from 'uuid';
 
 const Seguimiento = ({ handleButtonClick }) => {
@@ -24,15 +24,15 @@ const Seguimiento = ({ handleButtonClick }) => {
     const [selectedOption, setSelectedOption] = useState(0);
     const [selectedPhase, setSelectedPhase] = useState('');
     const location = useLocation();
-    const rowData = location.state; 
+    const rowData = location.state;
     const programaAcademico = rowData['programa académico'];
     const idPrograma = rowData['id_programa'];
     const escuela = rowData['escuela'];
     const formacion = rowData['pregrado/posgrado'];
     const [value, setValue] = useState('');
-    const [showCollapsible, setShowCollapsible] = useState({}); 
+    const [showCollapsible, setShowCollapsible] = useState({});
     const [filteredData, setFilteredData] = useState([]);
-    const [comment, setComment] = useState(''); 
+    const [comment, setComment] = useState('');
     const [collapsible, setCollapsible] = useState('');
     const [user, setUser] = useState('');
     const [isPlan, setPlan] = useState(['Plan de Mejoramiento', 'Sistemas']);
@@ -46,7 +46,7 @@ const Seguimiento = ({ handleButtonClick }) => {
     const [openModal, setOpenModal] = useState(false);
     const [fileData, setfileData] = useState(null);
     const fileInputRef = useRef(null);
-    const [fileLink, setFileLink] = useState(''); 
+    const [fileLink, setFileLink] = useState('');
     const [loading, setLoading] = useState(false);
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -78,7 +78,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             }
         };
         obtenerDatosFiltro();
-    }, [docs]); 
+    }, [docs]);
 
     const handleOpen = (doc) => {
         setSelectedDoc(doc);
@@ -221,7 +221,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                 return filtro10Item ? filtro10Item : null;
             });
             const result3 = result2.filter(item => item && item['proceso'] === procesoActual)
-                                    .sort((a, b) => a.orden - b.orden); // Ordenar por orden
+                .sort((a, b) => a.orden - b.orden); // Ordenar por orden
 
             setFases(general2);
             setFasesName(result3);
@@ -316,24 +316,24 @@ const Seguimiento = ({ handleButtonClick }) => {
     // Renderizar la tabla de fases
     const contenido_tablaFases = () => {
         const groupedFases = fases.reduce((acc, fase) => {
-            const grupo = fase.fase_sup || 'Sin Agrupar'; 
+            const grupo = fase.fase_sup || 'Sin Agrupar';
             if (!acc[grupo]) {
                 acc[grupo] = [];
             }
             acc[grupo].push(fase);
             return acc;
         }, {});
-    
+
         return (
-            <>  
+            <>
                 <div>
-                    {loading ? ( 
+                    {loading ? (
                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                             <CircularProgress />
                         </div>
                     ) : (
                         <>
-                            <div style={{display:'flex', justifyContent:'center', gap:'10px', flexDirection:'row'}}>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexDirection: 'row' }}>
                                 <div>
                                     {Object.keys(groupedFases).length > 0 && (
                                         <div>
@@ -349,7 +349,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                                                 const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#ffffff');
                                                                 return (
                                                                     <tr key={index} style={{ backgroundColor }}>
-                                                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left'}}>{fase.fase}</td>
+                                                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>{fase.fase}</td>
                                                                     </tr>
                                                                 );
                                                             })}
@@ -360,7 +360,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                         </div>
                                     )}
                                 </div>
-                                <div> 
+                                <div>
                                     {docs.length > 0 && (
                                         <div>
                                             <h2>Documentos requeridos</h2>
@@ -375,7 +375,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                                         const handleLinkClick = (event) => {
                                                             event.stopPropagation();
                                                         };
-    
+
                                                         return (
                                                             <tr key={index} style={fondoVerde} onClick={handleClick}>
                                                                 <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
@@ -414,12 +414,12 @@ const Seguimiento = ({ handleButtonClick }) => {
                 </div>
             </>
         );
-    };    
+    };
 
     // Renderizar tabla filtrada
     const renderFilteredTable = (data, filters, fasesTabla, useTopicAsFase = false) => {
         if (!Array.isArray(filters)) {
-            filters = [filters]; 
+            filters = [filters];
         }
         console.log('Renderizando tabla con filtros:', filters);
         const filteredData = Filtro8(data, filters);
@@ -485,7 +485,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
         };
-    
+
         const handleGuardarClick = async () => {
             try {
                 if (comment.trim() === '' || value.trim() === '' || selectedPhase.trim() === '') {
@@ -495,18 +495,18 @@ const Seguimiento = ({ handleButtonClick }) => {
                     setFormSubmitted(true);
                     return;
                 }
-    
+
                 let formattedDate;
                 if (selectedDate) {
                     formattedDate = dayjs(selectedDate).format('DD/MM/YYYY');
                 } else {
                     formattedDate = dayjs().format('DD/MM/YYYY');
                 }
-    
-                const collapsibleType = selectedPhase === 'RRC' 
-                    ? 'Plan de Mejoramiento RRC' 
+
+                const collapsibleType = selectedPhase === 'RRC'
+                    ? 'Plan de Mejoramiento RRC'
                     : (selectedPhase === 'RAAC' ? 'Plan de Mejoramiento RAAC' : 'Plan de Mejoramiento AAC');
-    
+
                 const dataSend = [
                     idPrograma,
                     formattedDate,
@@ -516,20 +516,20 @@ const Seguimiento = ({ handleButtonClick }) => {
                     collapsibleType,
                     selectedOption.id,
                 ];
-    
+
                 const dataSendCrea = [
                     idPrograma,
                     selectedOption.id,
-                    formattedDate, 
+                    formattedDate,
                 ];
-    
+
                 await sendDataToServer(dataSend);
                 if (selectedOption.id === undefined) {
                     console.log("Opción seleccionada -> Ninguna");
                 } else {
                     await sendDataToServerCrea(dataSendCrea);
                 }
-    
+
                 clearFileLink();
                 setLoading(false);
                 setOpenModal(true);
@@ -543,7 +543,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                 console.error('Error al enviar datos:', error);
             }
         };
-    
+
         return (
             <>
                 <div className='container-NS' style={{ fontWeight: 'bold', width: '100%', display: 'flex', flexDirection: 'row', margin: '20px', alignItems: 'center', gap: 'px' }}>
@@ -672,7 +672,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             </>
         );
     };
-    
+
     // Contenido del seguimiento por defecto
 
     const [openSecondModal, setOpenSecondModal] = useState(false);
@@ -680,14 +680,14 @@ const Seguimiento = ({ handleButtonClick }) => {
     const [duration, setDuration] = useState('');
     const [resolutionURL, setResolutionURL] = useState('');
     const [decision, setDecision] = useState(''); // Nueva variable de estado para la decisión
-    
+
     const handleCloseFirstModal = () => {
         setOpenModal(false);
         if (selectedOption.fase === "Proceso Finalizado") {
             setOpenSecondModal(true);
         }
     };
-    
+
     const handleSendHistoricalData = async () => {
         try {
             const shortUUID = uuidv4().slice(0, 7); // Genera un UUID corto de 7 caracteres
@@ -699,11 +699,11 @@ const Seguimiento = ({ handleButtonClick }) => {
                 formattedResolutionDate,
                 duration,
                 resolutionURL,
-                decision 
+                decision
             ];
-    
+
             await sendDataToServerHistorico(historicalData);
-    
+
             setOpenSecondModal(false);
             setResolutionDate(null);
             setDuration('');
@@ -724,7 +724,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             acc[grupo].push(item);
             return acc;
         }, {});
-    
+
         const handleGuardarClickDefault = async () => {
             try {
                 setLoading(true);
@@ -963,7 +963,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                         displayEmpty
                                         style={{ width: "100%" }}
                                         MenuProps={{
-                                            disableScrollLock: "true",
+                                            disableScrollLock: true,
                                             PaperProps: {
                                                 style: {
                                                     maxHeight: "150px",
@@ -989,29 +989,27 @@ const Seguimiento = ({ handleButtonClick }) => {
                                         >
                                             Ninguna
                                         </MenuItem>
-                                        {Object.entries(groupedFases).map(([grupo, fases]) => (
-                                            <React.Fragment key={grupo}>
-                                                <ListSubheader>{grupo}</ListSubheader>
-                                                {fases.map((fase, index) => (
-                                                    <MenuItem
-                                                        key={index}
-                                                        value={fase}
-                                                        sx={{
-                                                            display: "flex",
-                                                            width: "100%",
-                                                            paddingLeft: "20px",
-                                                            "&:hover": {
-                                                                backgroundColor: "rgba(0, 0, 0, 0.08)",
-                                                            },
-                                                            whiteSpace: "normal",
-                                                            overflow: "visible",
-                                                        }}
-                                                    >
-                                                        {fase.fase}
-                                                    </MenuItem>
-                                                ))}
-                                            </React.Fragment>
-                                        ))}
+                                        {Object.entries(groupedFases).map(([grupo, fases]) => [
+                                            <ListSubheader key={grupo}>{grupo}</ListSubheader>,
+                                            ...fases.map((fase, index) => (
+                                                <MenuItem
+                                                    key={index}
+                                                    value={fase}
+                                                    sx={{
+                                                        display: "flex",
+                                                        width: "100%",
+                                                        paddingLeft: "20px",
+                                                        "&:hover": {
+                                                            backgroundColor: "rgba(0, 0, 0, 0.08)",
+                                                        },
+                                                        whiteSpace: "normal",
+                                                        overflow: "visible",
+                                                    }}
+                                                >
+                                                    {fase.fase}
+                                                </MenuItem>
+                                            )),
+                                        ])}
                                     </Select>
                                 </FormControl>
                             </div>
@@ -1163,7 +1161,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         );
     };
 
-    
+
     return (
         <>
             <div style={{ marginRight: '20px', width: 'auto' }}>
