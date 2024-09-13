@@ -78,8 +78,8 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan }) => {
                         record.escuela,
                         record.fecha || null,
                         record.tiene_hscpm,
-                        record.url_hscpm,
-                        record.recibio_visita_pares
+                        record.url_herramienta,
+                        record.recibio_visitas
                     ];
                     return acc;
                 }, {});
