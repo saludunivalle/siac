@@ -28,7 +28,8 @@ const escuelas = [
 const programasBase = [
     'Anexos técnicos en consonancia con los registros calificados',
     'Porcentaje de avance en la recopilación de evidencias en el marco del PM.',
-    'Número de programas académicos de la Escuela de {tipo} con Acreditación o con Renovación de Acreditación.',
+    'Número de programas académicos de la Escuela de {tipo} con Acreditación',
+    'Número de programas académicos de la Escuela de {tipo} con Renovación de Acreditación.',
     'Porcentaje de avance en el diseño o rediseño del plan de mejoramiento con base a las recomendaciones de los pares académicos.',
 ];
 
@@ -67,22 +68,25 @@ const SeguimientoInicio = () => {
         setScores({
             pre: [
                 escuelaData.porc_anexos_pre || '',
-                escuelaData.porc_evidencias_pre || '',
-                (parseInt(escuelaData.cant_rc_pre || 0) + parseInt(escuelaData.cant_aac_pre || 0)).toString(),
+                escuelaData.por_evi_pre || '', 
+                escuelaData.cant_rc_pre || '', 
+                escuelaData.cant_aac_pre || '', 
                 escuelaData.porc_pm_pre || ''
             ],
             pos: [
                 escuelaData.porc_anexos_pos || '',
-                escuelaData.porc_evidencias_pos || '',
-                (parseInt(escuelaData.cant_rc_pos || 0) + parseInt(escuelaData.cant_aac_pos || 0)).toString(),
+                escuelaData.por_evi_pos || '',
+                escuelaData.cant_rc_pos || '', 
+                escuelaData.cant_aac_pos || '', 
                 escuelaData.porc_pm_pos || ''
             ]
-        });
+        });        
         setDescriptions({
-            descripcion_1: escuelaData.descripcion_1 || '',
-            descripcion_2: escuelaData.descripcion_2 || '',
-            descripcion_3: escuelaData.descripcion_3 || '',
-            descripcion_4: escuelaData.descripcion_4 || ''
+            descripcion_1: selectedProgramType === 'pre' ? escuelaData.descripcion_1_pre || '' : escuelaData.descripcion_1_pos || '',
+            descripcion_2: selectedProgramType === 'pre' ? escuelaData.descripcion_2_pre || '' : escuelaData.descripcion_2_pos || '',
+            descripcion_3: selectedProgramType === 'pre' ? escuelaData.descripcion_3_pre || '' : escuelaData.descripcion_3_pos || '',
+            descripcion_4: selectedProgramType === 'pre' ? escuelaData.descripcion_4_pre || '' : escuelaData.descripcion_4_pos || '',
+            descripcion_5: selectedProgramType === 'pre' ? escuelaData.descripcion_5_pre || '' : escuelaData.descripcion_5_pos || ''
         });
     };
 
