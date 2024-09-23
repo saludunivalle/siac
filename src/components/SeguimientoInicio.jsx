@@ -82,12 +82,17 @@ const SeguimientoInicio = () => {
             ]
         });        
         setDescriptions({
-            descripcion_1: selectedProgramType === 'pre' ? escuelaData.descripcion_1_pre || '' : escuelaData.descripcion_1_pos || '',
-            descripcion_2: selectedProgramType === 'pre' ? escuelaData.descripcion_2_pre || '' : escuelaData.descripcion_2_pos || '',
-            descripcion_3: selectedProgramType === 'pre' ? escuelaData.descripcion_3_pre || '' : escuelaData.descripcion_3_pos || '',
-            descripcion_4: selectedProgramType === 'pre' ? escuelaData.descripcion_4_pre || '' : escuelaData.descripcion_4_pos || '',
-            descripcion_5: selectedProgramType === 'pre' ? escuelaData.descripcion_5_pre || '' : escuelaData.descripcion_5_pos || ''
-        });
+            descripcion_1_pre: escuelaData.descripcion_1_pre || '',
+            descripcion_2_pre: escuelaData.descripcion_2_pre || '',
+            descripcion_3_pre: escuelaData.descripcion_3_pre || '',
+            descripcion_4_pre: escuelaData.descripcion_4_pre || '',
+            descripcion_5_pre: escuelaData.descripcion_5_pre || '',
+            descripcion_1_pos: escuelaData.descripcion_1_pos || '',
+            descripcion_2_pos: escuelaData.descripcion_2_pos || '',
+            descripcion_3_pos: escuelaData.descripcion_3_pos || '',
+            descripcion_4_pos: escuelaData.descripcion_4_pos || '',
+            descripcion_5_pos: escuelaData.descripcion_5_pos || ''
+        });        
     };
 
     const handleScoreChange = (index, value) => {
@@ -102,7 +107,7 @@ const SeguimientoInicio = () => {
             ...prevDescriptions,
             [field]: value
         }));
-    };
+    };    
 
     useEffect(() => {
         const fetchData = async () => {
@@ -176,33 +181,50 @@ const SeguimientoInicio = () => {
             console.error('No se encontraron datos para la escuela seleccionada');
             return;
         }
-
+    
         const updatedData = {
             id: filteredData.id,
             escuela: filteredData.escuela,
-            descripcion_1: descriptions.descripcion_1,
-            descripcion_2: descriptions.descripcion_2,
-            descripcion_3: descriptions.descripcion_3,
-            descripcion_4: descriptions.descripcion_4
+            por_evi_pre: scores.pre[1] || '',
+            por_evi_pos: scores.pos[1] || '',
+            descripcion_1_pre: descriptions.descripcion_1_pre || '',
+            descripcion_2_pre: descriptions.descripcion_2_pre || '',
+            descripcion_3_pre: descriptions.descripcion_3_pre || '',
+            descripcion_4_pre: descriptions.descripcion_4_pre || '',
+            descripcion_5_pre: descriptions.descripcion_5_pre || '',
+            descripcion_1_pos: descriptions.descripcion_1_pos || '',
+            descripcion_2_pos: descriptions.descripcion_2_pos || '',
+            descripcion_3_pos: descriptions.descripcion_3_pos || '',
+            descripcion_4_pos: descriptions.descripcion_4_pos || '',
+            descripcion_5_pos: descriptions.descripcion_5_pos || ''
         };
-
+    
         const dataupdateescuela = [
             updatedData.id,
             updatedData.escuela,
             filteredData.porc_anexos_pre,
-            filteredData.porc_evidencias_pre,
-            filteredData.cant_acred_renov_pre,
+            filteredData.cant_rc_pre,
+            filteredData.cant_aac_pre,
             filteredData.porc_pm_pre,
+            updatedData.por_evi_pre,
             filteredData.porc_anexos_pos,
-            filteredData.porc_evidencias_pos,
-            filteredData.cant_acred_renov_pos,
+            filteredData.cant_rc_pos,
+            filteredData.cant_aac_pos,
             filteredData.porc_pm_pos,
-            updatedData.descripcion_1,
-            updatedData.descripcion_2,
-            updatedData.descripcion_3,
-            updatedData.descripcion_4
+            updatedData.por_evi_pos,
+            updatedData.descripcion_1_pre,
+            updatedData.descripcion_2_pre,
+            updatedData.descripcion_3_pre,
+            updatedData.descripcion_4_pre,
+            updatedData.descripcion_5_pre,
+            updatedData.descripcion_1_pos,
+            updatedData.descripcion_2_pos,
+            updatedData.descripcion_3_pos,
+            updatedData.descripcion_4_pos,
+            updatedData.descripcion_5_pos,
+            null,            
         ];
-
+    
         try {
             await updateDataEscuela(dataupdateescuela, filteredData.id);
             console.log('Datos actualizados correctamente en el servidor.');
@@ -210,6 +232,7 @@ const SeguimientoInicio = () => {
             console.error('Error al actualizar datos en el servidor:', error);
         }
     };
+    
 
     const getProgramas = () => {
         const tipo = selectedProgramType === 'pre' ? 'pregrado' : 'posgrado';
@@ -346,7 +369,6 @@ const SeguimientoInicio = () => {
                                     </Button>
                                 </div>
                             </div>
-
                             <Table style={{ width: "90%" }}>
                                 <TableHead>
                                     <TableRow>
@@ -369,12 +391,6 @@ const SeguimientoInicio = () => {
                                                     value={scores[selectedProgramType][index] || ''}
                                                     onChange={(e) => handleScoreChange(index, e.target.value)}
                                                     style={{ width: '80px' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                        style: {
-                                                          color: 'black', 
-                                                        },
-                                                    }}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -382,8 +398,19 @@ const SeguimientoInicio = () => {
                                                     variant="outlined"
                                                     multiline
                                                     rows={2}
-                                                    value={descriptions[`descripcion_${index + 1}`] || ''}
-                                                    onChange={(e) => handleDescriptionChange(`descripcion_${index + 1}`, e.target.value)}
+                                                    value={
+                                                        selectedProgramType === 'pre'
+                                                            ? descriptions[`descripcion_${index + 1}_pre`] || ''
+                                                            : descriptions[`descripcion_${index + 1}_pos`] || ''
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleDescriptionChange(
+                                                            selectedProgramType === 'pre'
+                                                                ? `descripcion_${index + 1}_pre`
+                                                                : `descripcion_${index + 1}_pos`,
+                                                            e.target.value
+                                                        )
+                                                    }
                                                     style={{ width: '100%' }}
                                                 />
                                             </TableCell>
