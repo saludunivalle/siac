@@ -7,7 +7,13 @@ import {
     TableHead,
     TableRow,
     Typography,
-    TextField
+    CircularProgress,
+    TextField,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    DialogContentText
 } from '@mui/material';
 import { styled } from '@mui/system';
 import Header from './Header';
@@ -60,6 +66,8 @@ const SeguimientoInicio = () => {
     const [descriptions, setDescriptions] = useState({});
     const [data, setData] = useState([]);
     const [selectedProgramType, setSelectedProgramType] = useState('pre');
+    const [loading, setLoading] = useState(false); 
+    const [showModal, setShowModal] = useState(false); 
 
     const handleClickOpen = (escuela) => {
         setShowResumen(false); 
@@ -176,9 +184,11 @@ const SeguimientoInicio = () => {
     };
 
     const handleGuardarClick = async () => {
+        setLoading(true); 
         const filteredData = data.find(item => item.escuela === selectedEscuela);
         if (!filteredData) {
             console.error('No se encontraron datos para la escuela seleccionada');
+            setLoading(false);
             return;
         }
     
@@ -228,11 +238,17 @@ const SeguimientoInicio = () => {
         try {
             await updateDataEscuela(dataupdateescuela, filteredData.id);
             console.log('Datos actualizados correctamente en el servidor.');
+            setShowModal(true); 
         } catch (error) {
             console.error('Error al actualizar datos en el servidor:', error);
+        } finally {
+            setLoading(false);
         }
     };
     
+    const handleCloseModal = () => {
+        setShowModal(false);
+    };
 
     const getProgramas = () => {
         const tipo = selectedProgramType === 'pre' ? 'pregrado' : 'posgrado';
@@ -387,10 +403,16 @@ const SeguimientoInicio = () => {
                                             <TableCell>20%</TableCell>
                                             <TableCell>
                                                 <TextField
-                                                    variant="outlined"
-                                                    value={scores[selectedProgramType][index] || ''}
-                                                    onChange={(e) => handleScoreChange(index, e.target.value)}
-                                                    style={{ width: '80px' }}
+                                                        variant="outlined"
+                                                        value={scores[selectedProgramType][index] || ''}
+                                                        onChange={(e) => handleScoreChange(index, e.target.value)}
+                                                        style={{ width: '80px' }}
+                                                        InputProps={{
+                                                            readOnly: true,
+                                                            style: {
+                                                            color: 'black', 
+                                                            },
+                                                        }}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -430,14 +452,28 @@ const SeguimientoInicio = () => {
                                     variant="contained"
                                     color="primary"
                                     onClick={handleGuardarClick}
+                                    disabled={loading} 
                                 >
-                                    Guardar
+                                    {loading ? <CircularProgress size={24} /> : 'Guardar'} 
                                 </Button>
                             </div>
                             </>
                     )}
                 </div>
             </div>
+            <Dialog open={showModal} onClose={handleCloseModal}>
+                <DialogTitle>Datos guardados</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Sus datos han sido guardados correctamente.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseModal} color="primary">
+                        Cerrar
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 };
