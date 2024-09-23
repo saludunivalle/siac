@@ -419,13 +419,13 @@ const SeguimientoInicio = () => {
                                 </TableBody>
                             </Table>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', width: '90%' }}>
-                                <Button
+                                {/* <Button
                                     variant="contained"
                                     color="primary"
                                     onClick={handleCorteClick}
                                 >
                                     Hacer corte
-                                </Button>
+                                </Button> */}
                                 <Button
                                     variant="contained"
                                     color="primary"
