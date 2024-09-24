@@ -60,7 +60,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 
 const SeguimientoInicio = () => {
     const [resumenData, setResumenData] = useState(null);
-    const [showResumen, setShowResumen] = useState(false);
+    const [showResumen, setShowResumen] = useState(true);
     const [selectedEscuela, setSelectedEscuela] = useState('');
     const [scores, setScores] = useState({});
     const [descriptions, setDescriptions] = useState({});
@@ -290,6 +290,11 @@ const SeguimientoInicio = () => {
             console.error('Error al obtener datos para el resumen:', error);
         }
     };
+
+    useEffect(() => {
+        // Mostrar el resumen por defecto cuando se carga el componente
+        handleResumenClick();
+    }, []);
 
     const calculateTotals = () => {
         let totalDiseño = 0;
