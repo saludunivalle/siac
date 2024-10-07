@@ -279,6 +279,7 @@ const Header = () => {
               onClick={() => handleResultClick(result)}
             >
               {result["programa académico"]}
+              {result["sede"] && result["sede"] !== "Cali" ? ` - ${result["sede"]}` : ""}
             </SearchResultItem>
           ))}
         </SearchResultLabel>
