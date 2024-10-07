@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { Filtro5 } from '../service/data';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   borderLeft: `1px solid ${theme.palette.grey[400]}`,
@@ -10,7 +11,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   textAlign: 'center',
   whiteSpace: 'normal',
   wordWrap: 'break-word',
-  width: '33%',
+  width: '25%', 
   padding: '8px',
   '&:first-of-type': {
     borderLeft: 'none',
@@ -40,17 +41,63 @@ const ProgramasVenc = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { expiryPrograms } = location.state || {};
+  const [expiredRRCCount, setExpiredRRCCount] = useState(0);
+  const [expiredRACCount, setExpiredRACCount] = useState(0);
+
+  const getExpiredRRCPrograms = (programas) => {
+      return programas.filter((program) => program['fase rrc'] === 'Vencido');
+  };
+
+  const getExpiredRACPrograms = (programas) => {
+      return programas.filter((program) => program['fase rac'] === 'Vencido');
+  };
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            let response;
+            response = await Filtro5();
+
+            if (!response) {
+                throw new Error("response is undefined");
+            }
+          
+            const expiredRRCPrograms = getExpiredRRCPrograms(response);
+            const expiredRACPrograms = getExpiredRACPrograms(response);
+
+            setExpiredRRCCount(expiredRRCPrograms);
+            setExpiredRACCount(expiredRACPrograms);
+
+        } catch (error) {
+            console.error('Error al filtrar datos:', error);
+        }
+    };
+
+    const buttonGoogle = document.getElementById("buttonDiv");
+    if (buttonGoogle) {
+        buttonGoogle.classList.add('_display_none');
+    }
+    fetchData();
+  }, []);
+
 
   const handleRowClick = (program) => {
     navigate('/program_details', { state: program });
   };
 
   const renderPrograms = (programs) => (
-    programs?.map((program, index) => (
-      <StyledTableRow key={index} onClick={() => handleRowClick(program)}>
-        <StyledTableCell>{program['programa académico']}</StyledTableCell>
+    programs?.length > 0 ? (
+      programs.map((program, index) => (
+        <StyledTableRow key={index} onClick={() => handleRowClick(program)}>
+          <StyledTableCell>{program['programa académico']}</StyledTableCell>
+        </StyledTableRow>
+      ))
+    ) : (
+      <StyledTableRow>
+        <StyledTableCell colSpan={4}>No hay programas disponibles</StyledTableCell>
       </StyledTableRow>
-    ))
+    )
   );
 
   return (
@@ -68,6 +115,7 @@ const ProgramasVenc = () => {
                   <StyledTableHeadCell>1 año</StyledTableHeadCell>
                   <StyledTableHeadCell>2 años</StyledTableHeadCell>
                   <StyledTableHeadCell>3 años</StyledTableHeadCell>
+                  <StyledTableHeadCell>Vencidos</StyledTableHeadCell> 
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -75,6 +123,7 @@ const ProgramasVenc = () => {
                   <StyledTableCell>{renderPrograms(expiryPrograms?.RRC?.oneYear)}</StyledTableCell>
                   <StyledTableCell>{renderPrograms(expiryPrograms?.RRC?.twoYears)}</StyledTableCell>
                   <StyledTableCell>{renderPrograms(expiryPrograms?.RRC?.threeYears)}</StyledTableCell>
+                  <StyledTableCell>{renderPrograms(expiredRRCCount)}</StyledTableCell> 
                 </TableRow>
               </TableBody>
             </Table>
@@ -88,6 +137,7 @@ const ProgramasVenc = () => {
                   <StyledTableHeadCell>1 año</StyledTableHeadCell>
                   <StyledTableHeadCell>2 años</StyledTableHeadCell>
                   <StyledTableHeadCell>3 años</StyledTableHeadCell>
+                  <StyledTableHeadCell>Vencidos</StyledTableHeadCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -95,6 +145,7 @@ const ProgramasVenc = () => {
                   <StyledTableCell>{renderPrograms(expiryPrograms?.AAC?.oneYear)}</StyledTableCell>
                   <StyledTableCell>{renderPrograms(expiryPrograms?.AAC?.twoYears)}</StyledTableCell>
                   <StyledTableCell>{renderPrograms(expiryPrograms?.AAC?.threeYears)}</StyledTableCell>
+                  <StyledTableCell>{renderPrograms(expiredRACCount)}</StyledTableCell> 
                 </TableRow>
               </TableBody>
             </Table>

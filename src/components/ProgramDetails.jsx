@@ -68,6 +68,7 @@ const ProgramDetails = () => {
         'Fecha RAAC': fechavencrac,
         Acreditable: acreditable,
         Contingencia: contingencia, 
+        'Número renovaciones RRC': rowData['número renovaciones RRC'] || 1, // valor por defecto o el valor del programa
     });
 
     useEffect(() => {
@@ -308,20 +309,43 @@ const ProgramDetails = () => {
                         <div className='about-program'><strong>Resolución RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
                         <div className='about-program'><strong>Acreditable: </strong>&nbsp; {acreditable || 'N/A'}</div>
                         <div className='about-program'><strong>Proceso de Contingencia: </strong>&nbsp; {contingencia || 'N/A'}</div>
+                        <div className='about-program'><strong>Número Renovaciones RRC: </strong>&nbsp; {rowData['número renovaciones RRC'] || 'N/A'}</div>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
                         {Object.keys(formData).map((key) => (
                             <div key={key}>
-                                <TextField
-                                    label={key}
-                                    name={key}
-                                    value={formData[key]}
-                                    onChange={handleChange}
-                                    variant="outlined"
-                                    fullWidth
-                                    margin="normal"
-                                />
+                                {key === 'Número renovaciones RRC' ? (
+                                    <TextField
+                                        select
+                                        label="Número renovaciones RRC"
+                                        name="Número renovaciones RRC"
+                                        value={formData['Número renovaciones RRC']}
+                                        onChange={handleChange}
+                                        variant="outlined"
+                                        fullWidth
+                                        margin="normal"
+                                        SelectProps={{
+                                            native: true,
+                                        }}
+                                    >
+                                        {Array.from({ length: 15 }, (_, i) => (
+                                            <option key={i + 1} value={i + 1}>
+                                                {i + 1}
+                                            </option>
+                                        ))}
+                                    </TextField>
+                                ) : (
+                                    <TextField
+                                        label={key}
+                                        name={key}
+                                        value={formData[key]}
+                                        onChange={handleChange}
+                                        variant="outlined"
+                                        fullWidth
+                                        margin="normal"
+                                    />
+                                )}
                             </div>
                         ))}
                         <Button type="submit" variant="contained" color="primary" style={{ margin: '10px 0' }}>

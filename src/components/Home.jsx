@@ -28,8 +28,8 @@ const Home = () => {
     AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
   });
   const [expiryPrograms, setExpiryPrograms] = useState({
-    RRC: { oneYear: [], twoYears: [], threeYears: [] },
-    AAC: { oneYear: [], twoYears: [], threeYears: [] },
+    RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
+    AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
   });
   const [activosCount, setActivosCount] = useState(0);
   const [creacionCount, setCreacionCount] = useState(0);
@@ -49,6 +49,8 @@ const Home = () => {
   const [isCargo, setCargo] = useState([' ']);
   const [isLoading, setIsLoading] = useState(false); 
   const [selectedRow, setSelectedRow] = useState(null); 
+  const [expiredRRCCount, setExpiredRRCCount] = useState(0);
+  const [expiredRACCount, setExpiredRACCount] = useState(0);
 
   const navigate = useNavigate();
 
@@ -87,6 +89,7 @@ const Home = () => {
                   throw new Error("response is undefined");
               }
 
+              // Contar y setear los programas en base a su estado
               setActivosCount(response.filter(item => item['estado'] === 'Activo').length);
               setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
               setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
@@ -99,6 +102,24 @@ const Home = () => {
               setModCount(response.filter(item => item['mod'] === 'SI').length);
               setRowData(response);
               setFilteredData(response);
+
+              // Obtener los programas vencidos utilizando las nuevas funciones
+              const expiredRRCPrograms = getExpiredRRCPrograms(response);
+              const expiredRACPrograms = getExpiredRACPrograms(response);
+
+              console.log('Programas RRC vencidos:', expiredRRCPrograms);
+              console.log('Programas RAC vencidos:', expiredRACPrograms);
+
+              // Actualizar el estado con los programas vencidos
+              setExpiryPrograms(prevState => ({
+                  ...prevState,
+                  RRC: { ...prevState.RRC, expired: expiredRRCPrograms },
+                  AAC: { ...prevState.AAC, expired: expiredRACPrograms }
+              }));
+
+              // Conteo para visualización (si quieres mantener los contadores)
+              setExpiredRRCCount(expiredRRCPrograms.length);
+              setExpiredRACCount(expiredRACPrograms.length);
 
               const seguimientos = await Filtro7();
               processSeguimientos(seguimientos, response);
@@ -117,52 +138,66 @@ const Home = () => {
 
   const countExpiringPrograms = (programas) => {
     const currentYear = new Date().getFullYear();
-    const counts = { RRC: { oneYear: 0, twoYears: 0, threeYears: 0 }, AAC: { oneYear: 0, twoYears: 0, threeYears: 0 } };
+    const counts = {
+      RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+      AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+    };
   
     const expiringPrograms = {
-      RRC: { oneYear: [], twoYears: [], threeYears: [] },
-      AAC: { oneYear: [], twoYears: [], threeYears: [] },
+      RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
+      AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
     };
   
     programas.forEach(program => {
       const rrcYear = program['fechavencrc'] ? parseInt(program['fechavencrc'].split('/')[2]) : null;
       const aacYear = program['fechavencac'] ? parseInt(program['fechavencac'].split('/')[2]) : null;
   
+      // Para programas RRC
       if (rrcYear) {
         if (rrcYear === currentYear + 1) {
           counts.RRC.oneYear++;
           expiringPrograms.RRC.oneYear.push(program);
-        }
-        if (rrcYear === currentYear + 2) {
+        } else if (rrcYear === currentYear + 2) {
           counts.RRC.twoYears++;
           expiringPrograms.RRC.twoYears.push(program);
-        }
-        if (rrcYear === currentYear + 3) {
+        } else if (rrcYear === currentYear + 3) {
           counts.RRC.threeYears++;
           expiringPrograms.RRC.threeYears.push(program);
+        } else if (rrcYear < currentYear) {
+          expiringPrograms.RRC.expired.push(program); // Agregar programas vencidos
         }
       }
   
+      // Para programas AAC
       if (aacYear) {
         if (aacYear === currentYear + 1) {
           counts.AAC.oneYear++;
           expiringPrograms.AAC.oneYear.push(program);
-        }
-        if (aacYear === currentYear + 2) {
+        } else if (aacYear === currentYear + 2) {
           counts.AAC.twoYears++;
           expiringPrograms.AAC.twoYears.push(program);
-        }
-        if (aacYear === currentYear + 3) {
+        } else if (aacYear === currentYear + 3) {
           counts.AAC.threeYears++;
           expiringPrograms.AAC.threeYears.push(program);
+        } else if (aacYear < currentYear) {
+          expiringPrograms.AAC.expired.push(program); 
         }
       }
     });
   
-    console.log('Expiring programs:', expiringPrograms); // Verifica los datos aquí
+    console.log('Expiring programs:', expiringPrograms); 
     setExpiryCounts(counts);
     setExpiryPrograms(expiringPrograms);
+  };  
+
+  const getExpiredRRCPrograms = (programas) => {
+      return programas.filter((program) => program['fase rrc'] === 'Vencido');
   };
+
+  const getExpiredRACPrograms = (programas) => {
+      return programas.filter((program) => program['fase rac'] === 'Vencido');
+  };
+
   
   const processSeguimientos = useCallback((seguimientos, programas) => {
     if (!seguimientos || !Array.isArray(seguimientos)) {
@@ -254,6 +289,7 @@ const Home = () => {
 
   const handleExpiryClick = () => {
     navigate('/programas-venc', { state: { expiryPrograms } });
+    console.log('Expiry Programs:', expiryPrograms);
   };  
 
   const prepareReportData = async () => {
@@ -393,7 +429,7 @@ const Home = () => {
                     <td><strong>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</strong></td>
                   </tr>
                   <tr>
-                    <td colSpan="6" className="section-header">Acreditación de Alta Calidad</td>
+                    <td colSpan="6" className="section-header">Acreditación en Alta Calidad</td>
                   </tr>
                   <tr onClick={() => handleRowClick('option3', 'AAC', 'AAC')} className="hoverable-row">
                     <td>AAC</td>
@@ -490,13 +526,15 @@ const Home = () => {
             </table>
           </div>
           <div className='new-table' style={{ width:'100%', alignSelf: 'flex-start', marginLeft: '20px', marginTop: '20px' }}>
-            <table className='buttons-table' style={{ marginTop: '20px' }}>
+            <div style={{ fontSize: '25px', width:'100%', display: 'flex', justifyContent:'center', marginTop:'-20px' }}>Próximos a vencerse</div>
+            <table className='buttons-table' style={{ marginTop: '5px' }}>
               <thead>
                 <tr>
                   <th>Proceso</th>
                   <th>1 año</th>
                   <th>2 años</th>
                   <th>3 años</th>
+                  <th>Vencidos</th> 
                 </tr>
               </thead>
               <tbody>
@@ -505,12 +543,14 @@ const Home = () => {
                   <td>{expiryCounts.RRC.oneYear}</td>
                   <td>{expiryCounts.RRC.twoYears}</td>
                   <td>{expiryCounts.RRC.threeYears}</td>
+                  <td>{expiredRRCCount}</td> 
                 </tr>
                 <tr onClick={handleExpiryClick}>
                   <td>AAC</td>
                   <td>{expiryCounts.AAC.oneYear}</td>
                   <td>{expiryCounts.AAC.twoYears}</td>
                   <td>{expiryCounts.AAC.threeYears}</td>
+                  <td>{expiredRACCount}</td> 
                 </tr>
               </tbody>
             </table>
