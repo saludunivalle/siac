@@ -30,12 +30,13 @@ const ProgramDetails = () => {
         escuela,
         facultad,
         sede,
-        'pregrado/posgrado': formacion,
+        'pregrado/posgrado': academico,
+        'nivel de formación': formacion,
         'sección': seccion,
-        'fase rrc': faseRRC,
-        'fase rac': faseRAC,
-        fechavencrac,
+        fechaexpedrc,
         fechavencrc,
+        fechaexpedac,
+        fechavencrac,
         'titulo a conceder': titulo,
         jornada,
         modalidad,
@@ -53,6 +54,7 @@ const ProgramDetails = () => {
         Escuela: escuela,
         Departamento: departamento,
         Sección: seccion,
+        'Nivel Académico': academico,
         'Nivel de Formación': formacion,
         'Titulo a Conceder': titulo,
         Jornada: jornada,
@@ -60,7 +62,9 @@ const ProgramDetails = () => {
         Créditos: creditos,
         Periodicidad: periodicidad,
         Duración: duracion,
+        'FechaExp RRC': fechaexpedrc,
         'Fecha RRC': fechavencrc,
+        'FechaExp RAAC': fechaexpedac,
         'Fecha RAAC': fechavencrac,
         Acreditable: acreditable,
         Contingencia: contingencia, 
@@ -285,9 +289,10 @@ const ProgramDetails = () => {
                     <div className='about-program-general'>
                         <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad || 'N/A'}</div>
                         <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela || 'N/A'}</div>
-                        <div className='about-program'><strong>Sede: </strong>&nbsp; {sede || 'N/A'}</div>
                         <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento || 'N/A'}</div>
                         <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion || 'N/A'}</div>
+                        <div className='about-program'><strong>Sede: </strong>&nbsp; {sede || 'N/A'}</div>
+                        <div className='about-program'><strong>Nivel Académico: </strong>&nbsp; {academico || 'N/A'}</div>
                         <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion || 'N/A'}</div>
                         <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {titulo || 'N/A'}</div>
                         <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada || 'N/A'}</div>
@@ -295,10 +300,12 @@ const ProgramDetails = () => {
                         <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos || 'N/A'}</div>
                         <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad || 'N/A'}</div>
                         <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion || 'N/A'}</div>
-                        <div className='about-program'><strong>Fecha RRC: </strong>&nbsp; {fechavencrc || 'N/A'}</div>
-                        <div className='about-program'><strong>Fecha RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
-                        <div className='about-program'><strong>Documento RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
-                        <div className='about-program'><strong>Documento RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
+                        <div className='about-program'><strong>Fecha Otorgamiento RRC: </strong>&nbsp; {fechaexpedrc || 'N/A'}</div>
+                        <div className='about-program'><strong>Fecha Vencimiento RRC: </strong>&nbsp; {fechavencrc || 'N/A'}</div>
+                        <div className='about-program'><strong>Fecha Otorgamiento RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
+                        <div className='about-program'><strong>Fecha Vencimiento RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
+                        <div className='about-program'><strong>Resolución RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
+                        <div className='about-program'><strong>Resolución RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
                         <div className='about-program'><strong>Acreditable: </strong>&nbsp; {acreditable || 'N/A'}</div>
                         <div className='about-program'><strong>Proceso de Contingencia: </strong>&nbsp; {contingencia || 'N/A'}</div>
                     </div>
