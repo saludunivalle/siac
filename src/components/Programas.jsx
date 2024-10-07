@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
-import { Button, ButtonGroup, Tooltip, CircularProgress } from "@mui/material";
+import { Button, ButtonGroup, Tooltip, CircularProgress, Select, MenuItem } from "@mui/material";
 import { useEffect, useState } from "react";
 import { styled } from '@mui/material/styles';
 import { Filtro4, Filtro5, Filtro7 } from "../service/data";
@@ -30,6 +30,24 @@ const Programas = () => {
     const [user, setUser] = useState('');
     const [isCargo, setCargo] = useState([' ']);
     const [showInactiveButtons, setShowInactiveButtons] = useState(false);
+    const [posgradoNivelFormacion, setPosgradoNivelFormacion] = useState('');
+
+     const handleNivelFormacionChange = (event) => {
+        const selectedNivel = event.target.value;
+        setPosgradoNivelFormacion(selectedNivel);
+
+        let filteredResult = rowData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+        
+        if (selectedNivel && selectedNivel !== 'Todos') {
+            if (selectedNivel === ' ') {
+                filteredResult = filteredResult.filter(item => item['nivel de formación'] === '');
+            } else {
+                filteredResult = filteredResult.filter(item => item['nivel de formación'] === selectedNivel);
+            }
+        }
+
+        setFilteredData(filteredResult);
+    };
 
     useEffect(() => {
         const loggedUser = sessionStorage.getItem('logged');
@@ -157,9 +175,9 @@ const Programas = () => {
             let newSelectedValues = prevSelectedValues.includes(buttonValue)
                 ? prevSelectedValues.filter(val => val !== buttonValue)
                 : buttonValue === 'option1' || buttonValue === 'option2'
-                    ? [buttonValue]
-                    : [...prevSelectedValues, buttonValue];
-
+                    ? [buttonValue] 
+                    : [...prevSelectedValues, buttonValue]; 
+    
             if (buttonValue === 'option6') {
                 if (newSelectedValues.includes('option6')) {
                     newSelectedValues.push('inactive', 'desistido', 'desistido-int', 'rechazado');
@@ -168,7 +186,7 @@ const Programas = () => {
                 }
                 setShowInactiveButtons(prevState => !prevState);
             }
-
+    
             let filteredResult = rowData.filter(item => {
                 const filterByOption = option => {
                     switch (option) {
@@ -182,7 +200,7 @@ const Programas = () => {
                 };
                 return newSelectedValues.map(filterByOption).every(result => result === true);
             });
-
+    
             if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8', 'inactive', 'desistido', 'desistido-int', 'rechazado'].includes(option))) {
                 filteredResult = filteredResult.filter(item => {
                     return newSelectedValues.includes('option3') && (item['estado'] === 'Activo') ||
@@ -196,7 +214,7 @@ const Programas = () => {
                         newSelectedValues.includes('option8') && (item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede');
                 });
             }
-
+    
             setFilteredData(filteredResult);
             return newSelectedValues;
         });
@@ -282,6 +300,21 @@ const Programas = () => {
                                 <Button value="option2" className="custom-radio2"
                                     style={setButtonStyles('option2')}
                                     onClick={() => handleButtonClick('option2')}> Posgrado </Button>
+                                <Select
+                                    value={posgradoNivelFormacion}
+                                    onChange={handleNivelFormacionChange}
+                                    displayEmpty
+                                    style={{ marginLeft: '10px', width: '200px' }}
+                                    disabled={!isButtonSelected('option2')}
+                                >
+                                    <MenuItem value="Todos">Todos</MenuItem>
+                                    <MenuItem value="Doctorado">Doctorado</MenuItem>
+                                    <MenuItem value="Especialización">Especialización</MenuItem>
+                                    <MenuItem value="Especialización Médico Quirúrgica">Especialización Médico Quirúrgica</MenuItem>
+                                    <MenuItem value="Especialización Universitaria">Especialización Universitaria</MenuItem>
+                                    <MenuItem value="Maestría">Maestría</MenuItem>
+                                    <MenuItem value=" ">Campo Vacío</MenuItem>
+                                </Select>   
                             </ButtonGroup>
                         </div>
                         <div className="contenedorButtonGroup">
