@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop, Typography } from '@mui/material';
 import { Filtro13, Filtro14, Filtro15, Filtro16, sendDataRelEscPract, sendDataHorariosPract } from '../service/data';
 import '/src/styles/home.css';
+import axios from 'axios';
 import CollapsibleButton from './CollapsibleButton';
 
 const PracticeScenario = ({ data }) => {
@@ -28,6 +29,44 @@ const PracticeScenario = ({ data }) => {
     const [isScenarioSaved, setIsScenarioSaved] = useState(false);
     const [isScheduleSaved, setIsScheduleSaved] = useState(false);
     const [newScenario, setNewScenario] = useState(false);
+    const [showPracticeForm, setShowPracticeForm] = useState(false);
+    const [practiceFormData, setPracticeFormData] = useState({
+        nombreRotacion: '',
+        numeroEstudiantes: '',
+        horasSemanas: '',
+        docentes: '',
+        servicios: '',
+        intensidadHoraria: ''
+    });
+    const [practiceTables, setPracticeTables] = useState([]);
+
+    const togglePracticeForm = () => {
+        setShowPracticeForm(!showPracticeForm);
+    };
+    
+    const handlePracticeInputChange = (e) => {
+        const { name, value } = e.target;
+        setPracticeFormData({
+            ...practiceFormData,
+            [name]: value
+        });
+    };
+    
+    const handlePracticeFormSubmit = (e) => {
+        e.preventDefault();
+        setPracticeTables([...practiceTables, { ...practiceFormData }]);
+        setPracticeFormData({
+            nombreRotacion: '',
+            numeroEstudiantes: '',
+            horasSemanas: '',
+            docentes: '',
+            servicios: '',
+            intensidadHoraria: ''
+        });
+        setShowPracticeForm(false);
+    };
+    
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -220,6 +259,56 @@ const PracticeScenario = ({ data }) => {
         );
     };
 
+    const [showAnexoForm, setShowAnexoForm] = useState(false);
+    const [anexoFormData, setAnexoFormData] = useState({
+        nombreAnexo: '',
+        urlAnexo: ''
+    });
+    const [anexosList, setAnexosList] = useState([]);
+
+    const toggleAnexoForm = () => {
+        setShowAnexoForm(!showAnexoForm);
+    };
+
+    const handleAnexoInputChange = (e) => {
+        const { name, value } = e.target;
+        setAnexoFormData({
+            ...anexoFormData,
+            [name]: value
+        });
+    };
+
+    const handleAnexoFormSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const newAnexo = {
+                ...anexoFormData,
+                id: anexosList.length + 1,
+                id_programa: data.id_programa,
+                id_escenario: selectedFiltro14Id, // Usa el id del escenario seleccionado
+                fecha_formalización: new Date().toISOString().split('T')[0]
+            };
+
+            // Enviar datos a la hoja de cálculo
+            await sendAnexoToSheet(newAnexo);
+
+            setAnexosList([...anexosList, newAnexo]);
+            setAnexoFormData({
+                nombreAnexo: '',
+                urlAnexo: ''
+            });
+            setShowAnexoForm(false);
+        } catch (error) {
+            console.error('Error al guardar el anexo:', error);
+        }
+    };
+
+    // Función para enviar el anexo a la hoja de cálculo
+    const sendAnexoToSheet = async (anexo) => {
+        // Implementar lógica de envío usando Google Sheets API o el método adecuado
+        console.log('Enviando anexo a la hoja:', anexo);
+    };
+
     return (
         <>
             <div style={{ display: 'flex', justifyContent: 'center', width: '100%', fontSize: '20px' }}>
@@ -407,9 +496,152 @@ const PracticeScenario = ({ data }) => {
                     ))}
                 </div>
             </div>
+            <div style={{ marginTop: "20px", marginBottom:"20px" }}>
+                <Button variant="contained" onClick={togglePracticeForm}>
+                    Solicitud de Práctica
+                </Button>
+
+                {showPracticeForm && (
+                    <Box component="form" onSubmit={handlePracticeFormSubmit} sx={{ marginTop: 2 }}>
+                        <FormGroup>
+                            <TextField
+                                label="Nombre de Rotación"
+                                name="nombreRotacion"
+                                value={practiceFormData.nombreRotacion}
+                                onChange={handlePracticeInputChange}
+                                margin="normal"
+                                required
+                            />
+                            <TextField
+                                label="No. de Estudiantes"
+                                name="numeroEstudiantes"
+                                value={practiceFormData.numeroEstudiantes}
+                                onChange={handlePracticeInputChange}
+                                margin="normal"
+                                required
+                            />
+                            <TextField
+                                label="No. Horas y Semanas a Rotar"
+                                name="horasSemanas"
+                                value={practiceFormData.horasSemanas}
+                                onChange={handlePracticeInputChange}
+                                margin="normal"
+                                required
+                            />
+                            <TextField
+                                label="Docentes"
+                                name="docentes"
+                                value={practiceFormData.docentes}
+                                onChange={handlePracticeInputChange}
+                                margin="normal"
+                                required
+                            />
+                            <TextField
+                                label="Servicios"
+                                name="servicios"
+                                value={practiceFormData.servicios}
+                                onChange={handlePracticeInputChange}
+                                margin="normal"
+                                required
+                            />
+                            <TextField
+                                label="Intensidad Horaria"
+                                name="intensidadHoraria"
+                                value={practiceFormData.intensidadHoraria}
+                                onChange={handlePracticeInputChange}
+                                margin="normal"
+                                required
+                            />
+                        </FormGroup>
+                        <Button type="submit" variant="contained" sx={{ marginTop: 2 }}>
+                            Guardar
+                        </Button>
+                    </Box>
+                )}
+
+                {practiceTables.map((table, index) => (
+                    <TableContainer component={Paper} key={index} sx={{ marginTop: 2 }}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Campo</TableCell>
+                                    <TableCell>Valor</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {Object.entries(table).map(([key, value], i) => (
+                                    <TableRow key={i}>
+                                        <TableCell>{key}</TableCell>
+                                        <TableCell>{value}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                ))}
+            </div>
+
+            <div style={{ marginTop: "20px", marginBottom:"40px" }}>
+                <Button variant="contained" onClick={toggleAnexoForm}>
+                    Añadir Anexo
+                </Button>
+
+                {showAnexoForm && (
+                    <Box component="form" onSubmit={handleAnexoFormSubmit} sx={{ marginTop: 2 }}>
+                        <FormGroup>
+                            <TextField
+                                label="Nombre del Anexo"
+                                name="nombreAnexo"
+                                value={anexoFormData.nombreAnexo}
+                                onChange={handleAnexoInputChange}
+                                margin="normal"
+                                required
+                            />
+                            <TextField
+                                label="URL/Archivo"
+                                name="urlAnexo"
+                                value={anexoFormData.urlAnexo}
+                                onChange={handleAnexoInputChange}
+                                margin="normal"
+                                required
+                            />
+                        </FormGroup>
+                        <Button type="submit" variant="contained" sx={{ marginTop: 2 }}>
+                            Guardar Anexo
+                        </Button>
+                    </Box>
+                )}
+
+                {anexosList.length > 0 && (
+                    <TableContainer component={Paper} sx={{ marginTop: 2 }}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>ID</TableCell>
+                                    <TableCell>Nombre</TableCell>
+                                    <TableCell>URL</TableCell>
+                                    <TableCell>Fecha Formalización</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {anexosList.map((anexo, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{anexo.id}</TableCell>
+                                        <TableCell>{anexo.nombreAnexo}</TableCell>
+                                        <TableCell>{anexo.urlAnexo}</TableCell>
+                                        <TableCell>{anexo.fecha_formalización}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
+            </div>
+
             <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={saving}>
                 <CircularProgress color="inherit" />
             </Backdrop>
+
         </>
     );
 };
