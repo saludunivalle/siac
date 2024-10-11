@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
-import { Button, ButtonGroup, Tooltip, CircularProgress, Select, MenuItem } from "@mui/material";
+import { Button, ButtonGroup, Tooltip, CircularProgress } from "@mui/material";
 import { useEffect, useState } from "react";
 import { styled } from '@mui/material/styles';
 import { Filtro4, Filtro5, Filtro7 } from "../service/data";
@@ -30,24 +30,6 @@ const Programas = () => {
     const [user, setUser] = useState('');
     const [isCargo, setCargo] = useState([' ']);
     const [showInactiveButtons, setShowInactiveButtons] = useState(false);
-    const [posgradoNivelFormacion, setPosgradoNivelFormacion] = useState('');
-
-     const handleNivelFormacionChange = (event) => {
-        const selectedNivel = event.target.value;
-        setPosgradoNivelFormacion(selectedNivel);
-
-        let filteredResult = rowData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-        
-        if (selectedNivel && selectedNivel !== 'Todos') {
-            if (selectedNivel === ' ') {
-                filteredResult = filteredResult.filter(item => item['nivel de formación'] === '');
-            } else {
-                filteredResult = filteredResult.filter(item => item['nivel de formación'] === selectedNivel);
-            }
-        }
-
-        setFilteredData(filteredResult);
-    };
 
     useEffect(() => {
         const loggedUser = sessionStorage.getItem('logged');
@@ -64,7 +46,7 @@ const Programas = () => {
             ? rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado')
             : rowData;
         setFilteredData(filtered);
-    }, [isCargo, rowData]);
+    }, [isCargo, rowData]); 
 
     useEffect(() => {
         const fetchData = async () => {
@@ -156,7 +138,7 @@ const Programas = () => {
     const ButtonsContainer = styled('div')({
         display: 'flex',
         flexDirection: 'column',
-        placeItems: 'center',
+        alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
         position: 'relative',
@@ -164,6 +146,14 @@ const Programas = () => {
         '@media (max-width:600px)': {
             flexDirection: 'column',
         },
+    });
+
+    const ButtonRow = styled('div')({
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        marginBottom: '20px',
     });
 
     const handleBackClick = () => {
@@ -188,17 +178,35 @@ const Programas = () => {
             }
     
             let filteredResult = rowData.filter(item => {
-                const filterByOption = option => {
+                // Filtra por "Pregrado" o "Posgrado" primero, si se seleccionó alguno
+                const pregradoOrPosgradoFilter = newSelectedValues.includes('option1') 
+                    ? item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec'
+                    : newSelectedValues.includes('option2')
+                        ? item['pregrado/posgrado'] === 'Posgrado'
+                        : true;
+    
+                // Filtra por los niveles de formación seleccionados (Doctorado, Especialización, etc.)
+                const nivelesFormacionFilter = newSelectedValues.some(option => {
                     switch (option) {
-                        case 'option1':
-                            return item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec';
-                        case 'option2':
-                            return item['pregrado/posgrado'] === 'Posgrado';
+                        case 'doctorado':
+                            return item['nivel de formación'] === 'Doctorado';
+                        case 'especializacion':
+                            return item['nivel de formación'] === 'Especialización';
+                        case 'especializacionMedico':
+                            return item['nivel de formación'] === 'Especialización Médico Quirúrgica';
+                        case 'especializacionUni':
+                            return item['nivel de formación'] === 'Especialización Universitaria';
+                        case 'maestria':
+                            return item['nivel de formación'] === 'Maestría';
+                        case 'otras':
+                            return item['nivel de formación'] === '';
                         default:
-                            return true;
+                            return false;
                     }
-                };
-                return newSelectedValues.map(filterByOption).every(result => result === true);
+                });
+    
+                // Devuelve true si cumple con ambos filtros
+                return pregradoOrPosgradoFilter && (nivelesFormacionFilter || !newSelectedValues.some(val => ['doctorado', 'especializacion', 'especializacionMedico', 'especializacionUni', 'maestria', 'otras'].includes(val)));
             });
     
             if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8', 'inactive', 'desistido', 'desistido-int', 'rechazado'].includes(option))) {
@@ -219,6 +227,7 @@ const Programas = () => {
             return newSelectedValues;
         });
     };
+    
 
     const isButtonSelected = (buttonValue) => {
         return selectedValues.includes(buttonValue);
@@ -233,17 +242,17 @@ const Programas = () => {
 
     const renderFilteredTable = (data, filter) => {
         if (!data || data.length === 0) return <p>Ningún programa por mostrar</p>;
-    
+
         let filteredData = filter === 'No Aplica'
             ? data.filter(item => item['escuela'] === '' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ')
             : Filtro4(data, filter);
-    
+
         if (filteredData.length === 0) return <p>Ningún programa por mostrar</p>;
-    
+
         if (isCargo.includes('Posgrados')) {
             filteredData = filteredData.filter(item => item['pregrado/posgrado'] === 'Posgrado');
         }
-    
+
         return (
             <div className='table-container'>
                 {loading ? (
@@ -297,70 +306,71 @@ const Programas = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center', textAlign: 'center' }}>
                     <div style={{ fontSize: '18px' }}><strong>Total Programas: </strong> {filteredData.length} </div>
                     <ButtonsContainer>
-                        <div className="contenedorButtonGroup">
-                            <ButtonGroup style={{ gap: '10px' }}>
-                                <Button value="option1" className="custom-radio2"
-                                    style={setButtonStyles('option1')}
-                                    onClick={() => handleButtonClick('option1')}> Pregrado </Button>
-                                <Button value="option2" className="custom-radio2"
-                                    style={setButtonStyles('option2')}
-                                    onClick={() => handleButtonClick('option2')}> Posgrado </Button>
-                                <Select
-                                    value={posgradoNivelFormacion}
-                                    onChange={handleNivelFormacionChange}
-                                    displayEmpty
-                                    style={{ marginLeft: '10px', width: '200px' }}
-                                    disabled={!isButtonSelected('option2')}
-                                >
-                                    <MenuItem value="Todos">Todos</MenuItem>
-                                    <MenuItem value="Doctorado">Doctorado</MenuItem>
-                                    <MenuItem value="Especialización">Especialización</MenuItem>
-                                    <MenuItem value="Especialización Médico Quirúrgica">Especialización Médico Quirúrgica</MenuItem>
-                                    <MenuItem value="Especialización Universitaria">Especialización Universitaria</MenuItem>
-                                    <MenuItem value="Maestría">Maestría</MenuItem>
-                                    <MenuItem value=" ">Campo Vacío</MenuItem>
-                                </Select>   
-                            </ButtonGroup>
-                        </div>
-                        <div className="contenedorButtonGroup">
-                            <ButtonGroup style={{ gap: '10px' }}>
-                                <Button value="option3" className="custom-radio2"
-                                    style={setButtonStyles('option3')}
-                                    onClick={() => handleButtonClick('option3')}> Activos <br /> {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> } </Button>
-                                <Button value="option7" className="custom-radio2"
-                                    style={setButtonStyles('option7')}
-                                    onClick={() => handleButtonClick('option7')}> Activos Sedes <br /> {activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} /> }</Button>
-                                <Button value="option4" className="custom-radio2"
-                                    style={setButtonStyles('option4')}
-                                    onClick={() => handleButtonClick('option4')}> Creación <br /> {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> } </Button>
-                                <Button value="option8" className="custom-radio2"
-                                    style={setButtonStyles('option8')}
-                                    onClick={() => handleButtonClick('option8')}> Creación (Sedes y otros) <br /> {creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</Button>
-                                {/* <Button value="option5"
-                                    style={setButtonStyles('option5')}
-                                    onClick={() => handleButtonClick('option5')}> Negación <br /> {otrosCount !== 0 ? otrosCount : <CircularProgress size={20} /> } </Button> */}
-                                <Button value="option6"
-                                    style={setButtonStyles('option6')}
-                                    onClick={() => handleButtonClick('option6')}> Inactivos <br /> {inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} /> }</Button>
-                            </ButtonGroup>
-                        </div>
+                        {/* Fila de Pregrado y Posgrado */}
+                        <ButtonRow>
+                            <Button value="option1" className="custom-radio2"
+                                style={setButtonStyles('option1')}
+                                onClick={() => handleButtonClick('option1')}> Pregrado </Button>
+                            <Button value="option2" className="custom-radio2"
+                                style={setButtonStyles('option2')}
+                                onClick={() => handleButtonClick('option2')}> Posgrado </Button>
+                        </ButtonRow>
+                        {/* Mostrar fila de niveles de formación solo si se selecciona Posgrado */}
+                        {selectedValues.includes('option2') && (
+                            <ButtonRow>
+                                <Button value="doctorado" className="custom-radio2"
+                                    style={setButtonStyles('doctorado')}
+                                    onClick={() => handleButtonClick('doctorado')}> Doctorado </Button>
+                                <Button value="especializacion" className="custom-radio2"
+                                    style={setButtonStyles('especializacion')}
+                                    onClick={() => handleButtonClick('especializacion')}> Especialización </Button>
+                                <Button value="especializacionMedico" className="custom-radio2"
+                                    style={setButtonStyles('especializacionMedico')}
+                                    onClick={() => handleButtonClick('especializacionMedico')}> Especialización Médico Quirúrgica </Button>
+                                <Button value="especializacionUni" className="custom-radio2"
+                                    style={setButtonStyles('especializacionUni')}
+                                    onClick={() => handleButtonClick('especializacionUni')}> Especialización Universitaria </Button>
+                                <Button value="maestria" className="custom-radio2"
+                                    style={setButtonStyles('maestria')}
+                                    onClick={() => handleButtonClick('maestria')}> Maestría </Button>
+                                <Button value="otras" className="custom-radio2"
+                                    style={setButtonStyles('otras')}
+                                    onClick={() => handleButtonClick('otras')}> Otras (Vacío) </Button>
+                            </ButtonRow>
+                        )}
+                        {/* Fila de estado */}
+                        <ButtonRow>
+                            <Button value="option3" className="custom-radio2"
+                                style={setButtonStyles('option3')}
+                                onClick={() => handleButtonClick('option3')}> Activos <br /> {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> } </Button>
+                            <Button value="option7" className="custom-radio2"
+                                style={setButtonStyles('option7')}
+                                onClick={() => handleButtonClick('option7')}> Activos Sedes <br /> {activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} /> }</Button>
+                            <Button value="option4" className="custom-radio2"
+                                style={setButtonStyles('option4')}
+                                onClick={() => handleButtonClick('option4')}> Creación <br /> {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> } </Button>
+                            <Button value="option8" className="custom-radio2"
+                                style={setButtonStyles('option8')}
+                                onClick={() => handleButtonClick('option8')}> Creación (Sedes y otros) <br /> {creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</Button>
+                            <Button value="option6" className="custom-radio2"
+                                style={setButtonStyles('option6')}
+                                onClick={() => handleButtonClick('option6')}> Inactivos <br /> {inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} /> }</Button>
+                        </ButtonRow>
                         {showInactiveButtons && (
-                            <div className="contenedorButtonGroup" style={{ marginTop: '10px' }}>
-                                <ButtonGroup style={{ gap: '10px' }}>
-                                    <Button value="inactive"
-                                        style={setButtonStyles('inactive')}
-                                        onClick={() => handleButtonClick('inactive')}> Inactivo <br /> {inactiveCount !== 0 ? inactiveCount : <CircularProgress size={20} /> }</Button>
-                                    <Button value="desistido"
-                                        style={setButtonStyles('desistido')}
-                                        onClick={() => handleButtonClick('desistido')}> Desistido MEN <br /> {desistidoMenCount !== 0 ? desistidoMenCount : <CircularProgress size={20} /> }</Button>
-                                    <Button value="desistido-int"
-                                        style={setButtonStyles('desistido-int')}
-                                        onClick={() => handleButtonClick('desistido-int')}> Desistido Interno <br /> {desistidoInternoCount !== 0 ? desistidoInternoCount : <CircularProgress size={20} /> }</Button>
-                                    <Button value="rechazado"
-                                        style={setButtonStyles('rechazado')}
-                                        onClick={() => handleButtonClick('rechazado')}> Rechazado <br /> {rechazadoCount !== 0 ? rechazadoCount : <CircularProgress size={20} /> }</Button>
-                                </ButtonGroup>
-                            </div>
+                            <ButtonRow>
+                                <Button value="inactive" className="custom-radio2"
+                                    style={setButtonStyles('inactive')}
+                                    onClick={() => handleButtonClick('inactive')}> Inactivo <br /> {inactiveCount !== 0 ? inactiveCount : <CircularProgress size={20} /> }</Button>
+                                <Button value="desistido" className="custom-radio2"
+                                    style={setButtonStyles('desistido')}
+                                    onClick={() => handleButtonClick('desistido')}> Desistido MEN <br /> {desistidoMenCount !== 0 ? desistidoMenCount : <CircularProgress size={20} /> }</Button>
+                                <Button value="desistido-int" className="custom-radio2"
+                                    style={setButtonStyles('desistido-int')}
+                                    onClick={() => handleButtonClick('desistido-int')}> Desistido Interno <br /> {desistidoInternoCount !== 0 ? desistidoInternoCount : <CircularProgress size={20} /> }</Button>
+                                <Button value="rechazado" className="custom-radio2"
+                                    style={setButtonStyles('rechazado')}
+                                    onClick={() => handleButtonClick('rechazado')}> Rechazado <br /> {rechazadoCount !== 0 ? rechazadoCount : <CircularProgress size={20} /> }</Button>
+                            </ButtonRow>
                         )}
                     </ButtonsContainer>
                 </div>
