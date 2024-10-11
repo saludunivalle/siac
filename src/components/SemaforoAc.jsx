@@ -210,15 +210,15 @@ const SemaforoAC = ({ globalVariable }) => {
               {filteredData.map((item, index) => (
                 <tr key={index} style={{ backgroundColor: colors[item.id_programa] }} onClick={() => handleRowClick(item)}>
                   <td className="bold" style={{ fontSize: '14px', textAlign: 'left', paddingLeft: '5px' }}>{item['programa académico']}</td>
-                  <td>{item['sede']}</td>
-                  <td>{item['escuela']}</td>
                   <td>{item['departamento']}</td>
+                  <td>{item['sede']}</td>
+                  {/* <td>{item['escuela']}</td> */}
                   <td>{item['pregrado/posgrado']}</td>
+                  <td>{item['nivel de formación']}</td>
                   <td>{item['ac vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px' }} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px' }} />}</td>
-                  <td>{item['fechaexpedac']}</td>
-                  <td>{item['duracionac']}</td>
                   <td className="bold">{item['fechavencac']}</td>
                   <td>{item['rc vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px' }} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px' }} />}</td>
+                  <td>{item['fechavencrc']}</td>                           
                 </tr>
               ))}
             </tbody>
@@ -236,15 +236,15 @@ const SemaforoAC = ({ globalVariable }) => {
             <thead>
               <tr>
                 <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Programa Académico</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>Sede</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>Escuela</th>
                 <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>Pregrado/Posgrado</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>RAC Vigente</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>FechaExpedRAC</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>DuracionRAC</th>
-                <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>FechaVencRAC</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>Sede</th>
+                {/* <th style={{ backgroundColor: headerBackgroundColor }}>Escuela</th> */}
+                <th style={{ backgroundColor: headerBackgroundColor }}>Nivel Académico</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>Nivel de Formación</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>AAC Vigente</th>
+                <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Fecha de Vencimiento AAc</th>
                 <th style={{ backgroundColor: headerBackgroundColor }}>RRC Vigente</th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>Fecha de Vencimiento RC</th>
               </tr>
             </thead>
           </table>

@@ -196,8 +196,13 @@ const Mod = ({ globalVariable }) => {
                                     <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
                                     <td>{item['departamento']}</td> 
                                     <td>{item['sección']}</td> 
-                                    <td>{item['estado']}</td> 
-                                    <td>{item['nivel de formación']}</td> 
+                                    {/* <td>{item['estado']}</td> */}
+                                    <td>{item['pregrado/posgrado']}</td>
+                                    <td>{item['nivel de formación']}</td>
+                                    <td>{item['rc vigente']}</td>
+                                    <td>{item['fechavencrc']}</td>
+                                    <td>{item['ac vigente']}</td>
+                                    <td>{item['fechavencac']}</td>
                                 </tr>
                             );
                         })}
@@ -226,8 +231,13 @@ const Mod = ({ globalVariable }) => {
                                     <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Programa Académico</th>
                                     <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>  
                                     <th style={{ backgroundColor: headerBackgroundColor }}>Sección</th>
-                                    <th style={{ backgroundColor: headerBackgroundColor }}>Estado</th>
+                                    {/* <th style={{ backgroundColor: headerBackgroundColor }}>Estado</th> */}
+                                    <th style={{ backgroundColor: headerBackgroundColor }}>Nivel Académico</th>
                                     <th style={{ backgroundColor: headerBackgroundColor }}>Nivel de Formación</th>
+                                    <th style={{ backgroundColor: headerBackgroundColor }}>RC Vigente</th>
+                                    <th style={{ backgroundColor: headerBackgroundColor }}>Fecha de Vencimiento RC</th>
+                                    <th style={{ backgroundColor: headerBackgroundColor }}>AAC Vigente</th>
+                                    <th style={{ backgroundColor: headerBackgroundColor }}>Fecha de Vencimiento AAC</th>
                                 </tr>
                             </thead>
                         </table>  

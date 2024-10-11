@@ -131,7 +131,8 @@ const Crea = ({ globalVariable }) => {
                   <td className="bold" style={{ fontSize: '14px', textAlign: 'left', paddingLeft: '5px' }}>{item['programa académico']}</td>
                   <td>{item['departamento']}</td>
                   <td>{item['sección']}</td>
-                  <td>{item['estado']}</td>
+                  {/* <td>{item['estado']}</td> */}
+                  <td>{item['pregrado/posgrado']}</td>
                   <td>{item['nivel de formación']}</td>
                 </tr>
               ))}
@@ -152,7 +153,8 @@ const Crea = ({ globalVariable }) => {
                 <th className="bold" style={{ backgroundColor: headerBackgroundColor }}>Programa Académico</th>
                 <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>
                 <th style={{ backgroundColor: headerBackgroundColor }}>Sección</th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>Estado</th>
+                {/* <th style={{ backgroundColor: headerBackgroundColor }}>Estado</th> */}
+                <th style={{ backgroundColor: headerBackgroundColor }}>Nivel Académico</th>
                 <th style={{ backgroundColor: headerBackgroundColor }}>Nivel de Formación</th>
               </tr>
             </thead>

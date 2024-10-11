@@ -257,8 +257,13 @@ const Programas = () => {
                                     <td>{item['departamento']}</td>
                                     <td>{item['sección']}</td>
                                     <td>{item['estado']}</td>
+                                    <td>{item['pregrado/posgrado']}</td>
                                     <td>{item['nivel de formación']}</td>
-                                    <Tooltip title="CREA" arrow>
+                                    <td>{item['rc vigente']}</td>
+                                    <td>{item['fechavencrc']}</td>
+                                    <td>{item['ac vigente']}</td>
+                                    <td>{item['fechavencac']}</td>
+                                    {/* <Tooltip title="CREA" arrow>
                                         <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'CREA') }}></td>
                                     </Tooltip>
                                     <Tooltip title="MOD" arrow>
@@ -275,7 +280,7 @@ const Programas = () => {
                                     </Tooltip>
                                     <Tooltip title="INT" arrow>
                                         <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'INT') }}></td>
-                                    </Tooltip>
+                                    </Tooltip> */}
                                 </tr>
                             ))}
                         </tbody>
@@ -369,13 +374,18 @@ const Programas = () => {
                                 <th style={{ backgroundColor: headerBackgroundColor }}>Departamento</th>
                                 <th style={{ backgroundColor: headerBackgroundColor }}>Sección</th>
                                 <th style={{ backgroundColor: headerBackgroundColor }}>Estado</th>
+                                <th style={{ backgroundColor: headerBackgroundColor }}>Nivel Académico</th>
                                 <th style={{ backgroundColor: headerBackgroundColor }}>Nivel de Formación</th>
-                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>CREA</th>
+                                <th style={{ backgroundColor: headerBackgroundColor }}>RC Vigente</th>
+                                <th style={{ backgroundColor: headerBackgroundColor }}>Fecha de Vencimiento RC</th>
+                                <th style={{ backgroundColor: headerBackgroundColor }}>AAC Vigente</th>
+                                <th style={{ backgroundColor: headerBackgroundColor }}>Fecha de Vencimiento AAC</th>
+                                {/* <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>CREA</th>
                                 <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>MOD</th>
                                 <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>RRC</th>
                                 <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>AAC</th>
                                 <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>RAAC</th>
-                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>INT</th>
+                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>INT</th> */}
                             </tr>
                         </thead>
                     </table>
