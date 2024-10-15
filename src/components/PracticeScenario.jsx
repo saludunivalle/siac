@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop, Typography } from '@mui/material';
+import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop, Typography, RadioGroup, FormControlLabel, Radio, FormLabel } from '@mui/material';
 import { Filtro13, Filtro14, Filtro15, Filtro16, sendDataRelEscPract, sendDataHorariosPract } from '../service/data';
 import '/src/styles/home.css';
 import axios from 'axios';
@@ -282,20 +282,26 @@ const PracticeScenario = ({ data }) => {
         e.preventDefault();
         try {
             const newAnexo = {
-                ...anexoFormData,
-                id: anexosList.length + 1,
-                id_programa: data.id_programa,
-                id_escenario: selectedFiltro14Id, // Usa el id del escenario seleccionado
-                fecha_formalización: new Date().toISOString().split('T')[0]
+                id: anexosList.length + 1, // id generado localmente
+                id_programa: data.id_programa, // id del programa
+                id_escenario: selectedFiltro14Id, // id del escenario seleccionado
+                nombre: anexoFormData.nombreAnexo, // nombre del anexo
+                url: anexoFormData.urlAnexo, // URL del anexo o archivo
+                estado: anexoFormData.estadoAnexo, // estado del anexo (Pendiente, En proceso)
+                fecha_formalización: new Date().toISOString().split('T')[0] // fecha en formato ISO
             };
-
-            // Enviar datos a la hoja de cálculo
+    
+            // Enviar los datos a la hoja de cálculo
             await sendAnexoToSheet(newAnexo);
-
+    
+            // Actualizar la lista de anexos en el estado local
             setAnexosList([...anexosList, newAnexo]);
+    
+            // Reiniciar el formulario
             setAnexoFormData({
                 nombreAnexo: '',
-                urlAnexo: ''
+                urlAnexo: '',
+                estadoAnexo: 'Pendiente'
             });
             setShowAnexoForm(false);
         } catch (error) {
@@ -303,11 +309,156 @@ const PracticeScenario = ({ data }) => {
         }
     };
 
-    // Función para enviar el anexo a la hoja de cálculo
+
     const sendAnexoToSheet = async (anexo) => {
-        // Implementar lógica de envío usando Google Sheets API o el método adecuado
-        console.log('Enviando anexo a la hoja:', anexo);
+        try {
+            // Preparar los datos para enviar en el formato que requiere la API del servidor
+            const insertData = [
+                [
+                    anexo.id, // id del anexo
+                    anexo.id_programa, // id del programa
+                    anexo.id_escenario, // id del escenario
+                    anexo.nombre, // nombre del anexo
+                    anexo.url, // URL del anexo
+                    anexo.estado, // estado del anexo (Pendiente, En proceso)
+                    anexo.fecha_formalización // fecha de formalización
+                ]
+            ];
+    
+            // Especificar el nombre de la hoja de cálculo
+            const sheetName = 'ANEXOS_TEC';
+    
+            // Hacer la solicitud POST al servidor con los datos y el nombre de la hoja
+            const response = await axios.post('https://siac-server.vercel.app/sendDocServ', {
+                insertData,
+                sheetName
+            });
+    
+            if (response.status === 200) {
+                console.log('Anexo guardado correctamente en la hoja:', response.data);
+            } else {
+                console.error('Error al guardar el anexo en la hoja:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error al enviar el anexo al servidor:', error);
+        }
     };
+
+    const AnexosTable = () => {
+        const [anexos, setAnexos] = useState([]);
+        const [editingId, setEditingId] = useState(null);
+        const [editedAnexo, setEditedAnexo] = useState({});
+      
+        const fetchAnexos = async () => {
+            const response = await axios.post('https://siac-server.vercel.app/getAnexos', { sheetName: 'ANEXOS_TEC' });
+            if (response.data.status) {
+                setAnexos(response.data.data);
+            }
+        };
+
+        useEffect(() => {
+            fetchAnexos();
+        }, []);
+        
+        const handleEdit = (anexo) => {
+          setEditingId(anexo.id);
+          setEditedAnexo(anexo);
+        };
+      
+        const handleSave = async (id) => {
+            try {
+              await axios.post('https://siac-server.vercel.app/updateAnexo', {
+                id,
+                updateData: [
+                  editedAnexo.id,
+                  editedAnexo.id_programa,
+                  editedAnexo.id_escenario,
+                  editedAnexo.nombre, // Asegúrate de que estos campos sean correctos
+                  editedAnexo.url,
+                  editedAnexo.estado,
+                  editedAnexo.fecha_formalización
+                ]
+              });
+              setEditingId(null);
+              setEditedAnexo({});
+              await fetchAnexos();
+            } catch (error) {
+              console.error('Error al guardar el anexo:', error);
+            }
+        };
+          
+      
+        const handleDelete = async (id) => {
+          try {
+            await axios.post('https://siac-server.vercel.app/deleteAnexo', { id });
+            setAnexos(anexos.filter(anexo => anexo.id !== id));
+            await fetchAnexos();
+          } catch (error) {
+            console.error('Error al eliminar el anexo:', error);
+          }
+        };
+      
+        const handleChange = (e) => {
+          const { name, value } = e.target;
+          setEditedAnexo({
+            ...editedAnexo,
+            [name]: value
+          });
+        };
+      
+        return (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nombre</TableCell>
+                  <TableCell>URL</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell>Fecha Formalización</TableCell>
+                  <TableCell>Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {anexos.map((anexo) => (
+                    <TableRow key={anexo.id}>
+                    <TableCell>
+                        {editingId === anexo.id ? (
+                        <TextField name="nombre" value={editedAnexo.nombre} onChange={handleChange} />
+                        ) : (
+                        anexo.nombre
+                        )}
+                    </TableCell>
+                    <TableCell>
+                        {editingId === anexo.id ? (
+                        <TextField name="url" value={editedAnexo.url} onChange={handleChange} />
+                        ) : (
+                        anexo.url
+                        )}
+                    </TableCell>
+                    <TableCell>
+                        {editingId === anexo.id ? (
+                        <TextField name="estado" value={editedAnexo.estado} onChange={handleChange} />
+                        ) : (
+                        anexo.estado
+                        )}
+                    </TableCell>
+                    <TableCell>{anexo.fecha_formalización}</TableCell>
+                    <TableCell>
+                        {editingId === anexo.id ? (
+                        <Button onClick={() => handleSave(anexo.id)}>Guardar</Button>
+                        ) : (
+                        <Button onClick={() => handleEdit(anexo)}>Editar</Button>
+                        )}
+                        <Button onClick={() => handleDelete(anexo.id)}>Eliminar</Button>
+                    </TableCell>
+                    </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        );
+    };
+    
 
     return (
         <>
@@ -581,61 +732,49 @@ const PracticeScenario = ({ data }) => {
                 ))}
             </div>
 
-            <div style={{ marginTop: "20px", marginBottom:"40px" }}>
+            <div style={{ marginTop: "20px", marginBottom: "40px" }}>
                 <Button variant="contained" onClick={toggleAnexoForm}>
-                    Añadir Anexo
+                Añadir Anexo
                 </Button>
 
                 {showAnexoForm && (
-                    <Box component="form" onSubmit={handleAnexoFormSubmit} sx={{ marginTop: 2 }}>
-                        <FormGroup>
-                            <TextField
-                                label="Nombre del Anexo"
-                                name="nombreAnexo"
-                                value={anexoFormData.nombreAnexo}
-                                onChange={handleAnexoInputChange}
-                                margin="normal"
-                                required
-                            />
-                            <TextField
-                                label="URL/Archivo"
-                                name="urlAnexo"
-                                value={anexoFormData.urlAnexo}
-                                onChange={handleAnexoInputChange}
-                                margin="normal"
-                                required
-                            />
-                        </FormGroup>
-                        <Button type="submit" variant="contained" sx={{ marginTop: 2 }}>
-                            Guardar Anexo
-                        </Button>
-                    </Box>
+                <Box component="form" onSubmit={handleAnexoFormSubmit} sx={{ marginTop: 2 }}>
+                    <FormGroup>
+                    <TextField
+                        label="Nombre del Anexo"
+                        name="nombreAnexo"
+                        value={anexoFormData.nombreAnexo}
+                        onChange={handleAnexoInputChange}
+                        margin="normal"
+                        required
+                    />
+                    <TextField
+                        label="URL/Archivo"
+                        name="urlAnexo"
+                        value={anexoFormData.urlAnexo}
+                        onChange={handleAnexoInputChange}
+                        margin="normal"
+                        required
+                    />
+                    <FormGroup sx={{ marginTop: 2 }}>
+                        <FormLabel component="legend">Estado</FormLabel>
+                        <RadioGroup
+                        name="estadoAnexo"
+                        value={anexoFormData.estadoAnexo}
+                        onChange={handleAnexoInputChange}
+                        sx={{ display: 'flex', flexDirection: 'row' }}
+                        >
+                        <FormControlLabel value="Pendiente" control={<Radio />} label="Pendiente" />
+                        <FormControlLabel value="En proceso" control={<Radio />} label="En proceso" />
+                        </RadioGroup>
+                    </FormGroup>
+                    </FormGroup>
+                    <Button type="submit" variant="contained" sx={{ marginTop: 2 }}>
+                    Guardar Anexo
+                    </Button>
+                </Box>
                 )}
-
-                {anexosList.length > 0 && (
-                    <TableContainer component={Paper} sx={{ marginTop: 2 }}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>ID</TableCell>
-                                    <TableCell>Nombre</TableCell>
-                                    <TableCell>URL</TableCell>
-                                    <TableCell>Fecha Formalización</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {anexosList.map((anexo, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell>{anexo.id}</TableCell>
-                                        <TableCell>{anexo.nombreAnexo}</TableCell>
-                                        <TableCell>{anexo.urlAnexo}</TableCell>
-                                        <TableCell>{anexo.fecha_formalización}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                )}
+                <AnexosTable />
             </div>
 
             <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={saving}>
