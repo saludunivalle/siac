@@ -30,6 +30,10 @@ const PracticeScenario = ({ data }) => {
     const [isScheduleSaved, setIsScheduleSaved] = useState(false);
     const [newScenario, setNewScenario] = useState(false);
     const [showPracticeForm, setShowPracticeForm] = useState(false);
+    const togglePracticeForm = () => {
+        setShowPracticeForm(!showPracticeForm);
+    };
+    
     const [practiceFormData, setPracticeFormData] = useState({
         nombreRotacion: '',
         numeroEstudiantes: '',
@@ -39,11 +43,22 @@ const PracticeScenario = ({ data }) => {
         intensidadHoraria: ''
     });
     const [practiceTables, setPracticeTables] = useState([]);
+    const [editingId, setEditingId] = useState(null);
+    const [editedPractice, setEditedPractice] = useState({});
 
-    const togglePracticeForm = () => {
-        setShowPracticeForm(!showPracticeForm);
+    // Para obtener los datos actuales de la hoja SOLICITUD_PRACT
+    const fetchPractices = async () => {
+        const response = await axios.post('https://siac-server.vercel.app/getPractices', { sheetName: 'SOLICITUD_PRACT' });
+        if (response.data.status) {
+            setPracticeTables(response.data.data);
+        }
     };
-    
+
+    useEffect(() => {
+        fetchPractices();
+    }, []);
+
+    // Manejar los cambios en los inputs
     const handlePracticeInputChange = (e) => {
         const { name, value } = e.target;
         setPracticeFormData({
@@ -51,10 +66,21 @@ const PracticeScenario = ({ data }) => {
             [name]: value
         });
     };
-    
-    const handlePracticeFormSubmit = (e) => {
+
+    // Enviar una nueva solicitud
+    const handlePracticeFormSubmit = async (e) => {
         e.preventDefault();
-        setPracticeTables([...practiceTables, { ...practiceFormData }]);
+        const newPractice = {
+            ...practiceFormData,
+            id: practiceTables.length + 1,
+            id_programa: data.id_programa,
+            fecha_formalización: new Date().toISOString().split('T')[0]
+        };
+
+        await sendPracticeToSheet(newPractice);
+        setPracticeTables([...practiceTables, newPractice]);
+
+        // Limpiar formulario
         setPracticeFormData({
             nombreRotacion: '',
             numeroEstudiantes: '',
@@ -63,10 +89,104 @@ const PracticeScenario = ({ data }) => {
             servicios: '',
             intensidadHoraria: ''
         });
-        setShowPracticeForm(false);
     };
-    
 
+    const sendPracticeToSheet = async (practice) => {
+        try {
+            const insertData = [
+                [
+                    practice.id,
+                    practice.id_programa,
+                    practice.nombreRotacion,
+                    practice.numeroEstudiantes,
+                    practice.horasSemanas,
+                    practice.docentes,
+                    practice.servicios,
+                    practice.intensidadHoraria,
+                    practice.fecha_formalización
+                ]
+            ];
+            const sheetName = 'SOLICITUD_PRACT';
+            const response = await axios.post('https://siac-server.vercel.app/sendPractice', {
+                insertData,
+                sheetName
+            });
+
+            if (response.status === 200) {
+                console.log('Solicitud guardada correctamente en la hoja:', response.data);
+            } else {
+                console.error('Error al guardar la solicitud en la hoja:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error al enviar la solicitud al servidor:', error);
+        }
+    };
+
+    // Editar una solicitud existente
+    const handleEdit = (practice) => {
+        setEditingId(practice.id);
+        setEditedPractice(practice);
+    };
+
+    const handleSave = async (id) => {
+        await updatePractice(id);
+        setEditingId(null);
+        setEditedPractice({});
+        fetchPractices();  
+    };
+
+    const updatePractice = async (id) => {
+        const updateData = [
+            editedPractice.id,
+            editedPractice.id_programa,
+            editedPractice.nombreRotacion,
+            editedPractice.numeroEstudiantes,
+            editedPractice.horasSemanas,
+            editedPractice.docentes,
+            editedPractice.servicios,
+            editedPractice.intensidadHoraria,
+            editedPractice.fecha_formalización
+        ];
+        const sheetName = 'SOLICITUD_PRACT';
+        try {
+            const response = await axios.post('https://siac-server.vercel.app/updatePractice', {
+                updateData,
+                id,
+                sheetName
+            });
+            if (response.status === 200) {
+                console.log('Solicitud actualizada correctamente');
+            } else {
+                console.error('Error al actualizar la solicitud:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error al actualizar la solicitud:', error);
+        }
+    };
+
+    // Eliminar una solicitud
+    const handleDelete = async (id) => {
+        await deletePractice(id);
+        fetchPractices();  // Recargar las solicitudes
+    };
+
+    const deletePractice = async (id) => {
+        try {
+            const sheetName = 'SOLICITUD_PRACT';
+            const response = await axios.post('https://siac-server.vercel.app/deletePractice', {
+                id,
+                sheetName
+            });
+
+            if (response.status === 200) {
+                console.log('Solicitud eliminada correctamente');
+            } else {
+                console.error('Error al eliminar la solicitud:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error al eliminar la solicitud:', error);
+        }
+    }; 
 
     useEffect(() => {
         const fetchData = async () => {
@@ -710,26 +830,101 @@ const PracticeScenario = ({ data }) => {
                     </Box>
                 )}
 
-                {practiceTables.map((table, index) => (
-                    <TableContainer component={Paper} key={index} sx={{ marginTop: 2 }}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Campo</TableCell>
-                                    <TableCell>Valor</TableCell>
+                <TableContainer component={Paper} sx={{ marginTop: 2 }}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Nombre de Rotación</TableCell>
+                                <TableCell>Número de Estudiantes</TableCell>
+                                <TableCell>Horas por Semana</TableCell>
+                                <TableCell>Docentes</TableCell>
+                                <TableCell>Servicios</TableCell>
+                                <TableCell>Intensidad Horaria</TableCell>
+                                <TableCell>Acciones</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {practiceTables.map((practice) => (
+                                <TableRow key={practice.id}>
+                                    <TableCell>
+                                        {editingId === practice.id ? (
+                                            <TextField
+                                                name="nombreRotacion"
+                                                value={editedPractice.nombreRotacion}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, nombreRotacion: e.target.value })}
+                                            />
+                                        ) : (
+                                            practice.nombreRotacion
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === practice.id ? (
+                                            <TextField
+                                                name="numeroEstudiantes"
+                                                value={editedPractice.numeroEstudiantes}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, numeroEstudiantes: e.target.value })}
+                                            />
+                                        ) : (
+                                            practice.numeroEstudiantes
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === practice.id ? (
+                                            <TextField
+                                                name="horasSemanas"
+                                                value={editedPractice.horasSemanas}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, horasSemanas: e.target.value })}
+                                            />
+                                        ) : (
+                                            practice.horasSemanas
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === practice.id ? (
+                                            <TextField
+                                                name="docentes"
+                                                value={editedPractice.docentes}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, docentes: e.target.value })}
+                                            />
+                                        ) : (
+                                            practice.docentes
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === practice.id ? (
+                                            <TextField
+                                                name="servicios"
+                                                value={editedPractice.servicios}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, servicios: e.target.value })}
+                                            />
+                                        ) : (
+                                            practice.servicios
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === practice.id ? (
+                                            <TextField
+                                                name="intensidadHoraria"
+                                                value={editedPractice.intensidadHoraria}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, intensidadHoraria: e.target.value })}
+                                            />
+                                        ) : (
+                                            practice.intensidadHoraria
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === practice.id ? (
+                                            <Button onClick={() => handleSave(practice.id)}>Guardar</Button>
+                                        ) : (
+                                            <Button onClick={() => handleEdit(practice)}>Editar</Button>
+                                        )}
+                                        <Button onClick={() => handleDelete(practice.id)}>Eliminar</Button>
+                                    </TableCell>
                                 </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {Object.entries(table).map(([key, value], i) => (
-                                    <TableRow key={i}>
-                                        <TableCell>{key}</TableCell>
-                                        <TableCell>{value}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                ))}
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             </div>
 
             <div style={{ marginTop: "20px", marginBottom: "40px" }}>
