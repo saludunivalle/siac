@@ -990,7 +990,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                             Ninguna
                                         </MenuItem>
                                         {Object.entries(groupedFases).map(([grupo, fases]) => [
-                                            <ListSubheader key={grupo} sx={{fontWeight: 'bold'}}>{grupo}</ListSubheader>,
+                                            <ListSubheader key={grupo} sx={{fontWeight: 'bold'}}>{grupo.toUpperCase()}</ListSubheader>,
                                             ...fases.map((fase, index) => (
                                                 <MenuItem
                                                     key={index}

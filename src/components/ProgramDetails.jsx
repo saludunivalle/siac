@@ -288,29 +288,49 @@ const ProgramDetails = () => {
                 </div>
                 {!isEditing ? (
                     <div className='about-program-general'>
-                        <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad || 'N/A'}</div>
-                        <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela || 'N/A'}</div>
-                        <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento || 'N/A'}</div>
-                        <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion || 'N/A'}</div>
-                        <div className='about-program'><strong>Sede: </strong>&nbsp; {sede || 'N/A'}</div>
-                        <div className='about-program'><strong>Nivel Académico: </strong>&nbsp; {academico || 'N/A'}</div>
-                        <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion || 'N/A'}</div>
-                        <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {titulo || 'N/A'}</div>
-                        <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada || 'N/A'}</div>
-                        <div className='about-program'><strong>Modalidad: </strong>&nbsp; {modalidad || 'N/A'}</div>
-                        <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos || 'N/A'}</div>
-                        <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad || 'N/A'}</div>
-                        <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion || 'N/A'}</div>
-                        <div className='about-program'><strong>Fecha Otorgamiento RRC: </strong>&nbsp; {fechaexpedrc || 'N/A'}</div>
-                        <div className='about-program'><strong>Fecha Vencimiento RRC: </strong>&nbsp; {fechavencrc || 'N/A'}</div>
-                        <div className='about-program'><strong>Fecha Otorgamiento RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
-                        <div className='about-program'><strong>Fecha Vencimiento RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
-                        <div className='about-program'><strong>Resolución RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
-                        <div className='about-program'><strong>Resolución RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
-                        <div className='about-program'><strong>Acreditable: </strong>&nbsp; {acreditable || 'N/A'}</div>
-                        <div className='about-program'><strong>Proceso de Contingencia: </strong>&nbsp; {contingencia || 'N/A'}</div>
-                        <div className='about-program'><strong>Número Renovaciones RRC: </strong>&nbsp; {rowData['número renovaciones RRC'] || 'N/A'}</div>
+                        {/* Sección 1: Facultad hasta Sede */}
+                        <div className='about-program-section'>
+                            <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad || 'N/A'}</div>
+                            <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela || 'N/A'}</div>
+                            <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento || 'N/A'}</div>
+                            <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion || 'N/A'}</div>
+                            <div className='about-program'><strong>Sede: </strong>&nbsp; {sede || 'N/A'}</div>
+                        </div>
+                    
+                        {/* Sección 2: Nivel Académico hasta Modalidad */}
+                        <div className='about-program-section'>
+                            <div className='about-program'><strong>Nivel Académico: </strong>&nbsp; {academico || 'N/A'}</div>
+                            <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion || 'N/A'}</div>
+                            <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada || 'N/A'}</div>
+                            <div className='about-program'><strong>Modalidad: </strong>&nbsp; {modalidad || 'N/A'}</div>
+                        </div>
+                    
+                        {/* Sección 3: Título a conceder hasta Proceso de Contingencia */}
+                        <div className='about-program-section'>
+                            <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {titulo || 'N/A'}</div>
+                            <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos || 'N/A'}</div>
+                            <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad || 'N/A'}</div>
+                            <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion || 'N/A'}</div>
+                            <div className='about-program'><strong>Acreditable: </strong>&nbsp; {acreditable || 'N/A'}</div>
+                            <div className='about-program'><strong>Proceso de Contingencia: </strong>&nbsp; {contingencia || 'N/A'}</div>
+                        </div>
+                    
+                        {/* Sección 4: Fecha Otorgamiento RRC hasta Número Renovaciones RRC */}
+                        <div className='about-program-section'>
+                            <div className='about-program'><strong>Fecha Otorgamiento RRC: </strong>&nbsp; {fechaexpedrc || 'N/A'}</div>
+                            <div className='about-program'><strong>Fecha Vencimiento RRC: </strong>&nbsp; {fechavencrc || 'N/A'}</div>
+                            <div className='about-program'><strong>Resolución RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
+                            <div className='about-program'><strong>Número Renovaciones RRC: </strong>&nbsp; {rowData['número renovaciones RRC'] || 'N/A'}</div>
+                        </div>
+                    
+                        {/* Sección 5: Fecha Otorgamiento RAAC hasta Resolución RAAC */}
+                        <div className='about-program-section'>
+                            <div className='about-program'><strong>Fecha Otorgamiento RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
+                            <div className='about-program'><strong>Fecha Vencimiento RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
+                            <div className='about-program'><strong>Resolución RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
+                        </div>
                     </div>
+                    
                 ) : (
                     <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
                         {Object.keys(formData).map((key) => (

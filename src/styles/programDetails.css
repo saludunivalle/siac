@@ -54,8 +54,13 @@
 
 .about-program-general{
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     width: fit-content;
+}
+
+.about-program-section{
+    display: flex;
+    flex-direction: row;
 }
 
 .button-reverse{

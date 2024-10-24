@@ -35,12 +35,12 @@ const PracticeScenario = ({ data }) => {
     };
     
     const [practiceFormData, setPracticeFormData] = useState({
-        nombreRotacion: '',
-        numeroEstudiantes: '',
-        horasSemanas: '',
+        nombrerotacion: '',
+        numeroestudiantes: '',
+        horassemanas: '',
         docentes: '',
         servicios: '',
-        intensidadHoraria: ''
+        intensidadhoraria: ''
     });
     const [practiceTables, setPracticeTables] = useState([]);
     const [editingId, setEditingId] = useState(null);
@@ -48,15 +48,34 @@ const PracticeScenario = ({ data }) => {
 
     // Para obtener los datos actuales de la hoja SOLICITUD_PRACT
     const fetchPractices = async () => {
-        const response = await axios.post('https://siac-server.vercel.app/getPractices', { sheetName: 'SOLICITUD_PRACT' });
-        if (response.data.status) {
-            setPracticeTables(response.data.data);
+        try {
+            const response = await axios.post('https://siac-server.vercel.app/getPractices', { sheetName: 'SOLICITUD_PRACT' });
+    
+            // Verificar si la respuesta trae los datos esperados
+            console.log("Response:", response);
+            
+            if (response.data.status) {
+                const practices = response.data.data;
+    
+                // Filtrar las prácticas que tienen un ID vacío o son "filas eliminadas"
+                const filteredPractices = practices.filter(practice => practice.id && practice.nombrerotacion);
+    
+                setPracticeTables(filteredPractices);  // Asegúrate de que el estado se esté actualizando
+            } else {
+                console.error('Error en la respuesta al traer las prácticas:', response.data);
+            }
+        } catch (error) {
+            console.error('Error al cargar los datos de las prácticas:', error);
         }
     };
+    
 
     useEffect(() => {
-        fetchPractices();
-    }, []);
+        if (data.id_programa) {
+            fetchPractices();
+        }
+    }, [data.id_programa]);  // El hook depende de que data.id_programa esté disponible
+    
 
     // Manejar los cambios en los inputs
     const handlePracticeInputChange = (e) => {
@@ -82,12 +101,12 @@ const PracticeScenario = ({ data }) => {
 
         // Limpiar formulario
         setPracticeFormData({
-            nombreRotacion: '',
-            numeroEstudiantes: '',
-            horasSemanas: '',
+            nombrerotacion: '',
+            numeroestudiantes: '',
+            horassemanas: '',
             docentes: '',
             servicios: '',
-            intensidadHoraria: ''
+            intensidadhoraria: ''
         });
     };
 
@@ -97,12 +116,12 @@ const PracticeScenario = ({ data }) => {
                 [
                     practice.id,
                     practice.id_programa,
-                    practice.nombreRotacion,
-                    practice.numeroEstudiantes,
-                    practice.horasSemanas,
+                    practice.nombrerotacion,
+                    practice.numeroestudiantes,
+                    practice.horassemanas,
                     practice.docentes,
                     practice.servicios,
-                    practice.intensidadHoraria,
+                    practice.intensidadhoraria,
                     practice.fecha_formalización
                 ]
             ];
@@ -133,18 +152,23 @@ const PracticeScenario = ({ data }) => {
         setEditingId(null);
         setEditedPractice({});
         fetchPractices();  
+
+        const updatedPractices = practiceTables.map(practice => 
+            practice.id === id ? editedPractice : practice
+        );
+        setPracticeTables(updatedPractices);
     };
 
     const updatePractice = async (id) => {
         const updateData = [
             editedPractice.id,
             editedPractice.id_programa,
-            editedPractice.nombreRotacion,
-            editedPractice.numeroEstudiantes,
-            editedPractice.horasSemanas,
+            editedPractice.nombrerotacion,
+            editedPractice.numeroestudiantes,
+            editedPractice.horassemanas,
             editedPractice.docentes,
             editedPractice.servicios,
-            editedPractice.intensidadHoraria,
+            editedPractice.intensidadhoraria,
             editedPractice.fecha_formalización
         ];
         const sheetName = 'SOLICITUD_PRACT';
@@ -168,25 +192,36 @@ const PracticeScenario = ({ data }) => {
     const handleDelete = async (id) => {
         await deletePractice(id);
         fetchPractices();  // Recargar las solicitudes
+        // Eliminar localmente el elemento de la tabla
+        const updatedPractices = practiceTables.filter(practice => practice.id !== id);
+        setPracticeTables(updatedPractices);
     };
 
     const deletePractice = async (id) => {
         try {
-            const sheetName = 'SOLICITUD_PRACT';
-            const response = await axios.post('https://siac-server.vercel.app/deletePractice', {
-                id,
-                sheetName
-            });
-
-            if (response.status === 200) {
-                console.log('Solicitud eliminada correctamente');
-            } else {
-                console.error('Error al eliminar la solicitud:', response.statusText);
-            }
+          const sheetName = 'SOLICITUD_PRACT';
+          console.log('Enviando solicitud de eliminación para el ID:', id);
+      
+          const response = await axios.post('https://siac-server.vercel.app/deletePractice', {
+            id,
+            sheetName
+          });
+      
+          if (response.status === 200) {
+            console.log('Solicitud eliminada correctamente', id);
+            // Eliminar la solicitud del estado local si la eliminación fue exitosa
+            setPracticeTables(practiceTables.filter(practice => practice.id !== id));
+            // Recargar los datos de las prácticas para asegurar que se mantenga la consistencia
+            await fetchPractices();
+          } else {
+            console.error('Error al eliminar la solicitud:', response.statusText);
+          }
         } catch (error) {
-            console.error('Error al eliminar la solicitud:', error);
+          console.error('Error al eliminar la solicitud:', error);
         }
-    }; 
+      };
+      
+      
 
     useEffect(() => {
         const fetchData = async () => {
@@ -509,14 +544,23 @@ const PracticeScenario = ({ data }) => {
           
       
         const handleDelete = async (id) => {
-          try {
-            await axios.post('https://siac-server.vercel.app/deleteAnexo', { id });
-            setAnexos(anexos.filter(anexo => anexo.id !== id));
-            await fetchAnexos();
-          } catch (error) {
-            console.error('Error al eliminar el anexo:', error);
-          }
+            try {
+                console.log("Eliminando anexo con ID:", id);  // Verifica que el ID sea el correcto
+                const response = await axios.post('https://siac-server.vercel.app/deleteAnexo', { id });
+                
+                if (response.status === 200) {
+                    setAnexos(anexos.filter(anexo => anexo.id !== id));
+                    await fetchAnexos();
+                    console.log('Anexo eliminado correctamente');
+                } else {
+                    console.error('Error al eliminar el anexo:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error al eliminar el anexo:', error);
+            }
         };
+        
+          
       
         const handleChange = (e) => {
           const { name, value } = e.target;
@@ -777,24 +821,24 @@ const PracticeScenario = ({ data }) => {
                         <FormGroup>
                             <TextField
                                 label="Nombre de Rotación"
-                                name="nombreRotacion"
-                                value={practiceFormData.nombreRotacion}
+                                name="nombrerotacion"
+                                value={practiceFormData.nombrerotacion}
                                 onChange={handlePracticeInputChange}
                                 margin="normal"
                                 required
                             />
                             <TextField
                                 label="No. de Estudiantes"
-                                name="numeroEstudiantes"
-                                value={practiceFormData.numeroEstudiantes}
+                                name="numeroestudiantes"
+                                value={practiceFormData.numeroestudiantes}
                                 onChange={handlePracticeInputChange}
                                 margin="normal"
                                 required
                             />
                             <TextField
                                 label="No. Horas y Semanas a Rotar"
-                                name="horasSemanas"
-                                value={practiceFormData.horasSemanas}
+                                name="horassemanas"
+                                value={practiceFormData.horassemanas}
                                 onChange={handlePracticeInputChange}
                                 margin="normal"
                                 required
@@ -817,8 +861,8 @@ const PracticeScenario = ({ data }) => {
                             />
                             <TextField
                                 label="Intensidad Horaria"
-                                name="intensidadHoraria"
-                                value={practiceFormData.intensidadHoraria}
+                                name="intensidadhoraria"
+                                value={practiceFormData.intensidadhoraria}
                                 onChange={handlePracticeInputChange}
                                 margin="normal"
                                 required
@@ -849,34 +893,34 @@ const PracticeScenario = ({ data }) => {
                                     <TableCell>
                                         {editingId === practice.id ? (
                                             <TextField
-                                                name="nombreRotacion"
-                                                value={editedPractice.nombreRotacion}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, nombreRotacion: e.target.value })}
+                                                name="nombrerotacion"
+                                                value={editedPractice.nombrerotacion}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, nombrerotacion: e.target.value })}
                                             />
                                         ) : (
-                                            practice.nombreRotacion
+                                            practice.nombrerotacion
                                         )}
                                     </TableCell>
                                     <TableCell>
                                         {editingId === practice.id ? (
                                             <TextField
-                                                name="numeroEstudiantes"
-                                                value={editedPractice.numeroEstudiantes}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, numeroEstudiantes: e.target.value })}
+                                                name="numeroestudiantes"
+                                                value={editedPractice.numeroestudiantes}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, numeroestudiantes: e.target.value })}
                                             />
                                         ) : (
-                                            practice.numeroEstudiantes
+                                            practice.numeroestudiantes
                                         )}
                                     </TableCell>
                                     <TableCell>
                                         {editingId === practice.id ? (
                                             <TextField
-                                                name="horasSemanas"
-                                                value={editedPractice.horasSemanas}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, horasSemanas: e.target.value })}
+                                                name="horassemanas"
+                                                value={editedPractice.horassemanas}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, horassemanas: e.target.value })}
                                             />
                                         ) : (
-                                            practice.horasSemanas
+                                            practice.horassemanas
                                         )}
                                     </TableCell>
                                     <TableCell>
@@ -904,12 +948,12 @@ const PracticeScenario = ({ data }) => {
                                     <TableCell>
                                         {editingId === practice.id ? (
                                             <TextField
-                                                name="intensidadHoraria"
-                                                value={editedPractice.intensidadHoraria}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, intensidadHoraria: e.target.value })}
+                                                name="intensidadhoraria"
+                                                value={editedPractice.intensidadhoraria}
+                                                onChange={(e) => setEditedPractice({ ...editedPractice, intensidadhoraria: e.target.value })}
                                             />
                                         ) : (
-                                            practice.intensidadHoraria
+                                            practice.intensidadhoraria
                                         )}
                                     </TableCell>
                                     <TableCell>

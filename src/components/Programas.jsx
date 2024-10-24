@@ -321,9 +321,9 @@ const Programas = () => {
                                 <Button value="doctorado" className="custom-radio2"
                                     style={setButtonStyles('doctorado')}
                                     onClick={() => handleButtonClick('doctorado')}> Doctorado </Button>
-                                <Button value="especializacion" className="custom-radio2"
+                                {/* <Button value="especializacion" className="custom-radio2"
                                     style={setButtonStyles('especializacion')}
-                                    onClick={() => handleButtonClick('especializacion')}> Especialización </Button>
+                                    onClick={() => handleButtonClick('especializacion')}> Especialización </Button> */}
                                 <Button value="especializacionMedico" className="custom-radio2"
                                     style={setButtonStyles('especializacionMedico')}
                                     onClick={() => handleButtonClick('especializacionMedico')}> Especialización Médico Quirúrgica </Button>
