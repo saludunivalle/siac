@@ -4,8 +4,12 @@ import axios from 'axios';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
 import Seguimiento from './Seguimiento';
-import { Filtro7, FiltroHistorico } from "../service/data";
+import { Filtro5, Filtro7, FiltroHistorico } from "../service/data";
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'; 
 import { Tabs, Tab, Box, Button, TextField } from '@mui/material';
+import { format } from 'date-fns';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'; // IMPORTACIÓN CORRECTA DEL ADAPTADOR
 
 const ProgramDetails = () => {
     const location = useLocation();
@@ -23,6 +27,50 @@ const ProgramDetails = () => {
         raac: '',
     });
     const [isEditing, setIsEditing] = useState(false);
+
+    const [options, setOptions] = useState({
+        Sede: [],
+        Escuela: [],
+        Departamento: [],
+        Sección: [],
+        'Nivel Académico': [],
+        'Nivel de Formación': [],
+        Jornada: [],
+        Modalidad: [],
+        Periodicidad: [],
+        Acreditable: [],
+    });
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const data = await Filtro5(); 
+                const uniqueOptions = {
+                    Sede: [...new Set(data.map((item) => item.sede))],
+                    Escuela: [...new Set(data.map((item) => item.escuela))],
+                    Departamento: [...new Set(data.map((item) => item.departamento))],
+                    Sección: [...new Set(data.map((item) => item.sección))],
+                    'Nivel Académico': [...new Set(data.map((item) => item['pregrado/posgrado']))],
+                    'Nivel de Formación': [...new Set(data.map((item) => item['nivel de formación']))],
+                    Jornada: [...new Set(data.map((item) => item.jornada))],
+                    Modalidad: [...new Set(data.map((item) => item.modalidad))],
+                    Periodicidad: [...new Set(data.map((item) => item.periodicidad))],
+                    Acreditable: [...new Set(data.map((item) => item.acreditable))],
+                };
+                setOptions(uniqueOptions);
+            } catch (error) {
+                console.error('Error al obtener las opciones de Filtro5:', error);
+            }
+        };
+        fetchOptions();
+    }, []);
+
+    const handleDateChange = (date, field) => {
+        setFormData({
+            ...formData,
+            [field]: date ? format(date, 'dd/MM/yyyy') : '',
+        });
+    };
 
     const {
         'programa académico': programaAcademico,
@@ -332,49 +380,83 @@ const ProgramDetails = () => {
                     </div>
                     
                 ) : (
-                    <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
-                        {Object.keys(formData).map((key) => (
-                            <div key={key}>
-                                {key === 'Número renovaciones RRC' ? (
-                                    <TextField
-                                        select
-                                        label="Número renovaciones RRC"
-                                        name="Número renovaciones RRC"
-                                        value={formData['Número renovaciones RRC']}
-                                        onChange={handleChange}
-                                        variant="outlined"
-                                        fullWidth
-                                        margin="normal"
-                                        SelectProps={{
-                                            native: true,
-                                        }}
-                                    >
-                                        {Array.from({ length: 15 }, (_, i) => (
-                                            <option key={i + 1} value={i + 1}>
-                                                {i + 1}
-                                            </option>
-                                        ))}
-                                    </TextField>
-                                ) : (
-                                    <TextField
-                                        label={key}
-                                        name={key}
-                                        value={formData[key]}
-                                        onChange={handleChange}
-                                        variant="outlined"
-                                        fullWidth
-                                        margin="normal"
-                                    />
-                                )}
-                            </div>
-                        ))}
-                        <Button type="submit" variant="contained" color="primary" style={{ margin: '10px 0' }}>
-                            Actualizar Datos
-                        </Button>
-                        <Button onClick={() => setIsEditing(false)} variant="contained" color="secondary" style={{ margin: '10px 0', marginLeft: '10px' }}>
-                            Cancelar
-                        </Button>
-                    </form>
+                    <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
+                            {Object.keys(formData).map((key) => (
+                                <div key={key}>
+                                    {key === 'Créditos' ? (
+                                        <TextField
+                                            label={key}
+                                            name={key}
+                                            value={formData[key]}
+                                            onChange={handleChange}
+                                            variant="outlined"
+                                            fullWidth
+                                            margin="normal"
+                                            type="number" // Limitar a números
+                                            inputMode="numeric" // Mostrar teclado numérico en móviles
+                                            onKeyPress={(e) => {
+                                                if (!/[0-9]/.test(e.key)) {
+                                                    e.preventDefault(); // Prevenir la entrada de cualquier cosa que no sea un dígito
+                                                }
+                                            }}
+                                            inputProps={{ min: 0 }} // No permitir valores negativos
+                                        />
+                                    ) : ['FechaExp RRC', 'Fecha RRC', 'FechaExp RAAC', 'Fecha RAAC'].includes(key) ? (
+                                        <DatePicker
+                                            label={key}
+                                            value={
+                                                formData[key]
+                                                    ? new Date(formData[key].split('/').reverse().join('-'))
+                                                    : null
+                                            }
+                                            onChange={(newValue) => handleDateChange(newValue, key)}
+                                            renderInput={(params) => (
+                                                <TextField {...params} fullWidth margin="normal" />
+                                            )}
+                                            sx={{ marginBottom: '10px' }}
+                                        />
+                                    ) : options[key] && options[key].length > 0 ? (
+                                        <TextField
+                                            select
+                                            label={key}
+                                            name={key}
+                                            value={formData[key]}
+                                            onChange={handleChange}
+                                            variant="outlined"
+                                            fullWidth
+                                            margin="normal"
+                                            SelectProps={{
+                                                native: true,
+                                            }}
+                                        >
+                                            {options[key].map((option, index) => (
+                                                <option key={index} value={option}>
+                                                    {option}
+                                                </option>
+                                            ))}
+                                        </TextField>
+                                    ) : (
+                                        <TextField
+                                            label={key}
+                                            name={key}
+                                            value={formData[key]}
+                                            onChange={handleChange}
+                                            variant="outlined"
+                                            fullWidth
+                                            margin="normal"
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                            <Button type="submit" variant="contained" color="primary" style={{ margin: '10px 0' }}>
+                                Actualizar Datos
+                            </Button>
+                            <Button onClick={() => setIsEditing(false)} variant="contained" color="secondary" style={{ margin: '10px 0', marginLeft: '10px' }}>
+                                Cancelar
+                            </Button>
+                        </form>
+                    </LocalizationProvider>
                 )}
                 {!isEditing && (
                         <Button variant="contained" color="primary" onClick={() => setIsEditing(true)} style={{ marginBottom: '20px' }}>
