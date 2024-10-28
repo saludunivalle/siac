@@ -457,28 +457,25 @@ const Home = () => {
         </div>
       </div>
   );
-  
+
   const DetailedProcessTable = ({ counts, selectedRow }) => (
     <div className='detailed-container' style={{ display: 'flex', flexDirection: 'column', width: '100%' }}> 
-      <div style={{ 
-          position: 'fixed', 
-          top: '10%',
-          left: '50%',
-          transform: 'translate(-50%, 0)',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          paddingBottom: '20px',
-          paddingTop: '55px'
+      <div style={{
+        width: '100vw', 
+        paddingTop: '20px',
+        paddingBottom: '0px',
+        boxSizing: 'border-box',
+        display: 'flex',
+        justifyContent: 'center' 
       }}>
         <div style={{ fontSize: '25px', textAlign: 'center' }}>
           {getTitle()}
         </div>
       </div>
-
-      <div className='detailed-table-wrapper' style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', paddingRight: '50px', boxSizing: 'border-box', paddingTop:'50px' }}>
-        <div style={{ maxWidth: '400px', width: '100%' }}>
-          <h3 style={{ textAlign: 'right', marginBottom: '5px' }}>Nivel de Riesgo</h3>
+  
+      <div className='detailed-table-wrapper' style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', paddingRight: '50px', boxSizing: 'border-box', paddingTop: '20px' }}>
+        <div style={{ maxWidth: '400px', width: '100%', textAlign: 'right' }}>
+          <h3 style={{ marginBottom: '5px' }}>Nivel de Riesgo</h3>
           <table className='buttons-table' style={{ marginTop: '5px', width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
             <thead>
               <tr>
@@ -509,7 +506,7 @@ const Home = () => {
       </div>
     </div>
   );
-  
+
   
   return (
     <>
