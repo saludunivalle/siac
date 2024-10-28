@@ -6,6 +6,8 @@ import { styled } from '@mui/material/styles';
 import { Filtro4, Filtro5, Filtro7 } from "../service/data";
 import CollapsibleButton from "./CollapsibleButton";
 import '/src/styles/home.css';
+import '/src/styles/table.css';
+
 
 const Programas = () => {
     const location = useLocation();
@@ -160,6 +162,22 @@ const Programas = () => {
         navigate('/');
     };
 
+    // Función para determinar el color del semáforo en función del año de vencimiento
+    const getSemaforoColor = (vencimientoYear) => {
+        const currentYear = new Date().getFullYear();
+    
+        if (vencimientoYear < currentYear) {
+        return '#D3D3D3'; // Gris para vencido
+        } else if (vencimientoYear <= currentYear + 1) {
+        return '#FED5D1'; // Rojo para vencimiento en el próximo año
+        } else if (vencimientoYear > currentYear + 1 && vencimientoYear <= currentYear + 3) {
+        return '#FEFBD1'; // Amarillo para vencimiento entre un año y tres años
+        } else {
+        return '#E6FFE6'; // Verde para más de tres años de vencimiento
+        }
+    };
+    
+
     const handleButtonClick = (buttonValue) => {
         setSelectedValues(prevSelectedValues => {
             let newSelectedValues = prevSelectedValues.includes(buttonValue)
@@ -258,40 +276,52 @@ const Programas = () => {
                 {loading ? (
                     <p>Cargando datos...</p>
                 ) : (
-                    <table>
+                    <table style={{ width: '100%' }}>
                         <tbody>
-                            {filteredData.map((item, index) => (
-                                <tr key={index} onClick={() => handleRowClick(item)}>
-                                    <td className="bold" style={{ width: '25%', fontSize: '14px', textAlign: 'left', paddingLeft: '5px' }}>{item['programa académico']}</td>
-                                    <td>{item['departamento']}</td>
-                                    <td>{item['sección']}</td>
-                                    <td>{item['estado']}</td>
-                                    <td>{item['pregrado/posgrado']}</td>
-                                    <td>{item['nivel de formación']}</td>
-                                    <td>{item['rc vigente']}</td>
-                                    <td>{item['fechavencrc']}</td>
-                                    <td>{item['ac vigente']}</td>
-                                    <td>{item['fechavencac']}</td>
-                                    {/* <Tooltip title="CREA" arrow>
-                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'CREA') }}></td>
-                                    </Tooltip>
-                                    <Tooltip title="MOD" arrow>
-                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'MOD') }}></td>
-                                    </Tooltip>
-                                    <Tooltip title="RRC" arrow>
-                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'RRC') }}></td>
-                                    </Tooltip>
-                                    <Tooltip title="AAC" arrow>
-                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'AAC') }}></td>
-                                    </Tooltip>
-                                    <Tooltip title="RAAC" arrow>
-                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'RAAC') }}></td>
-                                    </Tooltip>
-                                    <Tooltip title="INT" arrow>
-                                        <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'INT') }}></td>
-                                    </Tooltip> */}
-                                </tr>
-                            ))}
+                            {filteredData.map((item, index) => {
+                                const rrcYear = item['fechavencrc'] ? parseInt(item['fechavencrc'].split('/')[2]) : null;
+                                const aacYear = item['fechavencac'] ? parseInt(item['fechavencac'].split('/')[2]) : null;
+    
+                                const rrcColor = rrcYear ? getSemaforoColor(rrcYear) : 'transparent';
+                                const aacColor = aacYear ? getSemaforoColor(aacYear) : 'transparent';
+
+                                return (
+                                    <tr key={index} onClick={() => handleRowClick(item)}>
+                                        <td className="bold" style={{ width: '25%', fontSize: '14px', textAlign: 'left', paddingLeft: '5px' }}>{item['programa académico']}</td>
+                                        <td>{item['departamento']}</td>
+                                        <td>{item['sección']}</td>
+                                        <td>{item['estado']}</td>
+                                        <td>{item['pregrado/posgrado']}</td>
+                                        <td>{item['nivel de formación']}</td>
+                                        <td>{item['rc vigente']}</td>
+                                        <td style={{ backgroundColor: rrcColor }}>
+                                            {item['fechavencrc'] ? item['fechavencrc'] : 'N/A'}
+                                        </td>
+                                        <td>{item['ac vigente']}</td>
+                                        <td style={{ backgroundColor: aacColor }}>
+                                            {item['fechavencac'] ? item['fechavencac'] : 'N/A'}
+                                        </td>
+                                        {/* <Tooltip title="CREA" arrow>
+                                            <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'CREA') }}></td>
+                                        </Tooltip>
+                                        <Tooltip title="MOD" arrow>
+                                            <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'MOD') }}></td>
+                                        </Tooltip>
+                                        <Tooltip title="RRC" arrow>
+                                            <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'RRC') }}></td>
+                                        </Tooltip>
+                                        <Tooltip title="AAC" arrow>
+                                            <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'AAC') }}></td>
+                                        </Tooltip>
+                                        <Tooltip title="RAAC" arrow>
+                                            <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'RAAC') }}></td>
+                                        </Tooltip>
+                                        <Tooltip title="INT" arrow>
+                                            <td className="hover-darken" style={{ width: '5%', backgroundColor: getCellBackgroundColor(item, 'INT') }}></td>
+                                        </Tooltip> */}
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 )}
