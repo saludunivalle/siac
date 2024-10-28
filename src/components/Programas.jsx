@@ -162,7 +162,6 @@ const Programas = () => {
         navigate('/');
     };
 
-    // Función para determinar el color del semáforo en función del año de vencimiento
     const getSemaforoColor = (vencimientoYear) => {
         const currentYear = new Date().getFullYear();
     
