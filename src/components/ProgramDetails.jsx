@@ -46,16 +46,16 @@ const ProgramDetails = () => {
             try {
                 const data = await Filtro5(); 
                 const uniqueOptions = {
-                    Sede: [...new Set(data.map((item) => item.sede))],
-                    Escuela: [...new Set(data.map((item) => item.escuela))],
-                    Departamento: [...new Set(data.map((item) => item.departamento))],
-                    Sección: [...new Set(data.map((item) => item.sección))],
-                    'Nivel Académico': [...new Set(data.map((item) => item['pregrado/posgrado']))],
-                    'Nivel de Formación': [...new Set(data.map((item) => item['nivel de formación']))],
-                    Jornada: [...new Set(data.map((item) => item.jornada))],
-                    Modalidad: [...new Set(data.map((item) => item.modalidad))],
-                    Periodicidad: [...new Set(data.map((item) => item.periodicidad))],
-                    Acreditable: [...new Set(data.map((item) => item.acreditable))],
+                    Sede: [...new Set(data.map((item) => item.sede).filter(option => option && option.trim() !== " "))],
+                    Escuela: [...new Set(data.map((item) => item.escuela).filter(option => option && option.trim() !== " "))],
+                    Departamento: [...new Set(data.map((item) => item.departamento).filter(option => option && option.trim() !== " "))],
+                    Sección: [...new Set(data.map((item) => item.sección).filter(option => option && option.trim() !== " "))],
+                    'Nivel Académico': [...new Set(data.map((item) => item['pregrado/posgrado']).filter(option => option && option.trim() !== " "))],
+                    'Nivel de Formación': [...new Set(data.map((item) => item['nivel de formación']).filter(option => option && option.trim() !== " "))],
+                    Jornada: [...new Set(data.map((item) => item.jornada).filter(option => option && option.trim() !== " "))],
+                    Modalidad: [...new Set(data.map((item) => item.modalidad).filter(option => option && option.trim() !== " "))],
+                    Periodicidad: [...new Set(data.map((item) => item.periodicidad).filter(option => option && option.trim() !== " "))],
+                    Acreditable: [...new Set(data.map((item) => item.acreditable).filter(option => option && option.trim() !== " "))],
                 };
                 setOptions(uniqueOptions);
             } catch (error) {
@@ -64,6 +64,7 @@ const ProgramDetails = () => {
         };
         fetchOptions();
     }, []);
+    
 
     const handleDateChange = (date, field) => {
         setFormData({
@@ -384,7 +385,7 @@ const ProgramDetails = () => {
                         <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
                             {Object.keys(formData).map((key) => (
                                 <div key={key}>
-                                    {key === 'Créditos' ? (
+                                    {key === 'Créditos' || key === 'Número renovaciones RRC' ? (
                                         <TextField
                                             label={key}
                                             name={key}
@@ -421,7 +422,7 @@ const ProgramDetails = () => {
                                             select
                                             label={key}
                                             name={key}
-                                            value={formData[key]}
+                                            value={formData[key] || ""} // Permitir que el valor inicial sea vacío si no hay dato
                                             onChange={handleChange}
                                             variant="outlined"
                                             fullWidth
@@ -430,12 +431,17 @@ const ProgramDetails = () => {
                                                 native: true,
                                             }}
                                         >
+                                            {/* Placeholder que se muestra al inicio si no hay valor seleccionado */}
+                                            <option value="" disabled>
+                                                
+                                            </option>
                                             {options[key].map((option, index) => (
                                                 <option key={index} value={option}>
                                                     {option}
                                                 </option>
                                             ))}
                                         </TextField>
+
                                     ) : (
                                         <TextField
                                             label={key}
