@@ -9,6 +9,13 @@ import '/src/styles/home.css';
 import Crea from './Crea';
 import Aac from './Aac';
 import Mod from './Mod';
+import { Pie } from 'react-chartjs-2';
+import { Card, CardContent, Typography, Grid } from '@mui/material';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import '/src/styles/home.css';
+
+ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 const Home = () => {
   const [globalVariable, setGlobalVariable] = useState(); // Variable global
@@ -54,6 +61,293 @@ const Home = () => {
 
   const navigate = useNavigate();
 
+  //nueva tabla:
+  const [programData, setProgramData] = useState({
+    activos: {
+      pregrado: { universitario: 0, tecnologico: 0 },
+      posgrado: {
+        maestria: 0,
+        especializacionUniversitaria: 0,
+        especializacionMedicoQuirurgica: 0,
+        doctorado: 0,
+      },
+      total: 0,
+    },
+    enCreacion: 0,
+    otros: 0,
+    inactivos: 0,
+    totalGeneral: 0,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Obtener los datos desde Filtro5 (deberás reemplazar con tu lógica para obtener los datos)
+        const response = await Filtro5();
+        
+        // Filtrar los programas activos de pregrado y posgrado
+        const activosPregradoUniversitario = response.filter(
+          (item) =>
+            item['pregrado/posgrado'] === 'Pregrado' &&
+            item['nivel de formación'] === 'Universitario' &&
+            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+        ).length;
+
+        const activosPregradoTecnologico = response.filter(
+          (item) =>
+            item['pregrado/posgrado'] === 'Pregrado' &&
+            item['nivel de formación'] === 'Tecnológico' &&
+            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+        ).length;
+
+        const activosPosgrado = {
+          maestria: response.filter(
+            (item) =>
+              item['pregrado/posgrado'] === 'Posgrado' &&
+              item['nivel de formación'] === 'Maestría' &&
+              (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+          ).length,
+          especializacionUniversitaria: response.filter(
+            (item) =>
+              item['pregrado/posgrado'] === 'Posgrado' &&
+              item['nivel de formación'] === 'Especialización Universitaria' &&
+              (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+          ).length,
+          especializacionMedicoQuirurgica: response.filter(
+            (item) =>
+              item['pregrado/posgrado'] === 'Posgrado' &&
+              item['nivel de formación'] === 'Especialización Médico Quirúrgica' &&
+              (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+          ).length,
+          doctorado: response.filter(
+            (item) =>
+              item['pregrado/posgrado'] === 'Posgrado' &&
+              item['nivel de formación'] === 'Doctorado' &&
+              (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+          ).length,
+        };
+
+        // Filtrar programas en creación
+        const enCreacion = response.filter(
+          (item) =>
+            item['estado'] === 'En Creación' ||
+            item['estado'] === 'En Creación - Sede'
+        ).length;
+
+        // Filtrar otros programas
+        const otros = response.filter(
+          (item) => item['estado'] === 'Negación RC'||
+            item['estado'] === 'N/A'
+        ).length;
+
+        // Filtrar programas inactivos
+        const inactivos = response.filter(
+          (item) =>
+            item['estado'] === 'Inactivo' ||
+            item['estado'] === 'Inactivo - Sede' || 
+            item['estado'] === 'Inactivo - Vencido RC' || 
+            item['estado'] === 'Desistido' || 
+            item['estado'] === 'Rechazado' || 
+            item['estado'] === 'Desistido Interno' || 
+            item['estado'] === 'Desistido Interno - Sede' || 
+            item['estado'] === 'Desistido MEN' || 
+            item['estado'] === 'Desistido MEN - Sede'
+        ).length;
+
+        // Calcular el total de programas activos
+        const totalActivos =
+          activosPregradoUniversitario +
+          activosPregradoTecnologico +
+          activosPosgrado.maestria +
+          activosPosgrado.especializacionUniversitaria +
+          activosPosgrado.especializacionMedicoQuirurgica +
+          activosPosgrado.doctorado;
+
+        // Actualizar el estado con los datos filtrados
+        setProgramData({
+          activos: {
+            pregrado: {
+              universitario: activosPregradoUniversitario,
+              tecnologico: activosPregradoTecnologico,
+            },
+            posgrado: activosPosgrado,
+            total: totalActivos,
+          },
+          enCreacion,
+          otros,
+          inactivos,
+          totalGeneral: totalActivos + enCreacion + otros + inactivos,
+        });
+      } catch (error) {
+        console.error('Error al filtrar datos:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+
+  //Para la grafica
+  const [chartDataNivelAcademico, setChartDataNivelAcademico] = useState(null);
+  const [chartDataNivelFormacion, setChartDataNivelFormacion] = useState(null);
+  const [chartDataEscuelas, setChartDataEscuelas] = useState(null);
+  const [filteredData2, setFilteredData2] = useState(null);
+  const [selectedNivelFormacion, setSelectedNivelFormacion] = useState('Todos');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Obtener los datos desde Filtro5
+        const response = await Filtro5();
+        setFilteredData2(response);
+        updateCharts(response);
+      } catch (error) {
+        console.error('Error al obtener los datos para la gráfica:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const updateCharts = (data) => {
+    // Filtrar los programas activos por nivel académico
+    const activosPregrado = data.filter(
+      (item) =>
+        item['pregrado/posgrado'] === 'Pregrado' &&
+        (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+    ).length;
+
+    const activosPosgrado = data.filter(
+      (item) =>
+        item['pregrado/posgrado'] === 'Posgrado' &&
+        (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+    ).length;
+
+    // Filtrar los programas activos por nivel de formación
+    const nivelFormacionCounts = data.reduce((acc, item) => {
+      if ((item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')) {
+        const nivelFormacion = item['nivel de formación'];
+        acc[nivelFormacion] = (acc[nivelFormacion] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    // Filtrar los programas activos por escuela
+    const escuelaCounts = data.reduce((acc, item) => {
+      if ((item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')) {
+        const escuela = item['escuela'];
+        acc[escuela] = (acc[escuela] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    // Configurar los datos para la gráfica de nivel académico
+    setChartDataNivelAcademico({
+      labels: ['Pregrado', 'Posgrado'],
+      datasets: [
+        {
+          label: 'Programas Activos por Nivel Académico',
+          data: [activosPregrado, activosPosgrado],
+          backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)'],
+          borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
+          borderWidth: 1,
+        },
+      ],
+      plugins: {
+        datalabels: {
+          color: '#fff',
+          anchor: 'center',
+          align: 'center',
+          formatter: (value) => value,
+        },
+      },
+    });
+
+    // Configurar los datos para la gráfica de nivel de formación
+    setChartDataNivelFormacion({
+      labels: Object.keys(nivelFormacionCounts),
+      datasets: [
+        {
+          label: 'Programas Activos por Nivel de Formación',
+          data: Object.values(nivelFormacionCounts),
+          backgroundColor: [
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)',
+            'rgba(255, 159, 64, 0.6)',
+            'rgba(54, 162, 235, 0.6)'
+          ],
+          borderColor: [
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(54, 162, 235, 1)'
+          ],
+          borderWidth: 1,
+        },
+      ],
+      plugins: {
+        datalabels: {
+          color: '#fff',
+          anchor: 'center',
+          align: 'center',
+          formatter: (value) => value,
+        },
+      },
+    });
+
+    // Configurar los datos para la gráfica de escuelas
+    setChartDataEscuelas({
+      labels: Object.keys(escuelaCounts),
+      datasets: [
+        {
+          label: 'Programas Activos por Escuela',
+          data: Object.values(escuelaCounts),
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.6)',
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)',
+            'rgba(255, 159, 64, 0.6)'
+          ],
+          borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+          ],
+          borderWidth: 1,
+        },
+      ],
+      plugins: {
+        datalabels: {
+          color: '#fff',
+          anchor: 'center',
+          align: 'center',
+          formatter: (value) => value,
+        },
+      },
+    });
+  };
+
+  const handleLegendClick = (nivelFormacion) => {
+    if (nivelFormacion === 'Todos') {
+      updateCharts(filteredData2);
+    } else {
+      const filtered = filteredData2.filter(
+        (item) => item['nivel de formación'] === nivelFormacion && (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+      );
+      updateCharts(filtered);
+    }
+    setSelectedNivelFormacion(nivelFormacion);
+  };
+
+  //Login
+
   useEffect(() => {
       if (sessionStorage.getItem('logged')) {
           const res = JSON.parse(sessionStorage.getItem('logged'));
@@ -68,9 +362,9 @@ const Home = () => {
       if (isCargo.includes('Posgrados')) {
           const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
           console.log("Datos filtrados por Posgrados:", filtered);
-          setFilteredData(filtered);
+          setFilteredData2(filtered);
       } else {
-          setFilteredData(rowData);
+          setFilteredData2(rowData);
       }
   }, [rowData, isCargo]);
 
@@ -530,7 +824,7 @@ const Home = () => {
         {programasVisible && (
           <div style={{ width:'25%' }}>
           <div style={{ fontSize: '25px', width:'100%', display: 'flex', justifyContent:'center', marginTop:'-40px' }}>Programas</div>
-          <div className='programas' onClick={handleClick} style={{  width:'100%', alignSelf: 'flex-start', marginLeft: '20px' }}>
+          {/* <div className='programas' onClick={handleClick} style={{  width:'100%', alignSelf: 'flex-start', marginLeft: '20px' }}>
             <table>
               <thead>
                 <tr></tr>
@@ -570,6 +864,69 @@ const Home = () => {
                 </tr>
               </tbody>
             </table>
+          </div> */}
+
+          <div className='programas' onClick={handleClick} style={{  width:'100%', alignSelf: 'flex-start', marginLeft: '20px' }}>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td><strong>ACTIVOS</strong></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>Pregrado</td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>- Universitario</td>
+                        <td>{programData.activos.pregrado.universitario}</td>
+                      </tr>
+                      <tr>
+                        <td>- Tecnológico</td>
+                        <td>{programData.activos.pregrado.tecnologico}</td>
+                      </tr>
+                      <tr>
+                        <td>Posgrado</td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>- Maestría</td>
+                        <td>{programData.activos.posgrado.maestria}</td>
+                      </tr>
+                      <tr>
+                        <td>- Especialización Universitaria</td>
+                        <td>{programData.activos.posgrado.especializacionUniversitaria}</td>
+                      </tr>
+                      <tr>
+                        <td>- Especialización Médico Quirúrgica</td>
+                        <td>{programData.activos.posgrado.especializacionMedicoQuirurgica}</td>
+                      </tr>
+                      <tr>
+                        <td>- Doctorado</td>
+                        <td>{programData.activos.posgrado.doctorado}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Total Activos</strong></td>
+                        <td><strong>{programData.activos.total}</strong></td>
+                      </tr>
+                      <tr>
+                        <td><strong>EN CREACIÓN</strong></td>
+                        <td>{programData.enCreacion}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>OTROS</strong></td>
+                        <td>{programData.otros}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>INACTIVOS</strong></td>
+                        <td>{programData.inactivos}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>TOTAL GENERAL</strong></td>
+                        <td><strong>{programData.totalGeneral}</strong></td>
+                      </tr>
+                    </tbody>
+                  </table>
           </div>
           <div className='new-table' style={{ width:'100%', alignSelf: 'flex-start', marginLeft: '20px', marginTop: '20px' }}>
             <div style={{ fontSize: '25px', width:'100%', display: 'flex', justifyContent:'center', marginTop:'-20px' }}>Próximos a vencerse</div>
@@ -696,6 +1053,62 @@ const Home = () => {
           </div>
         </>
       )}
+
+      <div style={{marginTop:'50px', marginBottom:'50px'}}>
+        <Grid container spacing={2} justifyContent="center">
+          <Grid item xs={12} sm={4} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" component="div">
+                  Programas Activos por Nivel Académico
+                </Typography>
+                {chartDataNivelAcademico && <Pie data={chartDataNivelAcademico} options={{ plugins: { datalabels: { display: true } } }} />}
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={4} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" component="div">
+                  Programas Activos por Nivel de Formación
+                </Typography>
+                {chartDataNivelFormacion && (
+                  <Pie
+                    data={chartDataNivelFormacion}
+                    options={{
+                      plugins: {
+                        datalabels: { display: true },
+                        legend: {
+                          onClick: (e, legendItem) => {
+                            const nivelFormacion = legendItem.text;
+                            handleLegendClick(nivelFormacion);
+                          },
+                        },
+                      },
+                    }}
+                  />
+                )}
+                <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                  <button onClick={() => handleLegendClick('Todos')} style={{ padding: '5px 10px', border: 'none', backgroundColor: '#3f51b5', color: 'white', cursor: 'pointer' }}>
+                    Mostrar Todos
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={4} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" component="div">
+                  Programas Activos por Escuela
+                </Typography>
+                {chartDataEscuelas && <Pie data={chartDataEscuelas} options={{ plugins: { datalabels: { display: true } } }} />}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </div>
+
       {selectedValue === 'option1' && (
         <>
           <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
