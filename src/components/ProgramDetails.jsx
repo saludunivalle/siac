@@ -6,7 +6,7 @@ import Header from './Header';
 import Seguimiento from './Seguimiento';
 import { Filtro5, Filtro7, FiltroHistorico } from "../service/data";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'; 
-import { Tabs, Tab, Box, Button, TextField } from '@mui/material';
+import { Tabs, Tab, Box, Button, TextField, Grid } from '@mui/material';
 import { format } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'; // IMPORTACIÓN CORRECTA DEL ADAPTADOR
@@ -26,7 +26,7 @@ const ProgramDetails = () => {
         rrc: '',
         raac: '',
     });
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);    
 
     const [options, setOptions] = useState({
         Sede: [],
@@ -339,128 +339,170 @@ const ProgramDetails = () => {
                     <div className='about-program-general'>
                         {/* Sección 1: Facultad hasta Sede */}
                         <div className='about-program-section'>
-                            <div className='about-program'><strong>Facultad: </strong>&nbsp; {facultad || 'N/A'}</div>
-                            <div className='about-program'><strong>Escuela: </strong>&nbsp; {escuela || 'N/A'}</div>
-                            <div className='about-program'><strong>Departamento: </strong>&nbsp; {departamento || 'N/A'}</div>
-                            <div className='about-program'><strong>Sección: </strong>&nbsp; {seccion || 'N/A'}</div>
-                            <div className='about-program'><strong>Sede: </strong>&nbsp; {sede || 'N/A'}</div>
+                            <div className='about-program'><strong>Facultad: </strong>&nbsp; {formData['Facultad'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Escuela: </strong>&nbsp; {formData['Escuela'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Departamento: </strong>&nbsp; {formData['Departamento'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Sección: </strong>&nbsp; {formData['Sección'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Sede: </strong>&nbsp; {formData['Sede'] || 'N/A'}</div>
                         </div>
-                    
+                                            
                         {/* Sección 2: Nivel Académico hasta Modalidad */}
                         <div className='about-program-section'>
-                            <div className='about-program'><strong>Nivel Académico: </strong>&nbsp; {academico || 'N/A'}</div>
-                            <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formacion || 'N/A'}</div>
-                            <div className='about-program'><strong>Jornada: </strong>&nbsp; {jornada || 'N/A'}</div>
-                            <div className='about-program'><strong>Modalidad: </strong>&nbsp; {modalidad || 'N/A'}</div>
+                            <div className='about-program'><strong>Nivel Académico: </strong>&nbsp; {formData['Nivel Académico'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Nivel de Formación: </strong>&nbsp; {formData['Nivel de Formación'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Jornada: </strong>&nbsp; {formData['Jornada'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Modalidad: </strong>&nbsp; {formData['Modalidad'] || 'N/A'}</div>
                         </div>
-                    
+                             
                         {/* Sección 3: Título a conceder hasta Proceso de Contingencia */}
                         <div className='about-program-section'>
-                            <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {titulo || 'N/A'}</div>
-                            <div className='about-program'><strong>Créditos: </strong>&nbsp; {creditos || 'N/A'}</div>
-                            <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {periodicidad || 'N/A'}</div>
-                            <div className='about-program'><strong>Duración: </strong>&nbsp; {duracion || 'N/A'}</div>
-                            <div className='about-program'><strong>Acreditable: </strong>&nbsp; {acreditable || 'N/A'}</div>
-                            <div className='about-program'><strong>Proceso de Contingencia: </strong>&nbsp; {contingencia || 'N/A'}</div>
+                            <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {formData['Titulo a Conceder'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Créditos: </strong>&nbsp; {formData['Créditos'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {formData['Periodicidad'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Duración: </strong>&nbsp; {formData['Duración'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Proceso de Contingencia: </strong>&nbsp; {formData['Contingencia'] || 'N/A'}</div>
                         </div>
-                    
+
                         {/* Sección 4: Fecha Otorgamiento RRC hasta Número Renovaciones RRC */}
                         <div className='about-program-section'>
-                            <div className='about-program'><strong>Fecha Otorgamiento RRC: </strong>&nbsp; {fechaexpedrc || 'N/A'}</div>
-                            <div className='about-program'><strong>Fecha Vencimiento RRC: </strong>&nbsp; {fechavencrc || 'N/A'}</div>
+                            <div className='about-program'><strong>Fecha Otorgamiento RRC: </strong>&nbsp; {formData['FechaExp RRC'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Fecha Vencimiento RRC: </strong>&nbsp; {formData['Fecha RRC'] || 'N/A'}</div>
                             <div className='about-program'><strong>Resolución RRC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.rrc || 'N/A' }} /></div>
-                            <div className='about-program'><strong>Número Renovaciones RRC: </strong>&nbsp; {rowData['número renovaciones RRC'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Número Renovaciones RRC: </strong>&nbsp; {formData['Número renovaciones RRC'] || 'N/A'}</div>
                         </div>
-                    
+
                         {/* Sección 5: Fecha Otorgamiento RAAC hasta Resolución RAAC */}
                         <div className='about-program-section'>
-                            <div className='about-program'><strong>Fecha Otorgamiento RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
-                            <div className='about-program'><strong>Fecha Vencimiento RAAC: </strong>&nbsp; {fechavencrac || 'N/A'}</div>
+                            <div className='about-program'><strong>Fecha Otorgamiento RAAC: </strong>&nbsp; {formData['FechaExp RAAC'] || 'N/A'}</div>
+                            <div className='about-program'><strong>Fecha Vencimiento RAAC: </strong>&nbsp; {formData['Fecha RAAC'] || 'N/A'}</div>
                             <div className='about-program'><strong>Resolución RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
+                            <div className='about-program'><strong>Acreditable: </strong>&nbsp; {formData['Acreditable'] || 'N/A'}</div>
                         </div>
                     </div>
                     
                 ) : (
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
                         <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
-                            {Object.keys(formData).map((key) => (
-                                <div key={key}>
-                                    {key === 'Créditos' || key === 'Número renovaciones RRC' ? (
-                                        <TextField
-                                            label={key}
-                                            name={key}
-                                            value={formData[key]}
-                                            onChange={handleChange}
-                                            variant="outlined"
-                                            fullWidth
-                                            margin="normal"
-                                            type="number" // Limitar a números
-                                            inputMode="numeric" // Mostrar teclado numérico en móviles
-                                            onKeyPress={(e) => {
-                                                if (!/[0-9]/.test(e.key)) {
-                                                    e.preventDefault(); // Prevenir la entrada de cualquier cosa que no sea un dígito
-                                                }
-                                            }}
-                                            inputProps={{ min: 0 }} // No permitir valores negativos
-                                        />
-                                    ) : ['FechaExp RRC', 'Fecha RRC', 'FechaExp RAAC', 'Fecha RAAC'].includes(key) ? (
-                                        <DatePicker
-                                            label={key}
-                                            value={
-                                                formData[key]
-                                                    ? new Date(formData[key].split('/').reverse().join('-'))
-                                                    : null
-                                            }
-                                            onChange={(newValue) => handleDateChange(newValue, key)}
-                                            renderInput={(params) => (
-                                                <TextField {...params} fullWidth margin="normal" />
-                                            )}
-                                            sx={{ marginBottom: '10px' }}
-                                        />
-                                    ) : options[key] && options[key].length > 0 ? (
-                                        <TextField
-                                            select
-                                            label={key}
-                                            name={key}
-                                            value={formData[key] || ""} // Permitir que el valor inicial sea vacío si no hay dato
-                                            onChange={handleChange}
-                                            variant="outlined"
-                                            fullWidth
-                                            margin="normal"
-                                            SelectProps={{
-                                                native: true,
-                                            }}
-                                        >
-                                            {/* Placeholder que se muestra al inicio si no hay valor seleccionado */}
-                                            <option value="" disabled>
-                                                
-                                            </option>
-                                            {options[key].map((option, index) => (
-                                                <option key={index} value={option}>
-                                                    {option}
-                                                </option>
-                                            ))}
-                                        </TextField>
-
-                                    ) : (
-                                        <TextField
-                                            label={key}
-                                            name={key}
-                                            value={formData[key]}
-                                            onChange={handleChange}
-                                            variant="outlined"
-                                            fullWidth
-                                            margin="normal"
-                                        />
-                                    )}
-                                </div>
-                            ))}
-                            <Button type="submit" variant="contained" color="primary" style={{ margin: '10px 0' }}>
-                                Actualizar Datos
-                            </Button>
-                            <Button onClick={() => setIsEditing(false)} variant="contained" color="secondary" style={{ margin: '10px 0', marginLeft: '10px' }}>
-                                Cancelar
-                            </Button>
+                        {Object.keys(formData).map((key, index) => {
+                            if (['FechaExp RRC', 'Fecha RRC', 'FechaExp RAAC', 'Fecha RAAC'].includes(key)) {
+                            // Agrupar las fechas en pares para mostrarlas en filas de dos columnas
+                            if (['FechaExp RRC', 'FechaExp RAAC'].includes(key)) {
+                                return (
+                                <Grid container spacing={2} key={index} style={{ marginBottom: '20px' }}>
+                                    <Grid item xs={6}>
+                                    <DatePicker
+                                        label={key === 'FechaExp RRC' ? 'Fecha Otorgamiento RRC' : key === 'FechaExp RAAC' ? 'Fecha Otorgamiento RAAC' : key}
+                                        value={
+                                        formData[key]
+                                            ? new Date(formData[key].split('/').reverse().join('-'))
+                                            : null
+                                        }
+                                        onChange={(newValue) => handleDateChange(newValue, key)}
+                                        renderInput={(params) => (
+                                        <TextField {...params} fullWidth margin="normal" />
+                                        )}
+                                    />
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                    <DatePicker
+                                        label={key === 'FechaExp RRC' ? 'Fecha Vencimiento RRC' : 'Fecha Vencimiento RAAC'}
+                                        value={
+                                        formData[key === 'FechaExp RRC' ? 'Fecha RRC' : 'Fecha RAAC']
+                                            ? new Date(
+                                                formData[key === 'FechaExp RRC' ? 'Fecha RRC' : 'Fecha RAAC']
+                                                .split('/')
+                                                .reverse()
+                                                .join('-')
+                                            )
+                                            : null
+                                        }
+                                        onChange={(newValue) =>
+                                        handleDateChange(
+                                            newValue,
+                                            key === 'FechaExp RRC' ? 'Fecha RRC' : 'Fecha RAAC'
+                                        )
+                                        }
+                                        renderInput={(params) => (
+                                        <TextField {...params} fullWidth margin="normal" />
+                                        )}
+                                    />
+                                    </Grid>
+                                </Grid>
+                                );
+                            }
+                            return null;
+                            }
+                            return (
+                            <div key={key}>
+                                {key === 'Créditos' || key === 'Número renovaciones RRC' ? (
+                                <TextField
+                                    label={key}
+                                    name={key}
+                                    value={formData[key]}
+                                    onChange={handleChange}
+                                    variant="outlined"
+                                    fullWidth
+                                    margin="normal"
+                                    type="number"
+                                    inputMode="numeric"
+                                    onKeyPress={(e) => {
+                                    if (!/[0-9]/.test(e.key)) {
+                                        e.preventDefault();
+                                    }
+                                    }}
+                                    inputProps={{ min: 0 }}
+                                />
+                                ) : options[key] && options[key].length > 0 ? (
+                                <TextField
+                                    select
+                                    label={key}
+                                    name={key}
+                                    value={formData[key] || ""}
+                                    onChange={handleChange}
+                                    variant="outlined"
+                                    fullWidth
+                                    margin="normal"
+                                    SelectProps={{
+                                    native: true,
+                                    }}
+                                >
+                                    <option value="" disabled></option>
+                                    {options[key].map((option, index) => (
+                                    <option key={index} value={option}>
+                                        {option}
+                                    </option>
+                                    ))}
+                                </TextField>
+                                ) : (
+                                <TextField
+                                    label={key}
+                                    name={key}
+                                    value={formData[key]}
+                                    onChange={handleChange}
+                                    variant="outlined"
+                                    fullWidth
+                                    margin="normal"
+                                />
+                                )}
+                            </div>
+                            );
+                        })}
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            color="primary"
+                            style={{ margin: '10px 0' }}
+                        >
+                            Actualizar Datos
+                        </Button>
+                        <Button
+                            onClick={() => setIsEditing(false)}
+                            variant="contained"
+                            color="secondary"
+                            style={{ margin: '10px 0', marginLeft: '10px' }}
+                        >
+                            Cancelar
+                        </Button>
                         </form>
                     </LocalizationProvider>
                 )}

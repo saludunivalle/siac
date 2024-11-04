@@ -192,7 +192,9 @@ const Home = () => {
   const [chartDataNivelFormacion, setChartDataNivelFormacion] = useState(null);
   const [chartDataEscuelas, setChartDataEscuelas] = useState(null);
   const [filteredData2, setFilteredData2] = useState(null);
+  const [selectedNivelAcademico, setSelectedNivelAcademico] = useState('Todos');
   const [selectedNivelFormacion, setSelectedNivelFormacion] = useState('Todos');
+  const [selectedEscuela, setSelectedEscuela] = useState('Todos');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -210,43 +212,69 @@ const Home = () => {
   }, []);
 
   const updateCharts = (data) => {
-    // Filtrar los programas activos por nivel académico
-    const activosPregrado = data.filter(
+    let filteredData = data;
+  
+    // Filtrar los programas según la escuela seleccionada
+    if (selectedEscuela !== 'Todos') {
+      filteredData = filteredData.filter(
+        (item) => item['escuela'] === selectedEscuela &&
+          (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+      );
+    }
+  
+    // Filtrar los programas según el nivel académico seleccionado
+    if (selectedNivelAcademico !== 'Todos') {
+      filteredData = filteredData.filter(
+        (item) => item['pregrado/posgrado'] === selectedNivelAcademico &&
+          (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+      );
+    }
+  
+    // Filtrar los programas según el nivel de formación seleccionado
+    if (selectedNivelFormacion !== 'Todos') {
+      filteredData = filteredData.filter(
+        (item) => item['nivel de formación'] === selectedNivelFormacion &&
+          (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+      );
+    }
+  
+    // Filtrar los programas activos por nivel académico utilizando los datos filtrados
+    const activosPregrado = filteredData.filter(
       (item) =>
         item['pregrado/posgrado'] === 'Pregrado' &&
         (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
     ).length;
-
-    const activosPosgrado = data.filter(
+  
+    const activosPosgrado = filteredData.filter(
       (item) =>
         item['pregrado/posgrado'] === 'Posgrado' &&
         (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
     ).length;
-
-    // Filtrar los programas activos por nivel de formación
-    const nivelFormacionCounts = data.reduce((acc, item) => {
-      if ((item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')) {
+  
+    // Filtrar los programas activos por nivel de formación utilizando los datos filtrados
+    const nivelFormacionCounts = filteredData.reduce((acc, item) => {
+      if (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede') {
         const nivelFormacion = item['nivel de formación'];
         acc[nivelFormacion] = (acc[nivelFormacion] || 0) + 1;
       }
       return acc;
     }, {});
-
-    // Filtrar los programas activos por escuela
-    const escuelaCounts = data.reduce((acc, item) => {
-      if ((item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')) {
+  
+    // Filtrar los programas activos por escuela utilizando los datos filtrados
+    const escuelaCounts = filteredData.reduce((acc, item) => {
+      if (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede') {
         const escuela = item['escuela'];
         acc[escuela] = (acc[escuela] || 0) + 1;
       }
       return acc;
     }, {});
-
+  
     // Configurar los datos para la gráfica de nivel académico
     setChartDataNivelAcademico({
       labels: ['Pregrado', 'Posgrado'],
       datasets: [
         {
-          label: 'Programas Activos por Nivel Académico',
+          label: 'Nivel Académico',
           data: [activosPregrado, activosPosgrado],
           backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)'],
           borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
@@ -262,13 +290,13 @@ const Home = () => {
         },
       },
     });
-
+  
     // Configurar los datos para la gráfica de nivel de formación
     setChartDataNivelFormacion({
       labels: Object.keys(nivelFormacionCounts),
       datasets: [
         {
-          label: 'Programas Activos por Nivel de Formación',
+          label: 'Nivel de Formación',
           data: Object.values(nivelFormacionCounts),
           backgroundColor: [
             'rgba(255, 206, 86, 0.6)',
@@ -296,13 +324,13 @@ const Home = () => {
         },
       },
     });
-
+  
     // Configurar los datos para la gráfica de escuelas
     setChartDataEscuelas({
       labels: Object.keys(escuelaCounts),
       datasets: [
         {
-          label: 'Programas Activos por Escuela',
+          label: 'Escuela',
           data: Object.values(escuelaCounts),
           backgroundColor: [
             'rgba(255, 99, 132, 0.6)',
@@ -333,18 +361,35 @@ const Home = () => {
       },
     });
   };
+  
+  const [chartsVisible, setChartsVisible] = useState(true);
 
-  const handleLegendClick = (nivelFormacion) => {
-    if (nivelFormacion === 'Todos') {
-      updateCharts(filteredData2);
+  const updateChartsVisibility = () => {
+    if (selectedNivelAcademico === 'Todos' && selectedNivelFormacion === 'Todos' && selectedEscuela === 'Todos') {
+      setChartsVisible(true);
     } else {
-      const filtered = filteredData2.filter(
-        (item) => item['nivel de formación'] === nivelFormacion && (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
-      );
-      updateCharts(filtered);
+      setChartsVisible(false);
     }
-    setSelectedNivelFormacion(nivelFormacion);
   };
+  
+  const handleAcademicLevelClick = (nivelAcademico) => {
+    setSelectedNivelAcademico(nivelAcademico);
+    updateCharts(filteredData2);
+    updateChartsVisibility();
+  };
+  
+  const handleLegendClick = (nivelFormacion) => {
+    setSelectedNivelFormacion(nivelFormacion);
+    updateCharts(filteredData2);
+    updateChartsVisibility();
+  };
+  
+  const handleEscuelaClick = (escuela) => {
+    setSelectedEscuela(escuela);
+    updateCharts(filteredData2);
+    updateChartsVisibility();
+  };
+  
 
   //Login
 
@@ -551,6 +596,7 @@ const Home = () => {
     setSelectedValue();
     setSelectedRow(null);
     setButtonsVisible(true); 
+    setChartsVisible(true); // Mostrar gráficas al regresar
   };
 
   const handleRowClick = (buttonValue, globalVar, rowKey) => {
@@ -573,6 +619,7 @@ const Home = () => {
     setProgramasVisible(false);
     setButtonsVisible(false); 
     setGlobalVariable(globalVar);
+    setChartsVisible(false); // Ocultar gráficas al hacer clic en un proceso
   };
 
   const handleClick = () => {
@@ -1054,60 +1101,106 @@ const Home = () => {
         </>
       )}
 
-      <div style={{marginTop:'50px', marginBottom:'50px'}}>
-        <Grid container spacing={2} justifyContent="center">
-          <Grid item xs={12} sm={4} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  Programas Activos por Nivel Académico
-                </Typography>
-                {chartDataNivelAcademico && <Pie data={chartDataNivelAcademico} options={{ plugins: { datalabels: { display: true } } }} />}
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={4} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  Programas Activos por Nivel de Formación
-                </Typography>
-                {chartDataNivelFormacion && (
-                  <Pie
-                    data={chartDataNivelFormacion}
-                    options={{
-                      plugins: {
-                        datalabels: { display: true },
-                        legend: {
-                          onClick: (e, legendItem) => {
-                            const nivelFormacion = legendItem.text;
-                            handleLegendClick(nivelFormacion);
+      {chartsVisible && (
+        <div style={{ marginTop: '50px', marginBottom: '50px' }}>
+          <Typography variant="h5" component="div" style={{ textAlign: 'center', marginBottom: '20px' }}>
+            Programas Activos
+          </Typography>
+          <Grid container spacing={2} justifyContent="center">
+            <Grid item xs={12} sm={4} md={4}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h5" component="div">
+                    Nivel Académico
+                  </Typography>
+                  {chartDataNivelAcademico && (
+                    <Pie
+                      data={chartDataNivelAcademico}
+                      options={{
+                        plugins: {
+                          datalabels: { display: true },
+                          legend: {
+                            onClick: (e, legendItem) => {
+                              const nivelAcademico = legendItem.text;
+                              handleAcademicLevelClick(nivelAcademico);
+                            },
                           },
                         },
-                      },
-                    }}
-                  />
-                )}
-                <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                  <button onClick={() => handleLegendClick('Todos')} style={{ padding: '5px 10px', border: 'none', backgroundColor: '#3f51b5', color: 'white', cursor: 'pointer' }}>
-                    Mostrar Todos
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
+                      }}
+                    />
+                  )}
+                  <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                    <button onClick={() => handleAcademicLevelClick('Todos')} style={{ padding: '5px 10px', border: 'none', backgroundColor: '#3f51b5', color: 'white', cursor: 'pointer' }}>
+                      Mostrar Todos
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={4} md={4}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h5" component="div">
+                    Nivel de Formación
+                  </Typography>
+                  {chartDataNivelFormacion && (
+                    <Pie
+                      data={chartDataNivelFormacion}
+                      options={{
+                        plugins: {
+                          datalabels: { display: true },
+                          legend: {
+                            onClick: (e, legendItem) => {
+                              const nivelFormacion = legendItem.text;
+                              handleLegendClick(nivelFormacion);
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                    <button onClick={() => handleLegendClick('Todos')} style={{ padding: '5px 10px', border: 'none', backgroundColor: '#3f51b5', color: 'white', cursor: 'pointer' }}>
+                      Mostrar Todos
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={4} md={4}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h5" component="div">
+                    Escuela
+                  </Typography>
+                  {chartDataEscuelas && (
+                    <Pie
+                      data={chartDataEscuelas}
+                      options={{
+                        plugins: {
+                          datalabels: { display: true },
+                          legend: {
+                            onClick: (e, legendItem) => {
+                              const escuela = legendItem.text;
+                              handleEscuelaClick(escuela);
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                    <button onClick={() => handleEscuelaClick('Todos')} style={{ padding: '5px 10px', border: 'none', backgroundColor: '#3f51b5', color: 'white', cursor: 'pointer' }}>
+                      Mostrar Todos
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
-          <Grid item xs={12} sm={4} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  Programas Activos por Escuela
-                </Typography>
-                {chartDataEscuelas && <Pie data={chartDataEscuelas} options={{ plugins: { datalabels: { display: true } } }} />}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </div>
+        </div>
+      )}
+
 
       {selectedValue === 'option1' && (
         <>
