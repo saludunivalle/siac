@@ -171,6 +171,20 @@ const Mod = ({ globalVariable }) => {
         };
     };
 
+    const getSemaforoColor = (vencimientoYear) => {
+        const currentYear = new Date().getFullYear();
+    
+        if (vencimientoYear < currentYear) {
+        return '#D3D3D3'; // Gris para vencido
+        } else if (vencimientoYear <= currentYear + 1) {
+        return '#FED5D1'; // Rojo para vencimiento en el próximo año
+        } else if (vencimientoYear > currentYear + 1 && vencimientoYear <= currentYear + 3) {
+        return '#FEFBD1'; // Amarillo para vencimiento entre un año y tres años
+        } else {
+        return '#E6FFE6'; // Verde para más de tres años de vencimiento
+        }
+    };
+
     const renderFilteredTable = (data) => {
         if (!data || data.length === 0) {
             return <p>Ningún programa por mostrar</p>;
@@ -190,19 +204,24 @@ const Mod = ({ globalVariable }) => {
                     <tbody>
                         {data.map((item, index) => {
                             const color = colors[item.id_programa] || 'white';
-    
+                            const rrcYear = item['fechavencrc'] ? parseInt(item['fechavencrc'].split('/')[2]) : null;
+                            const aacYear = item['fechavencac'] ? parseInt(item['fechavencac'].split('/')[2]) : null;
+
+                            const rrcColor = rrcYear ? getSemaforoColor(rrcYear) : 'transparent';
+                            const aacColor = aacYear ? getSemaforoColor(aacYear) : 'transparent';
+
                             return (
-                                <tr key={index} style={{backgroundColor: color}} onClick={() => handleRowClick(item)}>
-                                    <td className="bold" style={{fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
+                                <tr key={index} onClick={() => handleRowClick(item)}>
+                                    <td className="bold" style={{backgroundColor: color, fontSize:'14px', textAlign: 'left', paddingLeft:'5px'}}>{item['programa académico']}</td> 
                                     <td>{item['departamento']}</td> 
                                     <td>{item['sección']}</td> 
                                     {/* <td>{item['estado']}</td> */}
                                     <td>{item['pregrado/posgrado']}</td>
                                     <td>{item['nivel de formación']}</td>
                                     <td>{item['rc vigente']}</td>
-                                    <td>{item['fechavencrc']}</td>
+                                    <td style={{ backgroundColor: rrcColor }}>{item['fechavencrc']}</td>
                                     <td>{item['ac vigente']}</td>
-                                    <td>{item['fechavencac']}</td>
+                                    <td style={{ backgroundColor: aacColor }}>{item['fechavencac']}</td>
                                 </tr>
                             );
                         })}

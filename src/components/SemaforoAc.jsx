@@ -186,6 +186,20 @@ const SemaforoAC = ({ globalVariable }) => {
     }
   };
 
+  const getSemaforoColor = (vencimientoYear) => {
+      const currentYear = new Date().getFullYear();
+
+      if (vencimientoYear < currentYear) {
+      return '#D3D3D3'; // Gris para vencido
+      } else if (vencimientoYear <= currentYear + 1) {
+      return '#FED5D1'; // Rojo para vencimiento en el próximo año
+      } else if (vencimientoYear > currentYear + 1 && vencimientoYear <= currentYear + 3) {
+      return '#FEFBD1'; // Amarillo para vencimiento entre un año y tres años
+      } else {
+      return '#E6FFE6'; // Verde para más de tres años de vencimiento
+      }
+  };
+
   const renderFilteredTable = (data, filter) => {
     if (!data || data.length === 0) return <p>Ningún programa por mostrar</p>;
     const colors = {};
@@ -207,20 +221,76 @@ const SemaforoAC = ({ globalVariable }) => {
         ) : (
           <table>
             <tbody>
-              {filteredData.map((item, index) => (
-                <tr key={index} style={{ backgroundColor: colors[item.id_programa] }} onClick={() => handleRowClick(item)}>
-                  <td className="bold" style={{ fontSize: '14px', textAlign: 'left', paddingLeft: '5px' }}>{item['programa académico']}</td>
-                  <td>{item['departamento']}</td>
-                  <td>{item['sede']}</td>
-                  {/* <td>{item['escuela']}</td> */}
-                  <td>{item['pregrado/posgrado']}</td>
-                  <td>{item['nivel de formación']}</td>
-                  <td>{item['ac vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px' }} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px' }} />}</td>
-                  <td className="bold">{item['fechavencac']}</td>
-                  <td>{item['rc vigente'] === 'SI' ? <img src={Si_icon} alt="" style={{ width: '25px', height: '25px' }} /> : <img src={No_icon} alt="" style={{ width: '25px', height: '25px' }} />}</td>
-                  <td>{item['fechavencrc']}</td>                           
-                </tr>
-              ))}
+              {filteredData.map((item, index) => {
+                // Definir las variables para el año y colores
+                const rrcYear = item['fechavencrc'] ? parseInt(item['fechavencrc'].split('/')[2]) : null;
+                const aacYear = item['fechavencac'] ? parseInt(item['fechavencac'].split('/')[2]) : null;
+
+                const rrcColor = rrcYear ? getSemaforoColor(rrcYear) : 'transparent';
+                const aacColor = aacYear ? getSemaforoColor(aacYear) : 'transparent';
+
+                // Devolver el JSX para cada fila
+                return (
+                  <tr key={index} onClick={() => handleRowClick(item)}>
+                    <td
+                      className="bold"
+                      style={{
+                        backgroundColor: colors[item.id_programa] || 'white',
+                        fontSize: '14px',
+                        textAlign: 'left',
+                        paddingLeft: '5px'
+                      }}
+                    >
+                      {item['programa académico']}
+                    </td>
+                    <td>{item['departamento']}</td>
+                    <td>{item['sede']}</td>
+                    {/* Puedes descomentar la siguiente línea si decides mostrar la escuela */}
+                    {/* <td>{item['escuela']}</td> */}
+                    <td>{item['pregrado/posgrado']}</td>
+                    <td>{item['nivel de formación']}</td>
+                    <td>
+                      {item['ac vigente'] === 'SI' ? (
+                        <img
+                          src={Si_icon}
+                          alt=""
+                          style={{ width: '25px', height: '25px' }}
+                        />
+                      ) : (
+                        <img
+                          src={No_icon}
+                          alt=""
+                          style={{ width: '25px', height: '25px' }}
+                        />
+                      )}
+                    </td>
+                    <td
+                      className="bold"
+                      style={{ backgroundColor: aacColor }}
+                    >
+                      {item['fechavencac']}
+                    </td>
+                    <td>
+                      {item['rc vigente'] === 'SI' ? (
+                        <img
+                          src={Si_icon}
+                          alt=""
+                          style={{ width: '25px', height: '25px' }}
+                        />
+                      ) : (
+                        <img
+                          src={No_icon}
+                          alt=""
+                          style={{ width: '25px', height: '25px' }}
+                        />
+                      )}
+                    </td>
+                    <td style={{ backgroundColor: rrcColor }}>
+                      {item['fechavencrc']}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -95,6 +95,20 @@ const Aac = ({ globalVariable }) => {
     }
   };
 
+  const getSemaforoColor = (vencimientoYear) => {
+    const currentYear = new Date().getFullYear();
+
+    if (vencimientoYear < currentYear) {
+    return '#D3D3D3'; // Gris para vencido
+    } else if (vencimientoYear <= currentYear + 1) {
+    return '#FED5D1'; // Rojo para vencimiento en el próximo año
+    } else if (vencimientoYear > currentYear + 1 && vencimientoYear <= currentYear + 3) {
+    return '#FEFBD1'; // Amarillo para vencimiento entre un año y tres años
+    } else {
+    return '#E6FFE6'; // Verde para más de tres años de vencimiento
+    }
+};
+
   const handleRowClick = (rowData) => {
     navigate('/program_details', { state: { ...rowData, globalVariable } });
   };
@@ -122,20 +136,45 @@ const Aac = ({ globalVariable }) => {
         ) : (
           <table>
             <tbody>
-              {filteredData.map((item, index) => (
-                <tr key={index} style={{ backgroundColor: colors[item.id_programa] || 'white' }} onClick={() => handleRowClick(item)}>
-                  <td className="bold" style={{ fontSize: '14px', textAlign: 'left', paddingLeft: '5px' }}>{item['programa académico']}</td>
-                  <td>{item['departamento']}</td>
-                  <td>{item['sección']}</td>
-                  {/* <td>{item['estado']}</td> */}
-                  <td>{item['pregrado/posgrado']}</td>
-                  <td>{item['nivel de formación']}</td>
-                  <td>{item['rc vigente']}</td>
-                  <td>{item['fechavencrc']}</td>
-                  <td>{item['ac vigente']}</td>
-                  <td>{item['fechavencac']}</td>
-                </tr>
-              ))}
+              {filteredData.map((item, index) => {
+                // Definir las variables de año y colores aquí
+                const rrcYear = item['fechavencrc'] ? parseInt(item['fechavencrc'].split('/')[2]) : null;
+                const aacYear = item['fechavencac'] ? parseInt(item['fechavencac'].split('/')[2]) : null;
+
+                const rrcColor = rrcYear ? getSemaforoColor(rrcYear) : 'transparent';
+                const aacColor = aacYear ? getSemaforoColor(aacYear) : 'transparent';
+
+                // Devolver el componente JSX
+                return (
+                  <tr key={index} onClick={() => handleRowClick(item)}>
+                    <td
+                      className="bold"
+                      style={{
+                        backgroundColor: colors[item.id_programa] || 'white',
+                        fontSize: '14px',
+                        textAlign: 'left',
+                        paddingLeft: '5px'
+                      }}
+                    >
+                      {item['programa académico']}
+                    </td>
+                    <td>{item['departamento']}</td>
+                    <td>{item['sección']}</td>
+                    {/* Puedes descomentar la siguiente línea si decides mostrar el estado */}
+                    {/* <td>{item['estado']}</td> */}
+                    <td>{item['pregrado/posgrado']}</td>
+                    <td>{item['nivel de formación']}</td>
+                    <td>{item['rc vigente']}</td>
+                    <td style={{ backgroundColor: rrcColor }}>
+                      {item['fechavencrc']}
+                    </td>
+                    <td>{item['ac vigente']}</td>
+                    <td style={{ backgroundColor: aacColor }}>
+                      {item['fechavencac']}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
