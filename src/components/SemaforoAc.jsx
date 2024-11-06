@@ -339,8 +339,8 @@ const SemaforoAC = ({ globalVariable }) => {
           <button key={color} className='custom-button' style={setButtonStyles(color, clickedButton === color)} onClick={() => handleButtonClick(color)}>
             {color === 'white' && 'PROGRAMAS VENCIDOS'}
             {color === 'green' && 'AÑO Y 6 MESES'}
-            {color === 'yellow' && '6 MESES ANTES DE LA MITAD'}
-            {color === 'orange' && '3 AÑOS ANTES DEL VENCIMIENTO'}
+            {color === 'yellow' && '4 AÑOS ANTES DEL VENCIMIENTO'}
+            {color === 'orange' && '2 AÑOS ANTES DEL VENCIMIENTO'}
             {color === 'orange2' && '18 MESES ANTES DEL VENCIMIENTO'}
             {color === 'red' && 'AÑO DE VENCIMIENTO'}
             <br />

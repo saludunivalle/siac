@@ -130,6 +130,7 @@ const Seguimiento = ({ handleButtonClick }) => {
     };
 
     // Función para calcular fechas 
+    // Nueva función para calcular las fechas específicas
     function calcularFechas(fechaexpedrc, fechavencrc) {
         const partesFechaExpedicion = fechaexpedrc.split('/');
         const partesFechaVencimiento = fechavencrc.split('/');
@@ -144,17 +145,11 @@ const Seguimiento = ({ handleButtonClick }) => {
         fechaUnAñoSeisMesesDespues.setMonth(fechaUnAñoSeisMesesDespues.getMonth() + 6);
         fechaUnAñoSeisMesesDespues.setFullYear(fechaUnAñoSeisMesesDespues.getFullYear() + 1);
 
-        const fechaExpedicion = new Date(añoExpedicion, mesExpedicion, diaExpedicion);
-        const fechaVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
-        const diferenciaMilisegundos = fechaVencimiento - fechaExpedicion;
-        const diferenciaAños = diferenciaMilisegundos / (1000 * 60 * 60 * 24 * 365);
-        const mitadAños = diferenciaAños / 2;
-        const fechaMitad = new Date(fechaExpedicion);
-        fechaMitad.setFullYear(fechaMitad.getFullYear() + Math.floor(mitadAños));
-        fechaMitad.setMonth(fechaMitad.getMonth() - 6);
+        const fechaCuatroAñosAntesVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
+        fechaCuatroAñosAntesVencimiento.setFullYear(fechaCuatroAñosAntesVencimiento.getFullYear() - 4);
 
-        const fechaTresAñosAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
-        fechaTresAñosAntes.setFullYear(fechaTresAñosAntes.getFullYear() - 3);
+        const fechaDosAñosAntesVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
+        fechaDosAñosAntesVencimiento.setFullYear(fechaDosAñosAntesVencimiento.getFullYear() - 2);
 
         const fechaDieciochoMesesAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
         fechaDieciochoMesesAntes.setMonth(fechaDieciochoMesesAntes.getMonth() - 18);
@@ -168,8 +163,8 @@ const Seguimiento = ({ handleButtonClick }) => {
 
         return {
             unAñoSeisMesesDespues: formatDate(fechaUnAñoSeisMesesDespues),
-            seisMesesAntesMitad: formatDate(fechaMitad),
-            tresAñosAntes: formatDate(fechaTresAñosAntes),
+            cuatroAñosAntesVencimiento: formatDate(fechaCuatroAñosAntesVencimiento),
+            dosAñosAntesVencimiento: formatDate(fechaDosAñosAntesVencimiento),
             dieciochoMesesAntes: formatDate(fechaDieciochoMesesAntes)
         };
     }
@@ -1201,6 +1196,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                 fechaExpedicion={rowData['fechaexpedrc']}
                                 fechaVencimiento={rowData['fechavencrc']}
                                 fechasCalculadas={fechasCalculadas}
+                                tipo='RRC'
                             />
                             <CollapsibleButton buttonText="Renovación Registro Calificado" content={
                                 <>
@@ -1252,6 +1248,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                                 fechaExpedicion={rowData['fechaexpedac']}
                                 fechaVencimiento={rowData['fechavencac']}
                                 fechasCalculadas={fechasCalculadasAC}
+                                tipo='RAAC'
                             />
                             <CollapsibleButton buttonText="Renovación Acreditación" content={
                                 <>

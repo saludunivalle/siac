@@ -4,18 +4,22 @@ import logoCircular from '/src/assets/logocircular.png';
 
 const parseDate = (dateString) => dateString ? new Date(dateString.split('/').reverse().join('-') + 'T00:00:00') : null;
 
-const SimpleTimeline = ({ fechaExpedicion, fechaVencimiento, fechasCalculadas }) => {
+const SimpleTimeline = ({ fechaExpedicion, fechaVencimiento, fechasCalculadas, tipo }) => {
     const fechaExpedicionDate = parseDate(fechaExpedicion);
     const fechaVencimientoDate = parseDate(fechaVencimiento);
     const fechaActual = new Date(); 
 
+    // Títulos y cálculos basados en el tipo (RRC o RAAC)
+    const isRRC = tipo === 'RRC';
+    const tipoTexto = isRRC ? 'RRC' : 'RAAC';
+
     const fechas = [
-        { label: ['Expedición'], date: fechaExpedicionDate, color: 'blue' },
-        { label: ['1 Año y', '6 Meses Después'], date: parseDate(fechasCalculadas?.unAñoSeisMesesDespues), color: 'green' },
-        { label: ['6 Meses Antes', 'de la Mitad'], date: parseDate(fechasCalculadas?.seisMesesAntesMitad), color: 'yellow' },
-        { label: ['3 Años Antes', 'del Vencimiento'], date: parseDate(fechasCalculadas?.tresAñosAntes), color: 'orange' },
-        { label: ['18 Meses Antes', 'del Vencimiento'], date: parseDate(fechasCalculadas?.dieciochoMesesAntes), color: 'red' },
-        { label: ['Fecha del', 'Vencimiento'], date: fechaVencimientoDate, color: 'purple' },
+        { label: [`Reciben ${tipoTexto}`], date: fechaExpedicionDate, color: 'blue' },
+        { label: ['Rediseño del', 'plan de mejoramiento'], date: parseDate(fechasCalculadas?.unAñoSeisMesesDespues), color: 'green' },
+        { label: ['Autoevaluación para', `${tipoTexto}`], date: parseDate(fechasCalculadas?.cuatroAñosAntesVencimiento), color: 'yellow' },
+        { label: ['Radicación documento', 'en DACA'], date: parseDate(fechasCalculadas?.dosAñosAntesVencimiento), color: 'orange' },
+        { label: ['Radica al MEN'], date: parseDate(fechasCalculadas?.dieciochoMesesAntes), color: 'red' },
+        { label: [`Renovación de ${tipoTexto}`], date: fechaVencimientoDate, color: 'purple' },
     ].filter(fecha => fecha.date);
 
     const totalDuration = fechaVencimientoDate && fechaExpedicionDate ? fechaVencimientoDate - fechaExpedicionDate : null;

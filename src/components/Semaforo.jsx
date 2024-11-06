@@ -350,8 +350,8 @@ const Semaforo = ({ globalVariable }) => {
               >
                 {color === 'white' && 'PROGRAMAS VENCIDOS'}
                 {color === 'green' && 'AÑO Y 6 MESES'}
-                {color === 'yellow' && '6 MESES ANTES DE LA MITAD'}
-                {color === 'orange' && '3 AÑOS ANTES DEL VENCIMIENTO'}
+                {color === 'yellow' && '4 AÑOS ANTES DEL VECMIENTO'}
+                {color === 'orange' && '2 AÑOS ANTES DEL VENCIMIENTO'}
                 {color === 'orange2' && '18 MESES ANTES DEL VENCIMIENTO'}
                 {color === 'red' && 'AÑO DE VENCIMIENTO'}
                 <br />
