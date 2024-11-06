@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Filtro4, Filtro5, Filtro7 } from '../service/data';
 import '/src/styles/home.css'; 
 import CollapsibleButton from './CollapsibleButton';
+import * as XLSX from 'xlsx';
 
 const Aac = ({ globalVariable }) => {
   const location = useLocation();
@@ -99,18 +100,25 @@ const Aac = ({ globalVariable }) => {
     const currentYear = new Date().getFullYear();
 
     if (vencimientoYear < currentYear) {
-    return '#D3D3D3'; // Gris para vencido
+      return '#D3D3D3'; // Gris para vencido
     } else if (vencimientoYear <= currentYear + 1) {
-    return '#FED5D1'; // Rojo para vencimiento en el próximo año
+      return '#FED5D1'; // Rojo para vencimiento en el próximo año
     } else if (vencimientoYear > currentYear + 1 && vencimientoYear <= currentYear + 3) {
-    return '#FEFBD1'; // Amarillo para vencimiento entre un año y tres años
+      return '#FEFBD1'; // Amarillo para vencimiento entre un año y tres años
     } else {
-    return '#E6FFE6'; // Verde para más de tres años de vencimiento
+      return '#E6FFE6'; // Verde para más de tres años de vencimiento
     }
-};
+  };
 
   const handleRowClick = (rowData) => {
     navigate('/program_details', { state: { ...rowData, globalVariable } });
+  };
+
+  const handleDownloadExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(filteredData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos Filtrados');
+    XLSX.writeFile(workbook, 'datos_AAC.xlsx');
   };
 
   const renderFilteredTable = (data, filter) => {
@@ -184,6 +192,7 @@ const Aac = ({ globalVariable }) => {
 
   return (
     <div>
+      <button style={{marginTop:'20px', marginLeft:'20px'}} onClick={handleDownloadExcel} className="download-button">Generar Excel</button>
       {filteredData && filteredData.length > 0 ? (
         <div className='row-container'>
           <table style={{ width: '100%', textAlign: 'center', marginTop: '10px' }}>

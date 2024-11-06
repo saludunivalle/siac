@@ -4,6 +4,7 @@ import { Filtro4, Filtro5, Filtro7 } from '../service/data';
 import '/src/styles/home.css'; 
 import CollapsibleButton from './CollapsibleButton';
 import { Button, ButtonGroup } from "@mui/material";
+import * as XLSX from 'xlsx';
 
 const Mod = ({ globalVariable }) => {
     const location = useLocation();
@@ -74,6 +75,13 @@ const Mod = ({ globalVariable }) => {
     const handleRowClick = (rowData) => {
         navigate('/program_details', { state: { ...rowData, globalVariable } });
     };
+
+    const handleDownloadExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(filteredData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos Filtrados');
+        XLSX.writeFile(workbook, 'datos_MOD.xlsx');
+      };
 
     const getBackgroundColor = (data) => {
         if (!data || !data.id_programa) {
@@ -241,7 +249,8 @@ const Mod = ({ globalVariable }) => {
                     style={setButtonStyles('option2')}
                     onClick={() => handleButtonClick('option2')} > No Sustanciales </Button>
             </ButtonGroup>
-            <div>
+            <div> 
+                <button style={{marginTop:'20px', marginLeft:'20px'}} onClick={handleDownloadExcel} className="download-button">Generar Excel</button>
                 {filteredData && filteredData.length > 0 ? (
                     <div className='row-container'>
                         <table style={{ width: '100%', textAlign: 'center', marginTop: '10px' }}>

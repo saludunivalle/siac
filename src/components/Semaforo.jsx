@@ -8,6 +8,7 @@ import Si_icon from '../assets/si_icon.png';
 import No_icon from '../assets/no_icon.png';
 import { useNavigate } from 'react-router-dom';
 import { useMediaQuery } from '@mui/material';
+import * as XLSX from 'xlsx';
 
 const setButtonStyles = (buttonType, isClicked) => {
   const styles = {
@@ -105,6 +106,14 @@ const Semaforo = ({ globalVariable }) => {
     console.log('Datos de la fila:', rowData);
     navigate('/program_details', { state: { ...rowData, globalVariable } });
   };
+
+  const handleDownloadExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(filteredData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos Filtrados');
+    XLSX.writeFile(workbook, 'datos_RRC.xlsx');
+  };
+
 
   useEffect(() => {
     console.log(filteredData); 
@@ -369,6 +378,7 @@ const Semaforo = ({ globalVariable }) => {
               </button>
             ))}
           </div>
+          <button style={{marginTop:'20px', marginLeft:'20px'}} onClick={handleDownloadExcel} className="download-button">Generar Excel</button>
           {contenido_semaforo()}
         </>
       )}
