@@ -513,21 +513,28 @@ export const clearSheetExceptFirstRow = async (spreadsheetId, sheetName) => {
 
 export const sendDataToSheetNew = async (data) => {
   try {
-    const dataSend = {
-      insertData: data
-    };
-    const response = await fetchPostGeneral({
-      dataSend,
-      sheetName: 'REPORTE',
-      urlEndPoint: 'https://siac-server.vercel.app/sendReport',
-    });
-    if (response.status) {
-      console.log('Datos enviados correctamente al servidor.');
-    } else {
-      console.error('Error al enviar datos al servidor.');
+    const batchSize = 50; // Tamaño del lote
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize);
+      const dataSend = {
+        insertData: batch,
+      };
+
+      const response = await fetchPostGeneral({
+        dataSend,
+        sheetName: 'REPORTE',
+        urlEndPoint: 'https://siac-server.vercel.app/sendReport',
+      });
+
+      if (!response.status) {
+        console.error('Error al enviar lote de datos al servidor.');
+        throw new Error('Error al enviar lote de datos.');
+      }
     }
+    console.log('Datos enviados correctamente en lotes.');
   } catch (error) {
-    console.error('Error al procesar la solicitud:', error);
+    console.error('Error al procesar la solicitud por lotes:', error);
+    throw error;
   }
 };
 
