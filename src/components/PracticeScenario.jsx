@@ -416,9 +416,14 @@ const PracticeScenario = ({ data }) => {
 
     const [showAnexoForm, setShowAnexoForm] = useState(false);
     const [anexoFormData, setAnexoFormData] = useState({
-        nombreAnexo: '',
-        urlAnexo: ''
+        idEscenario: '', // Guardará el ID del escenario seleccionado
+        nombreEscenario: '', // Guardará el nombre del escenario
+        urlAnexo: '',
+        estadoAnexo: 'Pendiente',
+        fechaFormalizacion: null // Guardará la fecha seleccionada
     });
+    
+    
     const [anexosList, setAnexosList] = useState([]);
 
     const toggleAnexoForm = () => {
@@ -427,24 +432,50 @@ const PracticeScenario = ({ data }) => {
 
     const handleAnexoInputChange = (e) => {
         const { name, value } = e.target;
-        setAnexoFormData({
-            ...anexoFormData,
-            [name]: value
-        });
+    
+        if (name === 'idEscenario') {
+            // Obtener el nombre del escenario seleccionado
+            const selectedScenario = filtro14Data.find(item => item.id === value);
+            
+            setAnexoFormData({
+                ...anexoFormData,
+                idEscenario: value,
+                nombreEscenario: selectedScenario ? selectedScenario.nombre : ''
+            });
+        } else {
+            setAnexoFormData({
+                ...anexoFormData,
+                [name]: value
+            });
+        }
     };
+    
 
     const handleAnexoFormSubmit = async (e) => {
         e.preventDefault();
         try {
+            if (!anexoFormData.idEscenario || !anexoFormData.nombreEscenario) {
+                alert('Por favor selecciona un escenario de práctica válido.');
+                return;
+            }
+    
+            if (!anexoFormData.fechaFormalizacion) {
+                alert('Por favor selecciona una fecha válida.');
+                return;
+            }
+    
             const newAnexo = {
                 id: anexosList.length + 1, // id generado localmente
                 id_programa: data.id_programa, // id del programa
-                id_escenario: selectedFiltro14Id, // id del escenario seleccionado
-                nombre: anexoFormData.nombreAnexo, // nombre del anexo
+                idEscenario: anexoFormData.idEscenario, // id del escenario
+                nombre: anexoFormData.nombreEscenario, // nombre del escenario
                 url: anexoFormData.urlAnexo, // URL del anexo o archivo
-                estado: anexoFormData.estadoAnexo, // estado del anexo (Pendiente, En proceso)
-                fecha_formalización: new Date().toISOString().split('T')[0] // fecha en formato ISO
+                estado: anexoFormData.estadoAnexo, // estado del anexo (Pendiente, En proceso, Listo)
+                fecha_formalización: anexoFormData.fechaFormalizacion // fecha de formalización
             };
+    
+            // Verificar los datos a enviar
+            console.log("Datos del nuevo anexo:", newAnexo);
     
             // Enviar los datos a la hoja de cálculo
             await sendAnexoToSheet(newAnexo);
@@ -454,17 +485,18 @@ const PracticeScenario = ({ data }) => {
     
             // Reiniciar el formulario
             setAnexoFormData({
-                nombreAnexo: '',
+                idEscenario: '',
+                nombreEscenario: '',
                 urlAnexo: '',
-                estadoAnexo: 'Pendiente'
+                estadoAnexo: 'Pendiente',
+                fechaFormalizacion: null
             });
             setShowAnexoForm(false);
         } catch (error) {
             console.error('Error al guardar el anexo:', error);
         }
     };
-
-
+    
     const sendAnexoToSheet = async (anexo) => {
         try {
             // Preparar los datos para enviar en el formato que requiere la API del servidor
@@ -472,13 +504,15 @@ const PracticeScenario = ({ data }) => {
                 [
                     anexo.id, // id del anexo
                     anexo.id_programa, // id del programa
-                    anexo.id_escenario, // id del escenario
-                    anexo.nombre, // nombre del anexo
+                    anexo.idEscenario, // id del escenario
+                    anexo.nombre, // nombre del escenario
                     anexo.url, // URL del anexo
-                    anexo.estado, // estado del anexo (Pendiente, En proceso)
+                    anexo.estado, // estado del anexo (Pendiente, En proceso, Listo)
                     anexo.fecha_formalización // fecha de formalización
                 ]
             ];
+    
+            console.log("Datos enviados al servidor:", insertData); // DEBUG: Verificar la estructura antes de enviar
     
             // Especificar el nombre de la hoja de cálculo
             const sheetName = 'ANEXOS_TEC';
@@ -498,6 +532,7 @@ const PracticeScenario = ({ data }) => {
             console.error('Error al enviar el anexo al servidor:', error);
         }
     };
+    
 
     const AnexosTable = () => {
         const [anexos, setAnexos] = useState([]);
@@ -505,11 +540,19 @@ const PracticeScenario = ({ data }) => {
         const [editedAnexo, setEditedAnexo] = useState({});
       
         const fetchAnexos = async () => {
-            const response = await axios.post('https://siac-server.vercel.app/getAnexos', { sheetName: 'ANEXOS_TEC' });
-            if (response.data.status) {
-                setAnexos(response.data.data);
+            try {
+                const response = await axios.post('https://siac-server.vercel.app/getAnexos', { sheetName: 'ANEXOS_TEC' });
+                if (response.data.status) {
+                    console.log("Datos obtenidos del servidor:", response.data.data); // Verificar los datos obtenidos
+                    setAnexos(response.data.data);
+                } else {
+                    console.error('Error en la respuesta del servidor:', response.data);
+                }
+            } catch (error) {
+                console.error('Error al obtener los anexos:', error);
             }
         };
+        
 
         useEffect(() => {
             fetchAnexos();
@@ -569,57 +612,107 @@ const PracticeScenario = ({ data }) => {
             [name]: value
           });
         };
+
+        const formatFecha = (fecha) => {
+            if (!fecha) return "No definida";
+            const date = new Date(fecha);
+            return date.toLocaleDateString('es-ES'); // Esto mostrará la fecha en formato 'DD/MM/YYYY'
+        };
+        
       
         return (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Nombre</TableCell>
-                  <TableCell>URL</TableCell>
-                  <TableCell>Estado</TableCell>
-                  <TableCell>Fecha Formalización</TableCell>
-                  <TableCell>Acciones</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {anexos.map((anexo) => (
-                    <TableRow key={anexo.id}>
-                    <TableCell>
-                        {editingId === anexo.id ? (
-                        <TextField name="nombre" value={editedAnexo.nombre} onChange={handleChange} />
-                        ) : (
-                        anexo.nombre
-                        )}
-                    </TableCell>
-                    <TableCell>
-                        {editingId === anexo.id ? (
-                        <TextField name="url" value={editedAnexo.url} onChange={handleChange} />
-                        ) : (
-                        anexo.url
-                        )}
-                    </TableCell>
-                    <TableCell>
-                        {editingId === anexo.id ? (
-                        <TextField name="estado" value={editedAnexo.estado} onChange={handleChange} />
-                        ) : (
-                        anexo.estado
-                        )}
-                    </TableCell>
-                    <TableCell>{anexo.fecha_formalización}</TableCell>
-                    <TableCell>
-                        {editingId === anexo.id ? (
-                        <Button onClick={() => handleSave(anexo.id)}>Guardar</Button>
-                        ) : (
-                        <Button onClick={() => handleEdit(anexo)}>Editar</Button>
-                        )}
-                        <Button onClick={() => handleDelete(anexo.id)}>Eliminar</Button>
-                    </TableCell>
-                    </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Escenario de Práctica</TableCell>
+                            <TableCell>URL</TableCell>
+                            <TableCell>Estado</TableCell>
+                            <TableCell>Fecha Formalización</TableCell>
+                            <TableCell>Acciones</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {anexos.map((anexo) => (
+                            <TableRow key={anexo.id}>
+                                <TableCell>
+                                    {editingId === anexo.id ? (
+                                        <FormControl fullWidth>
+                                            <Select
+                                                name="idEscenario"
+                                                value={editedAnexo.idEscenario}
+                                                onChange={(e) => {
+                                                    const selectedId = e.target.value;
+                                                    const selectedScenario = filtro14Data.find(item => item.id === selectedId);
+                                                    setEditedAnexo({
+                                                        ...editedAnexo,
+                                                        idEscenario: selectedId,
+                                                        nombre: selectedScenario ? selectedScenario.nombre : ''
+                                                    });
+                                                }}
+                                            >
+                                                {filtro14Data.map((item) => (
+                                                    <MenuItem key={item.id} value={item.id}>
+                                                        {item.nombre}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    ) : (
+                                        anexo.nombre // Muestra el nombre del escenario cuando no está en edición
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    {editingId === anexo.id ? (
+                                        <TextField name="url" value={editedAnexo.url} onChange={(e) => setEditedAnexo({ ...editedAnexo, url: e.target.value })} />
+                                    ) : (
+                                        anexo.url
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    {editingId === anexo.id ? (
+                                        <RadioGroup
+                                            name="estado"
+                                            value={editedAnexo.estado}
+                                            onChange={(e) => setEditedAnexo({ ...editedAnexo, estado: e.target.value })}
+                                            sx={{ display: 'flex', flexDirection: 'row' }}
+                                        >
+                                            <FormControlLabel value="Pendiente" control={<Radio />} label="Pendiente" />
+                                            <FormControlLabel value="En proceso" control={<Radio />} label="En proceso" />
+                                            <FormControlLabel value="Listo" control={<Radio />} label="Listo" />
+                                        </RadioGroup>
+                                    ) : (
+                                        anexo.estado
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    {editingId === anexo.id ? (
+                                        <TextField
+                                            name="fecha_formalización"
+                                            type="date"
+                                            value={editedAnexo.fecha_formalización}
+                                            onChange={(e) => setEditedAnexo({ ...editedAnexo, fecha_formalización: e.target.value })}
+                                            InputLabelProps={{
+                                                shrink: true,
+                                            }}
+                                        />
+                                    ) : (
+                                        anexo.fecha_formalización || "No definida"
+                                    )}
+                                </TableCell>    
+                                <TableCell>
+                                    {editingId === anexo.id ? (
+                                        <Button onClick={() => handleSave(anexo.id)}>Guardar</Button>
+                                    ) : (
+                                        <Button onClick={() => handleEdit(anexo)}>Editar</Button>
+                                    )}
+                                    <Button onClick={() => handleDelete(anexo.id)}>Eliminar</Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         );
     };
     
@@ -979,37 +1072,59 @@ const PracticeScenario = ({ data }) => {
                 {showAnexoForm && (
                 <Box component="form" onSubmit={handleAnexoFormSubmit} sx={{ marginTop: 2 }}>
                     <FormGroup>
-                    <TextField
-                        label="Nombre del Anexo"
-                        name="nombreAnexo"
-                        value={anexoFormData.nombreAnexo}
-                        onChange={handleAnexoInputChange}
-                        margin="normal"
-                        required
-                    />
-                    <TextField
-                        label="URL/Archivo"
-                        name="urlAnexo"
-                        value={anexoFormData.urlAnexo}
-                        onChange={handleAnexoInputChange}
-                        margin="normal"
-                        required
-                    />
-                    <FormGroup sx={{ marginTop: 2 }}>
-                        <FormLabel component="legend">Estado</FormLabel>
-                        <RadioGroup
-                        name="estadoAnexo"
-                        value={anexoFormData.estadoAnexo}
-                        onChange={handleAnexoInputChange}
-                        sx={{ display: 'flex', flexDirection: 'row' }}
-                        >
-                        <FormControlLabel value="Pendiente" control={<Radio />} label="Pendiente" />
-                        <FormControlLabel value="En proceso" control={<Radio />} label="En proceso" />
-                        </RadioGroup>
-                    </FormGroup>
+                        <FormControl fullWidth>
+                            <InputLabel id="escenarios-label">Escenarios de Práctica</InputLabel>
+                            <Select
+                                labelId="escenarios-label"
+                                id="escenarios-select"
+                                name="idEscenario" // Esto permite que `handleAnexoInputChange` lo reconozca
+                                value={anexoFormData.idEscenario}
+                                onChange={handleAnexoInputChange} // La misma función maneja todos los cambios
+                                required
+                            >
+                                {filtro14Data.map((item) => (
+                                    <MenuItem key={item.id} value={item.id}>
+                                        {item.nombre}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            label="URL/Archivo"
+                            name="urlAnexo"
+                            value={anexoFormData.urlAnexo}
+                            onChange={handleAnexoInputChange}
+                            margin="normal"
+                            required
+                        />
+                        <TextField
+                            label="Fecha de Formalización"
+                            name="fechaFormalizacion"
+                            type="date"
+                            value={anexoFormData.fechaFormalizacion}
+                            onChange={handleAnexoInputChange}
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            margin="normal"
+                            required
+                        />
+                        <FormGroup sx={{ marginTop: 2 }}>
+                            <FormLabel component="legend">Estado</FormLabel>
+                            <RadioGroup
+                                name="estadoAnexo"
+                                value={anexoFormData.estadoAnexo}
+                                onChange={handleAnexoInputChange}
+                                sx={{ display: 'flex', flexDirection: 'row' }}
+                            >
+                                <FormControlLabel value="Pendiente" control={<Radio />} label="Pendiente" />
+                                <FormControlLabel value="En proceso" control={<Radio />} label="En proceso" />
+                                <FormControlLabel value="Listo" control={<Radio />} label="Listo" />
+                            </RadioGroup>
+                        </FormGroup>
                     </FormGroup>
                     <Button type="submit" variant="contained" sx={{ marginTop: 2 }}>
-                    Guardar Anexo
+                        Guardar Anexo
                     </Button>
                 </Box>
                 )}
