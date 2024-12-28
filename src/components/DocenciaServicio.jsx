@@ -6,6 +6,7 @@ import { Filtro14 } from '../service/data';
 const DocenciaServicio = () => {
     const [data, setData] = useState([]);
 
+    // Efecto para obtener los datos al montar el componente
     useEffect(() => {
         const fetchData = async () => {
             try {

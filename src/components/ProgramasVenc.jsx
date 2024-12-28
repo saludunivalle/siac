@@ -44,15 +44,17 @@ const ProgramasVenc = () => {
   const [expiredRRCCount, setExpiredRRCCount] = useState(0);
   const [expiredRACCount, setExpiredRACCount] = useState(0);
 
+  //Función para obtener los programas vencidos en RRC
   const getExpiredRRCPrograms = (programas) => {
       return programas.filter((program) => program['fase rrc'] === 'Vencido');
   };
 
+  //Función para obtener los programas vencidos en RAC
   const getExpiredRACPrograms = (programas) => {
       return programas.filter((program) => program['fase rac'] === 'Vencido');
   };
 
-
+  // Efecto para obtener los datos al montar el componente
   useEffect(() => {
     const fetchData = async () => {
         try {
@@ -82,6 +84,7 @@ const ProgramasVenc = () => {
   }, []);
 
 
+  //Función para redirigir a la página de detalles del programa
   const handleRowClick = (program) => {
     navigate('/program_details', { state: program });
   };

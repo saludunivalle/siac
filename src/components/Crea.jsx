@@ -17,6 +17,7 @@ const Crea = ({ globalVariable }) => {
   const [user, setUser] = useState('');
   const [isCargo, setCargo] = useState([' ']);
 
+  // Carga inicial de datos del usuario desde el almacenamiento de sesión
   useEffect(() => {
     const loggedData = sessionStorage.getItem('logged');
     if (loggedData) {
@@ -27,6 +28,7 @@ const Crea = ({ globalVariable }) => {
     }
   }, []);
 
+  // Filtra los datos según los permisos del usuario ("Posgrados")
   useEffect(() => {
     if (isCargo.includes('Posgrados')) {
       const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
@@ -36,6 +38,7 @@ const Crea = ({ globalVariable }) => {
     }
   }, [rowData, isCargo]);
 
+  // Carga y filtrado de datos secundarios desde un servicio remoto
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -49,6 +52,7 @@ const Crea = ({ globalVariable }) => {
     fetchData();
   }, [updateTrigger]);
 
+  // Filtra los datos principales para mostrar únicamente los programas en estado "En Creación"
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -67,6 +71,7 @@ const Crea = ({ globalVariable }) => {
     fetchData();
   }, [isCargo]);
 
+  // Determina el color de fondo de una fila basado en los datos de seguimiento
   const getBackgroundColor = (data) => {
     if (!data || !data.id_programa) return 'white';
 
@@ -96,11 +101,12 @@ const Crea = ({ globalVariable }) => {
     }
   };
 
+  // Navega a la página de detalles del programa al hacer clic en una fila
   const handleRowClick = (rowData) => {
     navigate('/program_details', { state: { ...rowData, globalVariable } });
   };
 
-
+  // Descarga los datos filtrados en un archivo Excel
   const handleDownloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(filteredData);
     const workbook = XLSX.utils.book_new();
@@ -108,7 +114,7 @@ const Crea = ({ globalVariable }) => {
     XLSX.writeFile(workbook, 'datos_CREA.xlsx');
   };
 
-
+  // Renderiza la tabla con los datos filtrados y colores aplicados
   const renderFilteredTable = (data, filter) => {
     if (!data || data.length === 0) return <p>Ningún programa por mostrar</p>;
 

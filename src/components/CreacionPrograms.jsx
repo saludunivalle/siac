@@ -29,11 +29,13 @@ const CreacionPrograma = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [openModal, setOpenModal] = useState(false);
 
+  // Manejador para actualizar el estado del formulario al cambiar los campos
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm({ ...form, [name]: value });
   };
 
+  // Manejador para guardar los datos al hacer clic en el botón "Guardar"
   const handleGuardarClick = async () => {
     try {
       setLoading(true);
@@ -82,6 +84,7 @@ const CreacionPrograma = () => {
     }
   };
 
+  // Manejador para cerrar el modal de confirmación
   const handleCloseModal = () => {
     setOpenModal(false);
     setForm(initialFormState);

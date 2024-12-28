@@ -21,6 +21,7 @@ const Mod = ({ globalVariable }) => {
     const [user, setUser] = useState('');
     const [isCargo, setCargo] = useState([' ']);
 
+    // Carga inicial de permisos y usuario desde la sesión
     useEffect(() => {
         if (sessionStorage.getItem('logged')) {
             let res = JSON.parse(sessionStorage.getItem('logged'));
@@ -31,6 +32,7 @@ const Mod = ({ globalVariable }) => {
         }
     }, []);
 
+    // Filtrado inicial de los datos según los permisos del usuario    
     useEffect(() => {
         if (isCargo.includes('Posgrados')) {
             const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
@@ -40,6 +42,7 @@ const Mod = ({ globalVariable }) => {
         }
     }, [rowData, isCargo]);
 
+    // Carga y filtrado de datos secundarios desde un servicio externo
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -54,6 +57,7 @@ const Mod = ({ globalVariable }) => {
         fetchData();
     }, [updateTrigger]);
 
+    // Filtrado adicional según criterios de "mod" (módulos sustanciales)    
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -72,10 +76,12 @@ const Mod = ({ globalVariable }) => {
         fetchData();
     }, [isCargo]);
 
+    // Función para manejar clics en filas de la tabla    
     const handleRowClick = (rowData) => {
         navigate('/program_details', { state: { ...rowData, globalVariable } });
     };
 
+    // Función para descargar los datos filtrados en formato Excel
     const handleDownloadExcel = () => {
         const worksheet = XLSX.utils.json_to_sheet(filteredData);
         const workbook = XLSX.utils.book_new();
@@ -83,6 +89,7 @@ const Mod = ({ globalVariable }) => {
         XLSX.writeFile(workbook, 'datos_MOD.xlsx');
       };
 
+    // Función para obtener el color de fondo basado en el nivel de riesgo del seguimiento
     const getBackgroundColor = (data) => {
         if (!data || !data.id_programa) {
             return 'white'; 
@@ -120,6 +127,7 @@ const Mod = ({ globalVariable }) => {
         }
     };
     
+    // Función para manejar los clics en botones de filtro (sustanciales/no sustanciales)
     const handleButtonClick = async (buttonValue) => {
         let response;
         if (isCargo.includes('Posgrados')) {
@@ -167,6 +175,7 @@ const Mod = ({ globalVariable }) => {
         return selectedValues.includes(buttonValue);
     };
 
+    // Estilos dinámicos para los botones de filtro
     const setButtonStyles = (buttonValue) => {
         return {
             color: isButtonSelected(buttonValue) ? 'white' : 'grey',
@@ -193,6 +202,7 @@ const Mod = ({ globalVariable }) => {
         }
     };
 
+    // Función para renderizar la tabla filtrada
     const renderFilteredTable = (data) => {
         if (!data || data.length === 0) {
             return <p>Ningún programa por mostrar</p>;

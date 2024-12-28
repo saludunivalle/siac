@@ -17,6 +17,7 @@ const Aac = ({ globalVariable }) => {
   const [user, setUser] = useState('');
   const [isCargo, setCargo] = useState([' ']);
 
+  // Efecto para cargar los datos del usuario desde la sesión
   useEffect(() => {
     const loggedData = sessionStorage.getItem('logged');
     if (loggedData) {
@@ -27,6 +28,7 @@ const Aac = ({ globalVariable }) => {
     }
   }, []);
 
+  // Efecto para filtrar los datos según el permiso del usuario (Posgrados)
   useEffect(() => {
     if (isCargo.includes('Posgrados')) {
       const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
@@ -36,6 +38,7 @@ const Aac = ({ globalVariable }) => {
     }
   }, [rowData, isCargo]);
 
+  // Efecto para cargar los datos de seguimiento adicionales desde un servicio
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -49,6 +52,7 @@ const Aac = ({ globalVariable }) => {
     fetchData();
   }, [updateTrigger]);
 
+  // Efecto para cargar los datos principales y filtrarlos según los permisos
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -67,6 +71,7 @@ const Aac = ({ globalVariable }) => {
     fetchData();
   }, [isCargo]);
 
+  // Función para determinar el color de fondo según el riesgo del programa
   const getBackgroundColor = (data) => {
     if (!data || !data.id_programa) return 'white';
 
@@ -96,6 +101,7 @@ const Aac = ({ globalVariable }) => {
     }
   };
 
+  // Función para determinar el color del semáforo según el año de vencimiento
   const getSemaforoColor = (vencimientoYear) => {
     const currentYear = new Date().getFullYear();
 
@@ -110,10 +116,12 @@ const Aac = ({ globalVariable }) => {
     }
   };
 
+  // Función para navegar a los detalles del programa al hacer clic en una fila
   const handleRowClick = (rowData) => {
     navigate('/program_details', { state: { ...rowData, globalVariable } });
   };
 
+  // Función para descargar los datos filtrados en formato Excel
   const handleDownloadExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(filteredData);
     const workbook = XLSX.utils.book_new();
@@ -121,6 +129,7 @@ const Aac = ({ globalVariable }) => {
     XLSX.writeFile(workbook, 'datos_AAC.xlsx');
   };
 
+  // Renderiza la tabla filtrada con las reglas y colores aplicados
   const renderFilteredTable = (data, filter) => {
     let filteredData = filter === 'No Aplica'
       ? data.filter(item => [' ', '???', 'SALE PARA TULIÁ'].includes(item['escuela']))
@@ -145,7 +154,7 @@ const Aac = ({ globalVariable }) => {
           <table>
             <tbody>
               {filteredData.map((item, index) => {
-                // Definir las variables de año y colores aquí
+                // Definir las variables de año y colores para los semáforos
                 const rrcYear = item['fechavencrc'] ? parseInt(item['fechavencrc'].split('/')[2]) : null;
                 const aacYear = item['fechavencac'] ? parseInt(item['fechavencac'].split('/')[2]) : null;
 
@@ -168,7 +177,6 @@ const Aac = ({ globalVariable }) => {
                     </td>
                     <td>{item['departamento']}</td>
                     <td>{item['sección']}</td>
-                    {/* Puedes descomentar la siguiente línea si decides mostrar el estado */}
                     {/* <td>{item['estado']}</td> */}
                     <td>{item['pregrado/posgrado']}</td>
                     <td>{item['nivel de formación']}</td>

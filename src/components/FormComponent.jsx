@@ -22,10 +22,12 @@ const FormComponent = ({ idPrograma }) => {
         { value: 'Responsable de la coordinación de las prácticas formativas en el escenario (No aplica para escenarios no institucionales)', label: 'Responsable de la coordinación de las prácticas formativas en el escenario (No aplica para escenarios no institucionales)' }
     ];
 
+    // Cargar las firmas existentes al montar el componente
     useEffect(() => {
         cargarFirmasExistente();
     }, []);
 
+    // Función para cargar registros existentes asociados al programa
     const cargarFirmasExistente = async () => {
         try {
             const resultfirmas = await FiltroFirmas();
