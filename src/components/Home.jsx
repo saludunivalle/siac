@@ -18,7 +18,7 @@ import '/src/styles/home.css';
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 const Home = () => {
-  const [globalVariable, setGlobalVariable] = useState(); // Variable global
+  const [globalVariable, setGlobalVariable] = useState(); 
   const [selectedValue, setSelectedValue] = useState();
   const [semaforoVisible, setSemaforoVisible] = useState(false);
   const [semaforoAcVisible, setSemaforoAcVisible] = useState(false);
@@ -38,16 +38,7 @@ const Home = () => {
     RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
     AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
   });
-  const [activosCount, setActivosCount] = useState(0);
-  const [creacionCount, setCreacionCount] = useState(0);
-  const [creacionSedesCount, setCreacionSedesCount] = useState(0);
-  const [activoSedesCount, setActivoSedesCount] = useState(0);
-  const [inactivosCount, setInactivosCount] = useState(0);
-  const [otrosCount, setOtrosCount] = useState(0);
-  const [aacCount, setAacCount] = useState(0);
-  const [rrcCount, setRrcCount] = useState(0);
-  const [raacCount, setRaacCount] = useState(0);
-  const [modCount, setModCount] = useState(0);
+
   const [programasVisible, setProgramasVisible] = useState(true);
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const [rowData, setRowData] = useState(null);
@@ -427,18 +418,7 @@ const Home = () => {
               if (!response) {
                   throw new Error("response is undefined");
               }
-
-              // Contar y setear los programas en base a su estado
-              setActivosCount(response.filter(item => item['estado'] === 'Activo').length);
-              setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
-              setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
-              setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
-              setOtrosCount(response.filter(item => item['estado'] === 'Negación RC').length);
-              setInactivosCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Desistido' || item['estado'] === 'Rechazado' || item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede').length);
-              setAacCount(response.filter(item => item['aac_1a'] === 'SI').length);
-              setRrcCount(response.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').length);
-              setRaacCount(response.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').length);
-              setModCount(response.filter(item => item['mod'] === 'SI').length);
+              
               setRowData(response);
               setFilteredData(response);
 
@@ -714,6 +694,7 @@ const Home = () => {
     }
   };
 
+  //Función para mostrar la tabla del número de programas en cada proceso
   const GeneralProcessTable = ({ counts, handleRowClick }) => (
       <div className='alltogetherGeneral' style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop:'30px'}}>
         <div style={{ fontSize: '25px', width: '100%', paddingBottom: '60px', display: 'flex', justifyContent: 'center' }}>
@@ -799,6 +780,7 @@ const Home = () => {
       </div>
   );
 
+  //Función para mostrar la tabla detallada de los niveles de riesgo
   const DetailedProcessTable = ({ counts, selectedRow }) => (
     <div className='detailed-container' style={{ display: 'flex', flexDirection: 'column', width: '100%' }}> 
       <div style={{
@@ -871,48 +853,6 @@ const Home = () => {
         {programasVisible && (
           <div style={{ width:'25%' }}>
           <div style={{ fontSize: '25px', width:'100%', display: 'flex', justifyContent:'center', marginTop:'-40px' }}>Programas</div>
-          {/* <div className='programas' onClick={handleClick} style={{  width:'100%', alignSelf: 'flex-start', marginLeft: '20px' }}>
-            <table>
-              <thead>
-                <tr></tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ paddingRight: '4px' }}>Activos Cali</td>
-                  <td>{activosCount !== 0 ? activosCount : <CircularProgress size={20} />}</td>
-                </tr>
-                <tr>
-                  <td style={{ paddingRight: '4px' }}>Activos Sedes</td>
-                  <td>{activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} />}</td>
-                </tr>
-                <tr>
-                  <td style={{ paddingRight: '4px' }}>En Creación</td>
-                  <td>{creacionCount !== 0 ? creacionCount : <CircularProgress size={20} />}</td>
-                </tr>
-                <tr>
-                  <td style={{ paddingRight: '4px' }}>En Creación (Sedes y otros)</td>
-                  <td>{creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} />}</td>
-                </tr>
-                <tr>
-                  <td style={{ paddingRight: '4px' }}>Otros</td>
-                  <td>{otrosCount !== 0 ? otrosCount : <CircularProgress size={20} />}</td>
-                </tr>
-                <tr>
-                  <td style={{ paddingRight: '4px' }}><strong>SUB-TOTAL:</strong></td>
-                  <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount}</td>
-                </tr>
-                <tr>
-                  <td style={{ paddingRight: '4px' }}>Inactivos - Desistidos - Rechazados</td>
-                  <td>{inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} />}</td>
-                </tr>
-                <tr>
-                  <td style={{ paddingRight: '4px' }}><strong>TOTAL:</strong></td>
-                  <td>{activosCount + creacionCount + creacionSedesCount + activoSedesCount + otrosCount + inactivosCount}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div> */}
-
           <div className='programas' onClick={handleClick} style={{  width:'100%', alignSelf: 'flex-start', marginLeft: '20px' }}>
                   <table>
                     <tbody>

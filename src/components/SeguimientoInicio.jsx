@@ -183,6 +183,7 @@ const SeguimientoInicio = () => {
         }
     };
 
+    // Función para guardar los datos de la escuela seleccionada
     const handleGuardarClick = async () => {
         setLoading(true); 
         const filteredData = data.find(item => item.escuela === selectedEscuela);

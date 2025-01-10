@@ -9,7 +9,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Tabs, Tab, Box, Button, TextField, Grid } from '@mui/material';
 import { format } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'; // IMPORTACIÓN CORRECTA DEL ADAPTADOR
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'; 
 
 const ProgramDetails = () => {
     const location = useLocation();
@@ -64,8 +64,8 @@ const ProgramDetails = () => {
         };
         fetchOptions();
     }, []);
-    
 
+    // Función para manejar el cambio de fecha
     const handleDateChange = (date, field) => {
         setFormData({
             ...formData,
@@ -205,6 +205,7 @@ const ProgramDetails = () => {
         setClickedButton(newValue);
     };
 
+    //  Función para obtener el color de fondo de los botones de seguimiento
     const getSeguimientoBackgroundColor = (process, isSelected) => {
         const defaultColor = 'rgb(241, 241, 241)';
         if (!Array.isArray(filteredDataSeg) || filteredDataSeg.length === 0) {
@@ -254,6 +255,7 @@ const ProgramDetails = () => {
         return adjustColor(color, amount);
     };
 
+    // Función para ajustar el color de fondo de los botones de seguimiento
     const adjustColor = (color, amount) => {
         let usePound = false;
 
@@ -291,6 +293,7 @@ const ProgramDetails = () => {
         });
     };
 
+    // Función para enviar los datos actualizados al servidor
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -311,7 +314,7 @@ const ProgramDetails = () => {
         }
     };
     
-
+    // Estilos de los botones de seguimiento
     const tabSx = (process) => ({
         backgroundColor: getSeguimientoBackgroundColor(process, clickedButton === process),
         color: clickedButton === process ? '#000' : '#555',

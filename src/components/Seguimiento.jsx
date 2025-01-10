@@ -130,7 +130,6 @@ const Seguimiento = ({ handleButtonClick }) => {
     };
 
     // Función para calcular fechas 
-    // Nueva función para calcular las fechas específicas
     function calcularFechas(fechaexpedrc, fechavencrc) {
         const partesFechaExpedicion = fechaexpedrc.split('/');
         const partesFechaVencimiento = fechavencrc.split('/');
@@ -182,6 +181,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         setFileLink('');
     };
 
+    // Función para cargar las fases del programa y los documentos según la opción seleccionada
     const cargarFases = async () => {
         try {
             setLoading(true);
@@ -235,6 +235,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         fetchMenuItems();
     }, [handleButtonClick]);
 
+    // Función para cargar los items del menú según el proceso seleccionado
     const fetchMenuItems = async () => {
         try {
             let procesoActual = '';
@@ -475,7 +476,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         setCollapsible(collapsibleType)
     };
 
-    // Contenido del seguimiento
+    // Contenido del seguimiento pm
     const contenido_seguimiento = () => {
         const handleInputChange1 = (event) => {
             setComment(event.target.value);
@@ -668,8 +669,6 @@ const Seguimiento = ({ handleButtonClick }) => {
         );
     };
 
-    // Contenido del seguimiento por defecto
-
     const [openSecondModal, setOpenSecondModal] = useState(false);
     const [resolutionDate, setResolutionDate] = useState(null);
     const [duration, setDuration] = useState('');
@@ -710,6 +709,7 @@ const Seguimiento = ({ handleButtonClick }) => {
         }
     };
 
+    // Contenido del seguimiento por defecto de los demás botones
     const contenido_seguimiento_default = () => {
         const groupedFases = menuItems.reduce((acc, item) => {
             const grupo = item.fase_sup || 'Sin Agrupar';
@@ -1155,7 +1155,6 @@ const Seguimiento = ({ handleButtonClick }) => {
             </>
         );
     };
-
 
     return (
         <>

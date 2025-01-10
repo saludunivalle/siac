@@ -159,6 +159,7 @@ const PracticeScenario = ({ data }) => {
         setPracticeTables(updatedPractices);
     };
 
+    //Función para actualizar la solicitud de practica 
     const updatePractice = async (id) => {
         const updateData = [
             editedPractice.id,
@@ -197,6 +198,7 @@ const PracticeScenario = ({ data }) => {
         setPracticeTables(updatedPractices);
     };
 
+    //Función para eliminar la solicitud de practica
     const deletePractice = async (id) => {
         try {
           const sheetName = 'SOLICITUD_PRACT';
@@ -221,8 +223,6 @@ const PracticeScenario = ({ data }) => {
         }
       };
       
-      
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -247,6 +247,7 @@ const PracticeScenario = ({ data }) => {
         loadPermisos();
     }, []);
 
+    //Función para cargar los permisos del usuario
     const loadPermisos = () => {
         if (sessionStorage.getItem('logged')) {
             try {
@@ -268,6 +269,7 @@ const PracticeScenario = ({ data }) => {
         setNewScenario(true);
     };
 
+    //Función para manejar el checkbox de las horas
     const handleCheck = (dia, hora, isChecked) => {
         setHorasPorDia(prevHorasPorDia => {
             const horasPorDiaCopy = { ...prevHorasPorDia };
@@ -286,6 +288,7 @@ const PracticeScenario = ({ data }) => {
         });
     };
 
+    //Función para manejar el envío de los datos
     const handleScenarioSubmit = async (e) => {
         e.preventDefault();
         setIsScenarioSaved(true);
@@ -294,6 +297,7 @@ const PracticeScenario = ({ data }) => {
         }
     };
 
+    //Función para manejar el envío de los datos
     const handleScheduleSubmit = async (e) => {
         e.preventDefault();
         setIsScheduleSaved(true);
@@ -302,6 +306,7 @@ const PracticeScenario = ({ data }) => {
         }
     };
 
+    //Función para manejar el envío final de los datos
     const handleFinalSubmit = async () => {
         setSaving(true);
         try {
@@ -354,6 +359,7 @@ const PracticeScenario = ({ data }) => {
         setTotalHorasRotacion(totalHorasRotacion);
     };
 
+    //Función para calcular el total de horas
     const calculateTotalHoras = (id_programa, id_asignatura) => {
         const filteredData = filtro15Data.filter(item => item.id_programa === id_programa && item.id_asignatura === id_asignatura);
         const totalHoras = filteredData.reduce((total, item) => {
@@ -364,6 +370,7 @@ const PracticeScenario = ({ data }) => {
         return totalHoras;
     };
 
+    //Función para obtener el horario
     const getHorario = (relationID) => {
         console.log('Buscando horario para relationID:', relationID);
         const horarioData = filtro16Data.find(item => item.id_relacion === relationID);
@@ -379,6 +386,7 @@ const PracticeScenario = ({ data }) => {
         }
     };
 
+    //Función para renderizar el horario    
     const renderHorario = (horario) => {
         console.log('Renderizando horario:', horario);
         return (
@@ -426,6 +434,7 @@ const PracticeScenario = ({ data }) => {
     
     const [anexosList, setAnexosList] = useState([]);
 
+    // Obtener los anexos actuales de la hoja ANEXOS_TEC
     const toggleAnexoForm = () => {
         setShowAnexoForm(!showAnexoForm);
     };
@@ -450,7 +459,7 @@ const PracticeScenario = ({ data }) => {
         }
     };
     
-
+    // Manejar el envío del formulario de anexos
     const handleAnexoFormSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -496,7 +505,8 @@ const PracticeScenario = ({ data }) => {
             console.error('Error al guardar el anexo:', error);
         }
     };
-    
+
+    // Función para enviar un anexo al servidor    
     const sendAnexoToSheet = async (anexo) => {
         try {
             // Preparar los datos para enviar en el formato que requiere la API del servidor
@@ -533,7 +543,7 @@ const PracticeScenario = ({ data }) => {
         }
     };
     
-
+    // Función para la tabla de anexos
     const AnexosTable = () => {
         const [anexos, setAnexos] = useState([]);
         const [editingId, setEditingId] = useState(null);
@@ -716,7 +726,6 @@ const PracticeScenario = ({ data }) => {
         );
     };
     
-
     return (
         <>
             <div style={{ display: 'flex', justifyContent: 'center', width: '100%', fontSize: '20px' }}>
@@ -797,17 +806,6 @@ const PracticeScenario = ({ data }) => {
                                             <>
                                                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' }}>
                                                     <Box sx={{ width: '30%', padding: '20px', marginLeft: '20px', textAlign: 'center' }}>
-                                                                {/* <div>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Semanas a Rotar: {f15.semana_rotar}
-                                                                    </Typography>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Horas Semanal: {f15.horas_semanales}
-                                                                    </Typography>
-                                                                    <Typography variant="h6" style={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}>
-                                                                        Total Horas: {f15.total_horas}
-                                                                    </Typography>
-                                                                </div> */}
                                                         {tienePermisoDirector() && (
                                                             <>
                                                                 <TextField

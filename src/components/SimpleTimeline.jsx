@@ -4,6 +4,7 @@ import logoCircular from '/src/assets/logocircular.png';
 
 const parseDate = (dateString) => dateString ? new Date(dateString.split('/').reverse().join('-') + 'T00:00:00') : null;
 
+// Componente SimpleTimeline
 const SimpleTimeline = ({ fechaExpedicion, fechaVencimiento, fechasCalculadas, tipo }) => {
     const fechaExpedicionDate = parseDate(fechaExpedicion);
     const fechaVencimientoDate = parseDate(fechaVencimiento);

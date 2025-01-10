@@ -67,6 +67,7 @@ const Seguimientorac = () => {
         fetchData();
         }, []);
 
+    // Función para renderizar la tabla filtrada
     const renderFilteredTable = (data, filter) => {
         const filteredData = Filtro8(data, filter);
         if (filteredData.length === 0) {

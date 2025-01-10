@@ -107,6 +107,7 @@ const Programas = () => {
             return defaultGreyCondition ? '#E0E0E0' : 'white';
         }
 
+        // Mapa de tópicos
         const topicMap = {
             CREA: 'Creación',
             MOD: 'Modificación',
@@ -115,12 +116,14 @@ const Programas = () => {
             RAAC: 'Renovación Acreditación'
         };
 
+        // Filtra los seguimientos por proceso
         const seguimientosPorProceso = seguimientos.filter(seg => seg.topic === topicMap[process]);
 
         if (seguimientosPorProceso.length === 0) {
             return defaultGreyCondition ? '#E0E0E0' : 'white';
         }
 
+        // Obtiene el seguimiento más reciente
         const recentSeguimiento = seguimientosPorProceso.reduce((prev, current) =>
             new Date(current.timestamp.split('/').reverse().join('-')) > new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
         );
@@ -162,6 +165,7 @@ const Programas = () => {
         navigate('/');
     };
 
+    // Función para obtener el color del semáforo según el año de vencimiento
     const getSemaforoColor = (vencimientoYear) => {
         const currentYear = new Date().getFullYear();
     
@@ -257,6 +261,7 @@ const Programas = () => {
         borderRadius: '6px',
     });
 
+    // Función para renderizar la tabla filtrada
     const renderFilteredTable = (data, filter) => {
         if (!data || data.length === 0) return <p>Ningún programa por mostrar</p>;
 
