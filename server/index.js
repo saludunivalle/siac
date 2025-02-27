@@ -9,13 +9,18 @@ config();
 const app = express();
 const router = express.Router();
 const PORT = process.env.PORT || 3001;
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+const API_KEY = process.env.API_KEY;
+
 console.log(process.env.client_email, process.env.private_key)
+
 //configure a JWT auth client
 let jwtClient = new google.auth.JWT(
-  process.env.client_email,
+  process.env.CLIENT_EMAIL,
   null,
-  (process.env.private_key).replace(/\\n/g, '\n'),
-  ['https://www.googleapis.com/auth/spreadsheets']);
+  (process.env.PRIVATE_KEY).replace(/\\n/g, '\n'),
+  ['https://www.googleapis.com/auth/spreadsheets']
+);
 
   //authenticate request
   jwtClient.authorize(function (err, tokens) {
@@ -36,25 +41,24 @@ router.post('/sendData', async ( req, res) => {
       insertData, 
       sheetName
     }=req.body
-    const spreadsheetId = '1GQY2sWovU3pIBk3NyswSIl_bkCi86xIwCjbMqK_wIAE';
     const range = sheetName;
     const sheets = google.sheets({ version: 'v4' , auth: jwtClient });
     const responseSheet = await sheets.spreadsheets.values.get({
-      spreadsheetId,
+      spreadsheetId: SPREADSHEET_ID,
       range,
-      key: 'AIzaSyDQTWi9NHU_UTjhVQ1Wb08qxREaRgD9v1g',
+      key: API_KEY,
     });
     const currentValues = responseSheet.data.values;
     const nextRow = currentValues ? currentValues.length + 1 : 1;
     const updatedRange = `${range}!A${nextRow}`;
     const sheetsResponse = await sheets.spreadsheets.values.update({
-      spreadsheetId,
+      spreadsheetId: SPREADSHEET_ID,
       range: updatedRange,
       valueInputOption: 'RAW', 
       resource: {
         values: insertData
       },
-      key: 'AIzaSyDQTWi9NHU_UTjhVQ1Wb08qxREaRgD9v1g',
+      key: API_KEY,
     })
     if (sheetsResponse.status === 200) {
       return res.status(200).json({ success: 'Se inserto correctamente', status:true});
@@ -71,7 +75,6 @@ router.post('/', async ( req, res) => {
   try {
     // console.log(jwtClient);
     const sheets = google.sheets({ version: 'v4',  auth: jwtClient });
-      const spreadsheetId = '1GQY2sWovU3pIBk3NyswSIl_bkCi86xIwCjbMqK_wIAE';
       //const range = 'PROGRAMAS';
       let range;
       switch (req.body.sheetName) {
@@ -89,9 +92,9 @@ router.post('/', async ( req, res) => {
       }
 
       const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
+        spreadsheetId: SPREADSHEET_ID,
         range,
-        key: 'AIzaSyDQTWi9NHU_UTjhVQ1Wb08qxREaRgD9v1g', 
+        key: API_KEY,
     });
     console.log(sheetValuesToObject(response.data.values));   
     res.json({
