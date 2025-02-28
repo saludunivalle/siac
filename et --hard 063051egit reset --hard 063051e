@@ -1,0 +1,162 @@
+* [33m7a4c106[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m update
+* [33mcba8134[m update
+* [33m934af47[m update
+* [33mf999697[m update
+* [33m8958acb[m Update
+* [33m737b3b7[m Fixing login errors
+* [33m063051e[m Update login
+* [33ma080d60[m comentarios en las funciones
+* [33m54885b5[m comentarios en las funciones
+* [33m51ee8b5[m Cambios en docencia servicio
+* [33m3ad194a[m arreglo generación de reportes
+* [33mae44014[m Generación de Excel
+* [33m903d5fa[m Corrección timeline
+* [33m941b797[m Modificaciones semaforo
+* [33m3cd4cb4[m Modificaciones de formulario de edición y Gráficas
+* [33med230fb[m Agregar gráficas
+* [33m309976a[m Pequeños detalles en el formulario de edición
+* [33md217e4c[m Semaforo fechas de vencimiento
+* [33mfe52266[m Semaforo fechas de vencimiento
+* [33m673c3bd[m Actualización Formulario
+* [33mfebab1d[m Sobreposición del titulo arreglado
+* [33m2492fa9[m alineación tablas
+* [33m0355da6[m nuevos requerimientos
+* [33m8b012ea[m Funcionalidad de Solicitud Practicas
+* [33m0903369[m Funcionalidad de Añadir Anexos
+* [33m6b2a8d3[m Cambio de diseño en la fuente de las fases
+* [33m68ae64b[m Se agregaron filtros en la vista de programas
+* [33m8f87095[m Edición de las tablas
+* [33m4d796c4[m Botones en Docencia Servvicio
+* [33mca542c5[m Nuevo layout y diseño de la tabla de nivel de riesgo
+* [33mf18a592[m Programas vencidos
+* [33m79349a4[m Se agregó la sede en el buscador
+* [33m7c2621d[m Filtros por nivel de formación
+* [33m7b8e69e[m Ficha de programas ajustad
+* [33m61964be[m Botón resumen por defecto
+* [33m95f62e2[m mensaje de guardado
+* [33mc648e32[m Botón hacer corte
+* [33mbba711e[m Modificación descripciones
+* [33m59dfddf[m separacion acreditacion y renovacion acreditacion
+* [33m3ba71d8[m botón de resumen agregado
+* [33m0e636ea[m corrigiendo variables
+*   [33m57be393[m Merge branch 'main' of https://github.com/saludunivalle/siac
+[32m|[m[33m\[m  
+[32m|[m * [33ma61d99a[m fixed add new foolowup
+* [33m|[m [33m9ec5fbb[m corrigiendo variables
+* [33m|[m [33m182d6a3[m corrigiendo variables
+[33m|[m[33m/[m  
+* [33m6945f90[m new phases
+* [33m83a6827[m add new details
+* [33m27b4768[m add new details
+* [33m3218224[m add action row click
+* [33mc3204cb[m add table
+* [33m62139db[m edit button
+* [33m38f0acf[m requeriments
+* [33m91a3292[m requeriments
+* [33m72b6309[m radio buttons
+* [33m324cca5[m radio buttons
+* [33mb5ec628[m inactivos button
+* [33m83ccaf6[m proceso finalizacion y links
+* [33mcc64dee[m seguimiento
+* [33mf4a98a3[m status update
+* [33m8c26fcf[m error fixed
+* [33m59a0b37[m form and design
+* [33mfd9739d[m Creation Form
+* [33m9686ad2[m Fixed
+* [33m5c933bc[m Fixed
+* [33mbf694d5[m Fixed
+* [33mef5ddf4[m Fixed error
+* [33m43a60c7[m update
+* [33ma25b7a1[m update date
+* [33m2e9546f[m update
+* [33mec2d0e4[m update
+* [33m724f201[m adding description
+* [33m3b2893b[m update orden
+* [33m74e46db[m responsive
+* [33m9e8adf0[m fixing error
+* [33m6f2ca6e[m user
+* [33mea12300[m timeline
+* [33m7e3caea[m requeriments
+* [33m7cb13db[m requeriments
+* [33m9434afc[m requeriments
+* [33m6176415[m requeriments
+* [33ma44c86b[m requeriments
+* [33m2d1480e[m requeriments
+* [33m0f7cef4[m requeriments
+* [33me0e8880[m requeriments
+* [33m5929978[m requeriments
+* [33ma162e4f[m requeriments
+* [33m62fc036[m columnas procesos en programas
+* [33m098a10c[m seguimiento por programas
+* [33m914b79e[m seguimiento por escuelas
+* [33maec83bc[m Activity Report and form seguimiento
+* [33m8260731[m Activity Report
+* [33ma588502[m button name
+* [33m753493d[m requeriment seguimiento form schools
+* [33mbe9e75e[m requeriment seguimiento form
+* [33m09cbdcb[m new requeriments seguimiento
+* [33m958a9d8[m requeriments seguimiento pm
+* [33m55cb508[m update requeriments
+* [33m81b4367[m update requeriments
+* [33mc35e983[m update requirements
+* [33mccb3103[m adding base docencia servicio
+* [33mcf558b5[m new requirements
+* [33m680a796[m design changes
+* [33m4a04264[m update requirement
+* [33m30ff1b4[m update requirement
+* [33m7683a5b[m update requeriments
+* [33m632f96a[m update requeriments
+* [33ma67477f[m update requeriments
+* [33m3dd3293[m update requeriments
+* [33m285a53b[m update requeriments
+* [33mc598b62[m update requeriments
+* [33md842b55[m update requeriments
+* [33m955707d[m update requeriments
+* [33m5cc60af[m update requeriments
+* [33me0f9b11[m update requeriments
+* [33mc3dd7e1[m design changes and new check buttons
+* [33m0673a21[m Collapsible name change
+* [33m7f42157[m GlobalVariable, DatePicker and Select Changes
+* [33mb2333b1[m creation
+* [33me95d363[m update
+* [33m8848514[m requeriments
+* [33me4426cf[m program view and filter fixed
+* [33m9afcabe[m mod add
+* [33mddd8f21[m inactivo problem fixed
+* [33mf2a6bc9[m user problem fixed
+* [33ma433de5[m requeriments updating
+* [33m74f3d74[m requeriments updating
+* [33m52d6125[m requeriments
+* [33m0b4b99f[m requeriments
+* [33ma598a6d[m Fixing schools
+* [33mad5ffef[m Fixing
+* [33md0eb36c[m Fixing
+* [33ma204d39[m button style
+* [33m3d62206[m Link changes
+* [33mc97831c[m Add create state and graphic modifications
+* [33m3375f29[m Add drive logic
+* [33ma40a32f[m Updating designs
+* [33m1eb3d39[m Updating designs
+* [33m2f3e4df[m Adding permissions
+* [33m36e2946[m Adding Programs table
+* [33mebbd3ca[m mobile modifications
+* [33m8b0774c[m Update Seguimientos
+* [33m485016a[m Add Seguimientos
+* [33m61c11ae[m search bar added
+* [33m23d8c7d[m design changes
+* [33me028731[m New implements
+* [33m6baf2f5[m Programs counter
+* [33m8013293[m New design changes
+* [33m485e3ec[m Fixing
+* [33m480bdea[m Fixing
+*   [33m4e69328[m Merge branch 'main' of https://github.com/saludunivalle/siac
+[34m|[m[35m\[m  
+[34m|[m * [33mc09f8e8[m Update package.json
+* [35m|[m   [33mb775ceb[m Fixing connection
+[35m|[m[1;31m\[m [35m\[m  
+[35m|[m [1;31m|[m[35m/[m  
+[35m|[m[35m/[m[1;31m|[m   
+[35m|[m * [33mf944db9[m Update README.md
+* [1;31m|[m [33m2e3d0df[m First Commit
+[1;31m|[m[1;31m/[m  
+* [33m98d9f46[m First Commit

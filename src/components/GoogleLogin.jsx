@@ -86,12 +86,12 @@ const GoogleLogin = ({
             google.accounts.id.initialize({
                 client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
                 callback: (response) => handleCredentialResponse(response),
-            });
+              });
 
             google.accounts.id.renderButton(
                 document.getElementById("buttonDiv"),
-                { theme: "outline", size: "large" , text: "login with google"}  
-            );
+                { theme: "outline", size: "large", text: "signin_with" } // Texto internacionalizado
+              );
 
             google.accounts.id.prompt();
         } catch (error) {
@@ -100,22 +100,27 @@ const GoogleLogin = ({
     };
 
     React.useEffect(() => {
-        const _root = document.getElementById('root');
-        const script_id = document.getElementById('google-login');
-
-        if (script_id) {
-            _root.removeChild(script_id);
+        let script;
+        const loadGoogleAuth = () => {
+          if (window.google?.accounts) {
+            _get_auth();
+          }
+        };
+      
+        if (!document.getElementById('google-login-script')) {
+          script = document.createElement('script');
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.async = true;
+          script.id = 'google-login-script';
+          script.onload = loadGoogleAuth;
+          document.body.appendChild(script);
         }
-
-        const _script = document.createElement('script');
-        _script.src = 'https://accounts.google.com/gsi/client';
-        _script.async = true;
-        _script.id = 'google-login';
-        _script.defer = true;
-        _root.appendChild(_script);
-
-        _script.onload = _get_auth;
-    }, []);
+      
+        return () => {
+          if (script) document.body.removeChild(script);
+          if (window.google?.accounts) google.accounts.id.cancel();
+        };
+      }, []);
 
     return (
         <>
