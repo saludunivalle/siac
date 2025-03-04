@@ -33,6 +33,7 @@
     "react-dom": "^18.2.0",
     "react-jwt": "^1.2.1",
     "react-router-dom": "^6.22.3",
+    "siac": "file:",
     "styled-components": "^6.1.8",
     "uuid": "^10.0.0",
     "xlsx": "^0.18.5"

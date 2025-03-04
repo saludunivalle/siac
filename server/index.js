@@ -1,117 +1,97 @@
-const express = require('express');
-const { google } = require('googleapis');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const {sheetValuesToObject} = require('./utils');
-const { config } = require('dotenv');
-config();
+/* global process, Buffer */
+import express from 'express';
+import { google } from 'googleapis';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+// Removed unused import: sheetValuesToObject
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
-const router = express.Router();
 const PORT = process.env.PORT || 3001;
-console.log(process.env.client_email, process.env.private_key)
-//configure a JWT auth client
-let jwtClient = new google.auth.JWT(
-  process.env.client_email,
+
+// Define jwtClient:
+// Adjust CLIENT_EMAIL and PRIVATE_KEY in your environment variables.
+// Replace newline characters correctly if needed.
+const jwtClient = new google.auth.JWT(
+  process.env.CLIENT_EMAIL,
   null,
-  (process.env.private_key).replace(/\\n/g, '\n'),
-  ['https://www.googleapis.com/auth/spreadsheets']);
-
-  //authenticate request
-  jwtClient.authorize(function (err, tokens) {
-        if (err) {
-        console.log(err,'hear');
-        return;
-  } else {
-       console.log("Successfully connected!");
-  }
-});
+  process.env.PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  ['https://www.googleapis.com/auth/spreadsheets']
+);
 
 app.use(bodyParser.json());
+app.use(cors({
+    origin: 'https://siac-salud.vercel.app', // Adjust to your production domain.
+    credentials: true // Allows cookies across frontend and backend.
+}));
+app.use(cookieParser());
 
-router.post('/sendData', async ( req, res) => {
-  
-  try {
-    const {
-      insertData, 
-      sheetName
-    }=req.body
-    const spreadsheetId = '1GQY2sWovU3pIBk3NyswSIl_bkCi86xIwCjbMqK_wIAE';
-    const range = sheetName;
-    const sheets = google.sheets({ version: 'v4' , auth: jwtClient });
-    const responseSheet = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range,
-      key: 'AIzaSyDQTWi9NHU_UTjhVQ1Wb08qxREaRgD9v1g',
-    });
-    const currentValues = responseSheet.data.values;
-    const nextRow = currentValues ? currentValues.length + 1 : 1;
-    const updatedRange = `${range}!A${nextRow}`;
-    const sheetsResponse = await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: updatedRange,
-      valueInputOption: 'RAW', 
-      resource: {
-        values: insertData
-      },
-      key: 'AIzaSyDQTWi9NHU_UTjhVQ1Wb08qxREaRgD9v1g',
-    })
-    if (sheetsResponse.status === 200) {
-      return res.status(200).json({ success: 'Se inserto correctamente', status:true});
-    } else {
-      return res.status(400).json({ error: 'No se inserto', status:false});
+app.post('/auth/google', async (req, res) => {
+    const { token } = req.body;
+    if (!token) {
+        return res.status(400).json({ error: 'Token no proporcionado' });
     }
-  } catch (error) {
-    return res.status(400).json({ error: 'Error en la conexion', status:false});
-  }
+
+    try {
+        // Decode token to extract payload.
+        const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        const email = decodedToken.email;
+
+        // Verify user permission via Google Sheets.
+        const sheets = google.sheets({ version: 'v4', auth: jwtClient });
+        const spreadsheetId = '1GQY2sWovU3pIBk3NyswSIl_bkCi86xIwCjbMqK_wIAE';
+        const range = 'PERMISOS!A1:C20';
+
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range,
+            key: process.env.GOOGLE_API_KEY
+        });
+
+        const users = response.data.values || [];
+        const userExists = users.some(row => row[0] === email);
+
+        if (!userExists) {
+            return res.status(403).json({ error: 'No tienes permisos' });
+        }
+
+        // Set an HTTP-only cookie with the token.
+        res.cookie('auth_token', token, {
+            httpOnly: true,
+            secure: true, // Use true in HTTPS environments.
+            sameSite: 'Strict',
+            maxAge: 5 * 24 * 60 * 60 * 1000 // Expires in 5 days.
+        });
+
+        res.status(200).json({ success: true, email });
+    } catch (error) {
+        console.error('Error en la autenticación:', error);
+        res.status(500).json({ error: 'Error al procesar la autenticación' });
+    }
 });
 
-router.post('/', async ( req, res) => {
-  
-  try {
-    // console.log(jwtClient);
-    const sheets = google.sheets({ version: 'v4',  auth: jwtClient });
-      const spreadsheetId = '1GQY2sWovU3pIBk3NyswSIl_bkCi86xIwCjbMqK_wIAE';
-      //const range = 'PROGRAMAS';
-      let range;
-      switch (req.body.sheetName) {
-        case 'Programas':
-          range = 'PROGRAMAS!A1:AE97';
-          break;
-        case 'Seguimientos':
-          range = 'SEGUIMIENTOS!A1:G97';
-          break;
-        case 'Permisos':
-          range = 'PERMISOS!A1:C20';
-          break;
-        default:
-          return res.status(400).json({ error: 'Nombre de hoja no válido' });
-      }
+app.get('/auth/verify', (req, res) => {
+    const token = req.cookies.auth_token;
+    if (!token) {
+        return res.status(401).json({ authenticated: false });
+    }
 
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-        key: 'AIzaSyDQTWi9NHU_UTjhVQ1Wb08qxREaRgD9v1g', 
-    });
-    console.log(sheetValuesToObject(response.data.values));   
-    res.json({
-      status: true, 
-      data: sheetValuesToObject(response.data.values)
-    }) 
-  } catch (error) {
-    console.log('error', error); 
-    res.json({
-      status: false
-    })
-  }
-    
+    const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    res.status(200).json({ authenticated: true, email: decodedToken.email });
 });
 
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(cors());
-app.use(router)
+app.post('/auth/logout', (req, res) => {
+  res.clearCookie('auth_token', {
+      httpOnly: true,
+      secure: true, // Mantener en true para producción con HTTPS
+      sameSite: 'Strict'
+  });
+  res.status(200).json({ success: true, message: 'Sesión cerrada correctamente' });
+});
+
 
 app.listen(PORT, () => {
-  console.log(`Servidor backend escuchando en el puerto ${PORT}`);
+    console.log(`Servidor backend en puerto ${PORT}`);
 });
