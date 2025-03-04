@@ -13,11 +13,14 @@ const hojaProgramas = 'Programas';
 const GoogleLogin = ({ setIsLogin }) => {
     const navigate = useNavigate();
     const [showLoginButton, setShowLoginButton] = useState(false);
+    const [isSessionActive, setIsSessionActive] = useState(false);
+    const [googleLoaded, setGoogleLoaded] = useState(false); // Verifica si Google se ha cargado
 
     const handleCredentialResponse = useCallback(async (response) => {
+        if (!response.credential) return;
+
         const data_decode = decodeToken(response.credential);
         try {
-            // Verificar permiso en la hoja de "Permisos"
             const permisosResponse = await fetchPostGeneral({
                 dataSend: {},
                 sheetName: hojaPermisos,
@@ -35,18 +38,14 @@ const GoogleLogin = ({ setIsLogin }) => {
 
                 if (resultPermisos.result) {
                     setIsLogin(true);
-                    localStorage.setItem('logged', JSON.stringify(resultPermisos.data)); // Guardar en localStorage
+                    localStorage.setItem('logged', JSON.stringify(resultPermisos.data));
                     Cookies.set('token', JSON.stringify(data_decode), { expires: 5 });
                     setShowLoginButton(false);
-                    
-                    if (window.google?.accounts) {
-                        google.accounts.id.cancel();
-                    }
+                    setIsSessionActive(true);
                     return;
                 }
             }
 
-            // Verificar permiso en la hoja de "Programas"
             const programasResponse = await fetchPostGeneral({
                 dataSend: {},
                 sheetName: hojaProgramas,
@@ -62,12 +61,9 @@ const GoogleLogin = ({ setIsLogin }) => {
                 if (programaPermitido) {
                     navigate('/program_details', { state: { ...programaPermitido, userEmail: data_decode.email } });
                     setIsLogin(true);
-                    localStorage.setItem('logged', JSON.stringify(data_decode)); // Guardar en localStorage
+                    localStorage.setItem('logged', JSON.stringify(data_decode));
                     setShowLoginButton(false);
-                    
-                    if (window.google?.accounts) {
-                        google.accounts.id.cancel();
-                    }
+                    setIsSessionActive(true);
                     return;
                 }
             }
@@ -75,37 +71,39 @@ const GoogleLogin = ({ setIsLogin }) => {
             alert('No tienes permiso para acceder');
             setIsLogin(false);
             setShowLoginButton(true);
+            setIsSessionActive(false);
         } catch (error) {
             console.error('Error en la solicitud:', error);
         }
     }, [setIsLogin, navigate]);
 
     const _get_auth = useCallback(() => {
-        if (window.google?.accounts) {
-            google.accounts.id.initialize({
-                client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
-                callback: handleCredentialResponse,
-            });
+        if (!window.google?.accounts) return;
 
-            google.accounts.id.renderButton(
-                document.getElementById("buttonDiv"),
-                { theme: "outline", size: "large", text: "signin_with" }
-            );
+        google.accounts.id.initialize({
+            client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
+            callback: handleCredentialResponse,
+        });
 
-            google.accounts.id.prompt();
-        }
+        google.accounts.id.renderButton(
+            document.getElementById("buttonDiv"),
+            { theme: "outline", size: "large", text: "signin_with" }
+        );
+
+        google.accounts.id.prompt();
     }, [handleCredentialResponse]);
 
     const handleLogout = async () => {
         try {
             await axios.post('https://siac-server.vercel.app/auth/logout', {}, { withCredentials: true });
-            localStorage.removeItem('logged'); // Borrar sesión
-            Cookies.remove('token'); // Borrar cookie
+            localStorage.removeItem('logged'); 
+            Cookies.remove('token'); 
             setIsLogin(false);
             setShowLoginButton(true);
-            
+            setIsSessionActive(false);
+
             if (window.google?.accounts) {
-                google.accounts.id.prompt(); // Volver a mostrar el prompt de Google
+                google.accounts.id.prompt();
             }
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
@@ -113,32 +111,38 @@ const GoogleLogin = ({ setIsLogin }) => {
     };
 
     useEffect(() => {
-        let script;
-        const loadGoogleAuth = () => {
-            if (window.google?.accounts) {
-                _get_auth();
+        const loadGoogleScript = () => {
+            if (document.getElementById('google-login-script')) {
+                setGoogleLoaded(true);
+                return;
             }
-        };
 
-        if (!document.getElementById('google-login-script')) {
-            script = document.createElement('script');
+            const script = document.createElement('script');
             script.src = 'https://accounts.google.com/gsi/client';
             script.async = true;
             script.id = 'google-login-script';
-            script.onload = loadGoogleAuth;
+            script.onload = () => {
+                setGoogleLoaded(true);
+                _get_auth();
+            };
             document.body.appendChild(script);
-        }
+        };
 
-        // Si hay sesión guardada, restaurarla
-        if (localStorage.getItem('logged')) {
+        loadGoogleScript();
+
+        const storedSession = localStorage.getItem('logged');
+        const tokenExists = Cookies.get('token');
+
+        if (storedSession && tokenExists) {
             setIsLogin(true);
             setShowLoginButton(false);
+            setIsSessionActive(true);
         } else {
             setShowLoginButton(true);
+            setIsSessionActive(false);
         }
 
         return () => {
-            if (script) document.body.removeChild(script);
             if (window.google?.accounts) {
                 google.accounts.id.cancel();
             }
@@ -147,20 +151,29 @@ const GoogleLogin = ({ setIsLogin }) => {
 
     return (
         <>
-            {showLoginButton && <div id="buttonDiv"></div>}
-            <button onClick={handleLogout} style={{
-                position: 'fixed', 
-                top: '20px', 
-                right: '20px', 
-                padding: '10px', 
-                backgroundColor: '#d32f2f', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: '5px', 
-                cursor: 'pointer'
-            }}>
-                Cerrar sesión
-            </button>
+            {showLoginButton && googleLoaded && <div id="buttonDiv"></div>}
+            {isSessionActive && (
+                <button onClick={handleLogout} style={{
+                    position: 'fixed',
+                    bottom: '20px',
+                    right: '20px',
+                    padding: '10px',
+                    backgroundColor: '#d32f2f',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '50px',
+                    height: '50px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    boxShadow: '0px 4px 8px rgba(0,0,0,0.3)'
+                }}>
+                    ❌
+                </button>
+            )}
         </>
     );
 };
