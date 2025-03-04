@@ -5,7 +5,7 @@ import { decodeToken } from 'react-jwt';
 import Cookies from 'js-cookie';
 import { fetchPostGeneral } from '../service/fetch';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+//import axios from 'axios';
 
 const hojaPermisos = 'Permisos';
 const hojaProgramas = 'Programas';
@@ -17,7 +17,7 @@ const GoogleLogin = ({ setIsLogin }) => {
     const handleCredentialResponse = useCallback(async (response) => {
         const data_decode = decodeToken(response.credential);
         try {
-            // Verify permission in the "Permisos" sheet
+            // Verificar permiso en la hoja de "Permisos"
             const permisosResponse = await fetchPostGeneral({
                 dataSend: {},
                 sheetName: hojaPermisos,
@@ -25,7 +25,6 @@ const GoogleLogin = ({ setIsLogin }) => {
             });
 
             if (permisosResponse) {
-                // Inline have_permision to avoid extra dependencies
                 const resultPermisos = (() => {
                     const result = permisosResponse.data?.filter(item => item['user'] === data_decode.email);
                     return {
@@ -40,12 +39,17 @@ const GoogleLogin = ({ setIsLogin }) => {
                     expiracion.setDate(expiracion.getDate() + 5);
                     Cookies.set('token', JSON.stringify(data_decode), { expires: expiracion });
                     sessionStorage.setItem('logged', JSON.stringify(resultPermisos.data));
+
+                    // Ocultar el botón de login y cerrar el prompt de Google
                     setShowLoginButton(false);
+                    if (window.google?.accounts) {
+                        google.accounts.id.cancel();
+                    }
                     return;
                 }
             }
 
-            // Verify permission in the "Programas" sheet
+            // Verificar permiso en la hoja de "Programas"
             const programasResponse = await fetchPostGeneral({
                 dataSend: {},
                 sheetName: hojaProgramas,
@@ -57,11 +61,16 @@ const GoogleLogin = ({ setIsLogin }) => {
                     const accesosArray = item['accesos'].split(',').map(email => email.trim());
                     return accesosArray.includes(data_decode.email);
                 });
+
                 if (programaPermitido) {
-                    // Passing email in navigation state if needed
                     navigate('/program_details', { state: { ...programaPermitido, userEmail: data_decode.email } });
                     setIsLogin(true);
                     setShowLoginButton(false);
+
+                    // Ocultar el contenedor de Google después de la autenticación
+                    if (window.google?.accounts) {
+                        google.accounts.id.cancel();
+                    }
                     return;
                 }
             }
@@ -74,22 +83,25 @@ const GoogleLogin = ({ setIsLogin }) => {
         }
     }, [setIsLogin, navigate]);
 
-    const _get_auth = useCallback(async () => {
+    const _get_auth = useCallback(() => {
         try {
             google.accounts.id.initialize({
                 client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
                 callback: handleCredentialResponse,
             });
+
             google.accounts.id.renderButton(
                 document.getElementById("buttonDiv"),
                 { theme: "outline", size: "large", text: "signin_with" }
             );
+
             google.accounts.id.prompt();
         } catch (error) {
             console.log('error', error);
         }
     }, [handleCredentialResponse]);
 
+    /*
     const handleLogout = async () => {
         try {
             await axios.post('https://siac-server.vercel.app/auth/logout', {}, { withCredentials: true });
@@ -100,7 +112,7 @@ const GoogleLogin = ({ setIsLogin }) => {
             console.error('Error al cerrar sesión:', error);
         }
     };
-    
+    */
 
     useEffect(() => {
         let script;
@@ -117,6 +129,14 @@ const GoogleLogin = ({ setIsLogin }) => {
             script.id = 'google-login-script';
             script.onload = loadGoogleAuth;
             document.body.appendChild(script);
+        }
+
+        // Ocultar contenedor de Google si la sesión está activa
+        if (sessionStorage.getItem('logged')) {
+            setShowLoginButton(false);
+            if (window.google?.accounts) {
+                google.accounts.id.cancel();
+            }
         }
 
         return () => {
