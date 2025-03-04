@@ -1,37 +1,22 @@
 /* global google */
-import { useState, useCallback, useEffect } from 'react';
-import { decodeToken } from "react-jwt";
+import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
+import { decodeToken } from 'react-jwt';
 import Cookies from 'js-cookie';
 import { fetchPostGeneral } from '../service/fetch';
 import { useNavigate } from 'react-router-dom';
-import PropTypes from "prop-types";
 
 const hojaPermisos = 'Permisos';
 const hojaProgramas = 'Programas';
 
-const GoogleLogin = ({
-    setIsLogin,
-    // Removed setData from props if not used
-}) => {
+const GoogleLogin = ({ setIsLogin }) => {
     const navigate = useNavigate();
     const [showLoginButton, setShowLoginButton] = useState(true);
-    // If you don't need userEmail elsewhere, you can remove this state,
-    // otherwise keep it for future use.
-    const [userEmail, setUserEmail] = useState(null); 
 
-    const have_permision = ({ data, dataToken }) => {
-        const result = data?.filter(item => item['user'] === dataToken['email']);
-        return {
-            result: result.length > 0,
-            data: result 
-        };
-    };
-
-    // Use useCallback so that it can be added safely in the useEffect dependency array.
     const handleCredentialResponse = useCallback(async (response) => {
         const data_decode = decodeToken(response.credential);
-
         try {
+            // Verify permission in the "Permisos" sheet
             const permisosResponse = await fetchPostGeneral({
                 dataSend: {},
                 sheetName: hojaPermisos,
@@ -39,40 +24,43 @@ const GoogleLogin = ({
             });
 
             if (permisosResponse) {
-                const resultPermisos = have_permision({
-                    data: permisosResponse.data,
-                    dataToken: data_decode
-                });
+                // Inline have_permision to avoid extra dependencies
+                const resultPermisos = (() => {
+                    const result = permisosResponse.data?.filter(item => item['user'] === data_decode.email);
+                    return {
+                        result: result.length > 0,
+                        data: result
+                    };
+                })();
 
                 if (resultPermisos.result) {
                     setIsLogin(true);
-                    setUserEmail(data_decode.email);
                     const expiracion = new Date();
                     expiracion.setDate(expiracion.getDate() + 5);
                     Cookies.set('token', JSON.stringify(data_decode), { expires: expiracion });
                     sessionStorage.setItem('logged', JSON.stringify(resultPermisos.data));
-                    setShowLoginButton(false); 
+                    setShowLoginButton(false);
                     return;
                 }
             }
 
+            // Verify permission in the "Programas" sheet
             const programasResponse = await fetchPostGeneral({
                 dataSend: {},
                 sheetName: hojaProgramas,
                 urlEndPoint: 'https://siac-server.vercel.app/'
             });
-
             if (programasResponse) {
                 const programasData = programasResponse.data;
                 const programaPermitido = programasData.find(item => {
                     const accesosArray = item['accesos'].split(',').map(email => email.trim());
-                    return accesosArray.includes(data_decode['email']);
+                    return accesosArray.includes(data_decode.email);
                 });
                 if (programaPermitido) {
+                    // Passing email in navigation state if needed
                     navigate('/program_details', { state: { ...programaPermitido, userEmail: data_decode.email } });
                     setIsLogin(true);
-                    setUserEmail(data_decode.email); 
-                    setShowLoginButton(false); 
+                    setShowLoginButton(false);
                     return;
                 }
             }
@@ -81,73 +69,60 @@ const GoogleLogin = ({
             setIsLogin(false);
         } catch (error) {
             console.error('Error en la solicitud:', error);
-            throw error; 
+            throw error;
         }
     }, [setIsLogin, navigate]);
 
-    useEffect(() => {
-        const initializeGoogleButton = () => {
-            try {
-                google.accounts.id.initialize({
-                    client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
-                    callback: handleCredentialResponse,
-                    hosted_domain: 'correounivalle.edu.co',
-                    ux_mode: 'popup'
-                });
-
-                google.accounts.id.renderButton(
-                    document.getElementById("googleButtonContainer"),
-                    {
-                        theme: "outline",
-                        size: "large",
-                        text: "signin_with",
-                        type: "standard",
-                        shape: "rectangular",
-                        width: 300
-                    }
-                );
-            } catch (error) {
-                console.error('Error inicializando Google Auth:', error);
-            }
-        };
-
-        const loadGoogleScript = () => {
-            if (!document.getElementById('google-login-script')) {
-                const script = document.createElement('script');
-                script.src = 'https://accounts.google.com/gsi/client';
-                script.async = true;
-                script.id = 'google-login-script';
-                script.onload = initializeGoogleButton;
-                document.body.appendChild(script);
-            }
-        };
-
-        loadGoogleScript();
-
-        return () => {
-            const buttonContainer = document.getElementById("googleButtonContainer");
-            if (buttonContainer) buttonContainer.innerHTML = '';
-        };
-    // Now we can safely add handleCredentialResponse into dependencies.
+    const _get_auth = useCallback(async () => {
+        try {
+            google.accounts.id.initialize({
+                client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
+                callback: handleCredentialResponse,
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("buttonDiv"),
+                { theme: "outline", size: "large", text: "signin_with" }
+            );
+            google.accounts.id.prompt();
+        } catch (error) {
+            console.log('error', error);
+        }
     }, [handleCredentialResponse]);
 
+    useEffect(() => {
+        let script;
+        const loadGoogleAuth = () => {
+            if (window.google?.accounts) {
+                _get_auth();
+            }
+        };
+
+        if (!document.getElementById('google-login-script')) {
+            script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.id = 'google-login-script';
+            script.onload = loadGoogleAuth;
+            document.body.appendChild(script);
+        }
+
+        return () => {
+            if (script) document.body.removeChild(script);
+            if (window.google?.accounts) {
+                google.accounts.id.cancel();
+            }
+        };
+    }, [_get_auth]);
+
     return (
-        <div 
-            id="googleButtonContainer"
-            style={{
-                display: 'flex',
-                justifyContent: 'center',
-                margin: '20px 0',
-                visibility: showLoginButton ? 'visible' : 'hidden'
-            }}
-        ></div>
+        <>
+            {showLoginButton && <div id="buttonDiv"></div>}
+        </>
     );
 };
 
 GoogleLogin.propTypes = {
     setIsLogin: PropTypes.func.isRequired,
-    // Remove or add the following based on your future use:
-    // setData: PropTypes.func,
 };
 
 export default GoogleLogin;
