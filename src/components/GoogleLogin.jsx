@@ -7,14 +7,11 @@ import { fetchPostGeneral } from '../service/fetch';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const hojaPermisos = 'Permisos';
-const hojaProgramas = 'Programas';
-
 const GoogleLogin = ({ setIsLogin }) => {
     const navigate = useNavigate();
-    const [showLoginButton, setShowLoginButton] = useState(false);
     const [isSessionActive, setIsSessionActive] = useState(false);
-    const [googleLoaded, setGoogleLoaded] = useState(false); // Verifica si Google se ha cargado
+    const [showLoginButton, setShowLoginButton] = useState(false);
+    const [googleLoaded, setGoogleLoaded] = useState(false);
 
     const handleCredentialResponse = useCallback(async (response) => {
         if (!response.credential) return;
@@ -23,45 +20,16 @@ const GoogleLogin = ({ setIsLogin }) => {
         try {
             const permisosResponse = await fetchPostGeneral({
                 dataSend: {},
-                sheetName: hojaPermisos,
+                sheetName: 'Permisos',
                 urlEndPoint: 'https://siac-server.vercel.app/'
             });
 
-            if (permisosResponse) {
-                const resultPermisos = (() => {
-                    const result = permisosResponse.data?.filter(item => item['user'] === data_decode.email);
-                    return {
-                        result: result.length > 0,
-                        data: result
-                    };
-                })();
-
-                if (resultPermisos.result) {
+            if (permisosResponse && permisosResponse.data) {
+                const resultPermisos = permisosResponse.data.filter(item => item['user'] === data_decode.email);
+                if (resultPermisos.length > 0) {
                     setIsLogin(true);
-                    localStorage.setItem('logged', JSON.stringify(resultPermisos.data));
+                    localStorage.setItem('logged', JSON.stringify(resultPermisos));
                     Cookies.set('token', JSON.stringify(data_decode), { expires: 5 });
-                    setShowLoginButton(false);
-                    setIsSessionActive(true);
-                    return;
-                }
-            }
-
-            const programasResponse = await fetchPostGeneral({
-                dataSend: {},
-                sheetName: hojaProgramas,
-                urlEndPoint: 'https://siac-server.vercel.app/'
-            });
-            if (programasResponse) {
-                const programasData = programasResponse.data;
-                const programaPermitido = programasData.find(item => {
-                    const accesosArray = item['accesos'].split(',').map(email => email.trim());
-                    return accesosArray.includes(data_decode.email);
-                });
-
-                if (programaPermitido) {
-                    navigate('/program_details', { state: { ...programaPermitido, userEmail: data_decode.email } });
-                    setIsLogin(true);
-                    localStorage.setItem('logged', JSON.stringify(data_decode));
                     setShowLoginButton(false);
                     setIsSessionActive(true);
                     return;
@@ -75,9 +43,9 @@ const GoogleLogin = ({ setIsLogin }) => {
         } catch (error) {
             console.error('Error en la solicitud:', error);
         }
-    }, [setIsLogin, navigate]);
+    }, [setIsLogin]);
 
-    const _get_auth = useCallback(() => {
+    const initializeGoogleAuth = useCallback(() => {
         if (!window.google?.accounts) return;
 
         google.accounts.id.initialize({
@@ -86,8 +54,8 @@ const GoogleLogin = ({ setIsLogin }) => {
         });
 
         google.accounts.id.renderButton(
-            document.getElementById("buttonDiv"),
-            { theme: "outline", size: "large", text: "signin_with" }
+            document.getElementById('buttonDiv'),
+            { theme: 'outline', size: 'large', text: 'signin_with' }
         );
 
         google.accounts.id.prompt();
@@ -101,10 +69,7 @@ const GoogleLogin = ({ setIsLogin }) => {
             setIsLogin(false);
             setShowLoginButton(true);
             setIsSessionActive(false);
-
-            if (window.google?.accounts) {
-                google.accounts.id.prompt();
-            }
+            navigate('/login');
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
         }
@@ -123,7 +88,7 @@ const GoogleLogin = ({ setIsLogin }) => {
             script.id = 'google-login-script';
             script.onload = () => {
                 setGoogleLoaded(true);
-                _get_auth();
+                initializeGoogleAuth();
             };
             document.body.appendChild(script);
         };
@@ -141,13 +106,7 @@ const GoogleLogin = ({ setIsLogin }) => {
             setShowLoginButton(true);
             setIsSessionActive(false);
         }
-
-        return () => {
-            if (window.google?.accounts) {
-                google.accounts.id.cancel();
-            }
-        };
-    }, [_get_auth]);
+    }, [initializeGoogleAuth]);
 
     return (
         <>

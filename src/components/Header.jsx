@@ -1,12 +1,10 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { styled } from "@mui/material/styles";
 import { InputBase } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { Link, useNavigate } from "react-router-dom";
 import { Filtro5 } from "../service/data";
 import logo from "/src/assets/logounivalle.svg";
-
 
 const HeaderContainer = styled("div")(({ theme }) => ({
   display: "flex",
