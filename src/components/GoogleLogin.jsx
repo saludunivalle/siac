@@ -45,37 +45,19 @@ const GoogleLogin = ({ setIsLogin }) => {
         }
     }, [setIsLogin]);
 
-    const initializeGoogleAuth = useCallback(() => {
-        if (!window.google?.accounts) return;
-
-        google.accounts.id.initialize({
-            client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
-            callback: handleCredentialResponse,
-        });
-
-        google.accounts.id.renderButton(
-            document.getElementById('buttonDiv'),
-            { theme: 'outline', size: 'large', text: 'signin_with' }
-        );
-
-        google.accounts.id.prompt();
-    }, [handleCredentialResponse]);
-
-    const handleLogout = async () => {
-        try {
-            await axios.post('https://siac-server.vercel.app/auth/logout', {}, { withCredentials: true });
-            localStorage.removeItem('logged'); 
-            Cookies.remove('token'); 
-            setIsLogin(false);
-            setShowLoginButton(true);
-            setIsSessionActive(false);
-            navigate('/login');
-        } catch (error) {
-            console.error('Error al cerrar sesión:', error);
-        }
-    };
-
     useEffect(() => {
+        const initializeGoogleAuth = () => {
+            if (!window.google?.accounts) return;
+
+            google.accounts.id.initialize({
+                client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
+                callback: handleCredentialResponse,
+                auto_select: true
+            });
+
+            google.accounts.id.prompt();
+        };
+
         const loadGoogleScript = () => {
             if (document.getElementById('google-login-script')) {
                 setGoogleLoaded(true);
@@ -106,7 +88,21 @@ const GoogleLogin = ({ setIsLogin }) => {
             setShowLoginButton(true);
             setIsSessionActive(false);
         }
-    }, [initializeGoogleAuth]);
+    }, [handleCredentialResponse]);
+
+    const handleLogout = async () => {
+        try {
+            await axios.post('https://siac-server.vercel.app/auth/logout', {}, { withCredentials: true });
+            localStorage.removeItem('logged'); 
+            Cookies.remove('token'); 
+            setIsLogin(false);
+            setShowLoginButton(true);
+            setIsSessionActive(false);
+            navigate('/login');
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+        }
+    };
 
     return (
         <>
