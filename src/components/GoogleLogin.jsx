@@ -1,140 +1,153 @@
 /* global google */
-import { useState, useEffect, useCallback } from 'react';
-import PropTypes from 'prop-types';
-import { decodeToken } from 'react-jwt';
+import { useState, useCallback, useEffect } from 'react';
+import { decodeToken } from "react-jwt";
 import Cookies from 'js-cookie';
 import { fetchPostGeneral } from '../service/fetch';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import PropTypes from "prop-types";
 
-const GoogleLogin = ({ setIsLogin }) => {
+const hojaPermisos = 'Permisos';
+const hojaProgramas = 'Programas';
+
+const GoogleLogin = ({
+    setIsLogin,
+    // Removed setData from props if not used
+}) => {
     const navigate = useNavigate();
-    const [isSessionActive, setIsSessionActive] = useState(false);
-    const [showLoginButton, setShowLoginButton] = useState(false);
-    const [googleLoaded, setGoogleLoaded] = useState(false);
+    const [showLoginButton, setShowLoginButton] = useState(true);
+    // If you don't need userEmail elsewhere, you can remove this state,
+    // otherwise keep it for future use.
+    const [userEmail, setUserEmail] = useState(null); 
 
+    const have_permision = ({ data, dataToken }) => {
+        const result = data?.filter(item => item['user'] === dataToken['email']);
+        return {
+            result: result.length > 0,
+            data: result 
+        };
+    };
+
+    // Use useCallback so that it can be added safely in the useEffect dependency array.
     const handleCredentialResponse = useCallback(async (response) => {
-        if (!response.credential) return;
-
         const data_decode = decodeToken(response.credential);
+
         try {
             const permisosResponse = await fetchPostGeneral({
                 dataSend: {},
-                sheetName: 'Permisos',
+                sheetName: hojaPermisos,
                 urlEndPoint: 'https://siac-server.vercel.app/'
             });
 
-            if (permisosResponse && permisosResponse.data) {
-                const resultPermisos = permisosResponse.data.filter(item => item['user'] === data_decode.email);
-                if (resultPermisos.length > 0) {
+            if (permisosResponse) {
+                const resultPermisos = have_permision({
+                    data: permisosResponse.data,
+                    dataToken: data_decode
+                });
+
+                if (resultPermisos.result) {
                     setIsLogin(true);
-                    localStorage.setItem('logged', JSON.stringify(resultPermisos));
-                    Cookies.set('token', JSON.stringify(data_decode), { expires: 5 });
-                    setShowLoginButton(false);
-                    setIsSessionActive(true);
+                    setUserEmail(data_decode.email);
+                    const expiracion = new Date();
+                    expiracion.setDate(expiracion.getDate() + 5);
+                    Cookies.set('token', JSON.stringify(data_decode), { expires: expiracion });
+                    sessionStorage.setItem('logged', JSON.stringify(resultPermisos.data));
+                    setShowLoginButton(false); 
+                    return;
+                }
+            }
+
+            const programasResponse = await fetchPostGeneral({
+                dataSend: {},
+                sheetName: hojaProgramas,
+                urlEndPoint: 'https://siac-server.vercel.app/'
+            });
+
+            if (programasResponse) {
+                const programasData = programasResponse.data;
+                const programaPermitido = programasData.find(item => {
+                    const accesosArray = item['accesos'].split(',').map(email => email.trim());
+                    return accesosArray.includes(data_decode['email']);
+                });
+                if (programaPermitido) {
+                    navigate('/program_details', { state: { ...programaPermitido, userEmail: data_decode.email } });
+                    setIsLogin(true);
+                    setUserEmail(data_decode.email); 
+                    setShowLoginButton(false); 
                     return;
                 }
             }
 
             alert('No tienes permiso para acceder');
             setIsLogin(false);
-            setShowLoginButton(true);
-            setIsSessionActive(false);
         } catch (error) {
             console.error('Error en la solicitud:', error);
+            throw error; 
         }
-    }, [setIsLogin]);
+    }, [setIsLogin, navigate]);
 
     useEffect(() => {
-        const initializeGoogleAuth = () => {
-            if (!window.google?.accounts) return;
+        const initializeGoogleButton = () => {
+            try {
+                google.accounts.id.initialize({
+                    client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
+                    callback: handleCredentialResponse,
+                    hosted_domain: 'correounivalle.edu.co',
+                    ux_mode: 'popup'
+                });
 
-            google.accounts.id.initialize({
-                client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
-                callback: handleCredentialResponse,
-                auto_select: true
-            });
-
-            google.accounts.id.prompt();
+                google.accounts.id.renderButton(
+                    document.getElementById("googleButtonContainer"),
+                    {
+                        theme: "outline",
+                        size: "large",
+                        text: "signin_with",
+                        type: "standard",
+                        shape: "rectangular",
+                        width: 300
+                    }
+                );
+            } catch (error) {
+                console.error('Error inicializando Google Auth:', error);
+            }
         };
 
         const loadGoogleScript = () => {
-            if (document.getElementById('google-login-script')) {
-                setGoogleLoaded(true);
-                return;
+            if (!document.getElementById('google-login-script')) {
+                const script = document.createElement('script');
+                script.src = 'https://accounts.google.com/gsi/client';
+                script.async = true;
+                script.id = 'google-login-script';
+                script.onload = initializeGoogleButton;
+                document.body.appendChild(script);
             }
-
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.id = 'google-login-script';
-            script.onload = () => {
-                setGoogleLoaded(true);
-                initializeGoogleAuth();
-            };
-            document.body.appendChild(script);
         };
 
         loadGoogleScript();
 
-        const storedSession = localStorage.getItem('logged');
-        const tokenExists = Cookies.get('token');
-
-        if (storedSession && tokenExists) {
-            setIsLogin(true);
-            setShowLoginButton(false);
-            setIsSessionActive(true);
-        } else {
-            setShowLoginButton(true);
-            setIsSessionActive(false);
-        }
+        return () => {
+            const buttonContainer = document.getElementById("googleButtonContainer");
+            if (buttonContainer) buttonContainer.innerHTML = '';
+        };
+    // Now we can safely add handleCredentialResponse into dependencies.
     }, [handleCredentialResponse]);
 
-    const handleLogout = async () => {
-        try {
-            await axios.post('https://siac-server.vercel.app/auth/logout', {}, { withCredentials: true });
-            localStorage.removeItem('logged'); 
-            Cookies.remove('token'); 
-            setIsLogin(false);
-            setShowLoginButton(true);
-            setIsSessionActive(false);
-            navigate('/login');
-        } catch (error) {
-            console.error('Error al cerrar sesión:', error);
-        }
-    };
-
     return (
-        <>
-            {showLoginButton && googleLoaded && <div id="buttonDiv"></div>}
-            {isSessionActive && (
-                <button onClick={handleLogout} style={{
-                    position: 'fixed',
-                    bottom: '20px',
-                    right: '20px',
-                    padding: '10px',
-                    backgroundColor: '#d32f2f',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '50px',
-                    height: '50px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    boxShadow: '0px 4px 8px rgba(0,0,0,0.3)'
-                }}>
-                    ❌
-                </button>
-            )}
-        </>
+        <div 
+            id="googleButtonContainer"
+            style={{
+                display: 'flex',
+                justifyContent: 'center',
+                margin: '20px 0',
+                visibility: showLoginButton ? 'visible' : 'hidden'
+            }}
+        ></div>
     );
 };
 
 GoogleLogin.propTypes = {
     setIsLogin: PropTypes.func.isRequired,
+    // Remove or add the following based on your future use:
+    // setData: PropTypes.func,
 };
 
 export default GoogleLogin;
