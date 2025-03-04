@@ -5,14 +5,14 @@ import { decodeToken } from 'react-jwt';
 import Cookies from 'js-cookie';
 import { fetchPostGeneral } from '../service/fetch';
 import { useNavigate } from 'react-router-dom';
-//import axios from 'axios';
+import axios from 'axios';
 
 const hojaPermisos = 'Permisos';
 const hojaProgramas = 'Programas';
 
 const GoogleLogin = ({ setIsLogin }) => {
     const navigate = useNavigate();
-    const [showLoginButton, setShowLoginButton] = useState(true);
+    const [showLoginButton, setShowLoginButton] = useState(false);
 
     const handleCredentialResponse = useCallback(async (response) => {
         const data_decode = decodeToken(response.credential);
@@ -35,13 +35,10 @@ const GoogleLogin = ({ setIsLogin }) => {
 
                 if (resultPermisos.result) {
                     setIsLogin(true);
-                    const expiracion = new Date();
-                    expiracion.setDate(expiracion.getDate() + 5);
-                    Cookies.set('token', JSON.stringify(data_decode), { expires: expiracion });
-                    sessionStorage.setItem('logged', JSON.stringify(resultPermisos.data));
-
-                    // Ocultar el botón de login y cerrar el prompt de Google
+                    localStorage.setItem('logged', JSON.stringify(resultPermisos.data)); // Guardar en localStorage
+                    Cookies.set('token', JSON.stringify(data_decode), { expires: 5 });
                     setShowLoginButton(false);
+                    
                     if (window.google?.accounts) {
                         google.accounts.id.cancel();
                     }
@@ -65,9 +62,9 @@ const GoogleLogin = ({ setIsLogin }) => {
                 if (programaPermitido) {
                     navigate('/program_details', { state: { ...programaPermitido, userEmail: data_decode.email } });
                     setIsLogin(true);
+                    localStorage.setItem('logged', JSON.stringify(data_decode)); // Guardar en localStorage
                     setShowLoginButton(false);
-
-                    // Ocultar el contenedor de Google después de la autenticación
+                    
                     if (window.google?.accounts) {
                         google.accounts.id.cancel();
                     }
@@ -77,14 +74,14 @@ const GoogleLogin = ({ setIsLogin }) => {
 
             alert('No tienes permiso para acceder');
             setIsLogin(false);
+            setShowLoginButton(true);
         } catch (error) {
             console.error('Error en la solicitud:', error);
-            throw error;
         }
     }, [setIsLogin, navigate]);
 
     const _get_auth = useCallback(() => {
-        try {
+        if (window.google?.accounts) {
             google.accounts.id.initialize({
                 client_id: '340874428494-ot9uprkvvq4ha529arl97e9mehfojm5b.apps.googleusercontent.com',
                 callback: handleCredentialResponse,
@@ -96,23 +93,24 @@ const GoogleLogin = ({ setIsLogin }) => {
             );
 
             google.accounts.id.prompt();
-        } catch (error) {
-            console.log('error', error);
         }
     }, [handleCredentialResponse]);
 
-    /*
     const handleLogout = async () => {
         try {
             await axios.post('https://siac-server.vercel.app/auth/logout', {}, { withCredentials: true });
-            sessionStorage.removeItem('logged'); // Limpiar sessionStorage
+            localStorage.removeItem('logged'); // Borrar sesión
+            Cookies.remove('token'); // Borrar cookie
             setIsLogin(false);
             setShowLoginButton(true);
+            
+            if (window.google?.accounts) {
+                google.accounts.id.prompt(); // Volver a mostrar el prompt de Google
+            }
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
         }
     };
-    */
 
     useEffect(() => {
         let script;
@@ -131,12 +129,12 @@ const GoogleLogin = ({ setIsLogin }) => {
             document.body.appendChild(script);
         }
 
-        // Ocultar contenedor de Google si la sesión está activa
-        if (sessionStorage.getItem('logged')) {
+        // Si hay sesión guardada, restaurarla
+        if (localStorage.getItem('logged')) {
+            setIsLogin(true);
             setShowLoginButton(false);
-            if (window.google?.accounts) {
-                google.accounts.id.cancel();
-            }
+        } else {
+            setShowLoginButton(true);
         }
 
         return () => {
@@ -150,6 +148,19 @@ const GoogleLogin = ({ setIsLogin }) => {
     return (
         <>
             {showLoginButton && <div id="buttonDiv"></div>}
+            <button onClick={handleLogout} style={{
+                position: 'fixed', 
+                top: '20px', 
+                right: '20px', 
+                padding: '10px', 
+                backgroundColor: '#d32f2f', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '5px', 
+                cursor: 'pointer'
+            }}>
+                Cerrar sesión
+            </button>
         </>
     );
 };
