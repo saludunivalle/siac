@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '/src/styles/programDetails.css'; 
@@ -10,6 +10,12 @@ import { Tabs, Tab, Box, Button, TextField, Grid } from '@mui/material';
 import { format } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'; 
+
+const normalizeValue = (value) => {
+    return typeof value === 'string' && value.trim().toUpperCase() === '#N/A'
+      ? 'N/A'
+      : value;
+  };
 
 const ProgramDetails = () => {
     const location = useLocation();
@@ -85,7 +91,7 @@ const ProgramDetails = () => {
         fechaexpedrc,
         fechavencrc,
         fechaexpedac,
-        fechavencrac,
+        fechavencac,
         'titulo a conceder': titulo,
         jornada,
         modalidad,
@@ -98,26 +104,26 @@ const ProgramDetails = () => {
     } = rowData || {};
 
     const [formData, setFormData] = useState({
-        Sede: sede,
-        Facultad: facultad,
-        Escuela: escuela,
-        Departamento: departamento,
-        Sección: seccion,
-        'Nivel Académico': academico,
-        'Nivel de Formación': formacion,
-        'Titulo a Conceder': titulo,
-        Jornada: jornada,
-        Modalidad: modalidad,
-        Créditos: creditos,
-        Periodicidad: periodicidad,
-        Duración: duracion,
-        'FechaExp RRC': fechaexpedrc,
-        'Fecha RRC': fechavencrc,
-        'FechaExp RAAC': fechaexpedac,
-        'Fecha RAAC': fechavencrac,
-        Acreditable: acreditable,
-        Contingencia: contingencia, 
-        'Número renovaciones RRC': rowData['número renovaciones RRC'] || 1, // valor por defecto o el valor del programa
+        Sede: normalizeValue(sede),
+        Facultad: normalizeValue(facultad),
+        Escuela: normalizeValue(escuela),
+        Departamento: normalizeValue(departamento),
+        Sección: normalizeValue(seccion),
+        'Nivel Académico': normalizeValue(academico),
+        'Nivel de Formación': normalizeValue(formacion),
+        'Titulo a Conceder': normalizeValue(titulo),
+        Jornada: normalizeValue(jornada),
+        Modalidad: normalizeValue(modalidad),
+        Créditos: normalizeValue(creditos),
+        Periodicidad: normalizeValue(periodicidad),
+        Duración: normalizeValue(duracion),
+        'FechaExp RRC': normalizeValue(fechaexpedrc),
+        'Fecha RRC': normalizeValue(fechavencrc),
+        'FechaExp RAAC': normalizeValue(fechaexpedac),
+        'Fecha RAAC': normalizeValue(fechavencac),
+        Acreditable: normalizeValue(acreditable),
+        Contingencia: normalizeValue(contingencia),
+        'Número renovaciones RRC': normalizeValue(rowData['número renovaciones RRC']) || 1,
     });
 
     useEffect(() => {
@@ -537,7 +543,7 @@ const ProgramDetails = () => {
                         <Tab label="Seguimiento PM" value="Seg" sx={tabSx('Seg')} />
                     </Tabs>
                 </Box>
-                <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento} />
+                <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento} fechavencrc={rowData.fechavencrc} />
                 {!userEmail && !isemail && (
                     <Button onClick={handleBackClick} variant="contained" style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', margin: '10px 0px -15px' }}>
                         Atrás

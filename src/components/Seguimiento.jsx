@@ -1168,6 +1168,8 @@ const Seguimiento = ({ handleButtonClick }) => {
                                 escuela={escuela}
                                 formacion={formacion}
                                 isPlan={avaibleRange(isPlan)}
+                                fechaVencimientoRRC={rowData['fechavencrc']}
+                                fechaVencAC={rowData['fechavencac']} 
                             />
                             <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                                 <>
