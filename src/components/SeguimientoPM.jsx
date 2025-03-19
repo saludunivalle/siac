@@ -20,7 +20,6 @@ import {
     Radio,
     Link
 } from '@mui/material';
-import { CheckCircle, Cancel } from '@mui/icons-material';
 import LaunchIcon from '@mui/icons-material/Launch';
 import { styled } from '@mui/system';
 import { sendDataSegui, dataSegui, updateDataSegui } from '../service/data';

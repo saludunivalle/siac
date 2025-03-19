@@ -187,6 +187,13 @@ const Seguimiento = ({ handleButtonClick }) => {
             setLoading(true);
             let procesoActual = '';
             let documentoproceso = '';
+            
+            // Si no hay un botón seleccionado, terminar la función
+            if (!handleButtonClick) {
+                setLoading(false);
+                return;
+            }
+            
             if (handleButtonClick === 'crea') {
                 procesoActual = 'Creación';
                 documentoproceso = 'Creación';
@@ -202,32 +209,65 @@ const Seguimiento = ({ handleButtonClick }) => {
             } else if (handleButtonClick === 'mod') {
                 procesoActual = 'Modificación';
                 documentoproceso = 'Modificación';
+            } else if (handleButtonClick === 'Seg' || handleButtonClick === 'conv') {
+                // Para estos casos no necesitamos cargar fases
+                setLoading(false);
+                return;
             }
-
+    
+            // Inicializar estados con valores vacíos por defecto
+            setFases([]);
+            setFasesName([]);
+            setItemActual(null);
+            setDocs([]);
+    
             const general = await Filtro10();
+            if (!general || !Array.isArray(general)) {
+                console.error('Error: Filtro10 no devolvió un array', general);
+                setLoading(false);
+                return;
+            }
+    
             const general2 = general
                 .filter(item => item['proceso'] === procesoActual)
-                .sort((a, b) => a.orden - b.orden); // Ordenar por orden
-
+                .sort((a, b) => a.orden - b.orden);
+    
             const response = await obtenerFasesProceso();
+            if (!response || !Array.isArray(response)) {
+                console.error('Error: obtenerFasesProceso no devolvió un array', response);
+                setLoading(false);
+                return;
+            }
+    
             const fasesFiltradas = response.filter(item => item.id_programa === idPrograma);
             const result2 = fasesFiltradas.map(fase => {
                 const filtro10Item = general.find(item => item.id === fase.id_fase);
                 return filtro10Item ? filtro10Item : null;
             });
+            
             const result3 = result2.filter(item => item && item['proceso'] === procesoActual)
-                .sort((a, b) => a.orden - b.orden); // Ordenar por orden
-
+                .sort((a, b) => a.orden - b.orden);
+    
             setFases(general2);
             setFasesName(result3);
-            const fase_actual = result3[0];
-            setItemActual(fase_actual);
+            
+            if (result3 && result3.length > 0) {
+                setItemActual(result3[0]);
+            }
+            
             const proceso = await Filtro12();
+            if (!proceso || !Array.isArray(proceso)) {
+                console.error('Error: Filtro12 no devolvió un array', proceso);
+                setLoading(false);
+                return;
+            }
+            
             const procesoFiltrado = proceso.filter(item => item['proceso'] === documentoproceso);
             setDocs(procesoFiltrado);
             setLoading(false);
         } catch (error) {
             console.error('Error al cargar las fases:', error);
+            setLoading(false);
         }
     };
 
@@ -265,13 +305,32 @@ const Seguimiento = ({ handleButtonClick }) => {
     useEffect(() => {
         if (sessionStorage.getItem('logged')) {
             let res = JSON.parse(sessionStorage.getItem('logged'));
-            setCargo(res.map(item => item.permiso).flat());
-            setUser(res[0].user);
+            // Asegurarse de que res.map(...).flat() devuelva un array
+            const permisos = res.map(item => item.permiso || []).flat();
+            setCargo(permisos.length > 0 ? permisos : [' ']);
+            setUser(res[0]?.user || '');
+        } else {
+            // Establecer un array vacío o con un valor por defecto si no hay datos de sesión
+            setCargo([' ']);
         }
     }, []);
 
     const avaibleRange = (buscar) => {
-        return isCargo.some(cargo => buscar.includes(cargo));
+        // Verificar que isCargo sea un array antes de intentar usar .some()
+        if (!Array.isArray(isCargo)) return false;
+        
+        // También asegurar que buscar sea un valor válido
+        if (!buscar) return false;
+        
+        return isCargo.some(cargo => {
+            // Verificar el tipo de buscar antes de usar includes
+            if (typeof buscar === 'string') {
+                return buscar.includes(cargo);
+            } else if (Array.isArray(buscar)) {
+                return buscar.includes(cargo);
+            }
+            return false;
+        });
     };
 
     // Efecto para cargar datos filtrados
