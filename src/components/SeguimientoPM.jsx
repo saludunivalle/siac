@@ -270,6 +270,46 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
 
     return (
         <>
+
+        {/* NUEVO BLOQUE: Select para Estado del Programa */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
+            <Box
+                sx={{
+                p: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: '12px',
+                backgroundColor: 'background.paper',
+                width: '800px',
+                textAlign: 'center'
+                }}
+            >
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500, color: 'text.secondary' }}>
+                    Estado del Programa
+                </Typography>
+                <FormControl 
+                    variant="outlined" 
+                    disabled={!isPlan}
+                    fullWidth
+                >
+                    <InputLabel id="estadoProceso-label">Seleccione el estado del programa</InputLabel>
+                    <Select
+                        labelId="estadoProceso-label"
+                        id="estadoProceso"
+                        value={estadoProceso}
+                        onChange={handleFieldChange(setEstadoProceso)}
+                        label="Seleccione el estado del programa"
+                    >
+                        <MenuItem value=""><em>Seleccione el estado del programa</em></MenuItem>
+                        <MenuItem value="Diseño">Diseño</MenuItem>
+                        <MenuItem value="Rediseño">Rediseño</MenuItem>
+                        <MenuItem value="Seguimiento">Seguimiento</MenuItem>
+                    </Select>
+                </FormControl>
+            </Box>
+        </div>
+
+        {/* DIV separado para los bloques de Registro Calificado y Acreditación */}
         <div
         style={{
             display: 'flex',
@@ -279,42 +319,42 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
             marginBottom: '20px'
         }}
         >
-        <Box
-            sx={{
-            p: 2,
-            borderRadius: '4px',
-            backgroundColor: registroCalificado.color,
-            color: 'Dark Gray',
-            fontWeight: 'bold',
-            flex: 1,
-            marginRight: '10px'
-            }}
-        >
-            <Typography variant="body1" align="center" fontWeight= "bold">
-            ¿Obtuvo o tiene Registro calificado?
-            </Typography>
-            <Typography variant="body2" align="center" fontWeight= "bold">
-            {registroCalificado.estado}
-            </Typography>
-        </Box>
-        <Box
-            sx={{
-            p: 2,
-            borderRadius: '4px',
-            backgroundColor: acreditacion.color,
-            color: 'Dark Gray',
-            fontWeight: 'bold',
-            flex: 1,
-            marginLeft: '10px'
-            }}
-        >
-            <Typography variant="body1" align="center" fontWeight= "bold">
-            ¿Obtuvo o tiene Acreditación?
-            </Typography>
-            <Typography variant="body2" align="center" fontWeight= "bold">
-            {acreditacion.estado}
-            </Typography>
-        </Box>
+            <Box
+                sx={{
+                p: 2,
+                borderRadius: '4px',
+                backgroundColor: registroCalificado.color,
+                color: 'Dark Gray',
+                fontWeight: 'bold',
+                flex: 1,
+                marginRight: '10px'
+                }}
+            >
+                <Typography variant="body1" align="center" fontWeight= "bold">
+                ¿Obtuvo o tiene Registro calificado?
+                </Typography>
+                <Typography variant="body2" align="center" fontWeight= "bold">
+                {registroCalificado.estado}
+                </Typography>
+            </Box>
+            <Box
+                sx={{
+                p: 2,
+                borderRadius: '4px',
+                backgroundColor: acreditacion.color,
+                color: 'Dark Gray',
+                fontWeight: 'bold',
+                flex: 1,
+                marginLeft: '10px'
+                }}
+            >
+                <Typography variant="body1" align="center" fontWeight= "bold">
+                ¿Obtuvo o tiene Acreditación?
+                </Typography>
+                <Typography variant="body2" align="center" fontWeight= "bold">
+                {acreditacion.estado}
+                </Typography>
+            </Box>
         </div> 
 
         {/* Bloque para HSCPM */}
