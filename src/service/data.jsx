@@ -493,6 +493,22 @@ export const updateDataEscuela = async (data, id) => {
   }
 };
 
+export const dataProgramas = async () => {
+  try {
+    const response = await fetchPostGeneral({
+      dataSend: {},
+      sheetName: 'Programas', // Nombre de la hoja en el backend
+      urlEndPoint: 'https://siac-server.vercel.app/seguimiento' // Endpoint principal
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener datos de programas:', error);
+    throw error;
+  }
+};
+
+
+
 export const clearSheetExceptFirstRow = async (spreadsheetId, sheetName) => {
   try {
     const response = await fetch('https://siac-server.vercel.app/clearSheet', {

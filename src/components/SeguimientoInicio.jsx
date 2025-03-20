@@ -18,7 +18,7 @@ import {
 import { styled } from '@mui/system';
 import Header from './Header';
 import { format } from 'date-fns';
-import { sendDataEscula, dataEscuelas, updateDataEscuela, dataSegui } from '../service/data';
+import { sendDataEscula, dataEscuelas, updateDataEscuela, dataSegui, dataProgramas } from '../service/data';
 
 const escuelas = [
     'Bacteriología y Lab. Clínico',
@@ -71,6 +71,7 @@ const SeguimientoInicio = () => {
     const [scores, setScores] = useState({});
     const [descriptions, setDescriptions] = useState({});
     const [data, setData] = useState([]);
+    const [programasData, setProgramasData] = useState([]);
     const [selectedProgramType, setSelectedProgramType] = useState('ambos');
     const [loading, setLoading] = useState(false); 
     const [showModal, setShowModal] = useState(false); 
@@ -191,6 +192,10 @@ const SeguimientoInicio = () => {
             try {
                 const responseData = await dataEscuelas();
                 setData(responseData);
+
+                const programasData = await dataProgramas();
+                setProgramasData(programasData); 
+
             } catch (error) {
                 console.error('Error al cargar los datos:', error);
             }
@@ -343,6 +348,54 @@ const SeguimientoInicio = () => {
         return programasBase.map(program => program.replace('{tipo}', tipo));
     };
 
+    const getProgramasAcreditados = (escuela, tipo) => {
+        console.log(`Buscando programas para: ${escuela} - ${tipo}`);
+        
+        if (!programasData || programasData.length === 0) {
+          console.log("No hay datos de programas cargados");
+          return "Ninguno";
+        }
+        
+        // Filtrar los programas con una comparación insensible a mayúsculas/minúsculas
+        const programasFiltrados = programasData.filter(programa => {
+          // Normalizamos los nombres de las propiedades
+          const programaNormalizado = Object.fromEntries(
+            Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
+          );
+          
+          // Verificar escuela (insensible a mayúsculas/minúsculas)
+          const escuelaMatch = 
+            (programaNormalizado.escuela?.toLowerCase() === escuela.toLowerCase()) ||
+            (programaNormalizado.e?.toLowerCase() === escuela.toLowerCase());
+          
+          // Verificar tipo pregrado/posgrado (insensible a mayúsculas/minúsculas)
+          const tipoMatch = 
+            (programaNormalizado["pregrado/posgrado"]?.toLowerCase() === tipo.toLowerCase());
+          
+          // Verificar si tiene AC vigente
+          const acreditadoMatch = 
+            (programaNormalizado["ac vigente"] === "SI") ||
+            (programaNormalizado["ac vigente"] === "Si");
+          
+          if (escuelaMatch && tipoMatch) {
+            console.log("Programa que cumple escuela y tipo:", programa);
+            console.log(`AC vigente: ${programaNormalizado["ac vigente"]}`);
+          }
+          
+          return escuelaMatch && tipoMatch && acreditadoMatch;
+        });
+        
+        console.log(`Programas filtrados finales: ${programasFiltrados.length}`);
+        
+        if (programasFiltrados.length === 0) return "Ninguno";
+        
+        // Usar el nombre correcto del campo según los datos
+        return programasFiltrados
+          .map(p => p["programa académico"] || p["Programa Académico"] || p["programa academico"])
+          .join(", ");
+      };
+      
+
     // Función para generar el resumen agrupado por estado (Diseño, Rediseño, Seguimiento)
     const generateResumen = (data) => {
         const resumen = {};
@@ -462,7 +515,7 @@ const SeguimientoInicio = () => {
                         <>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '90%', marginBottom: '20px' }}>
                                 <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
-                                <div>
+                                <div style={{ display: 'flex', alignItems: 'center', position: 'relative', left: '50px' }}>
                                     <Button
                                         variant={selectedProgramType === 'ambos' ? 'contained' : 'outlined'}
                                         onClick={() => setSelectedProgramType('ambos')}
@@ -485,7 +538,7 @@ const SeguimientoInicio = () => {
                                     </Button>
                                 </div>
                             </div>
-                            <Table style={{ width: "90%" }}>
+                            <Table style={{ width: "98%" }}>
                                 <TableHead>
                                     <TableRow>
                                         <StyledTableCell>#</StyledTableCell>
@@ -530,11 +583,10 @@ const SeguimientoInicio = () => {
                                                                 : (Number(scores.pre[index] || 0) + Number(scores.pos[index] || 0)) / 2
                                                             : scores[selectedProgramType][index] || ''
                                                     }
-                                                    onChange={(e) => handleScoreChange(index, e.target.value)}
                                                     style={{ width: '90px' }}
                                                     InputProps={{
                                                         readOnly: true,
-                                                        style: { color: 'black' },
+                                                        style: { color: 'black', backgroundColor: '#f5f5f5' },
                                                     }}
                                                 />
                                             </TableCell>
@@ -542,24 +594,31 @@ const SeguimientoInicio = () => {
                                                 <TextField
                                                     variant="outlined"
                                                     multiline
-                                                    rows={2}
+                                                    rows={4}
                                                     value={
-                                                        selectedProgramType === 'ambos'
+                                                        index === 0 ? (  // Solo para el primer criterio (Porcentaje de programas Acreditados)
+                                                            selectedProgramType === 'ambos'
+                                                            ? `Los programas académicos acreditados de pregrado son: ${getProgramasAcreditados(selectedEscuela, "Pregrado")}.\n\nLos programas académicos acreditados de posgrado son: ${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
+                                                            : selectedProgramType === 'pre'
+                                                                ? `Los programas académicos acreditados son: ${getProgramasAcreditados(selectedEscuela, "Pregrado")}.`
+                                                                : `Los programas académicos acreditados son: ${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
+                                                        ) : (  // Para los demás criterios, usar las descripciones existentes
+                                                            selectedProgramType === 'ambos'
                                                             ? (descriptions[`descripcion_${index + 1}_pre`] || '') + 
-                                                              (descriptions[`descripcion_${index + 1}_pos`] ? '\n\nPosgrado:\n' + descriptions[`descripcion_${index + 1}_pos`] : '')
+                                                                (descriptions[`descripcion_${index + 1}_pos`] ? '\n\nPosgrado:\n' + descriptions[`descripcion_${index + 1}_pos`] : '')
                                                             : selectedProgramType === 'pre'
                                                                 ? descriptions[`descripcion_${index + 1}_pre`] || ''
                                                                 : descriptions[`descripcion_${index + 1}_pos`] || ''
-                                                    }
-                                                    onChange={(e) =>
-                                                        handleDescriptionChange(
-                                                            selectedProgramType === 'pre'
-                                                                ? `descripcion_${index + 1}_pre`
-                                                                : `descripcion_${index + 1}_pos`,
-                                                            e.target.value
                                                         )
                                                     }
                                                     style={{ width: '100%' }}
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                        style: { 
+                                                            color: 'black',
+                                                            backgroundColor: '#f5f5f5' // Fondo gris claro para indicar que no es editable
+                                                        },
+                                                    }}
                                                 />
                                             </TableCell>
                                         </TableRow>
