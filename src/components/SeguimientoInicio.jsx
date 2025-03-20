@@ -68,7 +68,11 @@ const SeguimientoInicio = () => {
     const [resumenData, setResumenData] = useState(null);
     const [showResumen, setShowResumen] = useState(true);
     const [selectedEscuela, setSelectedEscuela] = useState('');
-    const [scores, setScores] = useState({});
+    const [scores, setScores] = useState({
+        pre: Array(9).fill(''),  // Array vacío con 9 elementos (ajusta según necesites)
+        pos: Array(9).fill(''),
+        ambos: Array(9).fill('')
+    });
     const [descriptions, setDescriptions] = useState({});
     const [data, setData] = useState([]);
     const [programasData, setProgramasData] = useState([]);
@@ -157,7 +161,8 @@ const SeguimientoInicio = () => {
                 escuelaData.acreditable_pos || '',
                 escuelaData.cant_rcVigente_pos || '',
                 escuelaData.cant_acVigente_pos || ''
-            ]
+            ],
+            ambos: Array(9).fill('')
         });        
         setDescriptions({
             descripcion_1_pre: escuelaData.descripcion_1_pre || '',
@@ -393,7 +398,128 @@ const SeguimientoInicio = () => {
         return programasFiltrados
           .map(p => p["programa académico"] || p["Programa Académico"] || p["programa academico"])
           .join(", ");
-      };
+    };
+
+    const getProgramasConRCVigente = (escuela, tipo) => {
+        console.log(`Buscando programas con RC vigente para: ${escuela} - ${tipo}`);
+        
+        if (!programasData || programasData.length === 0) {
+          console.log("No hay datos de programas cargados");
+          return "Ninguno";
+        }
+        
+        // Fecha actual para comparar
+        const fechaActual = new Date();
+        
+        // Filtrar los programas con una comparación insensible a mayúsculas/minúsculas
+        const programasFiltrados = programasData.filter(programa => {
+          // Normalizamos los nombres de las propiedades
+          const programaNormalizado = Object.fromEntries(
+            Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
+          );
+          
+          // Verificar escuela (insensible a mayúsculas/minúsculas)
+          const escuelaMatch = 
+            (programaNormalizado.escuela?.toLowerCase() === escuela.toLowerCase()) ||
+            (programaNormalizado.e?.toLowerCase() === escuela.toLowerCase());
+          
+          // Verificar tipo pregrado/posgrado (insensible a mayúsculas/minúsculas)
+          const tipoMatch = 
+            (programaNormalizado["pregrado/posgrado"]?.toLowerCase() === tipo.toLowerCase());
+          
+          // Verificar si tiene RC vigente
+          const rcVigenteMatch = 
+            (programaNormalizado["rc vigente"] === "SI") ||
+            (programaNormalizado["rc vigente"] === "Si");
+          
+          // También verificar fecha de vencimiento si está disponible
+          let fechaVigente = false;
+          if (programaNormalizado["fechavencrc"]) {
+            try {
+              const partes = programaNormalizado["fechavencrc"].split('/');
+              if (partes.length === 3) {
+                const fechaVencimiento = new Date(
+                  parseInt(partes[2]), // año
+                  parseInt(partes[1]) - 1, // mes (0-11)
+                  parseInt(partes[0]) // día
+                );
+                fechaVigente = fechaVencimiento > fechaActual;
+              }
+            } catch (e) {
+              console.error("Error al procesar fecha:", e);
+            }
+          }
+          
+          // Añadir fechaVigente a la condición de filtro
+          return escuelaMatch && tipoMatch && rcVigenteMatch && fechaVigente;
+        });
+        
+        console.log(`Programas con RC vigente encontrados: ${programasFiltrados.length}`);
+        
+        if (programasFiltrados.length === 0) return "Ninguno";
+        
+        // Usar el nombre correcto del campo según los datos
+        return programasFiltrados
+          .map(p => p["programa académico"] || p["Programa Académico"] || p["programa academico"])
+          .join(", ");
+    };
+
+    const getPorcentajeRCVigente = (escuela, tipo) => {
+        console.log(`Calculando porcentaje RC vigente para: ${escuela} - ${tipo}`);
+        
+        if (!programasData || programasData.length === 0) {
+          return "-";
+        }
+        
+        // Filtrar programas por escuela y tipo
+        const programasEscuelaTipo = programasData.filter(programa => {
+          const programaNormalizado = Object.fromEntries(
+            Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
+          );
+          
+          const escuelaMatch = programaNormalizado.escuela?.toLowerCase() === escuela.toLowerCase();
+          const tipoMatch = programaNormalizado["pregrado/posgrado"]?.toLowerCase() === tipo.toLowerCase();
+          
+          return escuelaMatch && tipoMatch;
+        });
+        
+        // Programas que tienen una fecha válida en FechaExpedRC (denominador)
+        const programasConFechaExpedicion = programasEscuelaTipo.filter(programa => {
+          const programaNormalizado = Object.fromEntries(
+            Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
+          );
+          
+          // Excluir valores vacíos, N/A y #N/A
+          const fechaExpedRC = programaNormalizado["fechaexpedrc"];
+          return fechaExpedRC && 
+                 fechaExpedRC.trim() !== "" && 
+                 fechaExpedRC.trim().toUpperCase() !== "N/A" &&
+                 fechaExpedRC.trim() !== "#N/A";
+        });
+        
+        // Programas que tienen RC Vigente = "SI" (numerador)
+        const programasRCVigente = programasEscuelaTipo.filter(programa => {
+          const programaNormalizado = Object.fromEntries(
+            Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
+          );
+          
+          return programaNormalizado["rc vigente"] === "SI" || programaNormalizado["rc vigente"] === "Si";
+        });
+        
+        // Calcular porcentaje según la fórmula corregida
+        const cantidadConFechaExpedicion = programasConFechaExpedicion.length;
+        const cantidadRCVigente = programasRCVigente.length;
+        
+        console.log(`Total programas ${escuela} ${tipo}: 
+          - Total: ${programasEscuelaTipo.length}
+          - Con fecha expedición RC: ${cantidadConFechaExpedicion}
+          - Con RC vigente="SI": ${cantidadRCVigente}`);
+        
+        if (cantidadConFechaExpedicion === 0) return "-";
+        
+        const porcentaje = (cantidadRCVigente / cantidadConFechaExpedicion) * 100;
+        return porcentaje.toFixed(2).replace('.', ',') + '%';
+    };
       
 
     // Función para generar el resumen agrupado por estado (Diseño, Rediseño, Seguimiento)
@@ -555,71 +681,127 @@ const SeguimientoInicio = () => {
                                             <TableCell>{program}</TableCell>
                                             <TableCell>{ponderacionesProgramas[index]}</TableCell>
                                             <TableCell>
-                                                <TextField
-                                                    variant="outlined"
-                                                    value={
-                                                        selectedProgramType === 'ambos'
-                                                            ? (index === 0) 
-                                                            ? (() => {
-                                                                // Para el primer criterio (Porcentaje de programas Acreditados)
+                                            <Typography 
+                                                    variant="body1"
+                                                    style={{ 
+                                                        width: '90px',
+                                                        fontWeight: 'bold' 
+                                                    }}
+                                                >
+                                                    {(index === 0)  
+                                                        ? (() => {
+                                                            // Para el primer criterio (% programas Acreditados)
+                                                            if (selectedProgramType === 'ambos') {
+                                                                // Código existente para vista combinada
                                                                 const escuelaData = data.find(d => d.escuela === selectedEscuela) || {};
                                                                 const acreditablePre = Number(escuelaData.acreditable_pre || 0);
                                                                 const acreditablePos = Number(escuelaData.acreditable_pos || 0);
                                                                 const acreditadosPre = Number(escuelaData.cant_acvigente_pre || 0);
                                                                 const acreditadosPos = Number(escuelaData.cant_acvigente_pos || 0);
                                                                 
-                                                                // Calcular el total
                                                                 const totalAcreditable = acreditablePre + acreditablePos;
                                                                 const totalAcreditados = acreditadosPre + acreditadosPos;
                                                                 
-                                                                // Manejar el caso especial cuando ambos son 0
                                                                 if (totalAcreditable === 0 && totalAcreditados === 0) return "-";
                                                                 
-                                                                // Calcular el porcentaje correcto basado en los totales con formato adecuado
                                                                 return totalAcreditable > 0
                                                                     ? ((totalAcreditados / totalAcreditable) * 100).toFixed(2).replace('.', ',') + '%'
                                                                     : "0%";
-                                                            })()
-                                                                : (Number(scores.pre[index] || 0) + Number(scores.pos[index] || 0)) / 2
-                                                            : scores[selectedProgramType][index] || ''
-                                                    }
-                                                    style={{ width: '90px' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                        style: { color: 'black', backgroundColor: '#f5f5f5' },
-                                                    }}
-                                                />
+                                                            } else {
+                                                                // Para vistas individuales, usar el valor existente
+                                                                return scores[selectedProgramType][index] || '';
+                                                            }
+                                                        })()
+                                                        : (index === 1) 
+                                                        ? (() => {
+                                                            // Para el segundo criterio (% programas con RC vigente)
+                                                            if (selectedProgramType === 'ambos') {
+                                                                // Programas de pregrado con fecha expedición
+                                                                const programasPreConFechaExpedicion = programasData.filter(p => 
+                                                                    p.escuela === selectedEscuela && 
+                                                                    p["pregrado/posgrado"]?.toLowerCase() === "pregrado" &&
+                                                                    p["fechaexpedrc"] && 
+                                                                    p["fechaexpedrc"].trim() !== "" &&
+                                                                    p["fechaexpedrc"].trim().toUpperCase() !== "N/A" &&
+                                                                    p["fechaexpedrc"].trim() !== "#N/A"
+                                                                );
+                                                                
+                                                                // Programas de posgrado con fecha expedición
+                                                                const programasPosConFechaExpedicion = programasData.filter(p => 
+                                                                    p.escuela === selectedEscuela && 
+                                                                    p["pregrado/posgrado"]?.toLowerCase() === "posgrado" &&
+                                                                    p["fechaexpedrc"] && 
+                                                                    p["fechaexpedrc"].trim() !== "" &&
+                                                                    p["fechaexpedrc"].trim().toUpperCase() !== "N/A" &&
+                                                                    p["fechaexpedrc"].trim() !== "#N/A"
+                                                                );
+                                                                
+                                                                // Programas con RC vigente = SI
+                                                                const programasRCVigentePre = programasData.filter(p => 
+                                                                    p.escuela === selectedEscuela && 
+                                                                    p["pregrado/posgrado"]?.toLowerCase() === "pregrado" &&
+                                                                    (p["rc vigente"] === "SI" || p["rc vigente"] === "Si")
+                                                                );
+                                                                
+                                                                const programasRCVigentePos = programasData.filter(p => 
+                                                                    p.escuela === selectedEscuela && 
+                                                                    p["pregrado/posgrado"]?.toLowerCase() === "posgrado" &&
+                                                                    (p["rc vigente"] === "SI" || p["rc vigente"] === "Si")
+                                                                );
+                                                                
+                                                                // Total denominadores y numeradores
+                                                                const totalConFechaExpedicion = programasPreConFechaExpedicion.length + programasPosConFechaExpedicion.length;
+                                                                const totalRCVigente = programasRCVigentePre.length + programasRCVigentePos.length;
+                                                                
+                                                                console.log(`Cálculo RC vigente combinado: ${totalRCVigente}/${totalConFechaExpedicion}`);
+                                                                
+                                                                if (totalConFechaExpedicion === 0) return "-";
+                                                                
+                                                                return ((totalRCVigente / totalConFechaExpedicion) * 100).toFixed(2).replace('.', ',') + '%';
+                                                            } else if (selectedProgramType === 'pre') {
+                                                                // Calcular directamente RC vigente de pregrado
+                                                                return getPorcentajeRCVigente(selectedEscuela, "Pregrado");
+                                                            } else if (selectedProgramType === 'pos') {
+                                                                // Calcular directamente RC vigente de posgrado
+                                                                return getPorcentajeRCVigente(selectedEscuela, "Posgrado");
+                                                            } else {
+                                                                return "-"; // Caso por defecto
+                                                            }
+                                                        })()
+                                                        : scores[selectedProgramType][index] || '' // Para los demás criterios
+                                                }
+                                            </Typography>
                                             </TableCell>
                                             <TableCell>
-                                                <TextField
-                                                    variant="outlined"
-                                                    multiline
-                                                    rows={4}
-                                                    value={
-                                                        index === 0 ? (  // Solo para el primer criterio (Porcentaje de programas Acreditados)
+                                            <Typography 
+                                                variant="body1"
+                                                style={{ 
+                                                    width: '100%',
+                                                    whiteSpace: 'pre-wrap'
+                                                }}
+                                            >
+                                                        {index === 0 ? (
                                                             selectedProgramType === 'ambos'
-                                                            ? `Los programas académicos acreditados de pregrado son: ${getProgramasAcreditados(selectedEscuela, "Pregrado")}.\n\nLos programas académicos acreditados de posgrado son: ${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
-                                                            : selectedProgramType === 'pre'
-                                                                ? `Los programas académicos acreditados son: ${getProgramasAcreditados(selectedEscuela, "Pregrado")}.`
-                                                                : `Los programas académicos acreditados son: ${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
-                                                        ) : (  // Para los demás criterios, usar las descripciones existentes
+                                                                ? `Los programas académicos acreditados de pregrado son: ${getProgramasAcreditados(selectedEscuela, "Pregrado")}.\n\nLos programas académicos acreditados de posgrado son: ${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
+                                                                : selectedProgramType === 'pre'
+                                                                    ? `Los programas académicos acreditados son: ${getProgramasAcreditados(selectedEscuela, "Pregrado")}.`
+                                                                    : `Los programas académicos acreditados son: ${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
+                                                        ) : index === 1 ? (
                                                             selectedProgramType === 'ambos'
-                                                            ? (descriptions[`descripcion_${index + 1}_pre`] || '') + 
-                                                                (descriptions[`descripcion_${index + 1}_pos`] ? '\n\nPosgrado:\n' + descriptions[`descripcion_${index + 1}_pos`] : '')
-                                                            : selectedProgramType === 'pre'
-                                                                ? descriptions[`descripcion_${index + 1}_pre`] || ''
-                                                                : descriptions[`descripcion_${index + 1}_pos`] || ''
-                                                        )
-                                                    }
-                                                    style={{ width: '100%' }}
-                                                    InputProps={{
-                                                        readOnly: true,
-                                                        style: { 
-                                                            color: 'black',
-                                                            backgroundColor: '#f5f5f5' // Fondo gris claro para indicar que no es editable
-                                                        },
-                                                    }}
-                                                />
+                                                                ? `Los programas académicos con Registro Calificado vigente de pregrado son: ${getProgramasConRCVigente(selectedEscuela, "Pregrado")}.\n\nLos programas académicos con Registro Calificado vigente de posgrado son: ${getProgramasConRCVigente(selectedEscuela, "Posgrado")}.`
+                                                                : selectedProgramType === 'pre'
+                                                                    ? `Los programas académicos con Registro Calificado vigente son: ${getProgramasConRCVigente(selectedEscuela, "Pregrado")}.`
+                                                                    : `Los programas académicos con Registro Calificado vigente son: ${getProgramasConRCVigente(selectedEscuela, "Posgrado")}.`
+                                                        ) : (
+                                                            selectedProgramType === 'ambos'
+                                                                ? (descriptions[`descripcion_${index + 1}_pre`] || '') + 
+                                                                  (descriptions[`descripcion_${index + 1}_pos`] ? '\n\nPosgrado:\n' + descriptions[`descripcion_${index + 1}_pos`] : '')
+                                                                : selectedProgramType === 'pre'
+                                                                    ? descriptions[`descripcion_${index + 1}_pre`] || ''
+                                                                    : descriptions[`descripcion_${index + 1}_pos`] || ''
+         
+                                                    )}
+                                                </Typography>
                                             </TableCell>
                                         </TableRow>
                                     ))}
