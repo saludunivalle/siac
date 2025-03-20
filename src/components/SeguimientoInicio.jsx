@@ -32,11 +32,17 @@ const escuelas = [
 ];
 
 const programasBase = [
-    'Anexos técnicos en consonancia con los registros calificados',
-    'Porcentaje de avance en la recopilación de evidencias en el marco del PM.',
-    'Número de programas académicos de la Escuela de {tipo} con Acreditación',
-    'Número de programas académicos de la Escuela de {tipo} con Renovación de Acreditación.',
-    'Porcentaje de avance en el diseño o rediseño del plan de mejoramiento con base a las recomendaciones de los pares académicos.',
+    'Porcentaje de programas Acreditados de la Escuela de {tipo}',
+    'Porcentaje de programas con Registro Calificado vigente de la Escuela de {tipo}',
+    'Porcentaje de programas en plan de mejoramiento Acreditación por la Escuela de {tipo}',
+    'Porcentaje de programas en plan de mejoramiento Registro calificado por la Escuela de {tipo}',
+];
+
+const ponderacionesProgramas = [
+    '30%', // Porcentaje de programas Acreditados
+    '30%', // Porcentaje de programas con Registro Calificado vigente
+    '20%', // Porcentaje de programas en plan de mejoramiento Acreditación
+    '20%'  // Porcentaje de programas en plan de mejoramiento Registro calificado
 ];
 
 const StyledButton = styled(Button)(({ theme }) => ({
@@ -65,7 +71,7 @@ const SeguimientoInicio = () => {
     const [scores, setScores] = useState({});
     const [descriptions, setDescriptions] = useState({});
     const [data, setData] = useState([]);
-    const [selectedProgramType, setSelectedProgramType] = useState('pre');
+    const [selectedProgramType, setSelectedProgramType] = useState('ambos');
     const [loading, setLoading] = useState(false); 
     const [showModal, setShowModal] = useState(false); 
 
@@ -73,20 +79,83 @@ const SeguimientoInicio = () => {
         setShowResumen(false); 
         setSelectedEscuela(escuela);
         const escuelaData = data.find(d => d.escuela === escuela) || {};
+
+        console.log('Valores directos de la escuela ' + escuela + ':', {
+            cant_acVigente_pre: escuelaData.cant_acVigente_pre,
+            cant_acVigente_pre_tipo: typeof escuelaData.cant_acVigente_pre,
+            cant_aac_pre: escuelaData.cant_aac_pre,
+            cant_aac_pre_tipo: typeof escuelaData.cant_aac_pre,
+            // Mostrar todos los campos relevantes para diagnóstico
+            todosLosCampos: escuelaData
+        });
+        // Asegurar que los valores sean números y no undefined
+        const acreditablePre = Number(escuelaData.acreditable_pre || 0);
+        const acreditablePos = Number(escuelaData.acreditable_pos || 0);
+        const acreditadosPre = Number(escuelaData.cant_acvigente_pre || 0);
+        const acreditadosPos = Number(escuelaData.cant_acvigente_pos || 0);
+
+        
+        // Calcular el total de acreditables (pregrado + posgrado)
+        const totalAcreditable = acreditablePre + acreditablePos;
+        const totalAcreditados = acreditadosPre + acreditadosPos;
+        
+        // Calcular el porcentaje según la fórmula correcta
+        const porcAcreditadosPre = acreditablePre === 0 && acreditadosPre === 0 
+        ? "-" 
+        : acreditablePre > 0
+            ? ((acreditadosPre / acreditablePre) * 100).toFixed(2).replace('.', ',') + '%'
+            : "0%";
+
+    // Si necesitas calcular el porcentaje de posgrado de manera similar
+    const porcAcreditadosPos = acreditablePos === 0 && acreditadosPos === 0
+        ? "-"
+        : acreditablePos > 0
+            ? ((acreditadosPos / acreditablePos) * 100).toFixed(2).replace('.', ',') + '%'
+            : "0%";
+            console.log('Porcentaje de acreditados Pregrado:', porcAcreditadosPre);
+            
+    // Porcentaje total
+    const porcAcreditados = totalAcreditable === 0 && totalAcreditados === 0
+        ? "-"
+        : totalAcreditable > 0
+            ? ((totalAcreditados / totalAcreditable) * 100).toFixed(2).replace('.', ',') + '%'
+            : "0%";
+            console.log('Porcentaje de acreditados Total:', porcAcreditados);
+
+        
+        console.log('Valores para cálculo:', {
+            acreditablePre,
+            acreditablePos,
+            totalAcreditable,
+            acreditadosPre,
+            acreditadosPos,
+            porcAcreditadosPre,
+            porcAcreditadosPos
+        });
+        
+        
         setScores({
             pre: [
+                porcAcreditadosPre || '',
                 escuelaData.porc_anexos_pre || '',
                 escuelaData.por_evi_pre || '', 
                 escuelaData.cant_rc_pre || '', 
                 escuelaData.cant_aac_pre || '', 
-                escuelaData.porc_pm_pre || ''
+                escuelaData.porc_pm_pre || '',
+                escuelaData.acreditable_pre || '',
+                escuelaData.cant_rcVigente_pre || '',
+                escuelaData.cant_acVigente_pre || ''
             ],
             pos: [
+                porcAcreditadosPos || '',
                 escuelaData.porc_anexos_pos || '',
                 escuelaData.por_evi_pos || '',
                 escuelaData.cant_rc_pos || '', 
                 escuelaData.cant_aac_pos || '', 
-                escuelaData.porc_pm_pos || ''
+                escuelaData.porc_pm_pos || '',
+                escuelaData.acreditable_pos || '',
+                escuelaData.cant_rcVigente_pos || '',
+                escuelaData.cant_acVigente_pos || ''
             ]
         });        
         setDescriptions({
@@ -218,11 +287,17 @@ const SeguimientoInicio = () => {
             filteredData.cant_aac_pre,
             filteredData.porc_pm_pre,
             updatedData.por_evi_pre,
+            filteredData.acreditable_pre,
+            filteredData.cant_rcVigente_pre,
+            filteredData.cant_acVigente_pre,
             filteredData.porc_anexos_pos,
             filteredData.cant_rc_pos,
             filteredData.cant_aac_pos,
             filteredData.porc_pm_pos,
             updatedData.por_evi_pos,
+            filteredData.acreditable_pos,
+            filteredData.cant_rcVigente_pos,
+            filteredData.cant_acVigente_pos,
             updatedData.descripcion_1_pre,
             updatedData.descripcion_2_pre,
             updatedData.descripcion_3_pre,
@@ -252,7 +327,19 @@ const SeguimientoInicio = () => {
     };
 
     const getProgramas = () => {
-        const tipo = selectedProgramType === 'pre' ? 'pregrado' : 'posgrado';
+        let tipo;
+        switch (selectedProgramType) {
+            case 'pre':
+                tipo = 'pregrado';
+                break;
+            case 'pos':
+                tipo = 'posgrado';
+                break;
+            case 'ambos':
+            default:
+                tipo = 'pregrado y posgrado';
+                break;
+        }
         return programasBase.map(program => program.replace('{tipo}', tipo));
     };
 
@@ -377,6 +464,13 @@ const SeguimientoInicio = () => {
                                 <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
                                 <div>
                                     <Button
+                                        variant={selectedProgramType === 'ambos' ? 'contained' : 'outlined'}
+                                        onClick={() => setSelectedProgramType('ambos')}
+                                        style={{ marginRight: '10px' }}
+                                    >
+                                        Pregrado y Posgrado
+                                    </Button>
+                                    <Button
                                         variant={selectedProgramType === 'pre' ? 'contained' : 'outlined'}
                                         onClick={() => setSelectedProgramType('pre')}
                                         style={{ marginRight: '10px' }}
@@ -406,19 +500,42 @@ const SeguimientoInicio = () => {
                                         <TableRow key={program}>
                                             <TableCell>{index + 1}</TableCell>
                                             <TableCell>{program}</TableCell>
-                                            <TableCell>20%</TableCell>
+                                            <TableCell>{ponderacionesProgramas[index]}</TableCell>
                                             <TableCell>
                                                 <TextField
-                                                        variant="outlined"
-                                                        value={scores[selectedProgramType][index] || ''}
-                                                        onChange={(e) => handleScoreChange(index, e.target.value)}
-                                                        style={{ width: '80px' }}
-                                                        InputProps={{
-                                                            readOnly: true,
-                                                            style: {
-                                                            color: 'black', 
-                                                            },
-                                                        }}
+                                                    variant="outlined"
+                                                    value={
+                                                        selectedProgramType === 'ambos'
+                                                            ? (index === 0) 
+                                                            ? (() => {
+                                                                // Para el primer criterio (Porcentaje de programas Acreditados)
+                                                                const escuelaData = data.find(d => d.escuela === selectedEscuela) || {};
+                                                                const acreditablePre = Number(escuelaData.acreditable_pre || 0);
+                                                                const acreditablePos = Number(escuelaData.acreditable_pos || 0);
+                                                                const acreditadosPre = Number(escuelaData.cant_acvigente_pre || 0);
+                                                                const acreditadosPos = Number(escuelaData.cant_acvigente_pos || 0);
+                                                                
+                                                                // Calcular el total
+                                                                const totalAcreditable = acreditablePre + acreditablePos;
+                                                                const totalAcreditados = acreditadosPre + acreditadosPos;
+                                                                
+                                                                // Manejar el caso especial cuando ambos son 0
+                                                                if (totalAcreditable === 0 && totalAcreditados === 0) return "-";
+                                                                
+                                                                // Calcular el porcentaje correcto basado en los totales con formato adecuado
+                                                                return totalAcreditable > 0
+                                                                    ? ((totalAcreditados / totalAcreditable) * 100).toFixed(2).replace('.', ',') + '%'
+                                                                    : "0%";
+                                                            })()
+                                                                : (Number(scores.pre[index] || 0) + Number(scores.pos[index] || 0)) / 2
+                                                            : scores[selectedProgramType][index] || ''
+                                                    }
+                                                    onChange={(e) => handleScoreChange(index, e.target.value)}
+                                                    style={{ width: '90px' }}
+                                                    InputProps={{
+                                                        readOnly: true,
+                                                        style: { color: 'black' },
+                                                    }}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -427,9 +544,12 @@ const SeguimientoInicio = () => {
                                                     multiline
                                                     rows={2}
                                                     value={
-                                                        selectedProgramType === 'pre'
-                                                            ? descriptions[`descripcion_${index + 1}_pre`] || ''
-                                                            : descriptions[`descripcion_${index + 1}_pos`] || ''
+                                                        selectedProgramType === 'ambos'
+                                                            ? (descriptions[`descripcion_${index + 1}_pre`] || '') + 
+                                                              (descriptions[`descripcion_${index + 1}_pos`] ? '\n\nPosgrado:\n' + descriptions[`descripcion_${index + 1}_pos`] : '')
+                                                            : selectedProgramType === 'pre'
+                                                                ? descriptions[`descripcion_${index + 1}_pre`] || ''
+                                                                : descriptions[`descripcion_${index + 1}_pos`] || ''
                                                     }
                                                     onChange={(e) =>
                                                         handleDescriptionChange(
