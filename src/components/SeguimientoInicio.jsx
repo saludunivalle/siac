@@ -272,7 +272,7 @@ const SeguimientoInicio = () => {
       }, [selectedEscuela, programasData]);
 
       const getPorcentajePMParaRC = async (escuela, tipo) => {
-        console.log(`Calculando porcentaje PM para Registro Calificado: ${escuela} - ${tipo}`);
+        console.log(`Calculando porcentaje PM para Registro Calificado usando hscpm_rrc: ${escuela} - ${tipo}`);
         
         try {
           // 1. Obtener datos de la hoja PROGRAMAS_PM
@@ -281,8 +281,6 @@ const SeguimientoInicio = () => {
             console.error("No hay datos de programas_pm disponibles");
             return "-";
           }
-          
-          console.log(`Total registros en PROGRAMAS_PM: ${dataPM.length}`);
           
           // 2. Crear mapa de programas por ID
           const programasMap = {};
@@ -295,10 +293,9 @@ const SeguimientoInicio = () => {
           
           // 3. Filtrar programas por escuela y tipo
           let programasFiltrados = [];
-          if (escuela === "todos") { // Para calcular el total general
+          if (escuela === "todos") {
             programasFiltrados = dataPM;
           } else {
-            // Filtrar por escuela y tipo específicos
             programasFiltrados = dataPM.filter(item => {
               const idPrograma = item.id_programa;
               const programaCompleto = programasMap[idPrograma];
@@ -317,35 +314,66 @@ const SeguimientoInicio = () => {
             });
           }
           
-          // 4. Contar programas en Diseño, Rediseño o Seguimiento
-          const programasEnPM = programasFiltrados.filter(item => {
+          // 4. Contar programas que tienen "SI" en hscpm_rrc (denominador)
+          const programasConHSCPMRC = programasFiltrados.filter(item => {
+            // Verificar si tiene "SI" en hscpm_rrc
+            const valor = item.hscpm_rrc && item.hscpm_rrc.toString().trim().toUpperCase();
+            return valor === "SI" || valor === "SÍ";
+          });
+          
+          console.log(`Total programas filtrados para ${escuela}-${tipo}: ${programasFiltrados.length}`);
+      
+          // Mostrar los valores de hscpm_rrc para diagnóstico
+          console.log("Valores de hscpm_rrc encontrados:");
+          programasFiltrados.forEach((item, index) => {
+            const idPrograma = item.id_programa;
+            const programaCompleto = programasMap[idPrograma];
+            const nombrePrograma = programaCompleto ? 
+              (programaCompleto["Programa Académico"] || programaCompleto["programa académico"] || idPrograma) : 
+              idPrograma;
+            
+            console.log(`${index + 1}. ${nombrePrograma}: ${item.hscpm_rrc || 'No tiene valor'}`);
+          });
+      
+          // Clasificar los valores para verificar la lógica de filtrado
+          const hscpmRCSI = programasFiltrados.filter(item => {
+            const valor = item.hscpm_rrc && item.hscpm_rrc.toString().trim().toUpperCase();
+            return valor === "SI" || valor === "SÍ";
+          }).length;
+      
+          const hscpmRCNO = programasFiltrados.filter(item => {
+            const valor = item.hscpm_rrc && item.hscpm_rrc.toString().trim().toUpperCase();
+            return valor === "NO";
+          }).length;
+      
+          const hscpmRCOtros = programasFiltrados.filter(item => {
+            if (!item.hscpm_rrc) return true;
+            const valor = item.hscpm_rrc.toString().trim().toUpperCase();
+            return valor !== "SI" && valor !== "SÍ" && valor !== "NO";
+          }).length;
+      
+          console.log(`Resumen de hscpm_rrc: Total=${programasFiltrados.length}, SI=${hscpmRCSI}, NO=${hscpmRCNO}, Otros=${hscpmRCOtros}`);
+      
+          console.log(`Programas con SI en hscpm_rrc: ${programasConHSCPMRC.length}`);
+          
+          // 5. De estos, contar cuántos están en estado Diseño, Rediseño o Seguimiento (numerador)
+          const programasConHSCPMRCEnEstados = programasConHSCPMRC.filter(item => {
             const estado = (item.estado_pm || '').toString().toLowerCase();
             return estado === "diseño" || estado === "diseno" || 
                    estado === "rediseño" || estado === "rediseno" || 
                    estado === "seguimiento";
           });
           
-          console.log(`Programas en Diseño/Rediseño/Seguimiento para RC: ${programasEnPM.length}`);
+          const totalProgramasConHSCPMRC = programasConHSCPMRC.length;
+          const totalProgramasConHSCPMRCEnEstados = programasConHSCPMRCEnEstados.length;
           
-          // 5. De estos, contar cuántos tienen RC Vigente = "SI" (diferencia con el tercer indicador)
-          const programasConRC = programasEnPM.filter(item => {
-            const programaCompleto = programasMap[item.id_programa];
-            if (!programaCompleto) return false;
-            
-            const rcVigente = (programaCompleto["RC Vigente"] || programaCompleto["rc vigente"] || '').toString().toLowerCase();
-            return rcVigente === "si" || rcVigente === "sí";
-          });
+          console.log(`RESUMEN FINAL RC: Programas con SI en hscpm_rrc: ${totalProgramasConHSCPMRC}, En estados D/R/S: ${totalProgramasConHSCPMRCEnEstados}`);
           
-          const totalProgramasEnPM = programasEnPM.length;
-          const totalProgramasConRC = programasConRC.length;
-          
-          console.log(`RESUMEN FINAL RC: Programas en PM: ${totalProgramasEnPM}, Con RC Vigente="SI": ${totalProgramasConRC}`);
-          
-          if (totalProgramasConRC === 0) {
-            return totalProgramasEnPM > 0 ? "0%" : "-";
+          if (totalProgramasConHSCPMRC === 0) {
+            return "-"; // No hay programas con hscpm_rrc=SI para calcular
           }
           
-          const porcentaje = (totalProgramasEnPM / totalProgramasConRC) * 100;
+          const porcentaje = (totalProgramasConHSCPMRCEnEstados / totalProgramasConHSCPMRC) * 100;
           return porcentaje.toFixed(2).replace('.', ',') + '%';
         } catch (error) {
           console.error("Error calculando porcentaje PM para RC:", error);
@@ -388,16 +416,24 @@ const SeguimientoInicio = () => {
             return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
           });
           
-          // 4. Filtrar por programas en estados Diseño, Rediseño o Seguimiento
-          const programasEnPM = programasFiltrados.filter(item => {
+          // 4. Filtrar los que tienen "SI" en hscpm_rrc y están en estados D/R/S
+          const programasEnPMRC = programasFiltrados.filter(item => {
+            // Verificar si tiene "SI" en hscpm_rrc
+            const tieneHSCPMRC = (item.hscpm_rrc && 
+                                item.hscpm_rrc.toString().trim().toUpperCase() === "SI") ||
+                               (item.hscpm_rrc && 
+                                item.hscpm_rrc.toString().trim().toUpperCase() === "SÍ");
+            
+            // Verificar estado
             const estado = (item.estado_pm || '').toString().toLowerCase();
-            return estado === "diseño" || estado === "diseno" || 
-                   estado === "rediseño" || estado === "rediseno" || 
-                   estado === "seguimiento";
+            const estadoValido = estado === "diseño" || estado === "diseno" || 
+                                estado === "rediseño" || estado === "rediseno" || 
+                                estado === "seguimiento";
+            
+            return tieneHSCPMRC && estadoValido;
           });
           
-          // 5. Generar lista de nombres con sus estados
-          const listaProgramas = programasEnPM.map(item => {
+          const listaProgramas = programasEnPMRC.map(item => {
             const programaCompleto = programasMap[item.id_programa];
             if (!programaCompleto) return '';
             
@@ -796,158 +832,184 @@ const SeguimientoInicio = () => {
     };
 
     const getPorcentajePMParaAcreditacion = async (escuela, tipo) => {
-        console.log(`Calculando porcentaje PM para Acreditación: ${escuela} - ${tipo}`);
-        
-        try {
-          // 1. Obtener datos de la hoja PROGRAMAS_PM
-          const dataPM = await dataSegui();
-          if (!dataPM || dataPM.length === 0) {
-            console.error("No hay datos de programas_pm disponibles");
-            return "-";
-          }
-          
-          console.log(`Total registros en PROGRAMAS_PM: ${dataPM.length}`);
-          
-          // 2. Crear mapa de programas por ID
-          const programasMap = {};
-          programasData.forEach(programa => {
-            const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
-            if (idPrograma) {
-              programasMap[idPrograma] = programa;
-            }
-          });
-          
-          console.log(`Total programas mapeados por ID: ${Object.keys(programasMap).length}`);
-          
-          // 3. Filtrar programas por escuela y tipo
-          let programasFiltrados = [];
-          if (escuela === "todos") { // Para calcular el total general
-            programasFiltrados = dataPM;
-          } else {
-            // Filtrar por escuela y tipo específicos
-            programasFiltrados = dataPM.filter(item => {
-              const idPrograma = item.id_programa;
-              const programaCompleto = programasMap[idPrograma];
-              
-              if (!programaCompleto) return false;
-              
-              const escuelaPrograma = (programaCompleto.escuela || programaCompleto.Escuela || '').toLowerCase();
-              
-              let tipoMatch = true;
-              if (tipo !== "ambos") {
-                const tipoPrograma = (programaCompleto["pregrado/posgrado"] || programaCompleto["Pregrado/Posgrado"] || '').toLowerCase();
-                tipoMatch = tipo === "pre" ? tipoPrograma === "pregrado" : tipoPrograma === "posgrado";
-              }
-              
-              return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
-            });
-          }
-          
-          console.log(`Programas filtrados para ${escuela}-${tipo}: ${programasFiltrados.length}`);
-          
-          // 4. Contar programas en Diseño, Rediseño o Seguimiento
-          const programasEnPM = programasFiltrados.filter(item => {
-            const estado = (item.estado_pm || '').toString().toLowerCase();
-            return estado === "diseño" || estado === "diseno" || 
-                   estado === "rediseño" || estado === "rediseno" || 
-                   estado === "seguimiento";
-          });
-          
-          console.log(`Programas en Diseño/Rediseño/Seguimiento: ${programasEnPM.length}`);
-          programasEnPM.forEach((p, i) => {
-            const programaCompleto = programasMap[p.id_programa];
-            if (programaCompleto) {
-              console.log(`${i+1}. ${programaCompleto["Programa Académico"] || programaCompleto["programa académico"]} - Estado: ${p.estado_pm}`);
-            }
-          });
-          
-          // 5. De estos, contar cuántos tienen AC Vigente = "SI"
-          const programasConAC = programasEnPM.filter(item => {
-            const programaCompleto = programasMap[item.id_programa];
-            if (!programaCompleto) return false;
-            
-            const acVigente = (programaCompleto["AC Vigente"] || programaCompleto["ac vigente"] || '').toString().toLowerCase();
-            return acVigente === "si" || acVigente === "sí";
-          });
-          
-          const totalProgramasEnPM = programasEnPM.length;
-          const totalProgramasConAC = programasConAC.length;
-          
-          console.log(`RESUMEN FINAL: Programas en PM: ${totalProgramasEnPM}, Con AC Vigente="SI": ${totalProgramasConAC}`);
-          
-          if (totalProgramasConAC === 0) {
-            return totalProgramasEnPM > 0 ? "0%" : "-";
-          }
-          
-          const porcentaje = (totalProgramasEnPM / totalProgramasConAC) * 100;
-          return porcentaje.toFixed(2).replace('.', ',') + '%';
-        } catch (error) {
-          console.error("Error calculando porcentaje PM:", error);
+      console.log(`Calculando porcentaje PM para Acreditación usando hscpm_aac: ${escuela} - ${tipo}`);
+      
+      try {
+        // 1. Obtener datos de la hoja PROGRAMAS_PM
+        const dataPM = await dataSegui();
+        if (!dataPM || dataPM.length === 0) {
+          console.error("No hay datos de programas_pm disponibles");
           return "-";
         }
-      };
-      
-      const getProgramasEnPlanMejoramiento = async (escuela, tipo) => {
-        try {
-          // 1. Obtener datos de la hoja PROGRAMAS_PM
-          const dataPM = await dataSegui();
-          if (!dataPM || dataPM.length === 0) {
-            return "Ninguno";
+        
+        // 2. Crear mapa de programas por ID
+        const programasMap = {};
+        programasData.forEach(programa => {
+          const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
+          if (idPrograma) {
+            programasMap[idPrograma] = programa;
           }
-          
-          // 2. Crear mapa de programas por ID
-          const programasMap = {};
-          programasData.forEach(programa => {
-            const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
-            if (idPrograma) {
-              programasMap[idPrograma] = programa;
-            }
-          });
-          
-          // 3. Filtrar programas por escuela y tipo
-          const programasFiltrados = dataPM.filter(item => {
+        });
+        
+        // 3. Filtrar programas por escuela y tipo
+        let programasFiltrados = [];
+        if (escuela === "todos") {
+          programasFiltrados = dataPM;
+        } else {
+          programasFiltrados = dataPM.filter(item => {
             const idPrograma = item.id_programa;
             const programaCompleto = programasMap[idPrograma];
             
             if (!programaCompleto) return false;
             
             const escuelaPrograma = (programaCompleto.escuela || programaCompleto.Escuela || '').toLowerCase();
-            let tipoMatch = true;
             
+            let tipoMatch = true;
             if (tipo !== "ambos") {
               const tipoPrograma = (programaCompleto["pregrado/posgrado"] || programaCompleto["Pregrado/Posgrado"] || '').toLowerCase();
-              tipoMatch = tipo.toLowerCase() === tipoPrograma;
+              tipoMatch = tipo === "pre" ? tipoPrograma === "pregrado" : tipoPrograma === "posgrado";
             }
             
             return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
           });
-          
-          // 4. Filtrar por programas en estados Diseño, Rediseño o Seguimiento
-          const programasEnPM = programasFiltrados.filter(item => {
-            const estado = (item.estado_pm || '').toString().toLowerCase();
-            return estado === "diseño" || estado === "diseno" || 
-                   estado === "rediseño" || estado === "rediseno" || 
-                   estado === "seguimiento";
-          });
-          
-          // 5. Generar lista de nombres con sus estados
-          const listaProgramas = programasEnPM.map(item => {
-            const programaCompleto = programasMap[item.id_programa];
-            if (!programaCompleto) return '';
-            
-            const nombrePrograma = programaCompleto["Programa Académico"] || 
-                                  programaCompleto["programa académico"] || 
-                                  programaCompleto["programa academico"];
-            
-            return `${nombrePrograma} (${item.estado_pm})`;
-          }).filter(nombre => nombre !== '');
-          
-          return listaProgramas.length > 0 ? listaProgramas.join(", ") : "Ninguno";
-        } catch (error) {
-          console.error("Error al obtener programas en plan de mejoramiento:", error);
-          return "Error al cargar datos";
         }
-      };
+        
+        // 4. Contar programas que tienen "SI" en hscpm_aac (denominador)
+        const programasConHSCPM = programasFiltrados.filter(item => {
+          // Verificar si tiene "SI" en hscpm_aac
+          const valor = item.hscpm_aac && item.hscpm_aac.toString().trim().toUpperCase();
+          return valor === "SI" || valor === "SÍ";
+        });
+        
+        console.log(`Total programas filtrados para ${escuela}-${tipo}: ${programasFiltrados.length}`);
+    
+        // Mostrar los valores de hscpm_aac para diagnóstico
+        console.log("Valores de hscpm_aac encontrados:");
+        programasFiltrados.forEach((item, index) => {
+          const idPrograma = item.id_programa;
+          const programaCompleto = programasMap[idPrograma];
+          const nombrePrograma = programaCompleto ? 
+            (programaCompleto["Programa Académico"] || programaCompleto["programa académico"] || idPrograma) : 
+            idPrograma;
+          
+          console.log(`${index + 1}. ${nombrePrograma}: ${item.hscpm_aac || 'No tiene valor'}`);
+        });
+    
+        // Clasificar los valores para verificar la lógica de filtrado
+        const hscpmSI = programasFiltrados.filter(item => {
+          const valor = item.hscpm_aac && item.hscpm_aac.toString().trim().toUpperCase();
+          return valor === "SI" || valor === "SÍ";
+        }).length;
+    
+        const hscpmNO = programasFiltrados.filter(item => {
+          const valor = item.hscpm_aac && item.hscpm_aac.toString().trim().toUpperCase();
+          return valor === "NO";
+        }).length;
+    
+        const hscpmOtros = programasFiltrados.filter(item => {
+          if (!item.hscpm_aac) return true;
+          const valor = item.hscpm_aac.toString().trim().toUpperCase();
+          return valor !== "SI" && valor !== "SÍ" && valor !== "NO";
+        }).length;
+    
+        console.log(`Resumen de hscpm_aac: Total=${programasFiltrados.length}, SI=${hscpmSI}, NO=${hscpmNO}, Otros=${hscpmOtros}`);
+    
+        console.log(`Programas con SI en hscpm_aac: ${programasConHSCPM.length}`);
+        
+        // 5. De estos, contar cuántos están en estado Diseño, Rediseño o Seguimiento (numerador)
+        const programasConHSCPMEnEstados = programasConHSCPM.filter(item => {
+          const estado = (item.estado_pm || '').toString().toLowerCase();
+          return estado === "diseño" || estado === "diseno" || 
+                 estado === "rediseño" || estado === "rediseno" || 
+                 estado === "seguimiento";
+        });
+        
+        const totalProgramasConHSCPM = programasConHSCPM.length;
+        const totalProgramasConHSCPMEnEstados = programasConHSCPMEnEstados.length;
+        
+        console.log(`RESUMEN FINAL: Programas con SI en hscpm_aac: ${totalProgramasConHSCPM}, En estados D/R/S: ${totalProgramasConHSCPMEnEstados}`);
+        
+        if (totalProgramasConHSCPM === 0) {
+          return "-"; // No hay programas con hscpm_aac=SI para calcular
+        }
+        
+        const porcentaje = (totalProgramasConHSCPMEnEstados / totalProgramasConHSCPM) * 100;
+        return porcentaje.toFixed(2).replace('.', ',') + '%';
+      } catch (error) {
+        console.error("Error calculando porcentaje PM:", error);
+        return "-";
+      }
+    };
+      
+    const getProgramasEnPlanMejoramiento = async (escuela, tipo) => {
+      try {
+        // 1. Obtener datos de la hoja PROGRAMAS_PM
+        const dataPM = await dataSegui();
+        if (!dataPM || dataPM.length === 0) {
+          return "Ninguno";
+        }
+        
+        // 2. Crear mapa de programas por ID
+        const programasMap = {};
+        programasData.forEach(programa => {
+          const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
+          if (idPrograma) {
+            programasMap[idPrograma] = programa;
+          }
+        });
+        
+        // 3. Filtrar programas por escuela y tipo
+        const programasFiltrados = dataPM.filter(item => {
+          const idPrograma = item.id_programa;
+          const programaCompleto = programasMap[idPrograma];
+          
+          if (!programaCompleto) return false;
+          
+          const escuelaPrograma = (programaCompleto.escuela || programaCompleto.Escuela || '').toLowerCase();
+          let tipoMatch = true;
+          
+          if (tipo !== "ambos") {
+            const tipoPrograma = (programaCompleto["pregrado/posgrado"] || programaCompleto["Pregrado/Posgrado"] || '').toLowerCase();
+            tipoMatch = tipo.toLowerCase() === tipoPrograma;
+          }
+          
+          return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
+        });
+        
+        // 4. Filtrar los que tienen "SI" en hscpm_aac y están en estados D/R/S
+        const programasEnPM = programasFiltrados.filter(item => {
+          // Verificar si tiene "SI" en hscpm_aac
+          const tieneHSCPM = (item.hscpm_aac && 
+                             item.hscpm_aac.toString().trim().toUpperCase() === "SI") ||
+                             (item.hscpm_aac && 
+                             item.hscpm_aac.toString().trim().toUpperCase() === "SÍ");
+          
+          // Verificar estado
+          const estado = (item.estado_pm || '').toString().toLowerCase();
+          const estadoValido = estado === "diseño" || estado === "diseno" || 
+                              estado === "rediseño" || estado === "rediseno" || 
+                              estado === "seguimiento";
+          
+          return tieneHSCPM && estadoValido;
+        });
+        
+        const listaProgramas = programasEnPM.map(item => {
+          const programaCompleto = programasMap[item.id_programa];
+          if (!programaCompleto) return '';
+          
+          const nombrePrograma = programaCompleto["Programa Académico"] || 
+                                programaCompleto["programa académico"] || 
+                                programaCompleto["programa academico"];
+          
+          return `${nombrePrograma} (${item.estado_pm})`;
+        }).filter(nombre => nombre !== '');
+        
+        return listaProgramas.length > 0 ? listaProgramas.join(", ") : "Ninguno";
+      } catch (error) {
+        console.error("Error al obtener programas en plan de mejoramiento:", error);
+        return "Error al cargar datos";
+      }
+    };
 
     // Función para generar el resumen agrupado por estado (Diseño, Rediseño, Seguimiento)
     const generateResumen = (data) => {
