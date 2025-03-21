@@ -79,6 +79,24 @@ const SeguimientoInicio = () => {
     const [selectedProgramType, setSelectedProgramType] = useState('ambos');
     const [loading, setLoading] = useState(false); 
     const [showModal, setShowModal] = useState(false); 
+    const [porcentajePM, setPorcentajePM] = useState({
+        ambos: "-",
+        pre: "-",
+        pos: "-"
+      });
+      const [programasEnPM, setProgramasEnPM] = useState({
+        pre: "Cargando...",
+        pos: "Cargando..."
+      });
+      const [porcentajePMRC, setPorcentajePMRC] = useState({
+        ambos: "-",
+        pre: "-",
+        pos: "-"
+      });
+      const [programasEnPMRC, setProgramasEnPMRC] = useState({
+        pre: "Cargando...",
+        pos: "Cargando..."
+      });
 
     const handleClickOpen = (escuela) => {
         setShowResumen(false); 
@@ -191,6 +209,262 @@ const SeguimientoInicio = () => {
             [field]: value
         }));
     };    
+
+    useEffect(() => {
+        const calcularPorcentajePM = async () => {
+          if (!selectedEscuela) return;
+          
+          // Calcular para pregrado
+          const porcentajePre = await getPorcentajePMParaAcreditacion(selectedEscuela, "pre");
+          
+          // Calcular para posgrado
+          const porcentajePos = await getPorcentajePMParaAcreditacion(selectedEscuela, "pos");
+          
+          // Calcular para ambos
+          const porcentajeAmbos = await getPorcentajePMParaAcreditacion(selectedEscuela, "ambos");
+          
+          setPorcentajePM({
+            pre: porcentajePre,
+            pos: porcentajePos,
+            ambos: porcentajeAmbos
+          });
+        };
+        
+        calcularPorcentajePM();
+      }, [selectedEscuela, selectedProgramType]);
+      
+      useEffect(() => {
+        const cargarDatos = async () => {
+          if (!selectedEscuela) return;
+          
+          try {
+            // Calcular porcentajes de PM para acreditación
+            const porcentajePre = await getPorcentajePMParaAcreditacion(selectedEscuela, "pre");
+            const porcentajePos = await getPorcentajePMParaAcreditacion(selectedEscuela, "pos");
+            const porcentajeAmbos = await getPorcentajePMParaAcreditacion(selectedEscuela, "ambos");
+            
+            setPorcentajePM({
+              pre: porcentajePre,
+              pos: porcentajePos,
+              ambos: porcentajeAmbos
+            });
+            
+            // Cargar listas de programas en PM para descripción
+            const listaPrePM = await getProgramasEnPlanMejoramiento(selectedEscuela, "Pregrado");
+            const listaPosPM = await getProgramasEnPlanMejoramiento(selectedEscuela, "Posgrado");
+            
+            console.log("Programas en PM cargados:", { pregrado: listaPrePM, posgrado: listaPosPM });
+            
+            setProgramasEnPM({
+              pre: listaPrePM,
+              pos: listaPosPM
+            });
+          } catch (error) {
+            console.error("Error cargando datos:", error);
+            setProgramasEnPM({
+              pre: "Error al cargar datos",
+              pos: "Error al cargar datos"
+            });
+          }
+        };
+        
+        cargarDatos();
+      }, [selectedEscuela, programasData]);
+
+      const getPorcentajePMParaRC = async (escuela, tipo) => {
+        console.log(`Calculando porcentaje PM para Registro Calificado: ${escuela} - ${tipo}`);
+        
+        try {
+          // 1. Obtener datos de la hoja PROGRAMAS_PM
+          const dataPM = await dataSegui();
+          if (!dataPM || dataPM.length === 0) {
+            console.error("No hay datos de programas_pm disponibles");
+            return "-";
+          }
+          
+          console.log(`Total registros en PROGRAMAS_PM: ${dataPM.length}`);
+          
+          // 2. Crear mapa de programas por ID
+          const programasMap = {};
+          programasData.forEach(programa => {
+            const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
+            if (idPrograma) {
+              programasMap[idPrograma] = programa;
+            }
+          });
+          
+          // 3. Filtrar programas por escuela y tipo
+          let programasFiltrados = [];
+          if (escuela === "todos") { // Para calcular el total general
+            programasFiltrados = dataPM;
+          } else {
+            // Filtrar por escuela y tipo específicos
+            programasFiltrados = dataPM.filter(item => {
+              const idPrograma = item.id_programa;
+              const programaCompleto = programasMap[idPrograma];
+              
+              if (!programaCompleto) return false;
+              
+              const escuelaPrograma = (programaCompleto.escuela || programaCompleto.Escuela || '').toLowerCase();
+              
+              let tipoMatch = true;
+              if (tipo !== "ambos") {
+                const tipoPrograma = (programaCompleto["pregrado/posgrado"] || programaCompleto["Pregrado/Posgrado"] || '').toLowerCase();
+                tipoMatch = tipo === "pre" ? tipoPrograma === "pregrado" : tipoPrograma === "posgrado";
+              }
+              
+              return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
+            });
+          }
+          
+          // 4. Contar programas en Diseño, Rediseño o Seguimiento
+          const programasEnPM = programasFiltrados.filter(item => {
+            const estado = (item.estado_pm || '').toString().toLowerCase();
+            return estado === "diseño" || estado === "diseno" || 
+                   estado === "rediseño" || estado === "rediseno" || 
+                   estado === "seguimiento";
+          });
+          
+          console.log(`Programas en Diseño/Rediseño/Seguimiento para RC: ${programasEnPM.length}`);
+          
+          // 5. De estos, contar cuántos tienen RC Vigente = "SI" (diferencia con el tercer indicador)
+          const programasConRC = programasEnPM.filter(item => {
+            const programaCompleto = programasMap[item.id_programa];
+            if (!programaCompleto) return false;
+            
+            const rcVigente = (programaCompleto["RC Vigente"] || programaCompleto["rc vigente"] || '').toString().toLowerCase();
+            return rcVigente === "si" || rcVigente === "sí";
+          });
+          
+          const totalProgramasEnPM = programasEnPM.length;
+          const totalProgramasConRC = programasConRC.length;
+          
+          console.log(`RESUMEN FINAL RC: Programas en PM: ${totalProgramasEnPM}, Con RC Vigente="SI": ${totalProgramasConRC}`);
+          
+          if (totalProgramasConRC === 0) {
+            return totalProgramasEnPM > 0 ? "0%" : "-";
+          }
+          
+          const porcentaje = (totalProgramasEnPM / totalProgramasConRC) * 100;
+          return porcentaje.toFixed(2).replace('.', ',') + '%';
+        } catch (error) {
+          console.error("Error calculando porcentaje PM para RC:", error);
+          return "-";
+        }
+      };
+     
+      const getProgramasEnPlanMejoramientoRC = async (escuela, tipo) => {
+        try {
+          // 1. Obtener datos de la hoja PROGRAMAS_PM
+          const dataPM = await dataSegui();
+          if (!dataPM || dataPM.length === 0) {
+            return "Ninguno";
+          }
+          
+          // 2. Crear mapa de programas por ID
+          const programasMap = {};
+          programasData.forEach(programa => {
+            const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
+            if (idPrograma) {
+              programasMap[idPrograma] = programa;
+            }
+          });
+          
+          // 3. Filtrar programas por escuela y tipo
+          const programasFiltrados = dataPM.filter(item => {
+            const idPrograma = item.id_programa;
+            const programaCompleto = programasMap[idPrograma];
+            
+            if (!programaCompleto) return false;
+            
+            const escuelaPrograma = (programaCompleto.escuela || programaCompleto.Escuela || '').toLowerCase();
+            let tipoMatch = true;
+            
+            if (tipo !== "ambos") {
+              const tipoPrograma = (programaCompleto["pregrado/posgrado"] || programaCompleto["Pregrado/Posgrado"] || '').toLowerCase();
+              tipoMatch = tipo.toLowerCase() === tipoPrograma;
+            }
+            
+            return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
+          });
+          
+          // 4. Filtrar por programas en estados Diseño, Rediseño o Seguimiento
+          const programasEnPM = programasFiltrados.filter(item => {
+            const estado = (item.estado_pm || '').toString().toLowerCase();
+            return estado === "diseño" || estado === "diseno" || 
+                   estado === "rediseño" || estado === "rediseno" || 
+                   estado === "seguimiento";
+          });
+          
+          // 5. Generar lista de nombres con sus estados
+          const listaProgramas = programasEnPM.map(item => {
+            const programaCompleto = programasMap[item.id_programa];
+            if (!programaCompleto) return '';
+            
+            const nombrePrograma = programaCompleto["Programa Académico"] || 
+                                  programaCompleto["programa académico"] || 
+                                  programaCompleto["programa academico"];
+            
+            return `${nombrePrograma} (${item.estado_pm})`;
+          }).filter(nombre => nombre !== '');
+          
+          return listaProgramas.length > 0 ? listaProgramas.join(", ") : "Ninguno";
+        } catch (error) {
+          console.error("Error al obtener programas en plan de mejoramiento para RC:", error);
+          return "Error al cargar datos";
+        }
+      };
+
+      useEffect(() => {
+        const cargarDatos = async () => {
+          if (!selectedEscuela) return;
+          
+          try {
+            // Cargar datos del tercer indicador (AC Vigente)
+            const porcentajePre = await getPorcentajePMParaAcreditacion(selectedEscuela, "pre");
+            const porcentajePos = await getPorcentajePMParaAcreditacion(selectedEscuela, "pos");
+            const porcentajeAmbos = await getPorcentajePMParaAcreditacion(selectedEscuela, "ambos");
+            
+            setPorcentajePM({
+              pre: porcentajePre,
+              pos: porcentajePos,
+              ambos: porcentajeAmbos
+            });
+            
+            const listaPrePM = await getProgramasEnPlanMejoramiento(selectedEscuela, "Pregrado");
+            const listaPosPM = await getProgramasEnPlanMejoramiento(selectedEscuela, "Posgrado");
+            
+            setProgramasEnPM({
+              pre: listaPrePM,
+              pos: listaPosPM
+            });
+            
+            // Cargar datos del cuarto indicador (RC Vigente)
+            const porcentajePreRC = await getPorcentajePMParaRC(selectedEscuela, "pre");
+            const porcentajePosRC = await getPorcentajePMParaRC(selectedEscuela, "pos");
+            const porcentajeAmbosRC = await getPorcentajePMParaRC(selectedEscuela, "ambos");
+            
+            setPorcentajePMRC({
+              pre: porcentajePreRC,
+              pos: porcentajePosRC,
+              ambos: porcentajeAmbosRC
+            });
+            
+            const listaPrePMRC = await getProgramasEnPlanMejoramientoRC(selectedEscuela, "Pregrado");
+            const lisaPosPMRC = await getProgramasEnPlanMejoramientoRC(selectedEscuela, "Posgrado");
+            
+            setProgramasEnPMRC({
+              pre: listaPrePMRC,
+              pos: lisaPosPMRC
+            });
+            
+          } catch (error) {
+            console.error("Error cargando datos:", error);
+          }
+        };
+        
+        cargarDatos();
+      }, [selectedEscuela, programasData]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -520,7 +794,160 @@ const SeguimientoInicio = () => {
         const porcentaje = (cantidadRCVigente / cantidadConFechaExpedicion) * 100;
         return porcentaje.toFixed(2).replace('.', ',') + '%';
     };
+
+    const getPorcentajePMParaAcreditacion = async (escuela, tipo) => {
+        console.log(`Calculando porcentaje PM para Acreditación: ${escuela} - ${tipo}`);
+        
+        try {
+          // 1. Obtener datos de la hoja PROGRAMAS_PM
+          const dataPM = await dataSegui();
+          if (!dataPM || dataPM.length === 0) {
+            console.error("No hay datos de programas_pm disponibles");
+            return "-";
+          }
+          
+          console.log(`Total registros en PROGRAMAS_PM: ${dataPM.length}`);
+          
+          // 2. Crear mapa de programas por ID
+          const programasMap = {};
+          programasData.forEach(programa => {
+            const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
+            if (idPrograma) {
+              programasMap[idPrograma] = programa;
+            }
+          });
+          
+          console.log(`Total programas mapeados por ID: ${Object.keys(programasMap).length}`);
+          
+          // 3. Filtrar programas por escuela y tipo
+          let programasFiltrados = [];
+          if (escuela === "todos") { // Para calcular el total general
+            programasFiltrados = dataPM;
+          } else {
+            // Filtrar por escuela y tipo específicos
+            programasFiltrados = dataPM.filter(item => {
+              const idPrograma = item.id_programa;
+              const programaCompleto = programasMap[idPrograma];
+              
+              if (!programaCompleto) return false;
+              
+              const escuelaPrograma = (programaCompleto.escuela || programaCompleto.Escuela || '').toLowerCase();
+              
+              let tipoMatch = true;
+              if (tipo !== "ambos") {
+                const tipoPrograma = (programaCompleto["pregrado/posgrado"] || programaCompleto["Pregrado/Posgrado"] || '').toLowerCase();
+                tipoMatch = tipo === "pre" ? tipoPrograma === "pregrado" : tipoPrograma === "posgrado";
+              }
+              
+              return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
+            });
+          }
+          
+          console.log(`Programas filtrados para ${escuela}-${tipo}: ${programasFiltrados.length}`);
+          
+          // 4. Contar programas en Diseño, Rediseño o Seguimiento
+          const programasEnPM = programasFiltrados.filter(item => {
+            const estado = (item.estado_pm || '').toString().toLowerCase();
+            return estado === "diseño" || estado === "diseno" || 
+                   estado === "rediseño" || estado === "rediseno" || 
+                   estado === "seguimiento";
+          });
+          
+          console.log(`Programas en Diseño/Rediseño/Seguimiento: ${programasEnPM.length}`);
+          programasEnPM.forEach((p, i) => {
+            const programaCompleto = programasMap[p.id_programa];
+            if (programaCompleto) {
+              console.log(`${i+1}. ${programaCompleto["Programa Académico"] || programaCompleto["programa académico"]} - Estado: ${p.estado_pm}`);
+            }
+          });
+          
+          // 5. De estos, contar cuántos tienen AC Vigente = "SI"
+          const programasConAC = programasEnPM.filter(item => {
+            const programaCompleto = programasMap[item.id_programa];
+            if (!programaCompleto) return false;
+            
+            const acVigente = (programaCompleto["AC Vigente"] || programaCompleto["ac vigente"] || '').toString().toLowerCase();
+            return acVigente === "si" || acVigente === "sí";
+          });
+          
+          const totalProgramasEnPM = programasEnPM.length;
+          const totalProgramasConAC = programasConAC.length;
+          
+          console.log(`RESUMEN FINAL: Programas en PM: ${totalProgramasEnPM}, Con AC Vigente="SI": ${totalProgramasConAC}`);
+          
+          if (totalProgramasConAC === 0) {
+            return totalProgramasEnPM > 0 ? "0%" : "-";
+          }
+          
+          const porcentaje = (totalProgramasEnPM / totalProgramasConAC) * 100;
+          return porcentaje.toFixed(2).replace('.', ',') + '%';
+        } catch (error) {
+          console.error("Error calculando porcentaje PM:", error);
+          return "-";
+        }
+      };
       
+      const getProgramasEnPlanMejoramiento = async (escuela, tipo) => {
+        try {
+          // 1. Obtener datos de la hoja PROGRAMAS_PM
+          const dataPM = await dataSegui();
+          if (!dataPM || dataPM.length === 0) {
+            return "Ninguno";
+          }
+          
+          // 2. Crear mapa de programas por ID
+          const programasMap = {};
+          programasData.forEach(programa => {
+            const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
+            if (idPrograma) {
+              programasMap[idPrograma] = programa;
+            }
+          });
+          
+          // 3. Filtrar programas por escuela y tipo
+          const programasFiltrados = dataPM.filter(item => {
+            const idPrograma = item.id_programa;
+            const programaCompleto = programasMap[idPrograma];
+            
+            if (!programaCompleto) return false;
+            
+            const escuelaPrograma = (programaCompleto.escuela || programaCompleto.Escuela || '').toLowerCase();
+            let tipoMatch = true;
+            
+            if (tipo !== "ambos") {
+              const tipoPrograma = (programaCompleto["pregrado/posgrado"] || programaCompleto["Pregrado/Posgrado"] || '').toLowerCase();
+              tipoMatch = tipo.toLowerCase() === tipoPrograma;
+            }
+            
+            return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
+          });
+          
+          // 4. Filtrar por programas en estados Diseño, Rediseño o Seguimiento
+          const programasEnPM = programasFiltrados.filter(item => {
+            const estado = (item.estado_pm || '').toString().toLowerCase();
+            return estado === "diseño" || estado === "diseno" || 
+                   estado === "rediseño" || estado === "rediseno" || 
+                   estado === "seguimiento";
+          });
+          
+          // 5. Generar lista de nombres con sus estados
+          const listaProgramas = programasEnPM.map(item => {
+            const programaCompleto = programasMap[item.id_programa];
+            if (!programaCompleto) return '';
+            
+            const nombrePrograma = programaCompleto["Programa Académico"] || 
+                                  programaCompleto["programa académico"] || 
+                                  programaCompleto["programa academico"];
+            
+            return `${nombrePrograma} (${item.estado_pm})`;
+          }).filter(nombre => nombre !== '');
+          
+          return listaProgramas.length > 0 ? listaProgramas.join(", ") : "Ninguno";
+        } catch (error) {
+          console.error("Error al obtener programas en plan de mejoramiento:", error);
+          return "Error al cargar datos";
+        }
+      };
 
     // Función para generar el resumen agrupado por estado (Diseño, Rediseño, Seguimiento)
     const generateResumen = (data) => {
@@ -768,6 +1195,16 @@ const SeguimientoInicio = () => {
                                                                 return "-"; // Caso por defecto
                                                             }
                                                         })()
+                                                        : (index === 2) 
+                                                    ? (() => {
+                                                        // Para el tercer criterio (% programas en plan de mejoramiento para Acreditación)
+                                                        return porcentajePM[selectedProgramType] || "-";
+                                                    })()
+                                                        : (index === 3) 
+                                                    ? (() => {
+                                                        // Para el cuarto criterio (% programas en plan de mejoramiento para RC)
+                                                        return porcentajePMRC[selectedProgramType] || "-";
+                                                    })()
                                                         : scores[selectedProgramType][index] || '' // Para los demás criterios
                                                 }
                                             </Typography>
@@ -792,7 +1229,20 @@ const SeguimientoInicio = () => {
                                                                 : selectedProgramType === 'pre'
                                                                     ? `Los programas académicos con Registro Calificado vigente son: ${getProgramasConRCVigente(selectedEscuela, "Pregrado")}.`
                                                                     : `Los programas académicos con Registro Calificado vigente son: ${getProgramasConRCVigente(selectedEscuela, "Posgrado")}.`
-                                                        ) : (
+                                                        ) : index === 2 ? (
+                                                            selectedProgramType === 'ambos'
+                                                                ? `Los programas con plan de mejoramiento acreditado de pregrado son: ${programasEnPM.pre}.\n\nLos programas con plan de mejoramiento acreditado de posgrado son: ${programasEnPM.pos}.`
+                                                                : selectedProgramType === 'pre'
+                                                                    ? `Los programas con plan de mejoramiento acreditado son: ${programasEnPM.pre}.`
+                                                                    : `Los programas con plan de mejoramiento acreditado son: ${programasEnPM.pos}.`
+                                                        
+                                                        ): index === 3 ? (
+                                                            selectedProgramType === 'ambos'
+                                                                ? `Los programas con plan de mejoramiento para Registro Calificado de pregrado son: ${programasEnPMRC.pre}.\n\nLos programas con plan de mejoramiento para Registro Calificado de posgrado son: ${programasEnPMRC.pos}.`
+                                                                : selectedProgramType === 'pre'
+                                                                    ? `Los programas con plan de mejoramiento para Registro Calificado son: ${programasEnPMRC.pre}.`
+                                                                    : `Los programas con plan de mejoramiento para Registro Calificado son: ${programasEnPMRC.pos}.`
+                                                        ) :(
                                                             selectedProgramType === 'ambos'
                                                                 ? (descriptions[`descripcion_${index + 1}_pre`] || '') + 
                                                                   (descriptions[`descripcion_${index + 1}_pos`] ? '\n\nPosgrado:\n' + descriptions[`descripcion_${index + 1}_pos`] : '')
