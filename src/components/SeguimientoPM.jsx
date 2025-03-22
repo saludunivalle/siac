@@ -73,6 +73,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
             const records = response
                 .filter(record => record.id_programa === idPrograma)
                 .reduce((acc, record) => {
+                    console.log("Registro completo:", record);
                     acc[record.id] = [
                         record.id,
                         record.id_programa,
@@ -83,10 +84,11 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
                         record.formacion,
                         record.escuela,
                         record.fecha || null,
-                        record.url_herramienta_RRC,        // índice 9 (columna J)
+                        record.url_herramienta_rrc,        // índice 9 (columna J)
                         record.recibio_visitas,            // índice 10 (columna K)
-                        record.url_herramienta_AAC 
+                        record.url_herramienta_aac
                     ];
+                    console.log("Array construido:", acc[record.id]);
                     return acc;
                 }, {});
             setSavedRecords(Object.values(records));
@@ -99,9 +101,9 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
                 setNumeroProgramas(lastRecord[5]);
                 setRecibioVisitaPares(lastRecord[10]);
                 setUrlHSCPM_RRC(lastRecord[9] || '');
-                setTieneHSCPM_RC(lastRecord[9] ? 'Si' : 'No');
+                setTieneHSCPM_RC(lastRecord[9] && lastRecord[9].trim() !== '' ? 'Si' : 'No');
                 setUrlHSCPM_AAC(lastRecord[11] || '');
-                setTieneHSCPM_AAC(lastRecord[11] ? 'Si' : 'No');
+                setTieneHSCPM_AAC(lastRecord[11] && lastRecord[11].trim() !== '' ? 'Si' : 'No');
                 setIsSaved(true);
                 setHasData(true);
             } else {
