@@ -34,8 +34,8 @@ const escuelas = [
 const programasBase = [
     'Porcentaje de programas Acreditados de la Escuela de {tipo}',
     'Porcentaje de programas con Registro Calificado vigente de la Escuela de {tipo}',
-    'Porcentaje de programas en plan de mejoramiento Acreditación por la Escuela de {tipo}',
-    'Porcentaje de programas en plan de mejoramiento Registro calificado por la Escuela de {tipo}',
+    'Porcentaje de programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Acreditación de {tipo}',
+    'Porcentaje de programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Registro Calificado de {tipo}',
 ];
 
 const ponderacionesProgramas = [
@@ -383,13 +383,12 @@ const SeguimientoInicio = () => {
      
       const getProgramasEnPlanMejoramientoRC = async (escuela, tipo) => {
         try {
-          // 1. Obtener datos de la hoja PROGRAMAS_PM
           const dataPM = await dataSegui();
           if (!dataPM || dataPM.length === 0) {
-            return "Ninguno";
+            return `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Registro Calificado de ${tipo} son (0).\n<b>No hay ningún programa en Plan de Mejoramiento para Registro Calificado</b>`;
           }
           
-          // 2. Crear mapa de programas por ID
+          // Crear mapa de programas por ID
           const programasMap = {};
           programasData.forEach(programa => {
             const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
@@ -398,7 +397,7 @@ const SeguimientoInicio = () => {
             }
           });
           
-          // 3. Filtrar programas por escuela y tipo
+          // Filtrar programas por escuela y tipo
           const programasFiltrados = dataPM.filter(item => {
             const idPrograma = item.id_programa;
             const programaCompleto = programasMap[idPrograma];
@@ -416,38 +415,82 @@ const SeguimientoInicio = () => {
             return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
           });
           
-          // 4. Filtrar los que tienen "SI" en hscpm_rrc y están en estados D/R/S
-          const programasEnPMRC = programasFiltrados.filter(item => {
+          // Filtrar por "SI" en hscpm_rrc y agrupar por estado
+          const programasEnDiseno = [];
+          const programasEnRediseno = [];
+          const programasEnSeguimiento = [];
+          
+          programasFiltrados.forEach(item => {
             // Verificar si tiene "SI" en hscpm_rrc
             const tieneHSCPMRC = (item.hscpm_rrc && 
-                                item.hscpm_rrc.toString().trim().toUpperCase() === "SI") ||
-                               (item.hscpm_rrc && 
-                                item.hscpm_rrc.toString().trim().toUpperCase() === "SÍ");
+                                 item.hscpm_rrc.toString().trim().toUpperCase() === "SI") ||
+                                (item.hscpm_rrc && 
+                                 item.hscpm_rrc.toString().trim().toUpperCase() === "SÍ");
             
-            // Verificar estado
+            if (!tieneHSCPMRC) return;
+            
+            // Verificar estado y agrupar
             const estado = (item.estado_pm || '').toString().toLowerCase();
-            const estadoValido = estado === "diseño" || estado === "diseno" || 
-                                estado === "rediseño" || estado === "rediseno" || 
-                                estado === "seguimiento";
-            
-            return tieneHSCPMRC && estadoValido;
-          });
-          
-          const listaProgramas = programasEnPMRC.map(item => {
             const programaCompleto = programasMap[item.id_programa];
-            if (!programaCompleto) return '';
+            
+            if (!programaCompleto) return;
             
             const nombrePrograma = programaCompleto["Programa Académico"] || 
                                   programaCompleto["programa académico"] || 
                                   programaCompleto["programa academico"];
             
-            return `${nombrePrograma} (${item.estado_pm})`;
-          }).filter(nombre => nombre !== '');
+            if (estado === "diseño" || estado === "diseno") {
+              programasEnDiseno.push(nombrePrograma);
+            } else if (estado === "rediseño" || estado === "rediseno") {
+              programasEnRediseno.push(nombrePrograma);
+            } else if (estado === "seguimiento") {
+              programasEnSeguimiento.push(nombrePrograma);
+            }
+          });
           
-          return listaProgramas.length > 0 ? listaProgramas.join(", ") : "Ninguno";
+          // Contar programas en cada estado
+          const totalDiseno = programasEnDiseno.length;
+          const totalRediseno = programasEnRediseno.length;
+          const totalSeguimiento = programasEnSeguimiento.length;
+          const totalProgramas = totalDiseno + totalRediseno + totalSeguimiento;
+          
+          if (totalProgramas === 0) {
+            return `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Registro Calificado de ${tipo} son (0).\n<b>No hay ningún programa en Plan de Mejoramiento para Registro Calificado</b>`;
+          }
+          
+          let resultado = `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Registro Calificado de ${tipo} son (${totalProgramas}):\n`;
+          resultado += `En Diseño (${totalDiseno}), En Rediseño (${totalRediseno}), En Seguimiento (${totalSeguimiento}).\n\n`;
+          
+          // Mostrar programas en Diseño
+          if (totalDiseno > 0) {
+            resultado += `En Diseño los programas son:\n`;
+            programasEnDiseno.forEach(prog => {
+              resultado += `- ${prog}\n`;
+            });
+            resultado += '\n';
+          }
+          
+          // Mostrar programas en Rediseño
+          if (totalRediseno > 0) {
+            resultado += `En Rediseño los programas son:\n`;
+            programasEnRediseno.forEach(prog => {
+              resultado += `- ${prog}\n`;
+            });
+            resultado += '\n';
+          }
+          
+          // Mostrar programas en Seguimiento
+          if (totalSeguimiento > 0) {
+            resultado += `En Seguimiento los programas son:\n`;
+            programasEnSeguimiento.forEach(prog => {
+              resultado += `- ${prog}\n`;
+            });
+          }
+          
+          return resultado.trim();
         } catch (error) {
           console.error("Error al obtener programas en plan de mejoramiento para RC:", error);
-          return "Error al cargar datos";
+          return "<b>Error al cargar datos</b>";
         }
       };
 
@@ -664,114 +707,67 @@ const SeguimientoInicio = () => {
     };
 
     const getProgramasAcreditados = (escuela, tipo) => {
-        console.log(`Buscando programas para: ${escuela} - ${tipo}`);
+      console.log(`Buscando programas acreditados para: ${escuela} - ${tipo}`);
+      
+      if (!programasData || programasData.length === 0) {
+        return "<b>No hay datos de programas cargados</b>";
+      }
+      
+      const programasFiltrados = programasData.filter(programa => {
+        const programaNormalizado = Object.fromEntries(
+          Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
+        );
         
-        if (!programasData || programasData.length === 0) {
-          console.log("No hay datos de programas cargados");
-          return "Ninguno";
-        }
+        const escuelaMatch = (programaNormalizado.escuela?.toLowerCase() === escuela.toLowerCase());
+        const tipoMatch = (programaNormalizado["pregrado/posgrado"]?.toLowerCase() === tipo.toLowerCase());
+        const acreditadoMatch = (programaNormalizado["ac vigente"] === "SI" || programaNormalizado["ac vigente"] === "Si");
         
-        // Filtrar los programas con una comparación insensible a mayúsculas/minúsculas
-        const programasFiltrados = programasData.filter(programa => {
-          // Normalizamos los nombres de las propiedades
-          const programaNormalizado = Object.fromEntries(
-            Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
-          );
-          
-          // Verificar escuela (insensible a mayúsculas/minúsculas)
-          const escuelaMatch = 
-            (programaNormalizado.escuela?.toLowerCase() === escuela.toLowerCase()) ||
-            (programaNormalizado.e?.toLowerCase() === escuela.toLowerCase());
-          
-          // Verificar tipo pregrado/posgrado (insensible a mayúsculas/minúsculas)
-          const tipoMatch = 
-            (programaNormalizado["pregrado/posgrado"]?.toLowerCase() === tipo.toLowerCase());
-          
-          // Verificar si tiene AC vigente
-          const acreditadoMatch = 
-            (programaNormalizado["ac vigente"] === "SI") ||
-            (programaNormalizado["ac vigente"] === "Si");
-          
-          if (escuelaMatch && tipoMatch) {
-            console.log("Programa que cumple escuela y tipo:", programa);
-            console.log(`AC vigente: ${programaNormalizado["ac vigente"]}`);
-          }
-          
-          return escuelaMatch && tipoMatch && acreditadoMatch;
-        });
-        
-        console.log(`Programas filtrados finales: ${programasFiltrados.length}`);
-        
-        if (programasFiltrados.length === 0) return "Ninguno";
-        
-        // Usar el nombre correcto del campo según los datos
-        return programasFiltrados
-          .map(p => p["programa académico"] || p["Programa Académico"] || p["programa academico"])
-          .join(", ");
+        return escuelaMatch && tipoMatch && acreditadoMatch;
+      });
+      
+      const cantidadProgramas = programasFiltrados.length;
+      
+      if (cantidadProgramas === 0) {
+        return `Los programas académicos acreditados de ${tipo} son (0).\n<b>No hay ningún programa acreditado</b>`;
+      }
+      
+      const listaProgramas = programasFiltrados
+        .map(p => `- ${p["programa académico"] || p["Programa Académico"] || p["programa academico"]}`)
+        .join("\n");
+      
+      return `Los programas académicos acreditados de ${tipo} son (${cantidadProgramas}).\nLos programas son:\n${listaProgramas}`;
     };
 
     const getProgramasConRCVigente = (escuela, tipo) => {
-        console.log(`Buscando programas con RC vigente para: ${escuela} - ${tipo}`);
+      console.log(`Buscando programas con RC vigente para: ${escuela} - ${tipo}`);
+      
+      if (!programasData || programasData.length === 0) {
+        return "<b>No hay datos de programas cargados</b>";
+      }
+      
+      const programasFiltrados = programasData.filter(programa => {
+        const programaNormalizado = Object.fromEntries(
+          Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
+        );
         
-        if (!programasData || programasData.length === 0) {
-          console.log("No hay datos de programas cargados");
-          return "Ninguno";
-        }
+        const escuelaMatch = (programaNormalizado.escuela?.toLowerCase() === escuela.toLowerCase());
+        const tipoMatch = (programaNormalizado["pregrado/posgrado"]?.toLowerCase() === tipo.toLowerCase());
+        const rcVigenteMatch = (programaNormalizado["rc vigente"] === "SI" || programaNormalizado["rc vigente"] === "Si");
         
-        // Fecha actual para comparar
-        const fechaActual = new Date();
-        
-        // Filtrar los programas con una comparación insensible a mayúsculas/minúsculas
-        const programasFiltrados = programasData.filter(programa => {
-          // Normalizamos los nombres de las propiedades
-          const programaNormalizado = Object.fromEntries(
-            Object.entries(programa).map(([key, value]) => [key.toLowerCase(), value])
-          );
-          
-          // Verificar escuela (insensible a mayúsculas/minúsculas)
-          const escuelaMatch = 
-            (programaNormalizado.escuela?.toLowerCase() === escuela.toLowerCase()) ||
-            (programaNormalizado.e?.toLowerCase() === escuela.toLowerCase());
-          
-          // Verificar tipo pregrado/posgrado (insensible a mayúsculas/minúsculas)
-          const tipoMatch = 
-            (programaNormalizado["pregrado/posgrado"]?.toLowerCase() === tipo.toLowerCase());
-          
-          // Verificar si tiene RC vigente
-          const rcVigenteMatch = 
-            (programaNormalizado["rc vigente"] === "SI") ||
-            (programaNormalizado["rc vigente"] === "Si");
-          
-          // También verificar fecha de vencimiento si está disponible
-          let fechaVigente = false;
-          if (programaNormalizado["fechavencrc"]) {
-            try {
-              const partes = programaNormalizado["fechavencrc"].split('/');
-              if (partes.length === 3) {
-                const fechaVencimiento = new Date(
-                  parseInt(partes[2]), // año
-                  parseInt(partes[1]) - 1, // mes (0-11)
-                  parseInt(partes[0]) // día
-                );
-                fechaVigente = fechaVencimiento > fechaActual;
-              }
-            } catch (e) {
-              console.error("Error al procesar fecha:", e);
-            }
-          }
-          
-          // Añadir fechaVigente a la condición de filtro
-          return escuelaMatch && tipoMatch && rcVigenteMatch && fechaVigente;
-        });
-        
-        console.log(`Programas con RC vigente encontrados: ${programasFiltrados.length}`);
-        
-        if (programasFiltrados.length === 0) return "Ninguno";
-        
-        // Usar el nombre correcto del campo según los datos
-        return programasFiltrados
-          .map(p => p["programa académico"] || p["Programa Académico"] || p["programa academico"])
-          .join(", ");
+        return escuelaMatch && tipoMatch && rcVigenteMatch;
+      });
+      
+      const cantidadProgramas = programasFiltrados.length;
+      
+      if (cantidadProgramas === 0) {
+        return `Los programas académicos con Registro Calificado vigente de ${tipo} son (0).\n<b>No hay ningún programa con Registro Calificado vigente</b>`;
+      }
+      
+      const listaProgramas = programasFiltrados
+        .map(p => `- ${p["programa académico"] || p["Programa Académico"] || p["programa academico"]}`)
+        .join("\n");
+      
+      return `Los programas académicos con Registro Calificado vigente de ${tipo} son (${cantidadProgramas}).\nLos programas son:\n${listaProgramas}`;
     };
 
     const getPorcentajeRCVigente = (escuela, tipo) => {
@@ -943,13 +939,12 @@ const SeguimientoInicio = () => {
       
     const getProgramasEnPlanMejoramiento = async (escuela, tipo) => {
       try {
-        // 1. Obtener datos de la hoja PROGRAMAS_PM
         const dataPM = await dataSegui();
         if (!dataPM || dataPM.length === 0) {
-          return "Ninguno";
+          return `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Acreditación de ${tipo} son (0).\n<b>No hay ningún programa en Plan de Mejoramiento para Acreditación</b>`;
         }
         
-        // 2. Crear mapa de programas por ID
+        // Crear mapa de programas por ID
         const programasMap = {};
         programasData.forEach(programa => {
           const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
@@ -958,7 +953,7 @@ const SeguimientoInicio = () => {
           }
         });
         
-        // 3. Filtrar programas por escuela y tipo
+        // Filtrar programas por escuela y tipo
         const programasFiltrados = dataPM.filter(item => {
           const idPrograma = item.id_programa;
           const programaCompleto = programasMap[idPrograma];
@@ -976,38 +971,82 @@ const SeguimientoInicio = () => {
           return escuelaPrograma === escuela.toLowerCase() && tipoMatch;
         });
         
-        // 4. Filtrar los que tienen "SI" en hscpm_aac y están en estados D/R/S
-        const programasEnPM = programasFiltrados.filter(item => {
+        // Filtrar por "SI" en hscpm_aac y agrupar por estado
+        const programasEnDiseno = [];
+        const programasEnRediseno = [];
+        const programasEnSeguimiento = [];
+        
+        programasFiltrados.forEach(item => {
           // Verificar si tiene "SI" en hscpm_aac
           const tieneHSCPM = (item.hscpm_aac && 
                              item.hscpm_aac.toString().trim().toUpperCase() === "SI") ||
                              (item.hscpm_aac && 
                              item.hscpm_aac.toString().trim().toUpperCase() === "SÍ");
           
-          // Verificar estado
-          const estado = (item.estado_pm || '').toString().toLowerCase();
-          const estadoValido = estado === "diseño" || estado === "diseno" || 
-                              estado === "rediseño" || estado === "rediseno" || 
-                              estado === "seguimiento";
+          if (!tieneHSCPM) return;
           
-          return tieneHSCPM && estadoValido;
-        });
-        
-        const listaProgramas = programasEnPM.map(item => {
+          // Verificar estado y agrupar
+          const estado = (item.estado_pm || '').toString().toLowerCase();
           const programaCompleto = programasMap[item.id_programa];
-          if (!programaCompleto) return '';
+          
+          if (!programaCompleto) return;
           
           const nombrePrograma = programaCompleto["Programa Académico"] || 
                                 programaCompleto["programa académico"] || 
                                 programaCompleto["programa academico"];
           
-          return `${nombrePrograma} (${item.estado_pm})`;
-        }).filter(nombre => nombre !== '');
+          if (estado === "diseño" || estado === "diseno") {
+            programasEnDiseno.push(nombrePrograma);
+          } else if (estado === "rediseño" || estado === "rediseno") {
+            programasEnRediseno.push(nombrePrograma);
+          } else if (estado === "seguimiento") {
+            programasEnSeguimiento.push(nombrePrograma);
+          }
+        });
         
-        return listaProgramas.length > 0 ? listaProgramas.join(", ") : "Ninguno";
+        // Contar programas en cada estado
+        const totalDiseno = programasEnDiseno.length;
+        const totalRediseno = programasEnRediseno.length;
+        const totalSeguimiento = programasEnSeguimiento.length;
+        const totalProgramas = totalDiseno + totalRediseno + totalSeguimiento;
+        
+        if (totalProgramas === 0) {
+          return `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Acreditación de ${tipo} son (0).\n<b>No hay ningún programa en Plan de Mejoramiento para Acreditación</b>`;
+        }
+        
+        let resultado = `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Acreditación de ${tipo} son (${totalProgramas}):\n`;
+        resultado += `En Diseño (${totalDiseno}), En Rediseño (${totalRediseno}), En Seguimiento (${totalSeguimiento}).\n\n`;
+        
+        // Mostrar programas en Diseño
+        if (totalDiseno > 0) {
+          resultado += `En Diseño los programas son:\n`;
+          programasEnDiseno.forEach(prog => {
+            resultado += `- ${prog}\n`;
+          });
+          resultado += '\n';
+        }
+        
+        // Mostrar programas en Rediseño
+        if (totalRediseno > 0) {
+          resultado += `En Rediseño los programas son:\n`;
+          programasEnRediseno.forEach(prog => {
+            resultado += `- ${prog}\n`;
+          });
+          resultado += '\n';
+        }
+        
+        // Mostrar programas en Seguimiento
+        if (totalSeguimiento > 0) {
+          resultado += `En Seguimiento los programas son:\n`;
+          programasEnSeguimiento.forEach(prog => {
+            resultado += `- ${prog}\n`;
+          });
+        }
+        
+        return resultado.trim();
       } catch (error) {
         console.error("Error al obtener programas en plan de mejoramiento:", error);
-        return "Error al cargar datos";
+        return "<b>Error al cargar datos</b>";
       }
     };
 
@@ -1272,48 +1311,69 @@ const SeguimientoInicio = () => {
                                             </Typography>
                                             </TableCell>
                                             <TableCell>
-                                            <Typography 
+                                            <div 
+                                              style={{ 
+                                                height: '250px',         
+                                                overflowY: 'auto',      
+                                                padding: '5px',
+                                                // Estilización personalizada para la barra de desplazamiento
+                                                '&::-webkit-scrollbar': {
+                                                  width: '8px',
+                                                },
+                                                '&::-webkit-scrollbar-track': {
+                                                  background: 'transparent',  // Fondo transparente
+                                                },
+                                                '&::-webkit-scrollbar-thumb': {
+                                                  backgroundColor: 'rgba(0,0,0,0.2)',  // Color semitransparente
+                                                  borderRadius: '4px',
+                                                  '&:hover': {
+                                                    backgroundColor: 'rgba(0,0,0,0.3)',  // Un poco más oscuro al pasar el cursor
+                                                  }
+                                                }
+                                              }}
+                                            >
+                                              <Typography 
                                                 variant="body1"
                                                 style={{ 
-                                                    width: '100%',
-                                                    whiteSpace: 'pre-wrap'
+                                                  width: '100%',
+                                                  whiteSpace: 'pre-wrap'
                                                 }}
-                                            >
-                                                        {index === 0 ? (
-                                                            selectedProgramType === 'ambos'
-                                                                ? `Los programas académicos acreditados de pregrado son: ${getProgramasAcreditados(selectedEscuela, "Pregrado")}.\n\nLos programas académicos acreditados de posgrado son: ${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
-                                                                : selectedProgramType === 'pre'
-                                                                    ? `Los programas académicos acreditados son: ${getProgramasAcreditados(selectedEscuela, "Pregrado")}.`
-                                                                    : `Los programas académicos acreditados son: ${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
-                                                        ) : index === 1 ? (
-                                                            selectedProgramType === 'ambos'
-                                                                ? `Los programas académicos con Registro Calificado vigente de pregrado son: ${getProgramasConRCVigente(selectedEscuela, "Pregrado")}.\n\nLos programas académicos con Registro Calificado vigente de posgrado son: ${getProgramasConRCVigente(selectedEscuela, "Posgrado")}.`
-                                                                : selectedProgramType === 'pre'
-                                                                    ? `Los programas académicos con Registro Calificado vigente son: ${getProgramasConRCVigente(selectedEscuela, "Pregrado")}.`
-                                                                    : `Los programas académicos con Registro Calificado vigente son: ${getProgramasConRCVigente(selectedEscuela, "Posgrado")}.`
-                                                        ) : index === 2 ? (
-                                                            selectedProgramType === 'ambos'
-                                                                ? `Los programas con plan de mejoramiento acreditado de pregrado son: ${programasEnPM.pre}.\n\nLos programas con plan de mejoramiento acreditado de posgrado son: ${programasEnPM.pos}.`
-                                                                : selectedProgramType === 'pre'
-                                                                    ? `Los programas con plan de mejoramiento acreditado son: ${programasEnPM.pre}.`
-                                                                    : `Los programas con plan de mejoramiento acreditado son: ${programasEnPM.pos}.`
-                                                        
-                                                        ): index === 3 ? (
-                                                            selectedProgramType === 'ambos'
-                                                                ? `Los programas con plan de mejoramiento para Registro Calificado de pregrado son: ${programasEnPMRC.pre}.\n\nLos programas con plan de mejoramiento para Registro Calificado de posgrado son: ${programasEnPMRC.pos}.`
-                                                                : selectedProgramType === 'pre'
-                                                                    ? `Los programas con plan de mejoramiento para Registro Calificado son: ${programasEnPMRC.pre}.`
-                                                                    : `Los programas con plan de mejoramiento para Registro Calificado son: ${programasEnPMRC.pos}.`
-                                                        ) :(
-                                                            selectedProgramType === 'ambos'
-                                                                ? (descriptions[`descripcion_${index + 1}_pre`] || '') + 
-                                                                  (descriptions[`descripcion_${index + 1}_pos`] ? '\n\nPosgrado:\n' + descriptions[`descripcion_${index + 1}_pos`] : '')
-                                                                : selectedProgramType === 'pre'
-                                                                    ? descriptions[`descripcion_${index + 1}_pre`] || ''
-                                                                    : descriptions[`descripcion_${index + 1}_pos`] || ''
-         
-                                                    )}
-                                                </Typography>
+                                                  dangerouslySetInnerHTML={{ __html: 
+                                                    index === 0 ? (
+                                                      selectedProgramType === 'ambos'
+                                                        ? `\n${getProgramasAcreditados(selectedEscuela, "Pregrado")}.\n\n\n${getProgramasAcreditados(selectedEscuela, "Posgrado")}.`
+                                                        : selectedProgramType === 'pre'
+                                                          ? getProgramasAcreditados(selectedEscuela, "Pregrado")
+                                                          : getProgramasAcreditados(selectedEscuela, "Posgrado")
+                                                    ) : index === 1 ? (
+                                                      selectedProgramType === 'ambos'
+                                                        ? `\n${getProgramasConRCVigente(selectedEscuela, "Pregrado")}.\n\n\n${getProgramasConRCVigente(selectedEscuela, "Posgrado")}.`
+                                                        : selectedProgramType === 'pre'
+                                                          ? getProgramasConRCVigente(selectedEscuela, "Pregrado")
+                                                          : getProgramasConRCVigente(selectedEscuela, "Posgrado")
+                                                    ) : index === 2 ? (
+                                                      selectedProgramType === 'ambos'
+                                                        ? `${programasEnPM.pre}\n\n${programasEnPM.pos}`
+                                                        : selectedProgramType === 'pre'
+                                                          ? programasEnPM.pre
+                                                          : programasEnPM.pos
+                                                    ) : index === 3 ? (
+                                                      selectedProgramType === 'ambos'
+                                                        ? `${programasEnPMRC.pre}\n\n${programasEnPMRC.pos}`
+                                                        : selectedProgramType === 'pre'
+                                                          ? programasEnPMRC.pre
+                                                          : programasEnPMRC.pos
+                                                    ) : (
+                                                      selectedProgramType === 'ambos'
+                                                        ? (descriptions[`descripcion_${index + 1}_pre`] || '') + 
+                                                          (descriptions[`descripcion_${index + 1}_pos`] ? '\n\nPosgrado:\n' + descriptions[`descripcion_${index + 1}_pos`] : '')
+                                                        : selectedProgramType === 'pre'
+                                                          ? descriptions[`descripcion_${index + 1}_pre`] || ''
+                                                          : descriptions[`descripcion_${index + 1}_pos`] || ''
+                                                    )
+                                                  }}
+                                                />
+                                              </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
