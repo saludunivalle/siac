@@ -65,31 +65,53 @@ const Programas = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = isCargo.includes('Posgrados')
-                    ? (await Filtro5()).filter(item => item['pregrado/posgrado'] === 'Posgrado')
-                    : await Filtro5();
+                const allProgramsGlobal = await Filtro5(); // Obtener todos los programas una vez
+                let programsForCounting = allProgramsGlobal;
 
-                setActivosCount(response.filter(item => item['estado'] === 'Activo').length);
-                setActivoSedesCount(response.filter(item => item['estado'] === 'Activo - Sede').length);
-                setCreacionCount(response.filter(item => item['estado'] === 'En Creación').length);
-                setCreacionSedesCount(response.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
-                setInactivosCount(response.filter(item => item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' || item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Desistido' || item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede' || item['estado'] === 'Rechazado').length);
-                setInactiveCount(response.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Inactivo - Sede').length);
-                setDesistidoMenCount(response.filter(item => item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede').length);
-                setDesistidoInternoCount(response.filter(item => item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede').length);
-                setRechazadoCount(response.filter(item => item['estado'] === 'Rechazado' || item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' ).length);
+                // Aplicar filtro de Pregrado/Posgrado si está seleccionado en selectedValues
+                if (selectedValues.includes('option1')) { // Pregrado seleccionado
+                    programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec');
+                } else if (selectedValues.includes('option2')) { // Posgrado seleccionado
+                    programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+                } else {
+                    // Si no hay selección explícita de Pregrado/Posgrado para los contadores,
+                    // aplicar el filtro de isCargo si es relevante (ej. rol solo ve Posgrados)
+                    if (isCargo.includes('Posgrados')) {
+                        programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+                    }
+                    // Si no hay filtro de Pre/Pos ni de isCargo relevante, programsForCounting usa todos los programas.
+                }
 
-                const initialFilteredData = response.filter(item =>
-                    item['estado'] === 'Activo' || item['estado'] === 'En Creación'
-                );
+                setActivosCount(programsForCounting.filter(item => item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede').length);
+                setActivoSedesCount(programsForCounting.filter(item => item['estado'] === 'Activo - Sede').length);
+                setCreacionCount(programsForCounting.filter(item => item['estado'] === 'En Creación' || item['estado'] === 'En Creación - Sede').length);
+                setCreacionSedesCount(programsForCounting.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
+                setInactivosCount(programsForCounting.filter(item => item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' || item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Desistido' || item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede' || item['estado'] === 'Rechazado').length);
+                setInactiveCount(programsForCounting.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Inactivo - Sede').length);
+                setDesistidoMenCount(programsForCounting.filter(item => item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede').length);
+                setDesistidoInternoCount(programsForCounting.filter(item => item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede').length);
+                setRechazadoCount(programsForCounting.filter(item => item['estado'] === 'Rechazado' || item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' ).length);
 
-                setFilteredData(initialFilteredData);
+                // Configuración inicial de filteredData (para la tabla) si rowData no se proporciona desde location.state
+                // Si rowData (location.state) existe, el useEffect en la línea 46 y handleButtonClick manejan filteredData.
+                if (!rowData) { // rowData es location.state
+                    let initialTableSource = allProgramsGlobal;
+                    if (isCargo.includes('Posgrados')) {
+                        initialTableSource = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+                    }
+                    // Filtro inicial por defecto para la tabla: Activo o En Creación
+                    const initialTableData = initialTableSource.filter(item =>
+                        item['estado'] === 'Activo' || item['estado'] === 'En Creación'
+                    );
+                    setFilteredData(initialTableData);
+                }
+
             } catch (error) {
                 console.error('Error al filtrar datos:', error);
             }
         };
         fetchData();
-    }, [isCargo]);
+    }, [isCargo, selectedValues, rowData]); // Dependencias actualizadas
 
     const handleRowClick = (rowData) => {
         navigate('/program_details', { state: rowData });
