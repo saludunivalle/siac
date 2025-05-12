@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
-import { Button, ButtonGroup, Tooltip, CircularProgress } from "@mui/material";
+import { Button, ButtonGroup, Tooltip, CircularProgress, Checkbox } from "@mui/material"; // Añadir Checkbox
 import { useEffect, useState } from "react";
 import { styled } from '@mui/material/styles';
 import { Filtro4, Filtro5, Filtro7 } from "../service/data";
@@ -17,7 +17,7 @@ const Programas = () => {
     const [filteredData, setFilteredData] = useState([]);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');
     const [loading, setLoading] = useState(false);
-    const [activosCount, setActivosCount] = useState(0);
+    const [activosCount, setActivosCount] = useState(0); // Este ahora será solo 'Activo'
     const [creacionCount, setCreacionCount] = useState(0);
     const [creacionSedesCount, setCreacionSedesCount] = useState(0);
     const [activoSedesCount, setActivoSedesCount] = useState(0);
@@ -82,9 +82,9 @@ const Programas = () => {
                     // Si no hay filtro de Pre/Pos ni de isCargo relevante, programsForCounting usa todos los programas.
                 }
 
-                setActivosCount(programsForCounting.filter(item => item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede').length);
+                setActivosCount(programsForCounting.filter(item => item['estado'] === 'Activo').length); // Modificado: solo 'Activo'
                 setActivoSedesCount(programsForCounting.filter(item => item['estado'] === 'Activo - Sede').length);
-                setCreacionCount(programsForCounting.filter(item => item['estado'] === 'En Creación' || item['estado'] === 'En Creación - Sede').length);
+                setCreacionCount(programsForCounting.filter(item => item['estado'] === 'En Creación').length);
                 setCreacionSedesCount(programsForCounting.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
                 setInactivosCount(programsForCounting.filter(item => item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' || item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Desistido' || item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede' || item['estado'] === 'Rechazado').length);
                 setInactiveCount(programsForCounting.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Inactivo - Sede').length);
@@ -366,10 +366,24 @@ const Programas = () => {
                         <ButtonRow>
                             <Button value="option1" className="custom-radio2"
                                 style={setButtonStyles('option1')}
-                                onClick={() => handleButtonClick('option1')}> Pregrado </Button>
+                                onClick={() => handleButtonClick('option1')}>
+                                <Checkbox
+                                    checked={selectedValues.includes('option1')}
+                                    style={{ color: isButtonSelected('option1') ? 'white' : 'grey', padding: '0 5px 0 0' }}
+                                    size="small"
+                                />
+                                Pregrado
+                            </Button>
                             <Button value="option2" className="custom-radio2"
                                 style={setButtonStyles('option2')}
-                                onClick={() => handleButtonClick('option2')}> Posgrado </Button>
+                                onClick={() => handleButtonClick('option2')}>
+                                <Checkbox
+                                    checked={selectedValues.includes('option2')}
+                                    style={{ color: isButtonSelected('option2') ? 'white' : 'grey', padding: '0 5px 0 0' }}
+                                    size="small"
+                                />
+                                Posgrado
+                            </Button>
                         </ButtonRow>
                         {/* Mostrar fila de niveles de formación solo si se selecciona Posgrado */}
                         {selectedValues.includes('option2') && (
@@ -398,13 +412,13 @@ const Programas = () => {
                         <ButtonRow>
                             <Button value="option3" className="custom-radio2"
                                 style={setButtonStyles('option3')}
-                                onClick={() => handleButtonClick('option3')}> Activos <br /> {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> } </Button>
+                                onClick={() => handleButtonClick('option3')}> Activos Cali<br /> {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> } </Button>
                             <Button value="option7" className="custom-radio2"
                                 style={setButtonStyles('option7')}
                                 onClick={() => handleButtonClick('option7')}> Activos Sedes <br /> {activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} /> }</Button>
                             <Button value="option4" className="custom-radio2"
                                 style={setButtonStyles('option4')}
-                                onClick={() => handleButtonClick('option4')}> Creación <br /> {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> } </Button>
+                                onClick={() => handleButtonClick('option4')}> Creación Cali<br /> {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> } </Button>
                             <Button value="option8" className="custom-radio2"
                                 style={setButtonStyles('option8')}
                                 onClick={() => handleButtonClick('option8')}> Creación (Sedes y otros) <br /> {creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</Button>
