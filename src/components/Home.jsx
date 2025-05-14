@@ -66,7 +66,16 @@ const Home = () => {
     },
     enCreacion: 0,
     otros: 0,
-    inactivos: 0,
+    inactivos: {
+      desistidoInterno: 0,
+      desistidoMEN: 0,
+      desistidoMENSede: 0,
+      inactivo: 0,
+      inactivoSede: 0,
+      inactivoVencidoRC: 0,
+      negacionRC: 0,
+      total: 0,
+    },
     totalGeneral: 0,
   });
 
@@ -127,23 +136,26 @@ const Home = () => {
 
         // Filtrar otros programas
         const otros = response.filter(
-          (item) => item['estado'] === 'Negación RC'||
-            item['estado'] === 'N/A'
+          (item) => item['estado'] === 'N/A'
         ).length;
 
-        // Filtrar programas inactivos
-        const inactivos = response.filter(
-          (item) =>
-            item['estado'] === 'Inactivo' ||
-            item['estado'] === 'Inactivo - Sede' || 
-            item['estado'] === 'Inactivo - Vencido RC' || 
-            item['estado'] === 'Desistido' || 
-            item['estado'] === 'Rechazado' || 
-            item['estado'] === 'Desistido Interno' || 
-            item['estado'] === 'Desistido Interno - Sede' || 
-            item['estado'] === 'Desistido MEN' || 
-            item['estado'] === 'Desistido MEN - Sede'
-        ).length;
+        // Filtrar programas inactivos por categoría
+        const inactivosDesistidoInterno = response.filter(item => item['estado'] === 'Desistido Interno').length;
+        const inactivosDesistidoMEN = response.filter(item => item['estado'] === 'Desistido MEN').length;
+        const inactivosDesistidoMENSede = response.filter(item => item['estado'] === 'Desistido MEN - Sede').length;
+        const inactivosInactivo = response.filter(item => item['estado'] === 'Inactivo').length;
+        const inactivosInactivoSede = response.filter(item => item['estado'] === 'Inactivo - Sede').length;
+        const inactivosInactivoVencidoRC = response.filter(item => item['estado'] === 'Inactivo - Vencido RC').length;
+        const inactivosNegacionRC = response.filter(item => item['estado'] === 'Negación RC').length;
+
+        const totalInactivos =
+          inactivosDesistidoInterno +
+          inactivosDesistidoMEN +
+          inactivosDesistidoMENSede +
+          inactivosInactivo +
+          inactivosInactivoSede +
+          inactivosInactivoVencidoRC +
+          inactivosNegacionRC;
 
         // Calcular el total de programas activos
         const totalActivos =
@@ -166,8 +178,17 @@ const Home = () => {
           },
           enCreacion,
           otros,
-          inactivos,
-          totalGeneral: totalActivos + enCreacion + otros + inactivos,
+          inactivos: {
+            desistidoInterno: inactivosDesistidoInterno,
+            desistidoMEN: inactivosDesistidoMEN,
+            desistidoMENSede: inactivosDesistidoMENSede,
+            inactivo: inactivosInactivo,
+            inactivoSede: inactivosInactivoSede,
+            inactivoVencidoRC: inactivosInactivoVencidoRC,
+            negacionRC: inactivosNegacionRC,
+            total: totalInactivos,
+          },
+          totalGeneral: totalActivos + enCreacion + otros + totalInactivos,
         });
       } catch (error) {
         console.error('Error al filtrar datos:', error);
@@ -176,7 +197,6 @@ const Home = () => {
 
     fetchData();
   }, []);
-
 
   //Para la grafica
   const [chartDataNivelAcademico, setChartDataNivelAcademico] = useState(null);
@@ -906,7 +926,54 @@ const Home = () => {
                       </tr>
                       <tr>
                         <td><strong>INACTIVOS</strong></td>
-                        <td>{programData.inactivos}</td>
+                        <td></td>
+                      </tr>
+                      {/* --- Desistidos --- */}
+                      <tr>
+                        <td style={{ paddingLeft: '10px' }}>Desistidos</td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td style={{ paddingLeft: '20px' }}>- Interno</td>
+                        <td>{programData.inactivos.desistidoInterno}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ paddingLeft: '20px' }}>- MEN</td>
+                        <td>{programData.inactivos.desistidoMEN}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ paddingLeft: '20px' }}>- MEN - Sede</td>
+                        <td>{programData.inactivos.desistidoMENSede}</td>
+                      </tr>
+                      {/* --- Otros Inactivos --- */}
+                      <tr>
+                        <td style={{ paddingLeft: '10px' }}>Inactivos</td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td style={{ paddingLeft: '20px' }}>- Inactivo</td>
+                        <td>{programData.inactivos.inactivo}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ paddingLeft: '20px' }}>- Sede</td>
+                        <td>{programData.inactivos.inactivoSede}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ paddingLeft: '20px' }}>- Vencido RC</td>
+                        <td>{programData.inactivos.inactivoVencidoRC}</td>
+                      </tr>
+                      {/* --- Negación --- */}
+                      <tr>
+                        <td style={{ paddingLeft: '10px' }}>Negación</td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td style={{ paddingLeft: '20px' }}>- Negación RC</td>
+                        <td>{programData.inactivos.negacionRC}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Total Inactivos</strong></td>
+                        <td><strong>{programData.inactivos.total}</strong></td>
                       </tr>
                       <tr>
                         <td><strong>TOTAL GENERAL</strong></td>
