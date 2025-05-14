@@ -65,7 +65,6 @@ const Home = () => {
       total: 0,
     },
     enCreacion: 0,
-    otros: 0,
     inactivos: {
       desistidoInterno: 0,
       desistidoMEN: 0,
@@ -134,11 +133,6 @@ const Home = () => {
             item['estado'] === 'En Creación - Sede'
         ).length;
 
-        // Filtrar otros programas
-        const otros = response.filter(
-          (item) => item['estado'] === 'N/A'
-        ).length;
-
         // Filtrar programas inactivos por categoría
         const inactivosDesistidoInterno = response.filter(item => item['estado'] === 'Desistido Interno').length;
         const inactivosDesistidoMEN = response.filter(item => item['estado'] === 'Desistido MEN').length;
@@ -177,7 +171,6 @@ const Home = () => {
             total: totalActivos,
           },
           enCreacion,
-          otros,
           inactivos: {
             desistidoInterno: inactivosDesistidoInterno,
             desistidoMEN: inactivosDesistidoMEN,
@@ -188,7 +181,7 @@ const Home = () => {
             negacionRC: inactivosNegacionRC,
             total: totalInactivos,
           },
-          totalGeneral: totalActivos + enCreacion + otros + totalInactivos,
+          totalGeneral: totalActivos + enCreacion + totalInactivos,
         });
       } catch (error) {
         console.error('Error al filtrar datos:', error);
@@ -919,10 +912,6 @@ const Home = () => {
                       <tr>
                         <td><strong>EN CREACIÓN</strong></td>
                         <td>{programData.enCreacion}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>OTROS</strong></td>
-                        <td>{programData.otros}</td>
                       </tr>
                       <tr>
                         <td><strong>INACTIVOS</strong></td>
