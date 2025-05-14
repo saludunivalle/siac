@@ -13,7 +13,7 @@ const Programas = () => {
     const location = useLocation();
     const rowData = location.state;
     const navigate = useNavigate();
-    const [selectedValues, setSelectedValues] = useState([/*'option3', 'option7'*/]);
+    const [selectedValues, setSelectedValues] = useState(['option3', 'option7']);
     const [filteredData, setFilteredData] = useState([]);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');
     const [loading, setLoading] = useState(false);
@@ -45,13 +45,6 @@ const Programas = () => {
     }, []);
 
     useEffect(() => {
-        const filtered = isCargo.includes('Posgrados')
-            ? rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado')
-            : rowData;
-        setFilteredData(filtered);
-    }, [isCargo, rowData]); 
-
-    useEffect(() => {
         const fetchData = async () => {
             try {
                 const seguimientos = await Filtro7();
@@ -64,56 +57,105 @@ const Programas = () => {
     }, [updateTrigger]);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchDataAndFilter = async () => {
+            setLoading(true);
             try {
-                const allProgramsGlobal = await Filtro5(); // Obtener todos los programas una vez
-                let programsForCounting = allProgramsGlobal;
+                const allProgramsGlobal = await Filtro5(); // Fetch all programs
 
-                // Aplicar filtro de Pregrado/Posgrado si está seleccionado en selectedValues
-                if (selectedValues.includes('option1')) { // Pregrado seleccionado
+                // --- Logic for Button Counts ---
+                let programsForCounting = [...allProgramsGlobal];
+                if (selectedValues.includes('option1')) { // Pregrado selected for counts
                     programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec');
-                } else if (selectedValues.includes('option2')) { // Posgrado seleccionado
+                } else if (selectedValues.includes('option2')) { // Posgrado selected for counts
                     programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-                } else {
-                    // Si no hay selección explícita de Pregrado/Posgrado para los contadores,
-                    // aplicar el filtro de isCargo si es relevante (ej. rol solo ve Posgrados)
-                    if (isCargo.includes('Posgrados')) {
-                        programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-                    }
-                    // Si no hay filtro de Pre/Pos ni de isCargo relevante, programsForCounting usa todos los programas.
+                } else if (isCargo.includes('Posgrados')) { // Default for Posgrados role if no specific pre/pos selected for counts
+                    programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
                 }
 
-                setActivosCount(programsForCounting.filter(item => item['estado'] === 'Activo').length); // Modificado: solo 'Activo'
+                setActivosCount(programsForCounting.filter(item => item['estado'] === 'Activo').length);
                 setActivoSedesCount(programsForCounting.filter(item => item['estado'] === 'Activo - Sede').length);
                 setCreacionCount(programsForCounting.filter(item => item['estado'] === 'En Creación').length);
                 setCreacionSedesCount(programsForCounting.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
-                setInactivosCount(programsForCounting.filter(item => item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' || item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede' || item['estado'] === 'Inactivo - Vencido RC' || item['estado'] === 'Desistido' || item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede' || item['estado'] === 'Rechazado').length);
+                const inactiveStatesForCount = ['Negación RC', 'Negación AAC', 'Inactivo', 'Inactivo - Sede', 'Inactivo - Vencido RC', 'Desistido', 'Desistido Interno', 'Desistido Interno - Sede', 'Desistido MEN', 'Desistido MEN - Sede', 'Rechazado'];
+                setInactivosCount(programsForCounting.filter(item => inactiveStatesForCount.includes(item['estado'])).length);
                 setInactiveCount(programsForCounting.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede').length);
                 setVencidoRCCount(programsForCounting.filter(item => item['estado'] === 'Inactivo - Vencido RC').length);
                 setDesistidoMenCount(programsForCounting.filter(item => item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede').length);
                 setDesistidoInternoCount(programsForCounting.filter(item => item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede').length);
-                setRechazadoCount(programsForCounting.filter(item => item['estado'] === 'Rechazado' || item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC' ).length);
+                setRechazadoCount(programsForCounting.filter(item => ['Rechazado', 'Negación RC', 'Negación AAC'].includes(item['estado'])).length);
 
-                // Configuración inicial de filteredData (para la tabla) si rowData no se proporciona desde location.state
-                // Si rowData (location.state) existe, el useEffect en la línea 46 y handleButtonClick manejan filteredData.
-                if (!rowData) { // rowData es location.state
-                    let initialTableSource = allProgramsGlobal;
-                    if (isCargo.includes('Posgrados')) {
-                        initialTableSource = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-                    }
-                    // Filtro inicial por defecto para la tabla: Activo o En Creación
-                    const initialTableData = initialTableSource.filter(item =>
-                        item['estado'] === 'Activo' || item['estado'] === 'En Creación'
-                    );
-                    setFilteredData(initialTableData);
+                // --- Logic for Table Data (filteredData) ---
+                let result = rowData || [...allProgramsGlobal]; // Prioritize rowData from navigation, else use all fetched programs
+
+                // 1. Apply isCargo filter if user has 'Posgrados' role AND no specific pre/pos filter ('option1'/'option2') is active
+                if (isCargo.includes('Posgrados') && !selectedValues.includes('option1') && !selectedValues.includes('option2')) {
+                    result = result.filter(item => item['pregrado/posgrado'] === 'Posgrado');
                 }
 
+                // 2. Filter by Pregrado/Posgrado based on selectedValues ('option1', 'option2')
+                // This overrides the general isCargo filter if option1 or option2 is selected.
+                if (selectedValues.includes('option1')) { // Pregrado
+                    result = result.filter(item => item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec');
+                } else if (selectedValues.includes('option2')) { // Posgrado
+                    result = result.filter(item => item['pregrado/posgrado'] === 'Posgrado');
+                    
+                    // 2a. If Posgrado is selected, further filter by Nivel de Formación if any are selected
+                    const nivelesFormacionSeleccionados = selectedValues.filter(val =>
+                        ['doctorado', 'especializacionMedico', 'especializacionUni', 'maestria', 'otras'].includes(val)
+                    );
+                    if (nivelesFormacionSeleccionados.length > 0) {
+                        result = result.filter(item => {
+                            return nivelesFormacionSeleccionados.some(option => {
+                                switch (option) {
+                                    case 'doctorado': return item['nivel de formación'] === 'Doctorado';
+                                    case 'especializacionMedico': return item['nivel de formación'] === 'Especialización Médico Quirúrgica';
+                                    case 'especializacionUni': return item['nivel de formación'] === 'Especialización Universitaria';
+                                    case 'maestria': return item['nivel de formación'] === 'Maestría';
+                                    case 'otras': return item['nivel de formación'] === ''; 
+                                    default: return false;
+                                }
+                            });
+                        });
+                    }
+                }
+
+                // 3. Filter by Estado based on selectedValues (option3, option4, etc. and inactive sub-buttons)
+                const hasEstadoFilters = selectedValues.some(option => 
+                    ['option3', 'option4', 'option7', 'option8', 
+                     'inactive', 'vencido-rc', 'desistido', 'desistido-int', 'rechazado'].includes(option)
+                );
+
+                if (hasEstadoFilters) {
+                    result = result.filter(item => {
+                        return selectedValues.some(option => { 
+                            switch (option) {
+                                case 'option3': return item['estado'] === 'Activo'; // Activos Cali
+                                case 'option7': return item['estado'] === 'Activo - Sede'; // Activos Sedes
+                                case 'option4': return item['estado'] === 'En Creación'; // Creacion Cali
+                                case 'option8': return item['estado'] === 'En Creación*' || item['estado'] === 'En Creación - Sede'; // Creacion Sedes/Otros
+                                case 'inactive': return item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede';
+                                case 'vencido-rc': return item['estado'] === 'Inactivo - Vencido RC';
+                                case 'desistido': return item['estado'] === 'Desistido' || item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede';
+                                case 'desistido-int': return item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede';
+                                case 'rechazado': return item['estado'] === 'Rechazado' || item['estado'] === 'Negación RC' || item['estado'] === 'Negación AAC';
+                                default: return false;
+                            }
+                        });
+                    });
+                }
+                
+                setFilteredData(result);
+
             } catch (error) {
-                console.error('Error al filtrar datos:', error);
+                console.error('Error al obtener y filtrar datos:', error);
+                setFilteredData([]); 
+            } finally {
+                setLoading(false);
             }
         };
-        fetchData();
-    }, [isCargo, selectedValues, rowData]); // Dependencias actualizadas
+
+        fetchDataAndFilter();
+    }, [isCargo, selectedValues, rowData]); // Key dependencies
 
     const handleRowClick = (rowData) => {
         navigate('/program_details', { state: rowData });
