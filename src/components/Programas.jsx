@@ -27,7 +27,11 @@ const Programas = () => {
         vencidoRC: true,
         desistidoMen: true,
         desistidoInterno: true,
-        rechazado: true
+        rechazado: true,
+        doctorado: true,     // Nuevo
+        espMedico: true,     // Nuevo
+        espUni: true,        // Nuevo
+        maestria: true       // Nuevo
     });
     const [activosCount, setActivosCount] = useState(0); // Este ahora será solo 'Activo'
     const [creacionCount, setCreacionCount] = useState(0);
@@ -40,6 +44,10 @@ const Programas = () => {
     const [desistidoMenCount, setDesistidoMenCount] = useState(0);
     const [desistidoInternoCount, setDesistidoInternoCount] = useState(0);
     const [rechazadoCount, setRechazadoCount] = useState(0);
+    const [doctoradoCount, setDoctoradoCount] = useState(0);
+    const [espMedicoCount, setEspMedicoCount] = useState(0);
+    const [espUniCount, setEspUniCount] = useState(0);
+    const [maestriaCount, setMaestriaCount] = useState(0);
     const [filteredDataSeg, setFilteredDataSeg] = useState([]);
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [user, setUser] = useState('');
@@ -84,7 +92,7 @@ const Programas = () => {
                     
                     // 2. Si hay filtros de nivel de formación seleccionados, aplicarlos también
                     const nivelesFormacionSeleccionados = selectedValues.filter(val =>
-                        ['doctorado', 'especializacionMedico', 'especializacionUni', 'maestria', 'otras'].includes(val)
+                        ['doctorado', 'especializacionMedico', 'especializacionUni', 'maestria'].includes(val)
                     );
                     
                     if (nivelesFormacionSeleccionados.length > 0) {
@@ -95,7 +103,6 @@ const Programas = () => {
                                     case 'especializacionMedico': return item['nivel de formación'] === 'Especialización Médico Quirúrgica';
                                     case 'especializacionUni': return item['nivel de formación'] === 'Especialización Universitaria';
                                     case 'maestria': return item['nivel de formación'] === 'Maestría';
-                                    case 'otras': return item['nivel de formación'] === ''; 
                                     default: return false;
                                 }
                             });
@@ -137,6 +144,24 @@ const Programas = () => {
                 setRechazadoCount(programsForCounting.filter(item => ['Rechazado', 'Negación RC', 'Negación AAC'].includes(item['estado'])).length);
                 setLoadingState(prev => ({...prev, rechazado: false}));
 
+                // Nuevos conteos para niveles de formación - solo para programas activos y activos-sede
+                const posgradoActivos = allProgramsGlobal.filter(
+                    item => item['pregrado/posgrado'] === 'Posgrado' && 
+                            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+                );
+                
+                setDoctoradoCount(posgradoActivos.filter(item => item['nivel de formación'] === 'Doctorado').length);
+                setLoadingState(prev => ({...prev, doctorado: false}));
+                
+                setEspMedicoCount(posgradoActivos.filter(item => item['nivel de formación'] === 'Especialización Médico Quirúrgica').length);
+                setLoadingState(prev => ({...prev, espMedico: false}));
+                
+                setEspUniCount(posgradoActivos.filter(item => item['nivel de formación'] === 'Especialización Universitaria').length);
+                setLoadingState(prev => ({...prev, espUni: false}));
+                
+                setMaestriaCount(posgradoActivos.filter(item => item['nivel de formación'] === 'Maestría').length);
+                setLoadingState(prev => ({...prev, maestria: false}));
+
                 // --- Logic for Table Data (filteredData) ---
                 let result = rowData || [...allProgramsGlobal]; // Prioritize rowData from navigation, else use all fetched programs
 
@@ -154,7 +179,7 @@ const Programas = () => {
                     
                     // 2a. If Posgrado is selected, further filter by Nivel de Formación if any are selected
                     const nivelesFormacionSeleccionados = selectedValues.filter(val =>
-                        ['doctorado', 'especializacionMedico', 'especializacionUni', 'maestria', 'otras'].includes(val)
+                        ['doctorado', 'especializacionMedico', 'especializacionUni', 'maestria'].includes(val)
                     );
                     if (nivelesFormacionSeleccionados.length > 0) {
                         result = result.filter(item => {
@@ -164,7 +189,6 @@ const Programas = () => {
                                     case 'especializacionMedico': return item['nivel de formación'] === 'Especialización Médico Quirúrgica';
                                     case 'especializacionUni': return item['nivel de formación'] === 'Especialización Universitaria';
                                     case 'maestria': return item['nivel de formación'] === 'Maestría';
-                                    case 'otras': return item['nivel de formación'] === ''; 
                                     default: return false;
                                 }
                             });
@@ -212,7 +236,11 @@ const Programas = () => {
                     vencidoRC: false,
                     desistidoMen: false,
                     desistidoInterno: false,
-                    rechazado: false
+                    rechazado: false,
+                    doctorado: false,     // Nuevo
+                    espMedico: false,     // Nuevo
+                    espUni: false,        // Nuevo
+                    maestria: false       // Nuevo
                 });
             } finally {
                 setLoading(false);
@@ -234,7 +262,11 @@ const Programas = () => {
                 vencidoRC: true,
                 desistidoMen: true,
                 desistidoInterno: true,
-                rechazado: true
+                rechazado: true,
+                doctorado: true,     // Nuevo
+                espMedico: true,     // Nuevo
+                espUni: true,        // Nuevo
+                maestria: true       // Nuevo
             });
             
             const timers = [];
@@ -408,15 +440,13 @@ const Programas = () => {
                             return item['nivel de formación'] === 'Especialización Universitaria';
                         case 'maestria':
                             return item['nivel de formación'] === 'Maestría';
-                        case 'otras':
-                            return item['nivel de formación'] === '';
                         default:
                             return false;
                     }
                 });
 
                 // Devuelve true si cumple con ambos filtros
-                return pregradoOrPosgradoFilter && (nivelesFormacionFilter || !newSelectedValues.some(val => ['doctorado', 'especializacion', 'especializacionMedico', 'especializacionUni', 'maestria', 'otras'].includes(val)));
+                return pregradoOrPosgradoFilter && (nivelesFormacionFilter || !newSelectedValues.some(val => ['doctorado', 'especializacion', 'especializacionMedico', 'especializacionUni', 'maestria'].includes(val)));
             });
 
             if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8', 'inactive', 'desistido', 'desistido-int', 'rechazado', 'vencido-rc'].includes(option))) {
@@ -453,6 +483,13 @@ const Programas = () => {
         backgroundColor: isButtonSelected(buttonValue) ? 'grey' : 'transparent',
         border: `2px solid ${isButtonSelected(buttonValue) ? 'grey' : 'grey'}`,
         borderRadius: '6px',
+        width: '200px',      // Aumentado de los ~160px implícitos
+        height: '85px',      // Aumentado de 75px
+        padding: '8px',      // Añadir padding para mejor espaciado del contenido
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
     });
 
     const renderCount = (count, type) => {
@@ -568,22 +605,24 @@ const Programas = () => {
                             <ButtonRow>
                                 <Button value="doctorado" className="custom-radio2"
                                     style={setButtonStyles('doctorado')}
-                                    onClick={() => handleButtonClick('doctorado')}> Doctorado </Button>
-                                {/* <Button value="especializacion" className="custom-radio2"
-                                    style={setButtonStyles('especializacion')}
-                                    onClick={() => handleButtonClick('especializacion')}> Especialización </Button> */}
+                                    onClick={() => handleButtonClick('doctorado')}>
+                                    Doctorado <br /> {renderCount(doctoradoCount, 'doctorado')}
+                                </Button>
                                 <Button value="especializacionMedico" className="custom-radio2"
                                     style={setButtonStyles('especializacionMedico')}
-                                    onClick={() => handleButtonClick('especializacionMedico')}> Especialización Médico Quirúrgica </Button>
+                                    onClick={() => handleButtonClick('especializacionMedico')}>
+                                    Especialización Médico Quirúrgica <br /> {renderCount(espMedicoCount, 'espMedico')}
+                                </Button>
                                 <Button value="especializacionUni" className="custom-radio2"
                                     style={setButtonStyles('especializacionUni')}
-                                    onClick={() => handleButtonClick('especializacionUni')}> Especialización Universitaria </Button>
+                                    onClick={() => handleButtonClick('especializacionUni')}>
+                                    Especialización Universitaria <br /> {renderCount(espUniCount, 'espUni')}
+                                </Button>
                                 <Button value="maestria" className="custom-radio2"
                                     style={setButtonStyles('maestria')}
-                                    onClick={() => handleButtonClick('maestria')}> Maestría </Button>
-                                <Button value="otras" className="custom-radio2"
-                                    style={setButtonStyles('otras')}
-                                    onClick={() => handleButtonClick('otras')}> Otras (Vacío) </Button>
+                                    onClick={() => handleButtonClick('maestria')}>
+                                    Maestría <br /> {renderCount(maestriaCount, 'maestria')}
+                                </Button>
                             </ButtonRow>
                         )}
                         {/* Fila de estado */}
