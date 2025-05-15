@@ -17,6 +17,18 @@ const Programas = () => {
     const [filteredData, setFilteredData] = useState([]);
     const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');
     const [loading, setLoading] = useState(false);
+    const [loadingState, setLoadingState] = useState({
+        activos: true,
+        activosSede: true,
+        creacion: true,
+        creacionSedes: true,
+        inactivos: true,
+        inactive: true,
+        vencidoRC: true,
+        desistidoMen: true,
+        desistidoInterno: true,
+        rechazado: true
+    });
     const [activosCount, setActivosCount] = useState(0); // Este ahora será solo 'Activo'
     const [creacionCount, setCreacionCount] = useState(0);
     const [creacionSedesCount, setCreacionSedesCount] = useState(0);
@@ -95,16 +107,35 @@ const Programas = () => {
 
                 // 3. Ahora calcular los contadores con programsForCounting ya correctamente filtrado
                 setActivosCount(programsForCounting.filter(item => item['estado'] === 'Activo').length);
+                setLoadingState(prev => ({...prev, activos: false}));
+                
                 setActivoSedesCount(programsForCounting.filter(item => item['estado'] === 'Activo - Sede').length);
+                setLoadingState(prev => ({...prev, activosSede: false}));
+                
                 setCreacionCount(programsForCounting.filter(item => item['estado'] === 'En Creación').length);
+                setLoadingState(prev => ({...prev, creacion: false}));
+                
                 setCreacionSedesCount(programsForCounting.filter(item => item['estado'] === 'En Creación - Sede' || item['estado'] === 'En Creación*').length);
+                setLoadingState(prev => ({...prev, creacionSedes: false}));
+                
                 const inactiveStatesForCount = ['Negación RC', 'Negación AAC', 'Inactivo', 'Inactivo - Sede', 'Inactivo - Vencido RC', 'Desistido', 'Desistido Interno', 'Desistido Interno - Sede', 'Desistido MEN', 'Desistido MEN - Sede', 'Rechazado'];
                 setInactivosCount(programsForCounting.filter(item => inactiveStatesForCount.includes(item['estado'])).length);
+                setLoadingState(prev => ({...prev, inactivos: false}));
+                
                 setInactiveCount(programsForCounting.filter(item => item['estado'] === 'Inactivo' || item['estado'] === 'Inactivo - Sede').length);
+                setLoadingState(prev => ({...prev, inactive: false}));
+                
                 setVencidoRCCount(programsForCounting.filter(item => item['estado'] === 'Inactivo - Vencido RC').length);
+                setLoadingState(prev => ({...prev, vencidoRC: false}));
+                
                 setDesistidoMenCount(programsForCounting.filter(item => item['estado'] === 'Desistido MEN' || item['estado'] === 'Desistido MEN - Sede').length);
+                setLoadingState(prev => ({...prev, desistidoMen: false}));
+                
                 setDesistidoInternoCount(programsForCounting.filter(item => item['estado'] === 'Desistido Interno' || item['estado'] === 'Desistido Interno - Sede').length);
+                setLoadingState(prev => ({...prev, desistidoInterno: false}));
+                
                 setRechazadoCount(programsForCounting.filter(item => ['Rechazado', 'Negación RC', 'Negación AAC'].includes(item['estado'])).length);
+                setLoadingState(prev => ({...prev, rechazado: false}));
 
                 // --- Logic for Table Data (filteredData) ---
                 let result = rowData || [...allProgramsGlobal]; // Prioritize rowData from navigation, else use all fetched programs
@@ -171,6 +202,18 @@ const Programas = () => {
             } catch (error) {
                 console.error('Error al obtener y filtrar datos:', error);
                 setFilteredData([]); 
+                setLoadingState({
+                    activos: false,
+                    activosSede: false,
+                    creacion: false,
+                    creacionSedes: false,
+                    inactivos: false,
+                    inactive: false,
+                    vencidoRC: false,
+                    desistidoMen: false,
+                    desistidoInterno: false,
+                    rechazado: false
+                });
             } finally {
                 setLoading(false);
             }
@@ -178,6 +221,34 @@ const Programas = () => {
 
         fetchDataAndFilter();
     }, [isCargo, selectedValues, rowData]); // Key dependencies
+
+    useEffect(() => {
+        if (loading) {
+            setLoadingState({
+                activos: true,
+                activosSede: true,
+                creacion: true,
+                creacionSedes: true,
+                inactivos: true,
+                inactive: true,
+                vencidoRC: true,
+                desistidoMen: true,
+                desistidoInterno: true,
+                rechazado: true
+            });
+            
+            const timers = [];
+            
+            Object.keys(loadingState).forEach(key => {
+                const timer = setTimeout(() => {
+                    setLoadingState(prev => ({...prev, [key]: false}));
+                }, 5000);
+                timers.push(timer);
+            });
+            
+            return () => timers.forEach(timer => clearTimeout(timer));
+        }
+    }, [loading]);
 
     const handleRowClick = (rowData) => {
         navigate('/program_details', { state: rowData });
@@ -384,6 +455,12 @@ const Programas = () => {
         borderRadius: '6px',
     });
 
+    const renderCount = (count, type) => {
+        if (count !== 0) return count;
+        if (!loadingState[type]) return 0;
+        return <CircularProgress size={20} />;
+    };
+
     // Función para renderizar la tabla filtrada
     const renderFilteredTable = (data, filter) => {
         if (!data || data.length === 0) return <p>Ningún programa por mostrar</p>;
@@ -513,37 +590,47 @@ const Programas = () => {
                         <ButtonRow>
                             <Button value="option3" className="custom-radio2"
                                 style={setButtonStyles('option3')}
-                                onClick={() => handleButtonClick('option3')}> Activos Cali<br /> {activosCount !== 0 ? activosCount : <CircularProgress size={20} /> } </Button>
+                                onClick={() => handleButtonClick('option3')}>
+                                Activos Cali<br /> {renderCount(activosCount, 'activos')}
+                            </Button>
                             <Button value="option7" className="custom-radio2"
                                 style={setButtonStyles('option7')}
-                                onClick={() => handleButtonClick('option7')}> Activos Sedes <br /> {activoSedesCount !== 0 ? activoSedesCount : <CircularProgress size={20} /> }</Button>
+                                onClick={() => handleButtonClick('option7')}>
+                                Activos Sedes <br /> {renderCount(activoSedesCount, 'activosSede')}
+                            </Button>
                             <Button value="option4" className="custom-radio2"
                                 style={setButtonStyles('option4')}
-                                onClick={() => handleButtonClick('option4')}> Creación Cali<br /> {creacionCount !== 0 ? creacionCount : <CircularProgress size={20} /> } </Button>
+                                onClick={() => handleButtonClick('option4')}>
+                                Creación Cali<br /> {renderCount(creacionCount, 'creacion')}
+                            </Button>
                             <Button value="option8" className="custom-radio2"
                                 style={setButtonStyles('option8')}
-                                onClick={() => handleButtonClick('option8')}> Creación (Sedes y otros) <br /> {creacionSedesCount !== 0 ? creacionSedesCount : <CircularProgress size={20} /> }</Button>
+                                onClick={() => handleButtonClick('option8')}>
+                                Creación (Sedes y otros) <br /> {renderCount(creacionSedesCount, 'creacionSedes')}
+                            </Button>
                             <Button value="option6" className="custom-radio2"
                                 style={setButtonStyles('option6')}
-                                onClick={() => handleButtonClick('option6')}> Inactivos <br /> {inactivosCount !== 0 ? inactivosCount : <CircularProgress size={20} /> }</Button>
+                                onClick={() => handleButtonClick('option6')}>
+                                Inactivos <br /> {renderCount(inactivosCount, 'inactivos')}
+                            </Button>
                         </ButtonRow>
                         {showInactiveButtons && (
                             <ButtonRow>
                                 <Button value="inactive" className="custom-radio2"
                                     style={setButtonStyles('inactive')}
-                                    onClick={() => handleButtonClick('inactive')}> Inactivo <br /> {inactiveCount !== 0 ? inactiveCount : <CircularProgress size={20} /> }</Button>
+                                    onClick={() => handleButtonClick('inactive')}> Inactivo <br /> {renderCount(inactiveCount, 'inactive')}</Button>
                                 <Button value="vencido-rc" className="custom-radio2"
                                     style={setButtonStyles('vencido-rc')}
-                                    onClick={() => handleButtonClick('vencido-rc')}> Vencido RC <br /> {vencidoRCCount !== 0 ? vencidoRCCount : <CircularProgress size={20} /> }</Button>
+                                    onClick={() => handleButtonClick('vencido-rc')}> Vencido RC <br /> {renderCount(vencidoRCCount, 'vencidoRC')}</Button>
                                 <Button value="desistido" className="custom-radio2"
                                     style={setButtonStyles('desistido')}
-                                    onClick={() => handleButtonClick('desistido')}> Desistido MEN <br /> {desistidoMenCount !== 0 ? desistidoMenCount : <CircularProgress size={20} /> }</Button>
+                                    onClick={() => handleButtonClick('desistido')}> Desistido MEN <br /> {renderCount(desistidoMenCount, 'desistidoMen')}</Button>
                                 <Button value="desistido-int" className="custom-radio2"
                                     style={setButtonStyles('desistido-int')}
-                                    onClick={() => handleButtonClick('desistido-int')}> Desistido Interno <br /> {desistidoInternoCount !== 0 ? desistidoInternoCount : <CircularProgress size={20} /> }</Button>
+                                    onClick={() => handleButtonClick('desistido-int')}> Desistido Interno <br /> {renderCount(desistidoInternoCount, 'desistidoInterno')}</Button>
                                 <Button value="rechazado" className="custom-radio2"
                                     style={setButtonStyles('rechazado')}
-                                    onClick={() => handleButtonClick('rechazado')}> Rechazado <br /> {rechazadoCount !== 0 ? rechazadoCount : <CircularProgress size={20} /> }</Button>
+                                    onClick={() => handleButtonClick('rechazado')}> Rechazado <br /> {renderCount(rechazadoCount, 'rechazado')}</Button>
                             </ButtonRow>
                         )}
                     </ButtonsContainer>
