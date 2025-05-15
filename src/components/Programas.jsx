@@ -64,14 +64,36 @@ const Programas = () => {
 
                 // --- Logic for Button Counts ---
                 let programsForCounting = [...allProgramsGlobal];
+                // 1. Primero filtrar por Pregrado/Posgrado
                 if (selectedValues.includes('option1')) { // Pregrado selected for counts
                     programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec');
                 } else if (selectedValues.includes('option2')) { // Posgrado selected for counts
                     programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-                } else if (isCargo.includes('Posgrados')) { // Default for Posgrados role if no specific pre/pos selected for counts
+                    
+                    // 2. Si hay filtros de nivel de formación seleccionados, aplicarlos también
+                    const nivelesFormacionSeleccionados = selectedValues.filter(val =>
+                        ['doctorado', 'especializacionMedico', 'especializacionUni', 'maestria', 'otras'].includes(val)
+                    );
+                    
+                    if (nivelesFormacionSeleccionados.length > 0) {
+                        programsForCounting = programsForCounting.filter(item => {
+                            return nivelesFormacionSeleccionados.some(option => {
+                                switch (option) {
+                                    case 'doctorado': return item['nivel de formación'] === 'Doctorado';
+                                    case 'especializacionMedico': return item['nivel de formación'] === 'Especialización Médico Quirúrgica';
+                                    case 'especializacionUni': return item['nivel de formación'] === 'Especialización Universitaria';
+                                    case 'maestria': return item['nivel de formación'] === 'Maestría';
+                                    case 'otras': return item['nivel de formación'] === ''; 
+                                    default: return false;
+                                }
+                            });
+                        });
+                    }
+                } else if (isCargo.includes('Posgrados')) { // Default for Posgrados role if no specific pre/pos selected
                     programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
                 }
 
+                // 3. Ahora calcular los contadores con programsForCounting ya correctamente filtrado
                 setActivosCount(programsForCounting.filter(item => item['estado'] === 'Activo').length);
                 setActivoSedesCount(programsForCounting.filter(item => item['estado'] === 'Activo - Sede').length);
                 setCreacionCount(programsForCounting.filter(item => item['estado'] === 'En Creación').length);
