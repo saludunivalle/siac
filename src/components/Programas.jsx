@@ -249,24 +249,51 @@ const Programas = () => {
 
     const handleButtonClick = (buttonValue) => {
         setSelectedValues(prevSelectedValues => {
-            let newSelectedValues = prevSelectedValues.includes(buttonValue)
-                ? prevSelectedValues.filter(val => val !== buttonValue)
-                : buttonValue === 'option1' || buttonValue === 'option2'
-                    ? [buttonValue] 
-                    : [...prevSelectedValues, buttonValue]; 
-    
-            if (buttonValue === 'option6') {
+            let newSelectedValues = [...prevSelectedValues];
+
+            // Si es Pregrado o Posgrado
+            if (buttonValue === 'option1' || buttonValue === 'option2') {
+                // Si ya está seleccionado, lo quitamos
+                if (newSelectedValues.includes(buttonValue)) {
+                    newSelectedValues = newSelectedValues.filter(val => val !== buttonValue);
+                } else {
+                    // Si no está seleccionado:
+                    // 1. Quitamos la otra opción (si option1, quitamos option2 y viceversa)
+                    newSelectedValues = newSelectedValues.filter(val => 
+                        val !== (buttonValue === 'option1' ? 'option2' : 'option1')
+                    );
+                    // 2. Agregamos el buttonValue
+                    newSelectedValues.push(buttonValue);
+                }
+                
+                // Siempre nos aseguramos que option3 y option7 estén incluidos
+                if (!newSelectedValues.includes('option3')) newSelectedValues.push('option3');
+                if (!newSelectedValues.includes('option7')) newSelectedValues.push('option7');
+            } 
+            // Para Inactivos (option6) - mantener lógica actual
+            else if (buttonValue === 'option6') {
                 const inactiveSubButtons = ['inactive', 'desistido', 'desistido-int', 'rechazado', 'vencido-rc'];
-                if (newSelectedValues.includes('option6')) {
+                if (!newSelectedValues.includes(buttonValue)) {
+                    newSelectedValues.push(buttonValue);
                     inactiveSubButtons.forEach(sub => {
                         if (!newSelectedValues.includes(sub)) newSelectedValues.push(sub);
                     });
                 } else {
+                    newSelectedValues = newSelectedValues.filter(val => val !== buttonValue);
                     newSelectedValues = newSelectedValues.filter(val => !inactiveSubButtons.includes(val));
                 }
                 setShowInactiveButtons(prevState => !prevState);
             }
-    
+            // Para otros botones
+            else {
+                if (newSelectedValues.includes(buttonValue)) {
+                    newSelectedValues = newSelectedValues.filter(val => val !== buttonValue);
+                } else {
+                    newSelectedValues.push(buttonValue);
+                }
+            }
+
+            // El resto de la lógica de filtrado se mantiene igual
             let filteredResult = rowData.filter(item => {
                 // Filtra por "Pregrado" o "Posgrado" primero, si se seleccionó alguno
                 const pregradoOrPosgradoFilter = newSelectedValues.includes('option1') 
@@ -274,7 +301,7 @@ const Programas = () => {
                     : newSelectedValues.includes('option2')
                         ? item['pregrado/posgrado'] === 'Posgrado'
                         : true;
-    
+
                 // Filtra por los niveles de formación seleccionados (Doctorado, Especialización, etc.)
                 const nivelesFormacionFilter = newSelectedValues.some(option => {
                     switch (option) {
@@ -294,11 +321,11 @@ const Programas = () => {
                             return false;
                     }
                 });
-    
+
                 // Devuelve true si cumple con ambos filtros
                 return pregradoOrPosgradoFilter && (nivelesFormacionFilter || !newSelectedValues.some(val => ['doctorado', 'especializacion', 'especializacionMedico', 'especializacionUni', 'maestria', 'otras'].includes(val)));
             });
-    
+
             if (newSelectedValues.some(option => ['option3', 'option4', 'option5', 'option6', 'option7', 'option8', 'inactive', 'desistido', 'desistido-int', 'rechazado', 'vencido-rc'].includes(option))) {
                 filteredResult = filteredResult.filter(item => {
                     return newSelectedValues.some(option => {
@@ -318,12 +345,11 @@ const Programas = () => {
                     });
                 });
             }
-    
+
             setFilteredData(filteredResult);
             return newSelectedValues;
         });
     };
-    
 
     const isButtonSelected = (buttonValue) => {
         return selectedValues.includes(buttonValue);
