@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
+import Sidebar from './Sidebar';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Filtro5 } from '../service/data';
@@ -43,6 +44,16 @@ const ProgramasVenc = () => {
   const { expiryPrograms } = location.state || {};
   const [expiredRRCCount, setExpiredRRCCount] = useState(0);
   const [expiredRACCount, setExpiredRACCount] = useState(0);
+  const [isCargo, setCargo] = useState([' ']);
+
+  // Obtener los permisos del usuario
+  useEffect(() => {
+    if (sessionStorage.getItem('logged')) {
+      const res = JSON.parse(sessionStorage.getItem('logged'));
+      const permisos = res.map(item => item.permiso).flat();
+      setCargo(permisos);
+    }
+  }, []);
 
   //Función para obtener los programas vencidos en RRC
   const getExpiredRRCPrograms = (programas) => {
@@ -106,7 +117,16 @@ const ProgramasVenc = () => {
   return (
     <div>
       <Header />
-      <Box sx={{ p: 3 }}>
+      <Sidebar isCargo={isCargo} />
+      <Box className="content content-with-sidebar" sx={{ 
+        p: 3,
+        ml: { xs: 0, sm: 0, md: '20px', lg: '40px' },
+        width: 'calc(100% - 10px)',
+        maxWidth: '100%',
+        position: 'relative',
+        zIndex: 1,
+        mt: '80px'
+      }}>
         <Typography variant="h4" gutterBottom>Programas por Vencer</Typography>
         
         <Box sx={{ mt: 4 }}>

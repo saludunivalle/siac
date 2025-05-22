@@ -1,0 +1,150 @@
+/* Base styles for the sidebar */
+.sidebar {
+  width: 280px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.closed {
+  width: 60px;
+}
+
+.sidebar-paper {
+  width: 280px;
+  background-color: #e8e8e8;
+  color: #333333;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: width 0.3s ease;
+  z-index: 1100; /* Menor que el z-index del header */
+}
+
+.sidebar-paper.closed {
+  width: 60px;
+}
+
+/* Header styles */
+.sidebar-header {
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.header-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-content h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.close-button {
+  padding: 6px;
+}
+
+.expand-button {
+  margin: 0 auto;
+  padding: 6px;
+}
+
+/* List styles */
+.sidebar-list {
+  padding: 8px 0;
+}
+
+.sidebar-list .MuiListItem-root {
+  padding: 8px 16px;
+  border-radius: 0;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-list .MuiListItem-root:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.sidebar-list .active-item {
+  background-color: rgba(25, 118, 210, 0.08);
+  position: relative;
+}
+
+.sidebar-list .active-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #1976d2;
+}
+
+.sidebar-list .MuiListItemIcon-root {
+  min-width: 40px;
+  color: #757575;
+}
+
+.sidebar-list .active-icon {
+  color: #1976d2;
+}
+
+/* Floating button when sidebar is closed */
+.menu-button-floating {
+  position: fixed;
+  top: 150px; /* Posicionado debajo del header */
+  left: 0;
+  z-index: 1100;
+  background-color: #1976d2 !important;
+  color: white !important;
+  border-radius: 0 4px 4px 0 !important;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.menu-button-floating:hover {
+  background-color: #1565c0 !important;
+}
+
+/* Ajustar el content para que tenga en cuenta el sidebar */
+.content-with-sidebar {
+  margin-left: 280px;
+  padding-right: 20px;
+  box-sizing: border-box;
+  transition: margin-left 0.3s ease;
+  margin-top: 80px; /* Espacio para el header */
+  width: calc(100% - 280px); /* Ancho ajustado al sidebar */
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    z-index: 1100;
+  }
+  
+  .sidebar-paper {
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.1);
+    margin-top: 80px !important; /* Forzar el margin en móviles */
+    height: calc(100vh - 80px) !important; /* Forzar la altura en móviles */
+  }
+  
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-paper.closed {
+    width: 240px;
+    transform: translateX(-100%);
+  }
+  
+  .content-with-sidebar {
+    margin-left: 0;
+    width: 100%; /* Full width en móviles */
+    padding: 0 15px;
+  }
+}

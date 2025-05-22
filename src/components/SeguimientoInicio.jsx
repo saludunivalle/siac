@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/system';
 import Header from './Header';
+import Sidebar from './Sidebar'; // Importamos el componente Sidebar
 import { format } from 'date-fns';
 import { sendDataEscula, dataEscuelas, updateDataEscuela, dataSegui, dataProgramas } from '../service/data';
 
@@ -84,19 +85,29 @@ const SeguimientoInicio = () => {
         pre: "-",
         pos: "-"
       });
-      const [programasEnPM, setProgramasEnPM] = useState({
+    const [programasEnPM, setProgramasEnPM] = useState({
         pre: "Cargando...",
         pos: "Cargando..."
       });
-      const [porcentajePMRC, setPorcentajePMRC] = useState({
+    const [porcentajePMRC, setPorcentajePMRC] = useState({
         ambos: "-",
         pre: "-",
         pos: "-"
       });
-      const [programasEnPMRC, setProgramasEnPMRC] = useState({
+    const [programasEnPMRC, setProgramasEnPMRC] = useState({
         pre: "Cargando...",
         pos: "Cargando..."
       });
+    const [isCargo, setCargo] = useState([' ']);
+
+    // Obtener los permisos del usuario desde sessionStorage
+    useEffect(() => {
+        if (sessionStorage.getItem('logged')) {
+            const res = JSON.parse(sessionStorage.getItem('logged'));
+            const permisos = res.map(item => item.permiso).flat();
+            setCargo(permisos);
+        }
+    }, []);
 
     const handleClickOpen = (escuela) => {
         setShowResumen(false); 
@@ -117,7 +128,6 @@ const SeguimientoInicio = () => {
         const acreditadosPre = Number(escuelaData.cant_acvigente_pre || 0);
         const acreditadosPos = Number(escuelaData.cant_acvigente_pos || 0);
 
-        
         // Calcular el total de acreditables (pregrado + posgrado)
         const totalAcreditable = acreditablePre + acreditablePos;
         const totalAcreditados = acreditadosPre + acreditadosPos;
@@ -129,23 +139,22 @@ const SeguimientoInicio = () => {
             ? ((acreditadosPre / acreditablePre) * 100).toFixed(2).replace('.', ',') + '%'
             : "0%";
 
-    // Si necesitas calcular el porcentaje de posgrado de manera similar
-    const porcAcreditadosPos = acreditablePos === 0 && acreditadosPos === 0
-        ? "-"
-        : acreditablePos > 0
-            ? ((acreditadosPos / acreditablePos) * 100).toFixed(2).replace('.', ',') + '%'
-            : "0%";
-            console.log('Porcentaje de acreditados Pregrado:', porcAcreditadosPre);
-            
-    // Porcentaje total
-    const porcAcreditados = totalAcreditable === 0 && totalAcreditados === 0
-        ? "-"
-        : totalAcreditable > 0
-            ? ((totalAcreditados / totalAcreditable) * 100).toFixed(2).replace('.', ',') + '%'
-            : "0%";
-            console.log('Porcentaje de acreditados Total:', porcAcreditados);
+        // Si necesitas calcular el porcentaje de posgrado de manera similar
+        const porcAcreditadosPos = acreditablePos === 0 && acreditadosPos === 0
+            ? "-"
+            : acreditablePos > 0
+                ? ((acreditadosPos / acreditablePos) * 100).toFixed(2).replace('.', ',') + '%'
+                : "0%";
+                console.log('Porcentaje de acreditados Pregrado:', porcAcreditadosPre);
+                
+        // Porcentaje total
+        const porcAcreditados = totalAcreditable === 0 && totalAcreditados === 0
+            ? "-"
+            : totalAcreditable > 0
+                ? ((totalAcreditados / totalAcreditable) * 100).toFixed(2).replace('.', ',') + '%'
+                : "0%";
+                console.log('Porcentaje de acreditados Total:', porcAcreditados);
 
-        
         console.log('Valores para cálculo:', {
             acreditablePre,
             acreditablePos,
@@ -155,7 +164,6 @@ const SeguimientoInicio = () => {
             porcAcreditadosPre,
             porcAcreditadosPos
         });
-        
         
         setScores({
             pre: [
@@ -1112,201 +1120,203 @@ const SeguimientoInicio = () => {
     return (
         <>
             <Header />
-            <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: "-40px", marginBottom: "10px" }}>
-                <h1>Seguimiento al Plan de Mejoramiento por Escuelas</h1>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px' }}>
-                    {escuelas.map(escuela => (
-                        <StyledButton
-                            key={escuela}
-                            className={selectedEscuela === escuela ? 'active' : ''}
-                            onClick={() => handleClickOpen(escuela)}
-                        >
-                            {escuela}
-                        </StyledButton>
-                    ))}
-                    <StyledButton
-                        onClick={handleResumenClick}
-                        className={showResumen ? 'active' : ''}
-                    >
-                        Resumen
-                    </StyledButton>
+            <Sidebar isCargo={isCargo} />
+            <div className="content content-with-sidebar">
+                <div style={{ width: "100%", display: "flex", justifyContent: "center", marginBottom: "10px" }}>
+                    <h1>Seguimiento al Plan de Mejoramiento por Escuelas</h1>
                 </div>
 
-                <div style={{ flex: 1, marginLeft: '50px' }}>
-                    {showResumen && resumenData && (
-                        <Table style={{ width: "90%", marginTop: '20px' }}>
-                            <TableHead>
-                                <TableRow>
-                                    <StyledTableCell>Escuela</StyledTableCell>
-                                    <StyledTableCell>Diseño</StyledTableCell>
-                                    <StyledTableCell>Rediseño</StyledTableCell>
-                                    <StyledTableCell>Seguimiento</StyledTableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {Object.keys(resumenData).map((escuela) => (
-                                    <TableRow key={escuela}>
-                                        <TableCell>{escuela}</TableCell>
-                                        <TableCell>{resumenData[escuela].diseño}</TableCell>
-                                        <TableCell>{resumenData[escuela].rediseño}</TableCell>
-                                        <TableCell>{resumenData[escuela].seguimiento}</TableCell>
-                                    </TableRow>
-                                ))}
-                                <TableRow>
-                                    <StyledTableCell><strong>Total</strong></StyledTableCell>
-                                    <StyledTableCell><strong>{totalDiseño}</strong></StyledTableCell>
-                                    <StyledTableCell><strong>{totalRediseño}</strong></StyledTableCell>
-                                    <StyledTableCell><strong>{totalSeguimiento}</strong></StyledTableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px' }}>
+                        {escuelas.map(escuela => (
+                            <StyledButton
+                                key={escuela}
+                                className={selectedEscuela === escuela ? 'active' : ''}
+                                onClick={() => handleClickOpen(escuela)}
+                            >
+                                {escuela}
+                            </StyledButton>
+                        ))}
+                        <StyledButton
+                            onClick={handleResumenClick}
+                            className={showResumen ? 'active' : ''}
+                        >
+                            Resumen
+                        </StyledButton>
+                    </div>
 
-                    {selectedEscuela && !showResumen && (
-                        <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '90%', marginBottom: '20px' }}>
-                                <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
-                                <div style={{ display: 'flex', alignItems: 'center', position: 'relative', left: '50px' }}>
-                                    <Button
-                                        variant={selectedProgramType === 'ambos' ? 'contained' : 'outlined'}
-                                        onClick={() => setSelectedProgramType('ambos')}
-                                        style={{ marginRight: '10px' }}
-                                    >
-                                        Pregrado y Posgrado
-                                    </Button>
-                                    <Button
-                                        variant={selectedProgramType === 'pre' ? 'contained' : 'outlined'}
-                                        onClick={() => setSelectedProgramType('pre')}
-                                        style={{ marginRight: '10px' }}
-                                    >
-                                        Pregrado
-                                    </Button>
-                                    <Button
-                                        variant={selectedProgramType === 'pos' ? 'contained' : 'outlined'}
-                                        onClick={() => setSelectedProgramType('pos')}
-                                    >
-                                        Posgrado
-                                    </Button>
-                                </div>
-                            </div>
-                            <Table style={{ width: "98%" }}>
+                    <div style={{ flex: 1, marginLeft: '50px' }}>
+                        {showResumen && resumenData && (
+                            <Table style={{ width: "90%", marginTop: '20px' }}>
                                 <TableHead>
                                     <TableRow>
-                                        <StyledTableCell>#</StyledTableCell>
-                                        <StyledTableCell style={{ width: '40%' }}>Criterio para la Escuela de {selectedEscuela}</StyledTableCell>
-                                        <StyledTableCell>Ponderación</StyledTableCell>
-                                        <StyledTableCell>Resultado Logrado</StyledTableCell>
-                                        <StyledTableCell style={{ width: '40%' }}>Descripción de lo logrado</StyledTableCell>
+                                        <StyledTableCell>Escuela</StyledTableCell>
+                                        <StyledTableCell>Diseño</StyledTableCell>
+                                        <StyledTableCell>Rediseño</StyledTableCell>
+                                        <StyledTableCell>Seguimiento</StyledTableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {getProgramas().map((program, index) => (
-                                        <TableRow key={program}>
-                                            <TableCell>{index + 1}</TableCell>
-                                            <TableCell>{program}</TableCell>
-                                            <TableCell>{ponderacionesProgramas[index]}</TableCell>
-                                            <TableCell>
-                                            <Typography 
-                                                    variant="body1"
-                                                    style={{ 
-                                                        width: '90px',
-                                                        fontWeight: 'bold' 
-                                                    }}
-                                                >
-                                                    {(index === 0)  
+                                    {Object.keys(resumenData).map((escuela) => (
+                                        <TableRow key={escuela}>
+                                            <TableCell>{escuela}</TableCell>
+                                            <TableCell>{resumenData[escuela].diseño}</TableCell>
+                                            <TableCell>{resumenData[escuela].rediseño}</TableCell>
+                                            <TableCell>{resumenData[escuela].seguimiento}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                    <TableRow>
+                                        <StyledTableCell><strong>Total</strong></StyledTableCell>
+                                        <StyledTableCell><strong>{totalDiseño}</strong></StyledTableCell>
+                                        <StyledTableCell><strong>{totalRediseño}</strong></StyledTableCell>
+                                        <StyledTableCell><strong>{totalSeguimiento}</strong></StyledTableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        )}
+
+                        {selectedEscuela && !showResumen && (
+                            <>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '90%', marginBottom: '20px' }}>
+                                    <Typography variant="h4" gutterBottom>{selectedEscuela}</Typography>
+                                    <div style={{ display: 'flex', alignItems: 'center', position: 'relative', left: '50px' }}>
+                                        <Button
+                                            variant={selectedProgramType === 'ambos' ? 'contained' : 'outlined'}
+                                            onClick={() => setSelectedProgramType('ambos')}
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Pregrado y Posgrado
+                                        </Button>
+                                        <Button
+                                            variant={selectedProgramType === 'pre' ? 'contained' : 'outlined'}
+                                            onClick={() => setSelectedProgramType('pre')}
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            Pregrado
+                                        </Button>
+                                        <Button
+                                            variant={selectedProgramType === 'pos' ? 'contained' : 'outlined'}
+                                            onClick={() => setSelectedProgramType('pos')}
+                                        >
+                                            Posgrado
+                                        </Button>
+                                    </div>
+                                </div>
+                                <Table style={{ width: "98%" }}>
+                                    <TableHead>
+                                        <TableRow>
+                                            <StyledTableCell>#</StyledTableCell>
+                                            <StyledTableCell style={{ width: '40%' }}>Criterio para la Escuela de {selectedEscuela}</StyledTableCell>
+                                            <StyledTableCell>Ponderación</StyledTableCell>
+                                            <StyledTableCell>Resultado Logrado</StyledTableCell>
+                                            <StyledTableCell style={{ width: '40%' }}>Descripción de lo logrado</StyledTableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {getProgramas().map((program, index) => (
+                                            <TableRow key={program}>
+                                                <TableCell>{index + 1}</TableCell>
+                                                <TableCell>{program}</TableCell>
+                                                <TableCell>{ponderacionesProgramas[index]}</TableCell>
+                                                <TableCell>
+                                                <Typography 
+                                                        variant="body1"
+                                                        style={{ 
+                                                            width: '90px',
+                                                            fontWeight: 'bold' 
+                                                        }}
+                                                    >
+                                                        {(index === 0)  
+                                                            ? (() => {
+                                                                // Para el primer criterio (% programas Acreditados)
+                                                                if (selectedProgramType === 'ambos') {
+                                                                    // Código existente para vista combinada
+                                                                    const escuelaData = data.find(d => d.escuela === selectedEscuela) || {};
+                                                                    const acreditablePre = Number(escuelaData.acreditable_pre || 0);
+                                                                    const acreditablePos = Number(escuelaData.acreditable_pos || 0);
+                                                                    const acreditadosPre = Number(escuelaData.cant_acvigente_pre || 0);
+                                                                    const acreditadosPos = Number(escuelaData.cant_acvigente_pos || 0);
+                                                                    
+                                                                    const totalAcreditable = acreditablePre + acreditablePos;
+                                                                    const totalAcreditados = acreditadosPre + acreditadosPos;
+                                                                    
+                                                                    if (totalAcreditable === 0 && totalAcreditados === 0) return "-";
+                                                                    
+                                                                    return totalAcreditable > 0
+                                                                        ? ((totalAcreditados / totalAcreditable) * 100).toFixed(2).replace('.', ',') + '%'
+                                                                        : "0%";
+                                                                } else {
+                                                                    // Para vistas individuales, usar el valor existente
+                                                                    return scores[selectedProgramType][index] || '';
+                                                                }
+                                                            })()
+                                                            : (index === 1) 
+                                                            ? (() => {
+                                                                // Para el segundo criterio (% programas con RC vigente)
+                                                                if (selectedProgramType === 'ambos') {
+                                                                    // Programas de pregrado con fecha expedición
+                                                                    const programasPreConFechaExpedicion = programasData.filter(p => 
+                                                                        p.escuela === selectedEscuela && 
+                                                                        p["pregrado/posgrado"]?.toLowerCase() === "pregrado" &&
+                                                                        p["fechaexpedrc"] && 
+                                                                        p["fechaexpedrc"].trim() !== "" &&
+                                                                        p["fechaexpedrc"].trim().toUpperCase() !== "N/A" &&
+                                                                        p["fechaexpedrc"].trim() !== "#N/A"
+                                                                    );
+                                                                    
+                                                                    // Programas de posgrado con fecha expedición
+                                                                    const programasPosConFechaExpedicion = programasData.filter(p => 
+                                                                        p.escuela === selectedEscuela && 
+                                                                        p["pregrado/posgrado"]?.toLowerCase() === "posgrado" &&
+                                                                        p["fechaexpedrc"] && 
+                                                                        p["fechaexpedrc"].trim() !== "" &&
+                                                                        p["fechaexpedrc"].trim().toUpperCase() !== "N/A" &&
+                                                                        p["fechaexpedrc"].trim() !== "#N/A"
+                                                                    );
+                                                                    
+                                                                    // Programas con RC vigente = SI
+                                                                    const programasRCVigentePre = programasData.filter(p => 
+                                                                        p.escuela === selectedEscuela && 
+                                                                        p["pregrado/posgrado"]?.toLowerCase() === "pregrado" &&
+                                                                        (p["rc vigente"] === "SI" || p["rc vigente"] === "Si")
+                                                                    );
+                                                                    
+                                                                    const programasRCVigentePos = programasData.filter(p => 
+                                                                        p.escuela === selectedEscuela && 
+                                                                        p["pregrado/posgrado"]?.toLowerCase() === "posgrado" &&
+                                                                        (p["rc vigente"] === "SI" || p["rc vigente"] === "Si")
+                                                                    );
+                                                                    
+                                                                    // Total denominadores y numeradores
+                                                                    const totalConFechaExpedicion = programasPreConFechaExpedicion.length + programasPosConFechaExpedicion.length;
+                                                                    const totalRCVigente = programasRCVigentePre.length + programasRCVigentePos.length;
+                                                                    
+                                                                    console.log(`Cálculo RC vigente combinado: ${totalRCVigente}/${totalConFechaExpedicion}`);
+                                                                    
+                                                                    if (totalConFechaExpedicion === 0) return "-";
+                                                                    
+                                                                    return ((totalRCVigente / totalConFechaExpedicion) * 100).toFixed(2).replace('.', ',') + '%';
+                                                                } else if (selectedProgramType === 'pre') {
+                                                                    // Calcular directamente RC vigente de pregrado
+                                                                    return getPorcentajeRCVigente(selectedEscuela, "Pregrado");
+                                                                } else if (selectedProgramType === 'pos') {
+                                                                    // Calcular directamente RC vigente de posgrado
+                                                                    return getPorcentajeRCVigente(selectedEscuela, "Posgrado");
+                                                                } else {
+                                                                    return "-"; // Caso por defecto
+                                                                }
+                                                            })()
+                                                            : (index === 2) 
                                                         ? (() => {
-                                                            // Para el primer criterio (% programas Acreditados)
-                                                            if (selectedProgramType === 'ambos') {
-                                                                // Código existente para vista combinada
-                                                                const escuelaData = data.find(d => d.escuela === selectedEscuela) || {};
-                                                                const acreditablePre = Number(escuelaData.acreditable_pre || 0);
-                                                                const acreditablePos = Number(escuelaData.acreditable_pos || 0);
-                                                                const acreditadosPre = Number(escuelaData.cant_acvigente_pre || 0);
-                                                                const acreditadosPos = Number(escuelaData.cant_acvigente_pos || 0);
-                                                                
-                                                                const totalAcreditable = acreditablePre + acreditablePos;
-                                                                const totalAcreditados = acreditadosPre + acreditadosPos;
-                                                                
-                                                                if (totalAcreditable === 0 && totalAcreditados === 0) return "-";
-                                                                
-                                                                return totalAcreditable > 0
-                                                                    ? ((totalAcreditados / totalAcreditable) * 100).toFixed(2).replace('.', ',') + '%'
-                                                                    : "0%";
-                                                            } else {
-                                                                // Para vistas individuales, usar el valor existente
-                                                                return scores[selectedProgramType][index] || '';
-                                                            }
+                                                            // Para el tercer criterio (% programas en plan de mejoramiento para Acreditación)
+                                                            return porcentajePM[selectedProgramType] || "-";
                                                         })()
-                                                        : (index === 1) 
+                                                            : (index === 3) 
                                                         ? (() => {
-                                                            // Para el segundo criterio (% programas con RC vigente)
-                                                            if (selectedProgramType === 'ambos') {
-                                                                // Programas de pregrado con fecha expedición
-                                                                const programasPreConFechaExpedicion = programasData.filter(p => 
-                                                                    p.escuela === selectedEscuela && 
-                                                                    p["pregrado/posgrado"]?.toLowerCase() === "pregrado" &&
-                                                                    p["fechaexpedrc"] && 
-                                                                    p["fechaexpedrc"].trim() !== "" &&
-                                                                    p["fechaexpedrc"].trim().toUpperCase() !== "N/A" &&
-                                                                    p["fechaexpedrc"].trim() !== "#N/A"
-                                                                );
-                                                                
-                                                                // Programas de posgrado con fecha expedición
-                                                                const programasPosConFechaExpedicion = programasData.filter(p => 
-                                                                    p.escuela === selectedEscuela && 
-                                                                    p["pregrado/posgrado"]?.toLowerCase() === "posgrado" &&
-                                                                    p["fechaexpedrc"] && 
-                                                                    p["fechaexpedrc"].trim() !== "" &&
-                                                                    p["fechaexpedrc"].trim().toUpperCase() !== "N/A" &&
-                                                                    p["fechaexpedrc"].trim() !== "#N/A"
-                                                                );
-                                                                
-                                                                // Programas con RC vigente = SI
-                                                                const programasRCVigentePre = programasData.filter(p => 
-                                                                    p.escuela === selectedEscuela && 
-                                                                    p["pregrado/posgrado"]?.toLowerCase() === "pregrado" &&
-                                                                    (p["rc vigente"] === "SI" || p["rc vigente"] === "Si")
-                                                                );
-                                                                
-                                                                const programasRCVigentePos = programasData.filter(p => 
-                                                                    p.escuela === selectedEscuela && 
-                                                                    p["pregrado/posgrado"]?.toLowerCase() === "posgrado" &&
-                                                                    (p["rc vigente"] === "SI" || p["rc vigente"] === "Si")
-                                                                );
-                                                                
-                                                                // Total denominadores y numeradores
-                                                                const totalConFechaExpedicion = programasPreConFechaExpedicion.length + programasPosConFechaExpedicion.length;
-                                                                const totalRCVigente = programasRCVigentePre.length + programasRCVigentePos.length;
-                                                                
-                                                                console.log(`Cálculo RC vigente combinado: ${totalRCVigente}/${totalConFechaExpedicion}`);
-                                                                
-                                                                if (totalConFechaExpedicion === 0) return "-";
-                                                                
-                                                                return ((totalRCVigente / totalConFechaExpedicion) * 100).toFixed(2).replace('.', ',') + '%';
-                                                            } else if (selectedProgramType === 'pre') {
-                                                                // Calcular directamente RC vigente de pregrado
-                                                                return getPorcentajeRCVigente(selectedEscuela, "Pregrado");
-                                                            } else if (selectedProgramType === 'pos') {
-                                                                // Calcular directamente RC vigente de posgrado
-                                                                return getPorcentajeRCVigente(selectedEscuela, "Posgrado");
-                                                            } else {
-                                                                return "-"; // Caso por defecto
-                                                            }
+                                                            // Para el cuarto criterio (% programas en plan de mejoramiento para RC)
+                                                            return porcentajePMRC[selectedProgramType] || "-";
                                                         })()
-                                                        : (index === 2) 
-                                                    ? (() => {
-                                                        // Para el tercer criterio (% programas en plan de mejoramiento para Acreditación)
-                                                        return porcentajePM[selectedProgramType] || "-";
-                                                    })()
-                                                        : (index === 3) 
-                                                    ? (() => {
-                                                        // Para el cuarto criterio (% programas en plan de mejoramiento para RC)
-                                                        return porcentajePMRC[selectedProgramType] || "-";
-                                                    })()
-                                                        : scores[selectedProgramType][index] || '' // Para los demás criterios
+                                                            : scores[selectedProgramType][index] || '' // Para los demás criterios
                                                 }
                                             </Typography>
                                             </TableCell>
@@ -1413,6 +1423,7 @@ const SeguimientoInicio = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            </div>
         </>
     );
 };

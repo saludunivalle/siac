@@ -1,58 +1,43 @@
+// src/components/Home.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, CircularProgress } from '@mui/material';
-import Semaforo from './Semaforo';
-import SemaforoAc from './SemaforoAc';
 import { Filtro5, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
 import Header from './Header';
-import '/src/styles/home.css';
-import Crea from './Crea';
-import Aac from './Aac';
-import Mod from './Mod';
+import Sidebar from './Sidebar';
+import '../styles/home.css';
 import { Pie } from 'react-chartjs-2';
-import { Card, CardContent, Typography, Grid } from '@mui/material';
+import { 
+  Card, 
+  CardContent, 
+  Typography, 
+  Grid, 
+  Button, 
+  CircularProgress,
+  TableContainer,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  Paper,
+  Box,
+  TableHead,
+  Fade,
+  Grow,
+  useMediaQuery
+} from '@mui/material';
+import DescriptionIcon from '@mui/icons-material/Description';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import SchoolIcon from '@mui/icons-material/School';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import WarningIcon from '@mui/icons-material/Warning';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import '/src/styles/home.css';
+import { useTheme } from '@mui/material/styles';
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 const Home = () => {
-  const [globalVariable, setGlobalVariable] = useState(); 
-  const [selectedValue, setSelectedValue] = useState();
-  const [semaforoVisible, setSemaforoVisible] = useState(false);
-  const [semaforoAcVisible, setSemaforoAcVisible] = useState(false);
-  const [counts, setCounts] = useState({
-    CREA: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-    MOD: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-    RRC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-    AAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-    RAAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-    INT: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-  });
-  const [expiryCounts, setExpiryCounts] = useState({
-    RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
-    AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
-  });
-  const [expiryPrograms, setExpiryPrograms] = useState({
-    RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
-    AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
-  });
-
-  const [programasVisible, setProgramasVisible] = useState(true);
-  const [buttonsVisible, setButtonsVisible] = useState(true);
-  const [rowData, setRowData] = useState(null);
-  const [filteredData, setFilteredData] = useState(null);
-  const [user, setUser] = useState('');
   const [isCargo, setCargo] = useState([' ']);
-  const [isLoading, setIsLoading] = useState(false); 
-  const [selectedRow, setSelectedRow] = useState(null); 
-  const [expiredRRCCount, setExpiredRRCCount] = useState(0);
-  const [expiredRACCount, setExpiredRACCount] = useState(0);
-
-  const navigate = useNavigate();
-
-  //nueva tabla:
   const [programData, setProgramData] = useState({
     activos: {
       pregrado: { universitario: 0, tecnologico: 0 },
@@ -78,13 +63,128 @@ const Home = () => {
     totalGeneral: 0,
   });
 
+  // Estados para los programas próximos a vencer - FUNCIONALIDAD COMPLETA
+  const [expiryCounts, setExpiryCounts] = useState({
+    RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+    AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+  });
+  
+  const [expiryPrograms, setExpiryPrograms] = useState({
+    RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
+    AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
+  });
+
+  const [expiredRRCCount, setExpiredRRCCount] = useState(0);
+  const [expiredRACCount, setExpiredRACCount] = useState(0);
+
+  // Estados para las gráficas
+  const [chartDataNivelAcademico, setChartDataNivelAcademico] = useState(null);
+  const [chartDataNivelFormacion, setChartDataNivelFormacion] = useState(null);
+  const [chartDataEscuelas, setChartDataEscuelas] = useState(null);
+  const [filteredData2, setFilteredData2] = useState(null);
+  const [selectedNivelAcademico, setSelectedNivelAcademico] = useState('Todos');
+  const [selectedNivelFormacion, setSelectedNivelFormacion] = useState('Todos');
+  const [selectedEscuela, setSelectedEscuela] = useState('Todos');
+  const [chartsVisible, setChartsVisible] = useState(true);
+  
+  // Estados para el reporte de actividades
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState('');
+
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Funciones para obtener programas vencidos
+  const getExpiredRRCPrograms = (programas) => {
+    return programas.filter((program) => program['fase rrc'] === 'Vencido');
+  };
+
+  const getExpiredRACPrograms = (programas) => {
+    return programas.filter((program) => program['fase rac'] === 'Vencido');
+  };
+
+  // Función para contar programas próximos a vencer - FUNCIONALIDAD COMPLETA
+  const countExpiringPrograms = (programas) => {
+    const currentYear = new Date().getFullYear();
+    const counts = {
+      RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+      AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+    };
+  
+    const expiringPrograms = {
+      RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
+      AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
+    };
+  
+    programas.forEach(program => {
+      const rrcYear = program['fechavencrc'] ? parseInt(program['fechavencrc'].split('/')[2]) : null;
+      const aacYear = program['fechavencac'] ? parseInt(program['fechavencac'].split('/')[2]) : null;
+  
+      // Para programas RRC
+      if (rrcYear) {
+        if (rrcYear === currentYear + 1) {
+          counts.RRC.oneYear++;
+          expiringPrograms.RRC.oneYear.push(program);
+        } else if (rrcYear === currentYear + 2) {
+          counts.RRC.twoYears++;
+          expiringPrograms.RRC.twoYears.push(program);
+        } else if (rrcYear === currentYear + 3) {
+          counts.RRC.threeYears++;
+          expiringPrograms.RRC.threeYears.push(program);
+        } else if (rrcYear < currentYear) {
+          expiringPrograms.RRC.expired.push(program);
+        }
+      }
+  
+      // Para programas AAC
+      if (aacYear) {
+        if (aacYear === currentYear + 1) {
+          counts.AAC.oneYear++;
+          expiringPrograms.AAC.oneYear.push(program);
+        } else if (aacYear === currentYear + 2) {
+          counts.AAC.twoYears++;
+          expiringPrograms.AAC.twoYears.push(program);
+        } else if (aacYear === currentYear + 3) {
+          counts.AAC.threeYears++;
+          expiringPrograms.AAC.threeYears.push(program);
+        } else if (aacYear < currentYear) {
+          expiringPrograms.AAC.expired.push(program); 
+        }
+      }
+    });
+  
+    console.log('Expiring programs:', expiringPrograms); 
+    setExpiryCounts(counts);
+    setExpiryPrograms(expiringPrograms);
+  };
+
+  // Manejador para navegación a programas vencidos
+  const handleExpiryClick = () => {
+    navigate('/programas-venc', { state: { expiryPrograms } });
+    console.log('Expiry Programs:', expiryPrograms);
+  };
+
+  // Obtener los permisos del usuario y el nombre de usuario
+  useEffect(() => {
+    if (sessionStorage.getItem('logged')) {
+      const res = JSON.parse(sessionStorage.getItem('logged'));
+      const permisos = res.map(item => item.permiso).flat();
+      setCargo(permisos);
+      
+      if (res.length > 0) {
+        setUser(res[0].usuario || '');
+      }
+    }
+  }, []);
+
+  // Obtener los datos de los programas
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Obtener los datos desde Filtro5 (deberás reemplazar con tu lógica para obtener los datos)
         const response = await Filtro5();
         
-        // Filtrar los programas activos de pregrado y posgrado
         const activosPregradoUniversitario = response.filter(
           (item) =>
             item['pregrado/posgrado'] === 'Pregrado' &&
@@ -126,14 +226,12 @@ const Home = () => {
           ).length,
         };
 
-        // Filtrar programas en creación
         const enCreacion = response.filter(
           (item) =>
             item['estado'] === 'En Creación' ||
             item['estado'] === 'En Creación - Sede'
         ).length;
 
-        // Filtrar programas inactivos por categoría
         const inactivosDesistidoInterno = response.filter(item => item['estado'] === 'Desistido Interno').length;
         const inactivosDesistidoMEN = response.filter(item => item['estado'] === 'Desistido MEN').length;
         const inactivosDesistidoMENSede = response.filter(item => item['estado'] === 'Desistido MEN - Sede').length;
@@ -151,7 +249,6 @@ const Home = () => {
           inactivosInactivoVencidoRC +
           inactivosNegacionRC;
 
-        // Calcular el total de programas activos
         const totalActivos =
           activosPregradoUniversitario +
           activosPregradoTecnologico +
@@ -160,7 +257,6 @@ const Home = () => {
           activosPosgrado.especializacionMedicoQuirurgica +
           activosPosgrado.doctorado;
 
-        // Actualizar el estado con los datos filtrados
         setProgramData({
           activos: {
             pregrado: {
@@ -183,6 +279,23 @@ const Home = () => {
           },
           totalGeneral: totalActivos + enCreacion + totalInactivos,
         });
+
+        // Obtener los programas vencidos utilizando las funciones
+        const expiredRRCPrograms = getExpiredRRCPrograms(response);
+        const expiredRACPrograms = getExpiredRACPrograms(response);
+
+        console.log('Programas RRC vencidos:', expiredRRCPrograms);
+        console.log('Programas RAC vencidos:', expiredRACPrograms);
+
+        // Actualizar el estado con los programas vencidos
+        setExpiredRRCCount(expiredRRCPrograms.length);
+        setExpiredRACCount(expiredRACPrograms.length);
+
+        // Procesar conteo de programas próximos a vencer
+        countExpiringPrograms(response);
+
+        setFilteredData2(response);
+        updateCharts(response);
       } catch (error) {
         console.error('Error al filtrar datos:', error);
       }
@@ -191,34 +304,10 @@ const Home = () => {
     fetchData();
   }, []);
 
-  //Para la grafica
-  const [chartDataNivelAcademico, setChartDataNivelAcademico] = useState(null);
-  const [chartDataNivelFormacion, setChartDataNivelFormacion] = useState(null);
-  const [chartDataEscuelas, setChartDataEscuelas] = useState(null);
-  const [filteredData2, setFilteredData2] = useState(null);
-  const [selectedNivelAcademico, setSelectedNivelAcademico] = useState('Todos');
-  const [selectedNivelFormacion, setSelectedNivelFormacion] = useState('Todos');
-  const [selectedEscuela, setSelectedEscuela] = useState('Todos');
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Obtener los datos desde Filtro5
-        const response = await Filtro5();
-        setFilteredData2(response);
-        updateCharts(response);
-      } catch (error) {
-        console.error('Error al obtener los datos para la gráfica:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
+  // Función para actualizar las gráficas
   const updateCharts = (data) => {
     let filteredData = data;
   
-    // Filtrar los programas según la escuela seleccionada
     if (selectedEscuela !== 'Todos') {
       filteredData = filteredData.filter(
         (item) => item['escuela'] === selectedEscuela &&
@@ -226,7 +315,6 @@ const Home = () => {
       );
     }
   
-    // Filtrar los programas según el nivel académico seleccionado
     if (selectedNivelAcademico !== 'Todos') {
       filteredData = filteredData.filter(
         (item) => item['pregrado/posgrado'] === selectedNivelAcademico &&
@@ -234,7 +322,6 @@ const Home = () => {
       );
     }
   
-    // Filtrar los programas según el nivel de formación seleccionado
     if (selectedNivelFormacion !== 'Todos') {
       filteredData = filteredData.filter(
         (item) => item['nivel de formación'] === selectedNivelFormacion &&
@@ -242,7 +329,6 @@ const Home = () => {
       );
     }
   
-    // Filtrar los programas activos por nivel académico utilizando los datos filtrados
     const activosPregrado = filteredData.filter(
       (item) =>
         item['pregrado/posgrado'] === 'Pregrado' &&
@@ -255,7 +341,6 @@ const Home = () => {
         (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
     ).length;
   
-    // Filtrar los programas activos por nivel de formación utilizando los datos filtrados
     const nivelFormacionCounts = filteredData.reduce((acc, item) => {
       if (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede') {
         const nivelFormacion = item['nivel de formación'];
@@ -264,7 +349,6 @@ const Home = () => {
       return acc;
     }, {});
   
-    // Filtrar los programas activos por escuela utilizando los datos filtrados
     const escuelaCounts = filteredData.reduce((acc, item) => {
       if (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede') {
         const escuela = item['escuela'];
@@ -273,100 +357,66 @@ const Home = () => {
       return acc;
     }, {});
   
-    // Configurar los datos para la gráfica de nivel académico
+    // Paleta de colores moderna y minimalista
+    const modernColors = {
+      primary: ['#B22222', '#DC143C'],
+      secondary: ['#6C757D', '#495057'],
+      accent: ['#8B4513', '#A52A2A', '#7B3F00'],
+      charts: [
+        'rgba(178, 34, 34, 0.8)',   // Rojo (B22222)
+        'rgba(108, 117, 125, 0.8)',  // Gris oscuro (6C757D)
+        'rgba(220, 20, 60, 0.8)',    // Carmesí (DC143C)
+        'rgba(73, 80, 87, 0.8)',     // Gris más oscuro (495057)
+        'rgba(128, 0, 32, 0.8)',     // Burdeos (800020)
+        'rgba(255, 131, 139, 0.8)'     // Siena (8B4513)
+      ]
+    };
+
     setChartDataNivelAcademico({
       labels: ['Pregrado', 'Posgrado'],
       datasets: [
         {
-          label: 'Nivel Académico',
+          label: 'Programas por Nivel Académico',
           data: [activosPregrado, activosPosgrado],
-          backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)'],
-          borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
-          borderWidth: 1,
+          backgroundColor: modernColors.primary,
+          borderColor: modernColors.primary.map(color => color.replace('0.8', '1')),
+          borderWidth: 2,
+          hoverBorderWidth: 3,
+          hoverOffset: 8,
         },
       ],
-      plugins: {
-        datalabels: {
-          color: '#fff',
-          anchor: 'center',
-          align: 'center',
-          formatter: (value) => value,
-        },
-      },
     });
   
-    // Configurar los datos para la gráfica de nivel de formación
     setChartDataNivelFormacion({
       labels: Object.keys(nivelFormacionCounts),
       datasets: [
         {
-          label: 'Nivel de Formación',
+          label: 'Programas por Nivel de Formación',
           data: Object.values(nivelFormacionCounts),
-          backgroundColor: [
-            'rgba(255, 206, 86, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)',
-            'rgba(255, 159, 64, 0.6)',
-            'rgba(54, 162, 235, 0.6)'
-          ],
-          borderColor: [
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-            'rgba(255, 159, 64, 1)',
-            'rgba(54, 162, 235, 1)'
-          ],
-          borderWidth: 1,
+          backgroundColor: modernColors.charts,
+          borderColor: modernColors.charts.map(color => color.replace('0.8', '1')),
+          borderWidth: 2,
+          hoverBorderWidth: 3,
+          hoverOffset: 8,
         },
       ],
-      plugins: {
-        datalabels: {
-          color: '#fff',
-          anchor: 'center',
-          align: 'center',
-          formatter: (value) => value,
-        },
-      },
     });
   
-    // Configurar los datos para la gráfica de escuelas
     setChartDataEscuelas({
       labels: Object.keys(escuelaCounts),
       datasets: [
         {
-          label: 'Escuela',
+          label: 'Programas por Escuela',
           data: Object.values(escuelaCounts),
-          backgroundColor: [
-            'rgba(255, 99, 132, 0.6)',
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(255, 206, 86, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)',
-            'rgba(255, 159, 64, 0.6)'
-          ],
-          borderColor: [
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-            'rgba(255, 159, 64, 1)'
-          ],
-          borderWidth: 1,
+          backgroundColor: modernColors.charts,
+          borderColor: modernColors.charts.map(color => color.replace('0.8', '1')),
+          borderWidth: 2,
+          hoverBorderWidth: 3,
+          hoverOffset: 8,
         },
       ],
-      plugins: {
-        datalabels: {
-          color: '#fff',
-          anchor: 'center',
-          align: 'center',
-          formatter: (value) => value,
-        },
-      },
     });
   };
-  
-  const [chartsVisible, setChartsVisible] = useState(true);
 
   const updateChartsVisibility = () => {
     if (selectedNivelAcademico === 'Todos' && selectedNivelFormacion === 'Todos' && selectedEscuela === 'Todos') {
@@ -393,239 +443,12 @@ const Home = () => {
     updateCharts(filteredData2);
     updateChartsVisibility();
   };
-  
-
-  //Login
-
-  useEffect(() => {
-      if (sessionStorage.getItem('logged')) {
-          const res = JSON.parse(sessionStorage.getItem('logged'));
-          const permisos = res.map(item => item.permiso).flat();
-          setCargo(permisos);
-          setUser(res[0].user);
-          console.log("Permisos del usuario:", permisos);
-      }
-  }, []);
-
-  useEffect(() => {
-      if (isCargo.includes('Posgrados')) {
-          const filtered = rowData?.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-          console.log("Datos filtrados por Posgrados:", filtered);
-          setFilteredData2(filtered);
-      } else {
-          setFilteredData2(rowData);
-      }
-  }, [rowData, isCargo]);
-
-  useEffect(() => {
-      const fetchData = async () => {
-          try {
-              let response;
-              if (isCargo.includes('Posgrados')) {
-                  const filtered = await Filtro5();
-                  response = filtered.filter(item => item['pregrado/posgrado'] === 'Posgrado');
-              } else {
-                  response = await Filtro5();
-              }
-
-              if (!response) {
-                  throw new Error("response is undefined");
-              }
-              
-              setRowData(response);
-              setFilteredData(response);
-
-              // Obtener los programas vencidos utilizando las nuevas funciones
-              const expiredRRCPrograms = getExpiredRRCPrograms(response);
-              const expiredRACPrograms = getExpiredRACPrograms(response);
-
-              console.log('Programas RRC vencidos:', expiredRRCPrograms);
-              console.log('Programas RAC vencidos:', expiredRACPrograms);
-
-              // Actualizar el estado con los programas vencidos
-              setExpiryPrograms(prevState => ({
-                  ...prevState,
-                  RRC: { ...prevState.RRC, expired: expiredRRCPrograms },
-                  AAC: { ...prevState.AAC, expired: expiredRACPrograms }
-              }));
-
-              // Conteo para visualización (si quieres mantener los contadores)
-              setExpiredRRCCount(expiredRRCPrograms.length);
-              setExpiredRACCount(expiredRACPrograms.length);
-
-              const seguimientos = await Filtro7();
-              processSeguimientos(seguimientos, response);
-              countExpiringPrograms(response);
-          } catch (error) {
-              console.error('Error al filtrar datos:', error);
-          }
-      };
-
-      const buttonGoogle = document.getElementById("buttonDiv");
-      if (buttonGoogle) {
-          buttonGoogle.classList.add('_display_none');
-      }
-      fetchData();
-  }, [isCargo]);
-
-  const countExpiringPrograms = (programas) => {
-    const currentYear = new Date().getFullYear();
-    const counts = {
-      RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
-      AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
-    };
-  
-    const expiringPrograms = {
-      RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
-      AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
-    };
-  
-    programas.forEach(program => {
-      const rrcYear = program['fechavencrc'] ? parseInt(program['fechavencrc'].split('/')[2]) : null;
-      const aacYear = program['fechavencac'] ? parseInt(program['fechavencac'].split('/')[2]) : null;
-  
-      // Para programas RRC
-      if (rrcYear) {
-        if (rrcYear === currentYear + 1) {
-          counts.RRC.oneYear++;
-          expiringPrograms.RRC.oneYear.push(program);
-        } else if (rrcYear === currentYear + 2) {
-          counts.RRC.twoYears++;
-          expiringPrograms.RRC.twoYears.push(program);
-        } else if (rrcYear === currentYear + 3) {
-          counts.RRC.threeYears++;
-          expiringPrograms.RRC.threeYears.push(program);
-        } else if (rrcYear < currentYear) {
-          expiringPrograms.RRC.expired.push(program); // Agregar programas vencidos
-        }
-      }
-  
-      // Para programas AAC
-      if (aacYear) {
-        if (aacYear === currentYear + 1) {
-          counts.AAC.oneYear++;
-          expiringPrograms.AAC.oneYear.push(program);
-        } else if (aacYear === currentYear + 2) {
-          counts.AAC.twoYears++;
-          expiringPrograms.AAC.twoYears.push(program);
-        } else if (aacYear === currentYear + 3) {
-          counts.AAC.threeYears++;
-          expiringPrograms.AAC.threeYears.push(program);
-        } else if (aacYear < currentYear) {
-          expiringPrograms.AAC.expired.push(program); 
-        }
-      }
-    });
-  
-    console.log('Expiring programs:', expiringPrograms); 
-    setExpiryCounts(counts);
-    setExpiryPrograms(expiringPrograms);
-  };  
-
-  const getExpiredRRCPrograms = (programas) => {
-      return programas.filter((program) => program['fase rrc'] === 'Vencido');
-  };
-
-  const getExpiredRACPrograms = (programas) => {
-      return programas.filter((program) => program['fase rac'] === 'Vencido');
-  };
-
-  
-  const processSeguimientos = useCallback((seguimientos, programas) => {
-    if (!seguimientos || !Array.isArray(seguimientos)) {
-        console.error('Seguimientos is undefined or not an array');
-        return;
-    }
-
-    const estados = {
-        CREA: programas.filter(item => item['estado'] === 'En Creación').map(item => item.id_programa),
-        MOD: programas.filter(item => item['mod'] === 'SI').map(item => item.id_programa),
-        RRC: programas.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').map(item => item.id_programa),
-        AAC: programas.filter(item => item['aac_1a'] === 'SI').map(item => item.id_programa),
-        RAAC: programas.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').map(item => item.id_programa),
-    };
-
-    const newCounts = {
-        CREA: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-        MOD: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-        RRC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-        AAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-        RAAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-        INT: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
-    };
-
-    Object.keys(estados).forEach((estado) => {
-        const filtered = seguimientos.filter((item) => estados[estado].includes(item.id_programa));
-        const latestSeguimientos = {};
-        filtered.forEach(item => {
-            const idPrograma = item.id_programa;
-            if (!latestSeguimientos[idPrograma] || new Date(item.timestamp) > new Date(latestSeguimientos[idPrograma].timestamp)) {
-                latestSeguimientos[idPrograma] = item;
-            }
-        });
-
-        Object.values(latestSeguimientos).forEach(item => {
-            const riesgo = item.riesgo;
-            if (riesgo === 'Alto') {
-                newCounts[estado].Alto += 1;
-            } else if (riesgo === 'Medio') {
-                newCounts[estado].Medio += 1;
-            } else if (riesgo === 'Bajo') {
-                newCounts[estado].Bajo += 1;
-            }
-        });
-
-        const sinRegistro = estados[estado].length - Object.keys(latestSeguimientos).length;
-        newCounts[estado].SinRegistro += sinRegistro;
-    });
-
-    setCounts(newCounts);
-}, []);
-
-  const handleBackClick = () => {
-    setProgramasVisible(true);
-    setSemaforoVisible(false);
-    setSemaforoAcVisible(false);
-    setSelectedValue();
-    setSelectedRow(null);
-    setButtonsVisible(true); 
-    setChartsVisible(true); // Mostrar gráficas al regresar
-  };
-
-  const handleRowClick = (buttonValue, globalVar, rowKey) => {
-    setSelectedValue(buttonValue);
-    setSemaforoVisible(false);
-    setSemaforoAcVisible(false);
-  
-    const validRowKeys = ['CREA', 'MOD', 'RRC', 'AAC', 'RAAC'];
-    if (validRowKeys.includes(rowKey)) {
-      setSelectedRow(rowKey);
-    } else {
-      setSelectedRow(null);
-    }
-  
-    if (buttonValue === 'option1') {
-      setSemaforoVisible(true);
-    } else if (buttonValue === 'option2') {
-      setSemaforoAcVisible(true);
-    }
-    setProgramasVisible(false);
-    setButtonsVisible(false); 
-    setGlobalVariable(globalVar);
-    setChartsVisible(false); // Ocultar gráficas al hacer clic en un proceso
-  };
 
   const handleClick = () => {
-    if (filteredData) {
-      navigate('/programas', { state: filteredData });
-    }
+    navigate('/programas', { state: filteredData2 });
   };
 
-  const handleExpiryClick = () => {
-    navigate('/programas-venc', { state: { expiryPrograms } });
-    console.log('Expiry Programs:', expiryPrograms);
-  };  
-
+  // Preparar datos para el reporte
   const prepareReportData = async () => {
     try {
         const seguimientos = await Filtro7();
@@ -690,549 +513,1019 @@ const Home = () => {
     }
   };
 
-  const getTitle = () => {
-    switch (selectedRow) {
-      case 'CREA':
-        return 'Programas en Proceso de Creación';
-      case 'MOD':
-        return 'Programas en Proceso de Modificación';
-      case 'RRC':
-        return 'Programas en Proceso de Renovación Registro Calificado';
-      case 'RAAC':
-        return 'Programas en Proceso de Renovación Acreditación';
-      case 'AAC':
-        return 'Programas en Proceso de Acreditación';
-      default:
-        return 'Procesos de Calidad';
+  // Función para truncar texto largo en móviles
+  const truncateText = (text, maxLength = 20) => {
+    if (!isMobile) return text;
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
+  // Opciones de gráficos modernizadas
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: {
+      padding: {
+        left: 0,
+        right: 0,
+        top: 10,
+        bottom: 10
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        align: 'center',
+        labels: {
+          padding: isMobile ? 10 : 20,
+          font: {
+            size: isMobile ? 9 : 11,
+            family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            weight: '500'
+          },
+          usePointStyle: true,
+          pointStyle: 'circle',
+          color: '#495057'
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#212529',
+        bodyColor: '#495057',
+        borderColor: '#E9ECEF',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true,
+        titleFont: {
+          family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          weight: '600'
+        },
+        bodyFont: {
+          family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segue UI', Roboto, sans-serif",
+          weight: '400'
+        }
+      },
+      datalabels: {
+        display: true,
+        color: '#FFFFFF',
+        font: {
+          weight: 'bold',
+          size: isMobile ? 11 : 14,
+          family: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        },
+        formatter: (value) => {
+          return value > 0 ? value : '';
+        },
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: 4,
+        padding: 4,
+        align: 'center',
+        anchor: 'center'
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'nearest'
+    },
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+      duration: 1000,
+      easing: 'easeOutQuart'
     }
   };
 
-  //Función para mostrar la tabla del número de programas en cada proceso
-  const GeneralProcessTable = ({ counts, handleRowClick }) => (
-      <div className='alltogetherGeneral' style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop:'30px'}}>
-        <div style={{ fontSize: '25px', width: '100%', paddingBottom: '60px', display: 'flex', justifyContent: 'center' }}>
-                  {getTitle()}
-       </div>
-        <div className='alltogether'>
-          <table className='buttons-table' style={{ marginTop: '20px' }}>
-            <thead>
-              <tr>
-                <th>Proceso</th>
-                <th>Alto</th>
-                <th>Medio</th>
-                <th>Bajo</th>
-                <th>Sin registro</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan="6" className="section-header">Registro Calificado</td>
-              </tr>
-              <tr onClick={() => handleRowClick('option4', 'CREA', 'CREA')} className="hoverable-row">
-                <td>CREA</td>
-                <td>{counts.CREA.Alto}</td>
-                <td>{counts.CREA.Medio}</td>
-                <td>{counts.CREA.Bajo}</td>
-                <td>{counts.CREA.SinRegistro}</td>
-                <td><strong>{counts.CREA.Alto + counts.CREA.Medio + counts.CREA.Bajo + counts.CREA.SinRegistro}</strong></td>
-              </tr>
-              <tr onClick={() => handleRowClick('option5', 'MOD', 'MOD')} className="hoverable-row">
-                <td>MOD</td>
-                <td>{counts.MOD.Alto}</td>
-                <td>{counts.MOD.Medio}</td>
-                <td>{counts.MOD.Bajo}</td>
-                <td>{counts.MOD.SinRegistro}</td>
-                <td><strong>{counts.MOD.Alto + counts.MOD.Medio + counts.MOD.Bajo + counts.MOD.SinRegistro}</strong></td>
-              </tr>
-              <tr onClick={() => handleRowClick('option1', 'RRC', 'RRC')} className="hoverable-row">
-                <td>RRC</td>
-                <td>{counts.RRC.Alto}</td>
-                <td>{counts.RRC.Medio}</td>
-                <td>{counts.RRC.Bajo}</td>
-                <td>{counts.RRC.SinRegistro}</td>
-                <td><strong>{counts.RRC.Alto + counts.RRC.Medio + counts.RRC.Bajo + counts.RRC.SinRegistro}</strong></td>
-              </tr>
-              <tr>
-                <td colSpan="6" className="section-header">Acreditación en Alta Calidad</td>
-              </tr>
-              <tr onClick={() => handleRowClick('option3', 'AAC', 'AAC')} className="hoverable-row">
-                <td>AAC</td>
-                <td>{counts.AAC.Alto}</td>
-                <td>{counts.AAC.Medio}</td>
-                <td>{counts.AAC.Bajo}</td>
-                <td>{counts.AAC.SinRegistro}</td>
-                <td><strong>{counts.AAC.Alto + counts.AAC.Medio + counts.AAC.Bajo + counts.AAC.SinRegistro}</strong></td>
-              </tr>
-              <tr onClick={() => handleRowClick('option2', 'RAAC', 'RAAC')} className="hoverable-row">
-                <td>RAAC</td>
-                <td>{counts.RAAC.Alto}</td>
-                <td>{counts.RAAC.Medio}</td>
-                <td>{counts.RAAC.Bajo}</td>
-                <td>{counts.RAAC.SinRegistro}</td>
-                <td><strong>{counts.RAAC.Alto + counts.RAAC.Medio + counts.RAAC.Bajo + counts.RAAC.SinRegistro}</strong></td>
-              </tr>
-              <tr className="hoverable-row">
-                <td>INT</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td><strong>0</strong></td>
-              </tr>
-              <tr>
-                <td><strong>TOTAL</strong></td>
-                <td><strong>{counts.CREA.Alto + counts.MOD.Alto + counts.RRC.Alto + counts.AAC.Alto + counts.RAAC.Alto}</strong></td>
-                <td><strong>{counts.CREA.Medio + counts.MOD.Medio + counts.RRC.Medio + counts.AAC.Medio + counts.RAAC.Medio}</strong></td>
-                <td><strong>{counts.CREA.Bajo + counts.MOD.Bajo + counts.RRC.Bajo + counts.AAC.Bajo + counts.RAAC.Bajo}</strong></td>
-                <td><strong>{counts.CREA.SinRegistro + counts.MOD.SinRegistro + counts.RRC.SinRegistro + counts.AAC.SinRegistro + counts.RAAC.SinRegistro + counts.INT.SinRegistro}</strong></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  // Componente de tabla modernizada y responsive
+  const ModernTable = () => {
+    return (
+      <Box sx={{ width: '100%', overflow: 'hidden' }}>
+        <Card sx={{ 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          border: '1px solid rgba(0,0,0,0.02)',
+          mb: 3,
+          width: '95%',
+          maxWidth: '540px',
+          marginLeft: '0',
+          marginRight: 'auto'
+        }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ 
+              p: { xs: 2, sm: 3 }, 
+              borderBottom: '1px solid rgba(0,0,0,0.03)',
+              background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)'
+            }}>
+              <Typography variant="h5" sx={{ 
+                fontWeight: 600,
+                color: '#B22222',
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                letterSpacing: '-0.02em',
+                fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+              }}>
+                Programas Académicos
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: '#6C757D',
+                mt: 0.5,
+                fontWeight: 400,
+                fontSize: { xs: '0.8125rem', sm: '0.875rem' }
+              }}>
+                Distribución por estado y nivel académico
+              </Typography>
+            </Box>
+
+            <div onClick={handleClick} style={{ cursor: 'pointer' }}>
+              <TableContainer sx={{ 
+                backgroundColor: 'transparent',
+                overflow: 'auto',
+                maxWidth: '100%',
+                '& .MuiTable-root': {
+                  borderCollapse: 'separate',
+                  borderSpacing: '0',
+                  minWidth: isMobile ? 'auto' : '100%',
+                  width: '100%'
+                }
+              }}>
+                <Table size={isMobile ? "small" : "medium"}>
+                  <TableBody>
+                    {/* Sección ACTIVOS */}
+                    <TableRow sx={{ 
+                      backgroundColor: 'rgba(178, 34, 34, 0.02)',
+                      '&:hover': { 
+                        backgroundColor: 'rgba(178, 34, 34, 0.04)',
+                        transform: 'translateX(2px)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }
+                    }}>
+                      <TableCell sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        color: '#B22222',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1, sm: 2 },
+                        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        width: isMobile ? 'auto' : '70%'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <SchoolIcon sx={{ fontSize: { xs: 16, sm: 18 }, color: '#B22222' }} />
+                          ACTIVOS
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: 'none', py: { xs: 1.5, sm: 2.5 }, display: { xs: 'none', sm: 'table-cell' } }} />
+                      <TableCell align="right" sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '1rem', sm: '1.1rem' },
+                        color: '#B22222',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                        width: isMobile ? 'auto' : 'auto'
+                      }}>
+                        {programData.activos.total}
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Subcategorías de ACTIVOS */}
+                    {[
+                      { label: 'Pregrado Universitario', shortLabel: 'P. Universitario', value: programData.activos.pregrado.universitario },
+                      { label: 'Pregrado Tecnológico', shortLabel: 'P. Tecnológico', value: programData.activos.pregrado.tecnologico },
+                      { label: 'Maestría', shortLabel: 'Maestría', value: programData.activos.posgrado.maestria },
+                      { label: 'Especialización Universitaria', shortLabel: 'Esp. Universitaria', value: programData.activos.posgrado.especializacionUniversitaria },
+                      { label: 'Especialización Médico Quirúrgica', shortLabel: 'Esp. Médico Quir.', value: programData.activos.posgrado.especializacionMedicoQuirurgica },
+                      { label: 'Doctorado', shortLabel: 'Doctorado', value: programData.activos.posgrado.doctorado }
+                    ].map((item, index) => (
+                      <TableRow key={index} sx={{ 
+                        '&:hover': { 
+                          backgroundColor: 'rgba(0, 0, 0, 0.01)',
+                          transform: 'translateX(1px)',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }
+                      }}>
+                        <TableCell sx={{ 
+                          fontSize: { xs: '0.8125rem', sm: '0.875rem' }, 
+                          color: '#495057',
+                          borderBottom: 'none',
+                          py: { xs: 1, sm: 1.5 },
+                          px: { xs: 1.5, sm: 3 },
+                          pl: { xs: 3, sm: 5 },
+                          fontWeight: 400
+                        }}>
+                          {isMobile ? item.shortLabel : item.label}
+                        </TableCell>
+                        <TableCell sx={{ borderBottom: 'none', py: { xs: 1, sm: 1.5 }, display: { xs: 'none', sm: 'table-cell' } }} />
+                        <TableCell align="right" sx={{ 
+                          fontWeight: 600,
+                          fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                          color: '#212529',
+                          borderBottom: 'none',
+                          py: { xs: 1, sm: 1.5 },
+                          px: { xs: 1.5, sm: 3 }
+                        }}>
+                          {item.value}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+
+                    {/* Separador visual */}
+                    <TableRow>
+                      <TableCell colSpan={3} sx={{ 
+                        borderBottom: 'none', 
+                        py: 1,
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.05) 50%, transparent 100%)',
+                        height: '1px'
+                      }} />
+                    </TableRow>
+
+                    {/* Sección EN CREACIÓN */}
+                    <TableRow sx={{ 
+                      backgroundColor: 'rgba(108, 117, 125, 0.02)',
+                      '&:hover': { 
+                        backgroundColor: 'rgba(108, 117, 125, 0.04)',
+                        transform: 'translateX(2px)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }
+                    }}>
+                      <TableCell sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        color: '#6C757D',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <TrendingUpIcon sx={{ fontSize: { xs: 16, sm: 18 }, color: '#6C757D' }} />
+                          EN CREACIÓN
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: 'none', py: { xs: 1.5, sm: 2.5 }, display: { xs: 'none', sm: 'table-cell' } }} />
+                      <TableCell align="right" sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '1rem', sm: '1.1rem' },
+                        color: '#6C757D',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 }
+                      }}>
+                        {programData.enCreacion}
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Separador visual */}
+                    <TableRow>
+                      <TableCell colSpan={3} sx={{ 
+                        borderBottom: 'none', 
+                        py: 1,
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.05) 50%, transparent 100%)',
+                        height: '1px'
+                      }} />
+                    </TableRow>
+
+                    {/* Sección INACTIVOS */}
+                    <TableRow sx={{ 
+                      backgroundColor: 'rgba(73, 80, 87, 0.02)',
+                      '&:hover': { 
+                        backgroundColor: 'rgba(73, 80, 87, 0.04)',
+                        transform: 'translateX(2px)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }
+                    }}>
+                      <TableCell sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        color: '#495057',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AssessmentIcon sx={{ fontSize: { xs: 16, sm: 18 }, color: '#495057' }} />
+                          INACTIVOS
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: 'none', py: { xs: 1.5, sm: 2.5 }, display: { xs: 'none', sm: 'table-cell' } }} />
+                      <TableCell align="right" sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '1rem', sm: '1.1rem' },
+                        color: '#495057',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 }
+                      }}>
+                        {programData.inactivos.total}
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Subcategorías de INACTIVOS */}
+                    {[
+                      { label: 'Desistido Interno', shortLabel: 'Desist. Interno', value: programData.inactivos.desistidoInterno },
+                      { label: 'Desistido MEN', shortLabel: 'Desist. MEN', value: programData.inactivos.desistidoMEN },
+                      { label: 'Desistido MEN - Sede', shortLabel: 'Desist. MEN-Sede', value: programData.inactivos.desistidoMENSede },
+                      { label: 'Inactivo', shortLabel: 'Inactivo', value: programData.inactivos.inactivo },
+                      { label: 'Inactivo - Sede', shortLabel: 'Inactivo-Sede', value: programData.inactivos.inactivoSede },
+                      { label: 'Inactivo - Vencido RC', shortLabel: 'Inact. Venc. RC', value: programData.inactivos.inactivoVencidoRC },
+                      { label: 'Negación RC', shortLabel: 'Negación RC', value: programData.inactivos.negacionRC }
+                    ].map((item, index) => (
+                      <TableRow key={index} sx={{ 
+                        '&:hover': { 
+                          backgroundColor: 'rgba(0, 0, 0, 0.01)',
+                          transform: 'translateX(1px)',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }
+                      }}>
+                        <TableCell sx={{ 
+                          fontSize: { xs: '0.8125rem', sm: '0.875rem' }, 
+                          color: '#495057',
+                          borderBottom: 'none',
+                          py: { xs: 1, sm: 1.5 },
+                          px: { xs: 1.5, sm: 3 },
+                          pl: { xs: 3, sm: 5 },
+                          fontWeight: 400
+                        }}>
+                          {isMobile ? item.shortLabel : item.label}
+                        </TableCell>
+                        <TableCell sx={{ borderBottom: 'none', py: { xs: 1, sm: 1.5 }, display: { xs: 'none', sm: 'table-cell' } }} />
+                        <TableCell align="right" sx={{ 
+                          fontWeight: 600,
+                          fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                          color: '#212529',
+                          borderBottom: 'none',
+                          py: { xs: 1, sm: 1.5 },
+                          px: { xs: 1.5, sm: 3 }
+                        }}>
+                          {item.value}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* TABLA DE PRÓXIMOS A VENCERSE - FUNCIONALIDAD COMPLETA Y RESPONSIVE */}
+        <Card sx={{ 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          border: '1px solid rgba(0,0,0,0.02)',
+          width: '95%',
+          maxWidth: '540px',
+          marginLeft: '0',
+          marginRight: 'auto'
+        }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ 
+              p: { xs: 2, sm: 3 }, 
+              borderBottom: '1px solid rgba(0,0,0,0.03)',
+              background: 'linear-gradient(135deg, #FFF8E7 0%, #FFFFFF 100%)'
+            }}>
+              <Typography variant="h5" sx={{ 
+                fontWeight: 600,
+                color: '#FF8C00',
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                letterSpacing: '-0.02em',
+                fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+              }}>
+                Próximos a Vencerse
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: '#6C757D',
+                mt: 0.5,
+                fontWeight: 400,
+                fontSize: { xs: '0.8125rem', sm: '0.875rem' }
+              }}>
+                Programas con registro calificado próximo a vencer
+              </Typography>
+            </Box>
+
+            <div onClick={handleExpiryClick} style={{ cursor: 'pointer' }}>
+              <TableContainer sx={{ 
+                backgroundColor: 'transparent',
+                overflow: 'auto',
+                maxWidth: '100%',
+                '& .MuiTable-root': {
+                  borderCollapse: 'separate',
+                  borderSpacing: '0',
+                  minWidth: isMobile ? 'auto' : '100%',
+                  width: '100%'
+                }
+              }}>
+                <Table size={isMobile ? "small" : "medium"}>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: 'rgba(255, 140, 0, 0.05)' }}>
+                      <TableCell sx={{ 
+                        fontWeight: 700, 
+                        color: '#495057',
+                        fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 1, sm: 2 },
+                        borderBottom: '1px solid rgba(0,0,0,0.05)'
+                      }}>
+                        Proceso
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 700, 
+                        color: '#495057',
+                        fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 0.5, sm: 1 },
+                        borderBottom: '1px solid rgba(0,0,0,0.05)'
+                      }}>
+                        1 año
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 700, 
+                        color: '#495057',
+                        fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 0.5, sm: 1 },
+                        borderBottom: '1px solid rgba(0,0,0,0.05)'
+                      }}>
+                        2 años
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 700, 
+                        color: '#495057',
+                        fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 0.5, sm: 1 },
+                        borderBottom: '1px solid rgba(0,0,0,0.05)'
+                      }}>
+                        3 años
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 700, 
+                        color: '#DC3545',
+                        fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 1.5, sm: 3 },
+                        borderBottom: '1px solid rgba(0,0,0,0.05)'
+                      }}>
+                        Vencidos
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {/* Sección RRC */}
+                    <TableRow sx={{ 
+                      '&:hover': { 
+                        backgroundColor: 'rgba(255, 140, 0, 0.02)',
+                        transform: 'translateX(2px)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }
+                    }}>
+                      <TableCell sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.875rem', sm: '0.95rem' },
+                        color: '#FF8C00',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <WarningIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: '#FF8C00' }} />
+                          RRC
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                        color: '#FFA500',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 }
+                      }}>
+                        {expiryCounts.RRC.oneYear}
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                        color: '#FFD700',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 }
+                      }}>
+                        {expiryCounts.RRC.twoYears}
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                        color: '#32CD32',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 }
+                      }}>
+                        {expiryCounts.RRC.threeYears}
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                        color: '#DC3545',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 }
+                      }}>
+                        {expiredRRCCount}
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Sección AAC */}
+                    <TableRow sx={{ 
+                      '&:hover': { 
+                        backgroundColor: 'rgba(255, 140, 0, 0.02)',
+                        transform: 'translateX(2px)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                      }
+                    }}>
+                      <TableCell sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.875rem', sm: '0.95rem' },
+                        color: '#FF8C00',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <WarningIcon sx={{ fontSize: { xs: 14, sm: 16 }, color: '#FF8C00' }} />
+                          AAC
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                        color: '#FFA500',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 }
+                      }}>
+                        {expiryCounts.AAC.oneYear}
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                        color: '#FFD700',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 }
+                      }}>
+                        {expiryCounts.AAC.twoYears}
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                        color: '#32CD32',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 }
+                      }}>
+                        {expiryCounts.AAC.threeYears}
+                      </TableCell>
+                      <TableCell align="center" sx={{ 
+                        fontWeight: 700,
+                        fontSize: { xs: '0.8125rem', sm: '0.9rem' },
+                        color: '#DC3545',
+                        borderBottom: 'none',
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 }
+                      }}>
+                        {expiredRACCount}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  };
+
+  // Componente de gráficos modernizado y responsive
+  const ModernCharts = () => (
+    <Box sx={{ 
+      height: '100%', 
+      width: '100%', 
+      position: 'relative', 
+      zIndex: 2,
+      pl: { xs: 0, sm: 0, md: 2, lg: 3 },
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: { xs: 'center', sm: 'center', md: 'flex-end' }
+    }}>
+      <Fade in={chartsVisible} timeout={600}>
+        <Box sx={{ 
+          width: '100%',
+          maxWidth: { xs: '100%', md: '95%', lg: '90%' },
+          mr: { xs: 0, md: 0 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: { xs: 'flex-start', md: 'flex-start' }
+        }}>
+          <Typography variant="h5" sx={{ 
+            mb: 3,
+            fontWeight: 600,
+            color: '#B22222',
+            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            letterSpacing: '-0.02em',
+            fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            pl: { xs: 1, sm: 0 },
+            textAlign: { xs: 'left', md: 'left' },
+            alignSelf: 'flex-start'
+          }}>
+            Análisis Visual
+          </Typography>
+          <Typography variant="body2" sx={{ 
+            color: '#6C757D',
+            mb: 4,
+            fontWeight: 400,
+            fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+            pl: { xs: 1, sm: 0 },
+            textAlign: { xs: 'left', md: 'left' },
+            alignSelf: 'flex-start'
+          }}>
+            Distribución interactiva de programas activos
+          </Typography>
+
+          <Grid container spacing={2}>
+            {/* Gráfico Nivel Académico */}
+            <Grid item xs={12}>
+              <Grow in={!!chartDataNivelAcademico} timeout={800}>
+                <Card sx={{ 
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(0,0,0,0.02)',
+                  overflow: 'hidden',
+                  width: '100%',
+                  maxWidth: '550px',
+                  ml: { xs: 'auto', md: 'auto' },
+                  mr: { xs: 'auto', md: '0' },
+                  position: 'relative',
+                  zIndex: 2,
+                  mb: 3
+                }}>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, height: '100%' }}>
+                    <Typography variant="h6" sx={{ 
+                      mb: 2,
+                      fontWeight: 600,
+                      color: '#212529',
+                      fontSize: { xs: '1rem', sm: '1.125rem' },
+                      fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                    }}>
+                      Nivel Académico
+                    </Typography>
+                    <Box sx={{ 
+                      height: { xs: 250, sm: 300, md: 350 }, 
+                      mb: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {chartDataNivelAcademico && (
+                        <Pie
+                          data={chartDataNivelAcademico}
+                          options={{
+                            ...chartOptions,
+                            plugins: {
+                              ...chartOptions.plugins,
+                              legend: {
+                                ...chartOptions.plugins.legend,
+                                onClick: (e, legendItem) => {
+                                  const nivelAcademico = legendItem.text;
+                                  handleAcademicLevelClick(nivelAcademico);
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                      <Button 
+                        variant="outlined" 
+                        size="small"
+                        onClick={() => handleAcademicLevelClick('Todos')}
+                        sx={{
+                          borderColor: '#E9ECEF',
+                          color: '#6C757D',
+                          fontWeight: 500,
+                          fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                          px: { xs: 1.5, sm: 2 },
+                          py: 0.75,
+                          borderRadius: '8px',
+                          textTransform: 'none',
+                          '&:hover': {
+                            borderColor: '#B22222',
+                            backgroundColor: 'rgba(178, 34, 34, 0.02)',
+                            color: '#B22222'
+                          }
+                        }}
+                      >
+                        Mostrar Todos
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grow>
+            </Grid>
+            
+            {/* Gráfico Nivel de Formación */}
+            <Grid item xs={12}>
+              <Grow in={!!chartDataNivelFormacion} timeout={1000}>
+                <Card sx={{ 
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(0,0,0,0.02)',
+                  overflow: 'hidden',
+                  width: '100%',
+                  maxWidth: '550px',
+                  ml: { xs: 'auto', md: 'auto' },
+                  mr: { xs: 'auto', md: '0' },
+                  position: 'relative',
+                  zIndex: 2,
+                  mb: 3
+                }}>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+                    <Typography variant="h6" sx={{ 
+                      mb: 2,
+                      fontWeight: 600,
+                      color: '#212529',
+                      fontSize: { xs: '1rem', sm: '1.125rem' },
+                      fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                    }}>
+                      Nivel de Formación
+                    </Typography>
+                    <Box sx={{ height: { xs: 250, sm: 300, md: 350 }, mb: 2 }}>
+                      {chartDataNivelFormacion && (
+                        <Pie
+                          data={chartDataNivelFormacion}
+                          options={{
+                            ...chartOptions,
+                            plugins: {
+                              ...chartOptions.plugins,
+                              legend: {
+                                ...chartOptions.plugins.legend,
+                                onClick: (e, legendItem) => {
+                                  const nivelFormacion = legendItem.text;
+                                  handleLegendClick(nivelFormacion);
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                      <Button 
+                        variant="outlined" 
+                        size="small"
+                        onClick={() => handleLegendClick('Todos')}
+                        sx={{
+                          borderColor: '#E9ECEF',
+                          color: '#6C757D',
+                          fontWeight: 500,
+                          fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                          px: { xs: 1.5, sm: 2 },
+                          py: 0.75,
+                          borderRadius: '8px',
+                          textTransform: 'none',
+                          '&:hover': {
+                            borderColor: '#B22222',
+                            backgroundColor: 'rgba(178, 34, 34, 0.02)',
+                            color: '#B22222'
+                          }
+                        }}
+                      >
+                        Mostrar Todos
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grow>
+            </Grid>
+            
+            {/* Gráfico Escuelas */}
+            <Grid item xs={12}>
+              <Grow in={!!chartDataEscuelas} timeout={1200}>
+                <Card sx={{ 
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(0,0,0,0.02)',
+                  overflow: 'hidden',
+                  width: '100%',
+                  maxWidth: '550px',
+                  ml: { xs: 'auto', md: 'auto' },
+                  mr: { xs: 'auto', md: '0' },
+                  position: 'relative',
+                  zIndex: 2,
+                  mb: 3
+                }}>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+                    <Typography variant="h6" sx={{ 
+                      mb: 2,
+                      fontWeight: 600,
+                      color: '#212529',
+                      fontSize: { xs: '1rem', sm: '1.125rem' },
+                      fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                    }}>
+                      Escuelas
+                    </Typography>
+                    <Box sx={{ height: { xs: 250, sm: 300, md: 350 }, mb: 2 }}>
+                      {chartDataEscuelas && (
+                        <Pie
+                          data={chartDataEscuelas}
+                          options={{
+                            ...chartOptions,
+                            plugins: {
+                              ...chartOptions.plugins,
+                              legend: {
+                                ...chartOptions.plugins.legend,
+                                onClick: (e, legendItem) => {
+                                  const escuela = legendItem.text;
+                                  handleEscuelaClick(escuela);
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                      <Button 
+                        variant="outlined" 
+                        size="small"
+                        onClick={() => handleEscuelaClick('Todos')}
+                        sx={{
+                          borderColor: '#E9ECEF',
+                          color: '#6C757D',
+                          fontWeight: 500,
+                          fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                          px: { xs: 1.5, sm: 2 },
+                          py: 0.75,
+                          borderRadius: '8px',
+                          textTransform: 'none',
+                          '&:hover': {
+                            borderColor: '#B22222',
+                            backgroundColor: 'rgba(178, 34, 34, 0.02)',
+                            color: '#B22222'
+                          }
+                        }}
+                      >
+                        Mostrar Todos
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grow>
+            </Grid>
+          </Grid>
+        </Box>
+      </Fade>
+    </Box>
   );
 
-  //Función para mostrar la tabla detallada de los niveles de riesgo
-  const DetailedProcessTable = ({ counts, selectedRow }) => (
-    <div className='detailed-container' style={{ display: 'flex', flexDirection: 'column', width: '100%' }}> 
-      <div style={{
-        width: '100vw', 
-        paddingTop: '20px',
-        paddingBottom: '0px',
-        boxSizing: 'border-box',
-        display: 'flex',
-        justifyContent: 'center' 
-      }}>
-        <div style={{ fontSize: '25px', textAlign: 'center' }}>
-          {getTitle()}
-        </div>
-      </div>
-  
-      <div className='detailed-table-wrapper' style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', paddingRight: '50px', boxSizing: 'border-box', paddingTop: '20px' }}>
-        <div style={{ maxWidth: '400px', width: '100%', textAlign: 'right' }}>
-          <h3 style={{ marginBottom: '5px' }}>Nivel de Riesgo</h3>
-          <table className='buttons-table' style={{ marginTop: '5px', width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-            <thead>
-              <tr>
-                <th>Alto</th>
-                <th>Medio</th>
-                <th>Bajo</th>
-                <th>Sin registro</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {counts[selectedRow] ? (
-                <tr>
-                  <td>{counts[selectedRow].Alto}</td>
-                  <td>{counts[selectedRow].Medio}</td>
-                  <td>{counts[selectedRow].Bajo}</td>
-                  <td>{counts[selectedRow].SinRegistro}</td>
-                  <td>{counts[selectedRow].Alto + counts[selectedRow].Medio + counts[selectedRow].Bajo + counts[selectedRow].SinRegistro}</td>
-                </tr>
-              ) : (
-                <tr>
-                  <td colSpan="5">No hay datos disponibles</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-
-  
   return (
     <>
       {isLoading && (
-        <div className="loading-overlay">
-          <CircularProgress color="inherit" />
-        </div>
-      )}
-      <Header />
-      <div className='container-general' style={{ display: 'flex', justifyContent: selectedRow ? 'flex-end' : 'center', alignItems: selectedRow ? 'flex-end' : 'flex-start', width: '100%', paddingTop: '20px' }}>
-        <div className='alltogether' >
-          <div>
-            {selectedRow === null ? (
-              <GeneralProcessTable counts={counts} handleRowClick={handleRowClick} />
-            ) : (
-              <DetailedProcessTable counts={counts} selectedRow={selectedRow} />
-            )}
-          </div>
-        </div>
-
-        {programasVisible && (
-          <div style={{ width:'25%' }}>
-          <div style={{ fontSize: '25px', width:'100%', display: 'flex', justifyContent:'center', marginTop:'-40px' }}>Programas</div>
-          <div className='programas' onClick={handleClick} style={{  width:'100%', alignSelf: 'flex-start', marginLeft: '20px' }}>
-                  <table>
-                    <tbody>
-                      <tr>
-                        <td><strong>ACTIVOS</strong></td>
-                        <td></td>
-                      </tr>
-                      <tr>
-                        <td>Pregrado</td>
-                        <td></td>
-                      </tr>
-                      <tr>
-                        <td>- Universitario</td>
-                        <td>{programData.activos.pregrado.universitario}</td>
-                      </tr>
-                      <tr>
-                        <td>- Tecnológico</td>
-                        <td>{programData.activos.pregrado.tecnologico}</td>
-                      </tr>
-                      <tr>
-                        <td>Posgrado</td>
-                        <td></td>
-                      </tr>
-                      <tr>
-                        <td>- Maestría</td>
-                        <td>{programData.activos.posgrado.maestria}</td>
-                      </tr>
-                      <tr>
-                        <td>- Especialización Universitaria</td>
-                        <td>{programData.activos.posgrado.especializacionUniversitaria}</td>
-                      </tr>
-                      <tr>
-                        <td>- Especialización Médico Quirúrgica</td>
-                        <td>{programData.activos.posgrado.especializacionMedicoQuirurgica}</td>
-                      </tr>
-                      <tr>
-                        <td>- Doctorado</td>
-                        <td>{programData.activos.posgrado.doctorado}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Total Activos</strong></td>
-                        <td><strong>{programData.activos.total}</strong></td>
-                      </tr>
-                      <tr>
-                        <td><strong>EN CREACIÓN</strong></td>
-                        <td>{programData.enCreacion}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>INACTIVOS</strong></td>
-                        <td></td>
-                      </tr>
-                      {/* --- Desistidos --- */}
-                      <tr>
-                        <td style={{ paddingLeft: '10px' }}>Desistidos</td>
-                        <td></td>
-                      </tr>
-                      <tr>
-                        <td style={{ paddingLeft: '20px' }}>- Interno</td>
-                        <td>{programData.inactivos.desistidoInterno}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ paddingLeft: '20px' }}>- MEN</td>
-                        <td>{programData.inactivos.desistidoMEN}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ paddingLeft: '20px' }}>- MEN - Sede</td>
-                        <td>{programData.inactivos.desistidoMENSede}</td>
-                      </tr>
-                      {/* --- Otros Inactivos --- */}
-                      <tr>
-                        <td style={{ paddingLeft: '10px' }}>Inactivos</td>
-                        <td></td>
-                      </tr>
-                      <tr>
-                        <td style={{ paddingLeft: '20px' }}>- Inactivo</td>
-                        <td>{programData.inactivos.inactivo}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ paddingLeft: '20px' }}>- Sede</td>
-                        <td>{programData.inactivos.inactivoSede}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ paddingLeft: '20px' }}>- Vencido RC</td>
-                        <td>{programData.inactivos.inactivoVencidoRC}</td>
-                      </tr>
-                      {/* --- Negación --- */}
-                      <tr>
-                        <td style={{ paddingLeft: '10px' }}>Negación</td>
-                        <td></td>
-                      </tr>
-                      <tr>
-                        <td style={{ paddingLeft: '20px' }}>- Negación RC</td>
-                        <td>{programData.inactivos.negacionRC}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Total Inactivos</strong></td>
-                        <td><strong>{programData.inactivos.total}</strong></td>
-                      </tr>
-                      <tr>
-                        <td><strong>TOTAL GENERAL</strong></td>
-                        <td><strong>{programData.totalGeneral}</strong></td>
-                      </tr>
-                    </tbody>
-                  </table>
-          </div>
-          <div className='new-table' style={{ width:'100%', alignSelf: 'flex-start', marginLeft: '20px', marginTop: '20px' }}>
-            <div style={{ fontSize: '25px', width:'100%', display: 'flex', justifyContent:'center', marginTop:'-20px' }}>Próximos a vencerse</div>
-            <table className='buttons-table' style={{ marginTop: '5px' }}>
-              <thead>
-                <tr>
-                  <th>Proceso</th>
-                  <th>1 año</th>
-                  <th>2 años</th>
-                  <th>3 años</th>
-                  <th>Vencidos</th> 
-                </tr>
-              </thead>
-              <tbody>
-                <tr onClick={handleExpiryClick}>
-                  <td>RRC</td>
-                  <td>{expiryCounts.RRC.oneYear}</td>
-                  <td>{expiryCounts.RRC.twoYears}</td>
-                  <td>{expiryCounts.RRC.threeYears}</td>
-                  <td>{expiredRRCCount}</td> 
-                </tr>
-                <tr onClick={handleExpiryClick}>
-                  <td>AAC</td>
-                  <td>{expiryCounts.AAC.oneYear}</td>
-                  <td>{expiryCounts.AAC.twoYears}</td>
-                  <td>{expiryCounts.AAC.threeYears}</td>
-                  <td>{expiredRACCount}</td> 
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          </div>
-        )}
-      </div>
-      {buttonsVisible && ( 
-        <>
-          <div  style={{width:"100%", display:"flex", justifyContent:"center", marginTop: '20px', flexDirection:'row', gap:'20px' }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => navigate('/seguimiento-inicio')}
-              style={{
-                marginTop: '20px',
-                backgroundColor: '#ffffff',
-                color: '#666666',
-                border: '2px solid #666666',
-                borderRadius: '6px',
-                width: '200px',
-              }}
-              sx={{
-                '&:hover': {
-                  backgroundColor: '#666666',
-                  color: '#ffffff',
-                },
-              }}
-            >
-              Seguimiento PM 
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleReporteActividades}
-              style={{
-                marginTop: '20px',
-                backgroundColor: '#ffffff',
-                color: '#666666',
-                border: '2px solid #666666',
-                borderRadius: '6px',
-                width: '200px',
-              }}
-              sx={{
-                '&:hover': {
-                  backgroundColor: '#666666',
-                  color: '#ffffff',
-                },
-              }}
-            >
-              Reporte Actividades
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => navigate('/docencia-servicio')}
-              style={{
-                marginTop: '20px',
-                backgroundColor: '#ffffff',
-                color: '#666666',
-                border: '2px solid #666666',
-                borderRadius: '6px',
-                width: '200px',
-              }}
-              sx={{
-                '&:hover': {
-                  backgroundColor: '#666666',
-                  color: '#ffffff',
-                },
-              }}
-            >
-              Docencia Servicio 
-            </Button>
-            {(isCargo.includes('Creación') || isCargo.includes('Sistemas')) && (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => navigate('/creacion-programa')}
-                style={{
-                  marginTop: '20px',
-                  backgroundColor: '#ffffff',
-                  color: '#666666',
-                  border: '2px solid #666666',
-                  borderRadius: '6px',
-                  width: '200px',
-                }}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: '#666666',
-                    color: '#ffffff',
-                  },
-                }}
-              >
-                Creación
-              </Button>
-            )}
-          </div>
-        </>
-      )}
-
-      {chartsVisible && (
-        <div style={{ marginTop: '50px', marginBottom: '50px' }}>
-          <Typography variant="h5" component="div" style={{ textAlign: 'center', marginBottom: '20px' }}>
-            Programas Activos
+        <Box sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <CircularProgress 
+            sx={{ 
+              color: '#B22222',
+              mb: 2 
+            }} 
+            size={48}
+          />
+          <Typography sx={{ 
+            color: '#6C757D',
+            fontWeight: 500,
+            fontSize: '0.875rem'
+          }}>
+            Generando reporte...
           </Typography>
-          <Grid container spacing={2} justifyContent="center">
-            <Grid item xs={12} sm={4} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h5" component="div">
-                    Nivel Académico
-                  </Typography>
-                  {chartDataNivelAcademico && (
-                    <Pie
-                      data={chartDataNivelAcademico}
-                      options={{
-                        plugins: {
-                          datalabels: { display: true },
-                          legend: {
-                            onClick: (e, legendItem) => {
-                              const nivelAcademico = legendItem.text;
-                              handleAcademicLevelClick(nivelAcademico);
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                  <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                    <button onClick={() => handleAcademicLevelClick('Todos')} style={{ padding: '5px 10px', border: 'none', backgroundColor: '#3f51b5', color: 'white', cursor: 'pointer' }}>
-                      Mostrar Todos
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
+        </Box>
+      )}
+      
+      <Header />
+      <Sidebar isCargo={isCargo} />
+      
+      <Box className="content content-with-sidebar" sx={{
+        background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)',
+        minHeight: '100vh',
+        pt: 4,
+        width: 'calc(100% - 10px)',
+        maxWidth: '100%',
+        overflowX: 'hidden',
+        position: 'relative',
+        zIndex: 1,
+        ml: { xs: 0, sm: 0, md: '20px', lg: '40px' },
+        boxSizing: 'border-box'
+      }}>
+        <Box sx={{ 
+          maxWidth: { xs: '100%', sm: '100%', md: '1280px', lg: '1450px' }, 
+          margin: '0 auto',
+          px: { xs: 0, sm: 1, md: 2, lg: 2 },
+          width: '100%',
+          position: 'relative',
+          left: { xs: 0, sm: 0, md: '-20px', lg: '-20px' },
+          boxSizing: 'border-box',
+          overflowX: 'hidden'
+        }}>
+          {/* Header principal */}
+          <Fade in timeout={400}>
+            <Box sx={{ 
+              textAlign: 'center',
+              mb: { xs: 3, sm: 4, md: 5 },
+              pl: { xs: 1, sm: 2, md: 0 }
+            }}>
+              <Typography variant="h3" sx={{ 
+                fontWeight: 700,
+                color: '#B22222',
+                fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem', lg: '3rem' },
+                letterSpacing: '-0.03em',
+                fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                mb: 1
+              }}>
+                Sistema SIAC
+              </Typography>
+            </Box>
+          </Fade>
+
+          {/* Contenido principal */}
+          <Grid 
+            container 
+            spacing={{ xs: 1, sm: 2, md: 2 }} 
+            sx={{ 
+              width: '100%', 
+              m: 0, 
+              boxSizing: 'border-box',
+              maxWidth: '100%'
+            }}
+          >
+            {/* Gráficos - aumentando a 6/12 en desktop, 100% en mobile (aparece segundo) */}
+            <Grid item xs={12} md={6} sx={{ 
+              order: { xs: 2, md: 1 },
+              pl: { xs: '0 !important', sm: '8px !important', md: '35px !important', lg: '45px !important' },
+              pr: { xs: '0 !important', sm: '8px !important', md: '0 !important' },
+              width: '100%',
+              position: 'relative',
+              zIndex: 2,
+              boxSizing: 'border-box',
+              display: 'flex',
+              justifyContent: { xs: 'center', md: 'flex-end' }
+            }}>
+              <ModernCharts />
             </Grid>
-            <Grid item xs={12} sm={4} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h5" component="div">
-                    Nivel de Formación
-                  </Typography>
-                  {chartDataNivelFormacion && (
-                    <Pie
-                      data={chartDataNivelFormacion}
-                      options={{
-                        plugins: {
-                          datalabels: { display: true },
-                          legend: {
-                            onClick: (e, legendItem) => {
-                              const nivelFormacion = legendItem.text;
-                              handleLegendClick(nivelFormacion);
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                  <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                    <button onClick={() => handleLegendClick('Todos')} style={{ padding: '5px 10px', border: 'none', backgroundColor: '#3f51b5', color: 'white', cursor: 'pointer' }}>
-                      Mostrar Todos
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={4} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h5" component="div">
-                    Escuela
-                  </Typography>
-                  {chartDataEscuelas && (
-                    <Pie
-                      data={chartDataEscuelas}
-                      options={{
-                        plugins: {
-                          datalabels: { display: true },
-                          legend: {
-                            onClick: (e, legendItem) => {
-                              const escuela = legendItem.text;
-                              handleEscuelaClick(escuela);
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                  <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                    <button onClick={() => handleEscuelaClick('Todos')} style={{ padding: '5px 10px', border: 'none', backgroundColor: '#3f51b5', color: 'white', cursor: 'pointer' }}>
-                      Mostrar Todos
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
+
+            {/* Tabla - igualando a 6/12 en desktop, 100% en mobile (aparece primero) */}
+            <Grid item xs={12} md={6} sx={{ 
+              order: { xs: 1, md: 2 },
+              pl: { xs: '0 !important', sm: '8px !important', md: '0 !important' },
+              width: '100%',
+              position: 'relative',
+              zIndex: 2,
+              pr: { xs: 0, sm: 0, md: '15px', lg: '25px' },
+              boxSizing: 'border-box',
+              display: 'flex',
+              justifyContent: { xs: 'center', md: 'flex-start' }
+            }}>
+              <Fade in timeout={600}>
+                <Box sx={{ 
+                  width: '100%', 
+                  maxWidth: '540px',
+                  overflow: 'hidden'
+                }}>
+                  <ModernTable />
+                </Box>
+              </Fade>
             </Grid>
           </Grid>
-        </div>
-      )}
 
-
-      {selectedValue === 'option1' && (
-        <>
-          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
-          <h3 style={{ textAlign: 'start', marginTop: '40px', marginLeft:'20px'}}>Trazabillidad del Proceso</h3>
-          <Semaforo globalVariable={globalVariable} />
-          
-        </>
-      )}
-      {selectedValue === 'option2' && (
-        <>
-          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
-          <h3 style={{ textAlign: 'start', marginTop: '40px', marginLeft:'20px' }}>Trazabillidad del Proceso</h3>
-          <SemaforoAc globalVariable={globalVariable} />
-        </>
-      )}
-      {selectedValue === 'option4' && (
-        <>
-          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
-          <Crea globalVariable={globalVariable} />
-        </>
-      )}
-      {selectedValue === 'option3' && (
-        <>
-          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
-          <Aac globalVariable={globalVariable} />
-        </>
-      )}
-      {selectedValue === 'option5' && (
-        <>
-          <button onClick={handleBackClick} className="back-button-bottom">Atrás</button>
-          <Mod globalVariable={globalVariable} />
-        </>
-      )}
+          {/* Espaciado inferior */}
+          <Box sx={{ height: { xs: 40, sm: 60 } }} />
+        </Box>
+      </Box>
     </>
   );
-}
+};
 
 export default Home;

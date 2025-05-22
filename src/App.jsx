@@ -12,6 +12,13 @@ import SeguimientoInicio from './components/SeguimientoInicio';
 import DocenciaServicio from './components/DocenciaServicio';
 import CreacionPrograms from './components/CreacionPrograms';
 import ProgramasVenc from './components/ProgramasVenc';
+import Semaforo from './components/Semaforo';
+import SemaforoAc from './components/SemaforoAc';
+import Crea from './components/Crea';
+import Aac from './components/Aac';
+import Mod from './components/Mod';
+import RegistroCalificado from './components/RegistroCalificado';
+import AcreditacionAltaCalidad from './components/AltaCalidad';
 
 function App() {
   const [isLogged, setLogged] = useState(false);
@@ -40,6 +47,13 @@ function App() {
               <Route path="/docencia-servicio" element={<DocenciaServicio />} />
               <Route path="/creacion-programa" element={<CreacionPrograms />} />
               <Route path="/programas-venc" element={<ProgramasVenc />} />
+              <Route path="/semaforo-rc" element={<Semaforo />} />
+              <Route path="/semaforo-ac" element={<SemaforoAc />} />
+              <Route path="/crea" element={<Crea />} />
+              <Route path="/aac" element={<Aac />} />
+              <Route path="/mod" element={<Mod />} />
+              <Route path="/registro-calificado" element={<RegistroCalificado />} />
+              <Route path="/acreditacion-alta-calidad" element={<AcreditacionAltaCalidad />} />
               <Route
                         path="*"
                         element={
