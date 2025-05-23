@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filtro2, Filtro4, Filtro5, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
 import Header from './Header';
@@ -76,6 +76,9 @@ const RegistroCalificado = () => {
     orange2: 0, // 18 MESES ANTES DEL VENCIMIENTO
     red: 0     // AÑO DE VENCIMIENTO
   });
+
+  const [selectedRisk, setSelectedRisk] = useState(null);
+  const [filteredByRisk, setFilteredByRisk] = useState(false);
 
   // Obtener los permisos del usuario
   useEffect(() => {
@@ -181,7 +184,7 @@ const RegistroCalificado = () => {
   }, []);
 
   // Configuración moderna de colores e iconos para niveles de riesgo
-  const riskConfig = {
+  const riskConfig = useMemo(() => ({
     Alto: {
       color: '#DC3545',
       backgroundColor: 'rgba(220, 53, 69, 0.08)',
@@ -210,9 +213,9 @@ const RegistroCalificado = () => {
       icon: <HelpOutlineIcon />,
       gradient: 'linear-gradient(135deg, #6C757D 0%, #495057 100%)'
     }
-  };
+  }), []);
 
-  const processConfig = {
+  const processConfig = useMemo(() => ({
     CREA: {
       name: 'Creación',
       icon: <TrendingUpIcon />,
@@ -231,26 +234,26 @@ const RegistroCalificado = () => {
       color: '#B22222',
       description: 'Renovación de Registro Calificado'
     }
-  };
+  }), []);
 
-  const getRiskColor = (riskLevel) => riskConfig[riskLevel]?.backgroundColor || 'white';
-  const getRiskIcon = (riskLevel) => riskConfig[riskLevel]?.icon || null;
+  const getRiskColor = useCallback((riskLevel) => riskConfig[riskLevel]?.backgroundColor || 'white', [riskConfig]);
+  const getRiskIcon = useCallback((riskLevel) => riskConfig[riskLevel]?.icon || null, [riskConfig]);
   
-  const getTotalByProcess = (proceso) => {
+  const getTotalByProcess = useCallback((proceso) => {
     return counts[proceso].Alto + counts[proceso].Medio + counts[proceso].Bajo + counts[proceso].SinRegistro;
-  };
+  }, [counts]);
   
-  const getTotalByRisk = (riskLevel) => {
+  const getTotalByRisk = useCallback((riskLevel) => {
     return counts.CREA[riskLevel] + counts.MOD[riskLevel] + counts.RRC[riskLevel];
-  };
+  }, [counts]);
   
-  const getGrandTotal = () => {
+  const getGrandTotal = useCallback(() => {
     return Object.keys(counts).reduce((total, proceso) => {
       return total + getTotalByProcess(proceso);
     }, 0);
-  };
+  }, [counts, getTotalByProcess]);
 
-  const handleRowClick = (buttonValue, globalVar, rowKey) => {
+  const handleRowClick = useCallback((buttonValue, globalVar, rowKey) => {
     if (buttonValue === 'Creación') {
       navigate('/creacion-programa');
       return;
@@ -260,15 +263,15 @@ const RegistroCalificado = () => {
     setSelectedValue(buttonValue);
     setProgramasVisible(false);
     setGlobalVariable(globalVar);
-  };
+  }, [navigate]);
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     setSelectedRow(null);
     setSelectedValue(null);
     setProgramasVisible(false);
-  };
+  }, []);
 
-  const handleNavigateToProgram = (program) => {
+  const handleNavigateToProgram = useCallback((program) => {
     const programData = {
         ...program,
         globalVariable: selectedRow,
@@ -279,9 +282,22 @@ const RegistroCalificado = () => {
       state: programData,
       replace: true
     });
-  };
+  }, [navigate, selectedRow]);
 
-  const getTitle = () => {
+  // Manejar clic en tarjeta de riesgo para filtrar programas
+  const handleRiskCardClick = useCallback((risk) => {
+    if (selectedRisk === risk) {
+      // Si ya está seleccionado, deseleccionar y mostrar todos
+      setSelectedRisk(null);
+      setFilteredByRisk(false);
+    } else {
+      // Seleccionar y filtrar por este riesgo
+      setSelectedRisk(risk);
+      setFilteredByRisk(true);
+    }
+  }, [selectedRisk]);
+
+  const getTitle = useCallback(() => {
     switch (selectedRow) {
       case 'CREA':
         return 'Programas en Proceso de Creación';
@@ -292,7 +308,7 @@ const RegistroCalificado = () => {
       default:
         return 'Procesos de Calidad - Registro Calificado';
     }
-  };
+  }, [selectedRow]);
 
   // Componente ModernRiskChip
   const ModernRiskChip = ({ riskLevel, value, size = 'medium' }) => {
@@ -473,19 +489,21 @@ const RegistroCalificado = () => {
                     <Grow in timeout={600 + index * 100}>
                       <Card 
                         elevation={0}
+                        onClick={() => handleRiskCardClick(risk)}
                         onMouseEnter={() => setHoveredCard(risk)}
                         onMouseLeave={() => setHoveredCard(null)}
                         sx={{ 
                           borderRadius: '20px',
-                          border: `2px solid ${config.borderColor}`,
-                          backgroundColor: config.backgroundColor,
+                          border: `2px solid ${selectedRisk === risk ? config.color : config.borderColor}`,
+                          backgroundColor: selectedRisk === risk ? alpha(config.color, 0.15) : config.backgroundColor,
                           position: 'relative',
                           overflow: 'hidden',
                           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          transform: hoveredCard === risk ? 'translateY(-8px)' : 'translateY(0)',
-                          boxShadow: hoveredCard === risk 
+                          transform: hoveredCard === risk || selectedRisk === risk ? 'translateY(-8px)' : 'translateY(0)',
+                          boxShadow: hoveredCard === risk || selectedRisk === risk
                             ? `0 12px 32px ${alpha(config.color, 0.15)}`
                             : `0 2px 8px ${alpha(config.color, 0.08)}`,
+                          cursor: 'pointer',
                           '&::before': {
                             content: '""',
                             position: 'absolute',
@@ -548,182 +566,6 @@ const RegistroCalificado = () => {
               })}
             </Grid>
 
-            {/* Tabla de Nivel de Riesgo */}
-            <Card sx={{ 
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              border: '1px solid rgba(0,0,0,0.02)',
-              width: '100%',
-              maxWidth: '600px',
-              mb: 4,
-              mx: 'auto'
-            }}>
-              <Box sx={{ 
-                p: { xs: 2, sm: 3 }, 
-                background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)',
-                borderBottom: '1px solid rgba(0,0,0,0.06)'
-              }}>
-                <Typography variant="h6" sx={{
-                  fontWeight: 600,
-                  color: '#212529',
-                  fontSize: '1.25rem',
-                  fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                }}>
-                  Nivel de Riesgo
-                </Typography>
-                <Typography variant="body2" sx={{ 
-                  color: '#6C757D',
-                  mt: 0.5
-                }}>
-                  Distribución de programas por nivel de riesgo
-                </Typography>
-              </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ 
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        color: '#495057',
-                        backgroundColor: '#F8F9FA',
-                        borderBottom: '2px solid rgba(0,0,0,0.06)',
-                        py: 2.5,
-                        px: { xs: 1, sm: 2 }
-                      }}>
-                        Nivel de Riesgo
-                      </TableCell>
-                      <TableCell align="center" sx={{ 
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        color: '#495057',
-                        backgroundColor: '#F8F9FA',
-                        borderBottom: '2px solid rgba(0,0,0,0.06)',
-                        py: 2.5,
-                        px: { xs: 1, sm: 2 }
-                      }}>
-                        Cantidad
-                      </TableCell>
-                      <TableCell align="center" sx={{ 
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        color: '#495057',
-                        backgroundColor: '#F8F9FA',
-                        borderBottom: '2px solid rgba(0,0,0,0.06)',
-                        py: 2.5,
-                        px: { xs: 1, sm: 2 }
-                      }}>
-                        Porcentaje
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => {
-                      const config = riskConfig[risk];
-                      const count = counts[selectedRow][risk];
-                      const total = getTotalByProcess(selectedRow);
-                      const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                      
-                      return (
-                        <TableRow key={risk} sx={{ 
-                          '&:hover': { 
-                            backgroundColor: 'rgba(0, 0, 0, 0.01)',
-                            transform: 'translateX(2px)',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                          }
-                        }}>
-                          <TableCell sx={{ 
-                            py: 2,
-                            px: { xs: 1, sm: 2 },
-                            borderBottom: '1px solid rgba(0,0,0,0.04)'
-                          }}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              {React.cloneElement(config.icon, { 
-                                sx: { color: config.color, fontSize: '20px' } 
-                              })}
-                              <Typography sx={{ 
-                                color: config.color,
-                                fontWeight: 500,
-                                fontSize: '0.9375rem'
-                              }}>
-                                {risk === 'SinRegistro' ? 'Sin Registro' : risk}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="center" sx={{ 
-                            py: 2,
-                            px: { xs: 1, sm: 2 },
-                            borderBottom: '1px solid rgba(0,0,0,0.04)'
-                          }}>
-                            <Typography sx={{ 
-                              fontWeight: 600,
-                              color: '#212529',
-                              fontSize: '1rem'
-                            }}>
-                              {count}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center" sx={{ 
-                            py: 2,
-                            px: { xs: 1, sm: 2 },
-                            borderBottom: '1px solid rgba(0,0,0,0.04)'
-                          }}>
-                            <Typography sx={{ 
-                              fontWeight: 600,
-                              color: config.color,
-                              fontSize: '1rem'
-                            }}>
-                              {percentage}%
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {/* Fila de total */}
-                    <TableRow sx={{ 
-                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                      '&:hover': { 
-                        backgroundColor: 'rgba(0, 0, 0, 0.03)',
-                        transform: 'translateX(2px)',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }
-                    }}>
-                      <TableCell sx={{ 
-                        py: 2,
-                        px: { xs: 1, sm: 2 },
-                        borderBottom: 'none',
-                        fontWeight: 600,
-                        color: '#212529'
-                      }}>
-                        Total
-                      </TableCell>
-                      <TableCell align="center" sx={{ 
-                        py: 2,
-                        px: { xs: 1, sm: 2 },
-                        borderBottom: 'none',
-                        fontWeight: 700,
-                        color: '#B22222',
-                        fontSize: '1.125rem'
-                      }}>
-                        {getTotalByProcess(selectedRow)}
-                      </TableCell>
-                      <TableCell align="center" sx={{ 
-                        py: 2,
-                        px: { xs: 1, sm: 2 },
-                        borderBottom: 'none',
-                        fontWeight: 700,
-                        color: '#B22222',
-                        fontSize: '1.125rem'
-                      }}>
-                        100%
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Card>
-            
             {/* Tabla de programas */}
             <Card sx={{ 
               boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
@@ -735,22 +577,58 @@ const RegistroCalificado = () => {
               <Box sx={{ 
                 p: { xs: 2, sm: 3 }, 
                 background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)',
-                borderBottom: '1px solid rgba(0,0,0,0.06)'
+                borderBottom: '1px solid rgba(0,0,0,0.06)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}>
-                <Typography variant="h6" sx={{
-                  fontWeight: 600,
-                  color: '#212529',
-                  fontSize: '1.25rem',
-                  fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                }}>
-                  Listado de Programas
-                </Typography>
-                <Typography variant="body2" sx={{ 
-                  color: '#6C757D',
-                  mt: 0.5
-                }}>
-                  {procesoProgramas.length} programa{procesoProgramas.length !== 1 ? 's' : ''} encontrado{procesoProgramas.length !== 1 ? 's' : ''}
-                </Typography>
+                <div>
+                  <Typography variant="h6" sx={{
+                    fontWeight: 600,
+                    color: '#212529',
+                    fontSize: '1.25rem',
+                    fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                  }}>
+                    Listado de Programas
+                    {selectedRisk && (
+                      <span style={{ 
+                        color: riskConfig[selectedRisk].color,
+                        marginLeft: '10px'
+                      }}>
+                        • Filtrado por: {selectedRisk === 'SinRegistro' ? 'Sin Registro' : `${selectedRisk} Riesgo`}
+                      </span>
+                    )}
+                  </Typography>
+                  <Typography variant="body2" sx={{ 
+                    color: '#6C757D',
+                    mt: 0.5
+                  }}>
+                    {filteredByRisk 
+                      ? `${procesoProgramas.filter(p => p.riesgo === selectedRisk).length} programa${procesoProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${procesoProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
+                      : `${procesoProgramas.length} programa${procesoProgramas.length !== 1 ? 's' : ''} encontrado${procesoProgramas.length !== 1 ? 's' : ''}`
+                    }
+                  </Typography>
+                </div>
+                {selectedRisk && (
+                  <Button 
+                    variant="outlined" 
+                    size="small"
+                    onClick={() => {
+                      setSelectedRisk(null);
+                      setFilteredByRisk(false);
+                    }}
+                    sx={{
+                      borderColor: '#6C757D',
+                      color: '#6C757D',
+                      '&:hover': {
+                        borderColor: '#495057',
+                        backgroundColor: 'rgba(108, 117, 125, 0.04)',
+                      }
+                    }}
+                  >
+                    Limpiar filtro
+                  </Button>
+                )}
               </Box>
               
               {procesoProgramas.length === 0 ? (
@@ -808,7 +686,7 @@ const RegistroCalificado = () => {
                               px: { xs: 1, sm: 2 },
                               fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                               position: 'sticky',
-                              top: 80,
+                              top: 0,
                               zIndex: 10
                             }}
                           >
@@ -818,7 +696,10 @@ const RegistroCalificado = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {procesoProgramas.map((program, index) => (
+                      {(filteredByRisk 
+                        ? procesoProgramas.filter(program => program.riesgo === selectedRisk)
+                        : procesoProgramas
+                      ).map((program, index) => (
                         <TableRow 
                           key={program.id_programa}
                           hover 

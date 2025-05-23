@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filtro5, Filtro6, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
 import Header from './Header';
@@ -72,8 +72,13 @@ const AltaCalidad = () => {
     yellow: 0, // 4 AÑOS ANTES DEL VENCIMIENTO
     orange: 0, // 2 AÑOS ANTES DEL VENCIMIENTO
     orange2: 0, // 18 MESES ANTES DEL VENCIMIENTO
-    red: 0     // AÑO DE VENCIMIENTO
+    red: 0,     // AÑO DE VENCIMIENTO
+    gray: 0     // SIN REGISTRO
   });
+
+  // Nuevo estado para el riesgo seleccionado
+  const [selectedRisk, setSelectedRisk] = useState(null);
+  const [filteredByRisk, setFilteredByRisk] = useState(false);
 
   // Obtener los permisos del usuario
   useEffect(() => {
@@ -113,12 +118,17 @@ const AltaCalidad = () => {
           }
           
           setRaacProgramCounts({
-            white: raacResponse.filter(item => item['fase rac'] === 'Vencido' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
+            white: raacResponse.filter(item => item['fase rac'] === 'Vencido' && item['sede'] === 'Cali').length,
             green: raacResponse.filter(item => item['fase rac'] === 'Fase 1' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
             yellow: raacResponse.filter(item => item['fase rac'] === 'Fase 2' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
             orange: raacResponse.filter(item => item['fase rac'] === 'Fase 3' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
             orange2: raacResponse.filter(item => item['fase rac'] === 'Fase 4' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
             red: raacResponse.filter(item => item['fase rac'] === 'Fase 5' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
+            gray: raacResponse.filter(item => 
+              (!item['fase rac'] || item['fase rac'] === '' || item['fase rac'] === 'N/A') && 
+              item['ac vigente'] === 'SI' && 
+              item['sede'] === 'Cali'
+            ).length
           });
         } catch (error) {
           console.error('Error al cargar conteos de programas RAAC:', error);
@@ -142,7 +152,10 @@ const AltaCalidad = () => {
 
     const estados = {
       AAC: programas.filter(item => item['aac_1a'] === 'SI').map(item => item.id_programa),
-      RAAC: programas.filter(item => item['ac vigente'] === 'SI' && item['fase rac'] !== 'N/A').map(item => item.id_programa),
+      RAAC: programas.filter(item => 
+        item['ac vigente'] === 'SI' || 
+        item['fase rac'] === 'Vencido'
+      ).map(item => item.id_programa),
       INT: programas.filter(item => item['acreditacion internacional'] === 'SI').map(item => item.id_programa)
     };
 
@@ -165,43 +178,123 @@ const AltaCalidad = () => {
         }
       });
 
+      // Inicializar array de programas para este estado
+      programDetails[estado] = [];
+
+      // Procesar cada programa
       estados[estado].forEach(programId => {
         const programa = programas.find(p => p.id_programa === programId);
-        if (programa) {
-          const seguimiento = latestSeguimientos[programId];
-          if (!programDetails[estado]) {
-            programDetails[estado] = [];
+        if (!programa) return;
+
+        const seguimiento = latestSeguimientos[programId];
+        let riesgo, mensaje;
+        
+        // Asignar riesgo según la fase para programas RAAC
+        if (estado === 'RAAC') {
+          if (!programa['fase rac'] || programa['fase rac'] === '' || programa['fase rac'] === 'N/A') {
+            riesgo = 'SinRegistro';
+            mensaje = 'Fase RAC no definida';
+          } else if (programa['fase rac'] === 'Vencido') {
+            riesgo = 'Alto';
+            mensaje = 'Programa con acreditación vencida';
+          } else if (programa['fase rac'] === 'Fase 5') {
+            riesgo = 'Alto';
+            mensaje = 'Programa en Fase 5 - Alto riesgo';
+          } else if (programa['fase rac'] === 'Fase 4' || programa['fase rac'] === 'Fase 3') {
+            riesgo = 'Medio';
+            mensaje = `Programa en ${programa['fase rac']} - Riesgo medio`;
+          } else if (programa['fase rac'] === 'Fase 2' || programa['fase rac'] === 'Fase 1') {
+            riesgo = 'Bajo';
+            mensaje = `Programa en ${programa['fase rac']} - Bajo riesgo`;
+          } else {
+            riesgo = seguimiento ? seguimiento.riesgo : 'SinRegistro';
+            mensaje = seguimiento ? seguimiento.mensaje : 'Sin información';
           }
-          
-          programDetails[estado].push({
-            ...programa,
-            riesgo: seguimiento ? seguimiento.riesgo : 'SinRegistro',
-            mensaje: seguimiento ? seguimiento.mensaje : 'Sin información'
-          });
+        } 
+        // Clasificar programas AAC según su estado de acreditación
+        else if (estado === 'AAC') {
+          if (programa['ac vigente'] === 'NO') {
+            riesgo = 'Alto';
+            mensaje = 'Programa con acreditación vencida';
+          } else if (programa['ac vigente'] === 'SI') {
+            // Si tiene fecha de vencimiento, clasificar según la fecha
+            if (programa['fechavencac']) {
+              const fechaVenc = programa['fechavencac'];
+              const partesFecha = fechaVenc.split('/');
+              if (partesFecha.length === 3) {
+                const año = parseInt(partesFecha[2]);
+                const mes = parseInt(partesFecha[1]) - 1;
+                const dia = parseInt(partesFecha[0]);
+                const fechaVencimiento = new Date(año, mes, dia);
+                const hoy = new Date();
+                
+                // Calcular diferencia en meses
+                const diferenciaMeses = (fechaVencimiento.getFullYear() - hoy.getFullYear()) * 12 + 
+                                        (fechaVencimiento.getMonth() - hoy.getMonth());
+                
+                if (diferenciaMeses <= 0) {
+                  // Ya venció o vence este mes
+                  riesgo = 'Alto';
+                  mensaje = 'Programa próximo a vencer o vencido';
+                } else if (diferenciaMeses <= 12) {
+                  // Vence en menos de un año
+                  riesgo = 'Alto';
+                  mensaje = 'Programa vence en menos de un año';
+                } else if (diferenciaMeses <= 24) {
+                  // Vence en menos de dos años
+                  riesgo = 'Medio';
+                  mensaje = 'Programa vence en menos de dos años';
+                } else {
+                  // Vence en más de dos años
+                  riesgo = 'Bajo';
+                  mensaje = 'Programa con vigencia extendida';
+                }
+              } else {
+                // Formato de fecha incorrecto
+                riesgo = 'SinRegistro';
+                mensaje = 'Formato de fecha de vencimiento incorrecto';
+              }
+            } else {
+              // No tiene fecha de vencimiento
+              riesgo = 'SinRegistro';
+              mensaje = 'Sin fecha de vencimiento registrada';
+            }
+          } else {
+            // Si no tiene información de vigencia
+            riesgo = seguimiento ? seguimiento.riesgo : 'SinRegistro';
+            mensaje = seguimiento ? seguimiento.mensaje : 'Sin información de vigencia';
+          }
         }
-      });
-
-      Object.values(latestSeguimientos).forEach(item => {
-        const riesgo = item.riesgo;
-        if (riesgo === 'Alto') {
-          newCounts[estado].Alto += 1;
-        } else if (riesgo === 'Medio') {
-          newCounts[estado].Medio += 1;
-        } else if (riesgo === 'Bajo') {
-          newCounts[estado].Bajo += 1;
+        // Para los demás casos, usar el seguimiento
+        else {
+          riesgo = seguimiento ? seguimiento.riesgo : 'SinRegistro';
+          mensaje = seguimiento ? seguimiento.mensaje : 'Sin información';
         }
+        
+        // Añadir programa con su nivel de riesgo
+        programDetails[estado].push({
+          ...programa,
+          riesgo,
+          mensaje
+        });
+        
+        // Actualizar conteos
+        newCounts[estado][riesgo] += 1;
       });
-
-      const sinRegistro = estados[estado].length - Object.keys(latestSeguimientos).length;
-      newCounts[estado].SinRegistro += sinRegistro;
+      
+      // Actualizar contador SinRegistro para estados que no son RAAC
+      if (estado !== 'RAAC') {
+        const sinRegistro = estados[estado].length - Object.keys(latestSeguimientos).length;
+        // No necesitamos ajustar SinRegistro aquí porque ya lo contamos arriba
+      }
     });
 
     setCounts(newCounts);
     setProgramDetails(programDetails);
   }, []);
-
+  
   // Configuración moderna de colores e iconos para niveles de riesgo
-  const riskConfig = {
+  const riskConfig = useMemo(() => ({
     Alto: {
       color: '#DC3545',
       backgroundColor: 'rgba(220, 53, 69, 0.08)',
@@ -230,9 +323,9 @@ const AltaCalidad = () => {
       icon: <HelpOutlineIcon />,
       gradient: 'linear-gradient(135deg, #6C757D 0%, #495057 100%)'
     }
-  };
+  }), []);
 
-  const processConfig = {
+  const processConfig = useMemo(() => ({
     AAC: {
       name: 'Acreditación',
       icon: <StarIcon />,
@@ -251,26 +344,26 @@ const AltaCalidad = () => {
       color: '#B22222',
       description: 'Programas con acreditación internacional'
     }
-  };
+  }), []);
 
-  const getRiskColor = (riskLevel) => riskConfig[riskLevel]?.backgroundColor || 'white';
-  const getRiskIcon = (riskLevel) => riskConfig[riskLevel]?.icon || null;
+  const getRiskColor = useCallback((riskLevel) => riskConfig[riskLevel]?.backgroundColor || 'white', [riskConfig]);
+  const getRiskIcon = useCallback((riskLevel) => riskConfig[riskLevel]?.icon || null, [riskConfig]);
   
-  const getTotalByProcess = (proceso) => {
+  const getTotalByProcess = useCallback((proceso) => {
     return counts[proceso].Alto + counts[proceso].Medio + counts[proceso].Bajo + counts[proceso].SinRegistro;
-  };
+  }, [counts]);
   
-  const getTotalByRisk = (riskLevel) => {
+  const getTotalByRisk = useCallback((riskLevel) => {
     return counts.AAC[riskLevel] + counts.RAAC[riskLevel] + counts.INT[riskLevel];
-  };
+  }, [counts]);
   
-  const getGrandTotal = () => {
+  const getGrandTotal = useCallback(() => {
     return Object.keys(counts).reduce((total, proceso) => {
       return total + getTotalByProcess(proceso);
     }, 0);
-  };
+  }, [counts, getTotalByProcess]);
 
-  const handleRowClick = (buttonValue, globalVar, rowKey) => {
+  const handleRowClick = useCallback((buttonValue, globalVar, rowKey) => {
     setSelectedValue(buttonValue);
     
     const validRowKeys = ['AAC', 'RAAC', 'INT'];
@@ -281,21 +374,29 @@ const AltaCalidad = () => {
       if (rowKey === 'RAAC') {
         setSelectedRaacOptions([]);
       }
+      
+      // Reset risk filter
+      setSelectedRisk(null);
+      setFilteredByRisk(false);
     } else {
       setSelectedRow(null);
     }
     
     setProgramasVisible(false);
     setGlobalVariable(globalVar);
-  };
+  }, []);
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     setSelectedRow(null);
     setSelectedValue(null);
     setProgramasVisible(false);
-  };
+    
+    // Reset risk filter
+    setSelectedRisk(null);
+    setFilteredByRisk(false);
+  }, []);
 
-  const handleNavigateToProgram = (program) => {
+  const handleNavigateToProgram = useCallback((program) => {
     const programData = {
       ...program,
       globalVariable: selectedRow,
@@ -306,9 +407,9 @@ const AltaCalidad = () => {
       state: programData,
       replace: true
     });
-  };
+  }, [navigate, selectedRow]);
 
-  const getTitle = () => {
+  const getTitle = useCallback(() => {
     switch (selectedRow) {
       case 'AAC':
         return 'Programas en Proceso de Acreditación';
@@ -319,7 +420,7 @@ const AltaCalidad = () => {
       default:
         return 'Procesos de Acreditación de Alta Calidad';
     }
-  };
+  }, [selectedRow]);
 
   // Componente ModernRiskChip
   const ModernRiskChip = ({ riskLevel, value, size = 'medium' }) => {
@@ -462,7 +563,8 @@ const AltaCalidad = () => {
                   { type: 'yellow', label: '4 AÑOS ANTES DEL VENCIMIENTO', count: raacProgramCounts.yellow },
                   { type: 'orange', label: '2 AÑOS ANTES DEL VENCIMIENTO', count: raacProgramCounts.orange },
                   { type: 'orange2', label: '18 MESES ANTES DEL VENCIMIENTO', count: raacProgramCounts.orange2 },
-                  { type: 'red', label: 'AÑO DEL VENCIMIENTO', count: raacProgramCounts.red }
+                  { type: 'red', label: 'AÑO DEL VENCIMIENTO', count: raacProgramCounts.red },
+                  { type: 'gray', label: 'SIN REGISTRO', count: counts.RAAC.SinRegistro }
                 ].map(({ type, label, count }) => (
                   <Button
                     key={type}
@@ -495,19 +597,21 @@ const AltaCalidad = () => {
                     <Grow in timeout={600 + index * 100}>
                       <Card 
                         elevation={0}
+                        onClick={() => handleRiskCardClick(risk)}
                         onMouseEnter={() => setHoveredCard(risk)}
                         onMouseLeave={() => setHoveredCard(null)}
                         sx={{ 
                           borderRadius: '20px',
-                          border: `2px solid ${config.borderColor}`,
-                          backgroundColor: config.backgroundColor,
+                          border: `2px solid ${selectedRisk === risk ? config.color : config.borderColor}`,
+                          backgroundColor: selectedRisk === risk ? alpha(config.color, 0.15) : config.backgroundColor,
                           position: 'relative',
                           overflow: 'hidden',
                           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          transform: hoveredCard === risk ? 'translateY(-8px)' : 'translateY(0)',
-                          boxShadow: hoveredCard === risk 
+                          transform: hoveredCard === risk || selectedRisk === risk ? 'translateY(-8px)' : 'translateY(0)',
+                          boxShadow: hoveredCard === risk || selectedRisk === risk
                             ? `0 12px 32px ${alpha(config.color, 0.15)}`
                             : `0 2px 8px ${alpha(config.color, 0.08)}`,
+                          cursor: 'pointer',
                           '&::before': {
                             content: '""',
                             position: 'absolute',
@@ -562,6 +666,17 @@ const AltaCalidad = () => {
                           }}>
                             {count === 1 ? 'programa' : 'programas'}
                           </Typography>
+                          {/* Mostrar porcentaje */}
+                          <Typography variant="body1" sx={{ 
+                            color: config.color,
+                            fontSize: '1.125rem',
+                            fontWeight: 600,
+                            mt: 1
+                          }}>
+                            {getTotalByProcess(selectedRow) > 0 
+                              ? `${((count / getTotalByProcess(selectedRow)) * 100).toFixed(1)}%` 
+                              : '0%'}
+                          </Typography>
                         </CardContent>
                       </Card>
                     </Grow>
@@ -570,182 +685,6 @@ const AltaCalidad = () => {
               })}
             </Grid>
 
-            {/* Tabla de Nivel de Riesgo */}
-            <Card sx={{ 
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              border: '1px solid rgba(0,0,0,0.02)',
-              width: '100%',
-              maxWidth: '600px',
-              mb: 4,
-              mx: 'auto'
-            }}>
-              <Box sx={{ 
-                p: { xs: 2, sm: 3 }, 
-                background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)',
-                borderBottom: '1px solid rgba(0,0,0,0.06)'
-              }}>
-                <Typography variant="h6" sx={{
-                  fontWeight: 600,
-                  color: '#212529',
-                  fontSize: '1.25rem',
-                  fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                }}>
-                  Nivel de Riesgo
-                </Typography>
-                <Typography variant="body2" sx={{ 
-                  color: '#6C757D',
-                  mt: 0.5
-                }}>
-                  Distribución de programas por nivel de riesgo
-                </Typography>
-              </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ 
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        color: '#495057',
-                        backgroundColor: '#F8F9FA',
-                        borderBottom: '2px solid rgba(0,0,0,0.06)',
-                        py: 2.5,
-                        px: { xs: 1, sm: 2 }
-                      }}>
-                        Nivel de Riesgo
-                      </TableCell>
-                      <TableCell align="center" sx={{ 
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        color: '#495057',
-                        backgroundColor: '#F8F9FA',
-                        borderBottom: '2px solid rgba(0,0,0,0.06)',
-                        py: 2.5,
-                        px: { xs: 1, sm: 2 }
-                      }}>
-                        Cantidad
-                      </TableCell>
-                      <TableCell align="center" sx={{ 
-                        fontWeight: 600,
-                        fontSize: '0.875rem',
-                        color: '#495057',
-                        backgroundColor: '#F8F9FA',
-                        borderBottom: '2px solid rgba(0,0,0,0.06)',
-                        py: 2.5,
-                        px: { xs: 1, sm: 2 }
-                      }}>
-                        Porcentaje
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => {
-                      const config = riskConfig[risk];
-                      const count = counts[selectedRow][risk];
-                      const total = getTotalByProcess(selectedRow);
-                      const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                      
-                      return (
-                        <TableRow key={risk} sx={{ 
-                          '&:hover': { 
-                            backgroundColor: 'rgba(0, 0, 0, 0.01)',
-                            transform: 'translateX(2px)',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                          }
-                        }}>
-                          <TableCell sx={{ 
-                            py: 2,
-                            px: { xs: 1, sm: 2 },
-                            borderBottom: '1px solid rgba(0,0,0,0.04)'
-                          }}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              {React.cloneElement(config.icon, { 
-                                sx: { color: config.color, fontSize: '20px' } 
-                              })}
-                              <Typography sx={{ 
-                                color: config.color,
-                                fontWeight: 500,
-                                fontSize: '0.9375rem'
-                              }}>
-                                {risk === 'SinRegistro' ? 'Sin Registro' : risk}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="center" sx={{ 
-                            py: 2,
-                            px: { xs: 1, sm: 2 },
-                            borderBottom: '1px solid rgba(0,0,0,0.04)'
-                          }}>
-                            <Typography sx={{ 
-                              fontWeight: 600,
-                              color: '#212529',
-                              fontSize: '1rem'
-                            }}>
-                              {count}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center" sx={{ 
-                            py: 2,
-                            px: { xs: 1, sm: 2 },
-                            borderBottom: '1px solid rgba(0,0,0,0.04)'
-                          }}>
-                            <Typography sx={{ 
-                              fontWeight: 600,
-                              color: config.color,
-                              fontSize: '1rem'
-                            }}>
-                              {percentage}%
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {/* Fila de total */}
-                    <TableRow sx={{ 
-                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                      '&:hover': { 
-                        backgroundColor: 'rgba(0, 0, 0, 0.03)',
-                        transform: 'translateX(2px)',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }
-                    }}>
-                      <TableCell sx={{ 
-                        py: 2,
-                        px: { xs: 1, sm: 2 },
-                        borderBottom: 'none',
-                        fontWeight: 600,
-                        color: '#212529'
-                      }}>
-                        Total
-                      </TableCell>
-                      <TableCell align="center" sx={{ 
-                        py: 2,
-                        px: { xs: 1, sm: 2 },
-                        borderBottom: 'none',
-                        fontWeight: 700,
-                        color: '#B22222',
-                        fontSize: '1.125rem'
-                      }}>
-                        {getTotalByProcess(selectedRow)}
-                      </TableCell>
-                      <TableCell align="center" sx={{ 
-                        py: 2,
-                        px: { xs: 1, sm: 2 },
-                        borderBottom: 'none',
-                        fontWeight: 700,
-                        color: '#B22222',
-                        fontSize: '1.125rem'
-                      }}>
-                        100%
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Card>
-            
             {/* Tabla de programas */}
             <Card sx={{ 
               boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
@@ -756,22 +695,58 @@ const AltaCalidad = () => {
               <Box sx={{ 
                 p: 3, 
                 background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)',
-                borderBottom: '1px solid rgba(0,0,0,0.06)'
+                borderBottom: '1px solid rgba(0,0,0,0.06)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}>
-                <Typography variant="h6" sx={{
-                  fontWeight: 600,
-                  color: '#212529',
-                  fontSize: '1.25rem',
-                  fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                }}>
-                  Listado de Programas
-                </Typography>
-                <Typography variant="body2" sx={{ 
-                  color: '#6C757D',
-                  mt: 0.5
-                }}>
-                  {procesoProgramas.length} programa{procesoProgramas.length !== 1 ? 's' : ''} encontrado{procesoProgramas.length !== 1 ? 's' : ''}
-                </Typography>
+                <div>
+                  <Typography variant="h6" sx={{
+                    fontWeight: 600,
+                    color: '#212529',
+                    fontSize: '1.25rem',
+                    fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                  }}>
+                    Listado de Programas
+                    {selectedRisk && (
+                      <span style={{ 
+                        color: riskConfig[selectedRisk].color,
+                        marginLeft: '10px'
+                      }}>
+                        • Filtrado por: {selectedRisk === 'SinRegistro' ? 'Sin Registro' : `${selectedRisk} Riesgo`}
+                      </span>
+                    )}
+                  </Typography>
+                  <Typography variant="body2" sx={{ 
+                    color: '#6C757D',
+                    mt: 0.5
+                  }}>
+                    {filteredByRisk 
+                      ? `${procesoProgramas.filter(p => p.riesgo === selectedRisk).length} programa${procesoProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${procesoProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
+                      : `${procesoProgramas.length} programa${procesoProgramas.length !== 1 ? 's' : ''} encontrado${procesoProgramas.length !== 1 ? 's' : ''}`
+                    }
+                  </Typography>
+                </div>
+                {selectedRisk && (
+                  <Button 
+                    variant="outlined" 
+                    size="small"
+                    onClick={() => {
+                      setSelectedRisk(null);
+                      setFilteredByRisk(false);
+                    }}
+                    sx={{
+                      borderColor: '#6C757D',
+                      color: '#6C757D',
+                      '&:hover': {
+                        borderColor: '#495057',
+                        backgroundColor: 'rgba(108, 117, 125, 0.04)',
+                      }
+                    }}
+                  >
+                    Limpiar filtro
+                  </Button>
+                )}
               </Box>
               
               {procesoProgramas.length === 0 ? (
@@ -829,7 +804,7 @@ const AltaCalidad = () => {
                               px: { xs: 1, sm: 2 },
                               fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                               position: 'sticky',
-                              top: 80,
+                              top: 0,
                               zIndex: 10
                             }}
                           >
@@ -839,7 +814,10 @@ const AltaCalidad = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {procesoProgramas.map((program, index) => (
+                      {(filteredByRisk 
+                        ? procesoProgramas.filter(program => program.riesgo === selectedRisk)
+                        : procesoProgramas
+                      ).map((program, index) => (
                         <TableRow 
                           key={program.id_programa}
                           hover 
@@ -947,9 +925,6 @@ const AltaCalidad = () => {
             borderBottom: '1px solid rgba(0,0,0,0.06)'
           }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-                Alta Calidad
-              </Typography>
             </Box>
             <Typography variant="h4" sx={{ 
               fontWeight: 700,
@@ -1326,6 +1301,14 @@ const AltaCalidad = () => {
         '&:hover': {
           backgroundColor: isSelected ? '#d81b60' : '#fce4ec',
         }
+      },
+      gray: { 
+        backgroundColor: isSelected ? '#6C757D' : 'rgba(108, 117, 125, 0.08)', 
+        color: isSelected ? 'white' : '#000', 
+        borderColor: '#6C757D',
+        '&:hover': {
+          backgroundColor: isSelected ? '#5a6268' : '#e9ecef',
+        }
       }
     };
 
@@ -1357,15 +1340,10 @@ const AltaCalidad = () => {
     try {
       setLoading(true);
       
-      // Update selected options array
-      setSelectedRaacOptions(prev => {
-        if (prev.includes(buttonType)) {
-          return prev.filter(item => item !== buttonType);
-        } else {
-          return [...prev, buttonType];
-        }
-      });
+      // Toggle the clicked button (si ya está seleccionado, desactivarlo)
+      setClickedRaacButton(buttonType === clickedRaacButton ? null : buttonType);
       
+      // Mapeo de tipos de botones a sus términos de búsqueda
       const searchTermMap = {
         white: 'Vencido',
         green: 'Fase 1',
@@ -1373,7 +1351,7 @@ const AltaCalidad = () => {
         orange: 'Fase 3',
         orange2: 'Fase 4',
         red: 'Fase 5',
-        default: ''
+        gray: 'SinRegistro'
       };
       
       // Get all programs
@@ -1385,51 +1363,57 @@ const AltaCalidad = () => {
         response = await Filtro6({ searchTerm: '' });
       }
       
-      // Filter only those with ac_vigente = SI
-      const allRaacPrograms = response.filter(item => item['ac vigente'] === 'SI');
+      // Filter programs based on the clicked button
+      let filteredPrograms;
+      if (buttonType === clickedRaacButton) {
+        // Si se hizo clic en el mismo botón, mostrar todos los programas RAAC
+        filteredPrograms = response.filter(item => 
+          (item['ac vigente'] === 'SI') || 
+          item['fase rac'] === 'Vencido'
+        );
+        setClickedRaacButton(null);
+      } else if (buttonType === 'white') {
+        // Para el botón "white", mostrar solo los programas con fase_rac = 'Vencido'
+        filteredPrograms = response.filter(item => item['fase rac'] === 'Vencido');
+      } else if (buttonType === 'gray') {
+        // Para el botón "gray", mostrar programas con fase_rac vacío o 'N/A'
+        filteredPrograms = response.filter(item => 
+          (!item['fase rac'] || item['fase rac'] === '' || item['fase rac'] === 'N/A') && 
+          item['ac vigente'] === 'SI'
+        );
+      } else {
+        // Para los demás botones, filtrar por fase_rac y ac_vigente = 'SI'
+        filteredPrograms = response.filter(item => 
+          item['fase rac'] === searchTermMap[buttonType] && 
+          item['ac vigente'] === 'SI'
+        );
+      }
       
       // Get all seguimientos to assign risk levels
       const seguimientos = await Filtro7();
       
-      // Prepare updated selected options after the click
-      const updatedSelectedOptions = prev => {
-        if (prev.includes(buttonType)) {
-          return prev.filter(item => item !== buttonType);
-        } else {
-          return [...prev, buttonType];
+      // Get all RAAC programs with risk information
+      const programsWithRisk = await loadProgramsWithRisk(filteredPrograms, seguimientos);
+      
+      // Calculate new counts based on filtered programs
+      const newCounts = { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 };
+      programsWithRisk.forEach(program => {
+        if (newCounts[program.riesgo] !== undefined) {
+          newCounts[program.riesgo] += 1;
         }
-      };
+      });
       
-      const newSelectedOptions = updatedSelectedOptions(selectedRaacOptions);
+      // Update programDetails state with filtered RAAC programs
+      setProgramDetails(prev => ({
+        ...prev,
+        RAAC: programsWithRisk
+      }));
       
-      // If no button is selected after this click, show all programs
-      if (newSelectedOptions.length === 0) {
-        // Get all RRC programs with risk information
-        const programsWithRisk = await loadProgramsWithRisk(allRaacPrograms, seguimientos);
-        
-        // Update programDetails state with all RRC programs
-        setProgramDetails(prev => ({
-          ...prev,
-          RAAC: programsWithRisk
-        }));
-      } else {
-        // Filter programs based on selected buttons
-        const filteredResult = allRaacPrograms.filter(program => {
-          return newSelectedOptions.some(option => {
-            const searchTerm = searchTermMap[option];
-            return program['fase rac'] === searchTerm;
-          });
-        });
-        
-        // Get RRC programs with risk information
-        const programsWithRisk = await loadProgramsWithRisk(filteredResult, seguimientos);
-        
-        // Update programDetails state with filtered RRC programs
-        setProgramDetails(prev => ({
-          ...prev,
-          RAAC: programsWithRisk
-        }));
-      }
+      // Update counts directly for immediate UI refresh
+      setCounts(prev => ({
+        ...prev,
+        RAAC: newCounts
+      }));
       
       setLoading(false);
     } catch (error) {
@@ -1437,11 +1421,129 @@ const AltaCalidad = () => {
       setLoading(false);
     }
   };
-  
+
   // Helper function to load programs with risk information
   const loadProgramsWithRisk = async (programs, seguimientos) => {
     return programs.map(program => {
-      // Find the latest seguimiento for this program
+      // Para programas AAC, clasificar según estado de acreditación
+      if (program['aac_1a'] === 'SI') {
+        if (program['ac vigente'] === 'NO') {
+          return {
+            ...program,
+            riesgo: 'Alto',
+            mensaje: 'Programa con acreditación vencida'
+          };
+        } 
+        
+        if (program['ac vigente'] === 'SI' && program['fechavencac']) {
+          const fechaVenc = program['fechavencac'];
+          const partesFecha = fechaVenc.split('/');
+          
+          if (partesFecha.length === 3) {
+            const año = parseInt(partesFecha[2]);
+            const mes = parseInt(partesFecha[1]) - 1;
+            const dia = parseInt(partesFecha[0]);
+            const fechaVencimiento = new Date(año, mes, dia);
+            const hoy = new Date();
+            
+            // Calcular diferencia en meses
+            const diferenciaMeses = (fechaVencimiento.getFullYear() - hoy.getFullYear()) * 12 + 
+                                   (fechaVencimiento.getMonth() - hoy.getMonth());
+            
+            if (diferenciaMeses <= 0) {
+              return {
+                ...program,
+                riesgo: 'Alto',
+                mensaje: 'Programa próximo a vencer o vencido'
+              };
+            } 
+            
+            if (diferenciaMeses <= 12) {
+              return {
+                ...program,
+                riesgo: 'Alto',
+                mensaje: 'Programa vence en menos de un año'
+              };
+            } 
+            
+            if (diferenciaMeses <= 24) {
+              return {
+                ...program,
+                riesgo: 'Medio',
+                mensaje: 'Programa vence en menos de dos años'
+              };
+            } 
+            
+            return {
+              ...program,
+              riesgo: 'Bajo',
+              mensaje: 'Programa con vigencia extendida'
+            };
+          }
+        }
+        
+        // Si es un programa AAC pero no cumple las condiciones anteriores, clasificar como SinRegistro
+        // Esto incluye programas sin fecha de vencimiento o con formato incorrecto
+        if (!program['fechavencac'] || program['fechavencac'] === '') {
+          return {
+            ...program,
+            riesgo: 'SinRegistro',
+            mensaje: 'Sin fecha de vencimiento registrada'
+          };
+        }
+        
+        // Para programas AAC con fase_rac N/A o vacío, clasificar como SinRegistro
+        if (!program['fase rac'] || program['fase rac'] === '' || program['fase rac'] === 'N/A') {
+          return {
+            ...program,
+            riesgo: 'SinRegistro',
+            mensaje: 'Fase RAC no definida'
+          };
+        }
+      }
+      
+      // Asignar riesgo según la fase para programas RAAC
+      if (!program['fase rac'] || program['fase rac'] === '' || program['fase rac'] === 'N/A') {
+        return {
+          ...program,
+          riesgo: 'SinRegistro',
+          mensaje: 'Fase RAC no definida'
+        };
+      } 
+      
+      if (program['fase rac'] === 'Vencido') {
+        return {
+          ...program,
+          riesgo: 'Alto',
+          mensaje: 'Programa con acreditación vencida'
+        };
+      } 
+      
+      if (program['fase rac'] === 'Fase 5') {
+        return {
+          ...program,
+          riesgo: 'Alto',
+          mensaje: 'Programa en Fase 5 - Alto riesgo'
+        };
+      } 
+      
+      if (program['fase rac'] === 'Fase 4' || program['fase rac'] === 'Fase 3') {
+        return {
+          ...program,
+          riesgo: 'Medio',
+          mensaje: `Programa en ${program['fase rac']} - Riesgo medio`
+        };
+      } 
+      
+      if (program['fase rac'] === 'Fase 2' || program['fase rac'] === 'Fase 1') {
+        return {
+          ...program,
+          riesgo: 'Bajo',
+          mensaje: `Programa en ${program['fase rac']} - Bajo riesgo`
+        };
+      }
+      
+      // Para los demás programas, proceder como antes
       const programSeguimientos = seguimientos.filter(seg => seg.id_programa === program.id_programa);
       let latestSeguimiento = null;
       
@@ -1467,8 +1569,8 @@ const AltaCalidad = () => {
         try {
           setLoading(true);
           
-          // Reset selected options so no buttons are preselected
-          setSelectedRaacOptions([]);
+          // Reset clicked button
+          setClickedRaacButton(null);
           
           // Get all programs
           let response;
@@ -1479,8 +1581,12 @@ const AltaCalidad = () => {
             response = await Filtro6({ searchTerm: '' });
           }
           
-          // Filter only those with ac_vigente = SI
-          const allRaacPrograms = response.filter(item => item['ac vigente'] === 'SI');
+          // Filter programs appropriately - mostrar todos los programas RAAC inicialmente
+          // Incluir también programas con fase_rac vacío o 'N/A' para clasificarlos como SinRegistro
+          const allRaacPrograms = response.filter(item => 
+            (item['ac vigente'] === 'SI') || 
+            item['fase rac'] === 'Vencido'
+          );
           
           // Get all seguimientos to assign risk levels
           const seguimientos = await Filtro7();
@@ -1488,10 +1594,24 @@ const AltaCalidad = () => {
           // Get all RAAC programs with risk information
           const programsWithRisk = await loadProgramsWithRisk(allRaacPrograms, seguimientos);
           
+          // Calculate new counts based on all RAAC programs
+          const newCounts = { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 };
+          programsWithRisk.forEach(program => {
+            if (newCounts[program.riesgo] !== undefined) {
+              newCounts[program.riesgo] += 1;
+            }
+          });
+          
           // Update programDetails state with all RAAC programs
           setProgramDetails(prev => ({
             ...prev,
             RAAC: programsWithRisk
+          }));
+          
+          // Update counts directly for immediate UI refresh
+          setCounts(prev => ({
+            ...prev,
+            RAAC: newCounts
           }));
           
           setLoading(false);
@@ -1504,6 +1624,19 @@ const AltaCalidad = () => {
       loadRaacPrograms();
     }
   }, [selectedRow, isCargo]);
+
+  // Manejar clic en tarjeta de riesgo para filtrar programas
+  const handleRiskCardClick = useCallback((risk) => {
+    if (selectedRisk === risk) {
+      // Si ya está seleccionado, deseleccionar y mostrar todos
+      setSelectedRisk(null);
+      setFilteredByRisk(false);
+    } else {
+      // Seleccionar y filtrar por este riesgo
+      setSelectedRisk(risk);
+      setFilteredByRisk(true);
+    }
+  }, [selectedRisk]);
 
   return (
     <>

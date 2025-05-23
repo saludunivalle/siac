@@ -1,5 +1,5 @@
 // src/components/Home.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filtro5, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
 import Header from './Header';
@@ -96,17 +96,17 @@ const Home = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Funciones para obtener programas vencidos
-  const getExpiredRRCPrograms = (programas) => {
+  // Funciones para obtener programas vencidos - MEMOIZADAS
+  const getExpiredRRCPrograms = useCallback((programas) => {
     return programas.filter((program) => program['fase rrc'] === 'Vencido');
-  };
+  }, []);
 
-  const getExpiredRACPrograms = (programas) => {
+  const getExpiredRACPrograms = useCallback((programas) => {
     return programas.filter((program) => program['fase rac'] === 'Vencido');
-  };
+  }, []);
 
-  // Función para contar programas próximos a vencer - FUNCIONALIDAD COMPLETA
-  const countExpiringPrograms = (programas) => {
+  // Función para contar programas próximos a vencer - MEMOIZADA Y OPTIMIZADA
+  const countExpiringPrograms = useCallback((programas) => {
     const currentYear = new Date().getFullYear();
     const counts = {
       RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
@@ -155,16 +155,14 @@ const Home = () => {
       }
     });
   
-    console.log('Expiring programs:', expiringPrograms); 
     setExpiryCounts(counts);
     setExpiryPrograms(expiringPrograms);
-  };
+  }, []);
 
-  // Manejador para navegación a programas vencidos
-  const handleExpiryClick = () => {
+  // Manejador para navegación a programas vencidos - MEMOIZADO
+  const handleExpiryClick = useCallback(() => {
     navigate('/programas-venc', { state: { expiryPrograms } });
-    console.log('Expiry Programs:', expiryPrograms);
-  };
+  }, [navigate, expiryPrograms]);
 
   // Obtener los permisos del usuario y el nombre de usuario
   useEffect(() => {
@@ -302,10 +300,10 @@ const Home = () => {
     };
 
     fetchData();
-  }, []);
+  }, [getExpiredRRCPrograms, getExpiredRACPrograms, countExpiringPrograms]);
 
-  // Función para actualizar las gráficas
-  const updateCharts = (data) => {
+  // Función para actualizar las gráficas - MEMOIZADA
+  const updateCharts = useCallback((data) => {
     let filteredData = data;
   
     if (selectedEscuela !== 'Todos') {
@@ -416,40 +414,41 @@ const Home = () => {
         },
       ],
     });
-  };
+  }, [selectedEscuela, selectedNivelAcademico, selectedNivelFormacion]);
 
-  const updateChartsVisibility = () => {
+  // Función para actualizar visibilidad de gráficos - MEMOIZADA
+  const updateChartsVisibility = useCallback(() => {
     if (selectedNivelAcademico === 'Todos' && selectedNivelFormacion === 'Todos' && selectedEscuela === 'Todos') {
       setChartsVisible(true);
     } else {
       setChartsVisible(false);
     }
-  };
+  }, [selectedNivelAcademico, selectedNivelFormacion, selectedEscuela]);
   
-  const handleAcademicLevelClick = (nivelAcademico) => {
+  const handleAcademicLevelClick = useCallback((nivelAcademico) => {
     setSelectedNivelAcademico(nivelAcademico);
     updateCharts(filteredData2);
     updateChartsVisibility();
-  };
+  }, [filteredData2, updateChartsVisibility]);
   
-  const handleLegendClick = (nivelFormacion) => {
+  const handleLegendClick = useCallback((nivelFormacion) => {
     setSelectedNivelFormacion(nivelFormacion);
     updateCharts(filteredData2);
     updateChartsVisibility();
-  };
+  }, [filteredData2, updateChartsVisibility]);
   
-  const handleEscuelaClick = (escuela) => {
+  const handleEscuelaClick = useCallback((escuela) => {
     setSelectedEscuela(escuela);
     updateCharts(filteredData2);
     updateChartsVisibility();
-  };
+  }, [filteredData2, updateChartsVisibility]);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     navigate('/programas', { state: filteredData2 });
-  };
+  }, [navigate, filteredData2]);
 
-  // Preparar datos para el reporte
-  const prepareReportData = async () => {
+  // Preparar datos para el reporte - MEMOIZADA
+  const prepareReportData = useCallback(async () => {
     try {
         const seguimientos = await Filtro7();
         const programas = await Filtro5();
@@ -477,14 +476,14 @@ const Home = () => {
         console.error('Error al preparar datos del reporte:', error);
         throw error;
     }
-  };
+  }, [user]);
 
-  const downloadSheet = (spreadsheetId) => {
+  const downloadSheet = useCallback((spreadsheetId) => {
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
     window.open(url, '_blank');
-  };
+  }, []);
 
-  const handleReporteActividades = async () => {
+  const handleReporteActividades = useCallback(async () => {
     setIsLoading(true); 
     try {
         const spreadsheetId = '1R4Ugfx43AoBjxjsEKYl7qZsAY8AfFNUN_gwcqETwgio';
@@ -511,16 +510,16 @@ const Home = () => {
     } finally {
         setIsLoading(false); 
     }
-  };
+  }, [prepareReportData, downloadSheet]);
 
-  // Función para truncar texto largo en móviles
-  const truncateText = (text, maxLength = 20) => {
+  // Función para truncar texto largo en móviles - MEMOIZADA
+  const truncateText = useCallback((text, maxLength = 20) => {
     if (!isMobile) return text;
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-  };
+  }, [isMobile]);
 
-  // Opciones de gráficos modernizadas
-  const chartOptions = {
+  // Opciones de gráficos modernizadas - MEMOIZADAS
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     layout: {
@@ -592,7 +591,7 @@ const Home = () => {
       duration: 1000,
       easing: 'easeOutQuart'
     }
-  };
+  }), [isMobile]);
 
   // Componente de tabla modernizada y responsive
   const ModernTable = () => {
@@ -1457,16 +1456,6 @@ const Home = () => {
               mb: { xs: 3, sm: 4, md: 5 },
               pl: { xs: 1, sm: 2, md: 0 }
             }}>
-              <Typography variant="h3" sx={{ 
-                fontWeight: 700,
-                color: '#B22222',
-                fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem', lg: '3rem' },
-                letterSpacing: '-0.03em',
-                fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                mb: 1
-              }}>
-                Sistema SIAC
-              </Typography>
             </Box>
           </Fade>
 
