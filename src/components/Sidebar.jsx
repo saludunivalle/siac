@@ -25,7 +25,8 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import StarIcon from '@mui/icons-material/Star';
 import HomeIcon from '@mui/icons-material/Home';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import KeyboardArrowLeftRoundedIcon from '@mui/icons-material/KeyboardArrowLeftRounded';
+import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -35,6 +36,7 @@ const Sidebar = ({ isCargo }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(true);
+  const [isHidden, setIsHidden] = useState(false);
   const isMobile = useMediaQuery('(max-width:768px)');
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState('');
@@ -58,7 +60,16 @@ const Sidebar = ({ isCargo }) => {
   }, []);
 
   const handleDrawerToggle = () => {
-    setOpen(!open);
+    if (isHidden) {
+      setIsHidden(false);
+      setOpen(true);
+    } else {
+      setOpen(!open);
+    }
+  };
+
+  const handleHideSidebar = () => {
+    setIsHidden(true);
   };
 
   const isActive = (path) => {
@@ -166,7 +177,7 @@ const Sidebar = ({ isCargo }) => {
         },
         {
           text: 'Acreditación Alta Calidad',
-          icon: <StarIcon />,
+          icon: <VerifiedIcon />,
           path: '/acreditacion-alta-calidad',
           tooltip: 'Acreditación Alta Calidad'
         }
@@ -224,12 +235,12 @@ const Sidebar = ({ isCargo }) => {
           onMouseEnter={() => setHoveredItem(itemKey)}
           onMouseLeave={() => setHoveredItem(null)}
           sx={{
-            py: 1,
-            px: open ? 2 : 1.5,
-            mx: open ? 0.75 : 0.5,
-            my: 0.25,
-            borderRadius: open ? '10px' : '8px',
-            minHeight: '40px',
+            py: 0.5,
+            px: open ? 1.5 : 0.75,
+            mx: open ? 0.5 : 0.15,
+            my: open ? 0.13 : 0.05,
+            borderRadius: open ? '8px' : '6px',
+            minHeight: '32px',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             position: 'relative',
             overflow: 'hidden',
@@ -250,7 +261,7 @@ const Sidebar = ({ isCargo }) => {
               left: 0,
               top: 0,
               bottom: 0,
-              width: active ? '4px' : '0px',
+              width: active ? '3px' : '0px',
               backgroundColor: '#B22222',
               borderRadius: '0 4px 4px 0',
               transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -258,12 +269,12 @@ const Sidebar = ({ isCargo }) => {
           }}
         >
           <ListItemIcon sx={{
-            minWidth: open ? '36px' : '24px',
+            minWidth: open ? '32px' : '20px',
             color: active ? '#B22222' : '#6C757D',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             transform: active ? 'scale(1.1)' : 'scale(1)',
             '& .MuiSvgIcon-root': {
-              fontSize: open ? '18px' : '18px'
+              fontSize: open ? '16px' : '16px'
             }
           }}>
             {item.icon}
@@ -273,7 +284,7 @@ const Sidebar = ({ isCargo }) => {
               primary={item.text}
               sx={{
                 '& .MuiListItemText-primary': {
-                  fontSize: '0.8125rem',
+                  fontSize: '0.75rem',
                   fontWeight: active ? 600 : 500,
                   color: active ? '#B22222' : '#495057',
                   fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -290,12 +301,12 @@ const Sidebar = ({ isCargo }) => {
 
   // Componente para secciones del menú
   const MenuSection = ({ section }) => (
-    <Box key={section.id} sx={{ mb: 0.5 }}>
+    <Box key={section.id} sx={{ mb: 0.25 }}>
       <Collapse in={open} orientation="horizontal">
         <Typography sx={{
-          px: 2,
-          py: 0.5,
-          fontSize: '0.7rem',
+          px: 1.5,
+          py: 0.25,
+          fontSize: '0.65rem',
           fontWeight: 600,
           color: '#6C757D',
           textTransform: 'uppercase',
@@ -351,11 +362,12 @@ const Sidebar = ({ isCargo }) => {
       <Drawer
         variant="permanent"
         sx={{
-          width: open ? 280 : 72,
+          width: isHidden ? 0 : (open ? 280 : 72),
           flexShrink: 0,
           transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
           '& .MuiDrawer-paper': {
-            width: open ? 280 : 72,
+            width: isHidden ? 0 : (open ? 280 : 72),
             marginTop: '80px',
             height: 'calc(100vh - 80px)',
             backgroundColor: '#FFFFFF',
@@ -414,34 +426,68 @@ const Sidebar = ({ isCargo }) => {
             </Box>
           </Fade>
           
-          <IconButton 
-            onClick={handleDrawerToggle}
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: '10px',
-              backgroundColor: open ? 'rgba(108, 117, 125, 0.08)' : 'rgba(178, 34, 34, 0.08)',
-              color: open ? '#6C757D' : '#B22222',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                backgroundColor: open ? 'rgba(108, 117, 125, 0.12)' : 'rgba(178, 34, 34, 0.12)',
-                transform: 'scale(1.05)'
-              }
-            }}
-          >
-            {open ? <ChevronLeftIcon /> : <MenuIcon />}
-          </IconButton>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip 
+              title={open ? "Colapsar menú" : "Expandir menú"}
+              placement="right"
+              arrow
+            >
+              <IconButton
+                onClick={() => setOpen(!open)}
+                sx={{
+                  width: 28,
+                  height: 28,
+                  backgroundColor: open ? 'rgba(108, 117, 125, 0.08)' : 'rgba(178, 34, 34, 0.08)',
+                  color: open ? '#6C757D' : '#B22222',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    backgroundColor: open ? 'rgba(108, 117, 125, 0.12)' : 'rgba(178, 34, 34, 0.12)',
+                    transform: 'scale(1.05)'
+                  }
+                }}
+              >
+                <MenuIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip 
+              title="Ocultar menú"
+              placement="left"
+              arrow
+            >
+              <IconButton
+                onClick={() => setIsHidden(true)}
+                sx={{
+                  width: 28,
+                  height: 28,
+                  backgroundColor: 'rgba(108, 117, 125, 0.08)',
+                  color: '#6C757D',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(108, 117, 125, 0.12)',
+                    transform: 'scale(1.05)'
+                  }
+                }}
+              >
+                <KeyboardArrowLeftRoundedIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
 
         {/* Contenido del menú */}
         <Box sx={{ 
           flex: 1, 
           overflow: 'hidden',
-          py: 1
+          py: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          minHeight: 0
         }}>
           <Box sx={{ 
+            flex: 1,
             overflowY: 'auto',
-            height: '100%',
             '&::-webkit-scrollbar': {
               width: '4px'
             },
@@ -456,146 +502,242 @@ const Sidebar = ({ isCargo }) => {
             {menuItems.map((section) => (
               <MenuSection key={section.id} section={section} />
             ))}
+          </Box>
 
-            {/* Sección de reportes */}
-            <Box sx={{ 
-              mt: 'auto',
-              pt: 1,
-              borderTop: '1px solid rgba(0, 0, 0, 0.06)',
-              mx: 1
-            }}>
-              <Collapse in={open} orientation="horizontal">
-                <Typography sx={{
-                  px: 2,
+          {/* Sección de reportes */}
+          <Box sx={{ 
+            pt: 1,
+            borderTop: '1px solid rgba(0, 0, 0, 0.06)',
+            mx: 1
+          }}>
+            <Collapse in={open} orientation="horizontal">
+              <Typography sx={{
+                px: 1.5,
+                py: 0.25,
+                fontSize: '0.65rem',
+                fontWeight: 600,
+                color: '#6C757D',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+              }}>
+                Reportes
+              </Typography>
+            </Collapse>
+            
+            <Tooltip 
+              title={open ? "" : "Asignaciones Académicas"} 
+              placement="right"
+              arrow
+              enterDelay={300}
+            >
+              <ListItem 
+                button 
+                onClick={() => openExternalLink('https://lookerstudio.google.com/reporting/9e58572e-acd8-411a-8635-3767e4729091/page/p_7d13ppzeqd')}
+                onMouseEnter={() => setHoveredItem('assignments')}
+                onMouseLeave={() => setHoveredItem(null)}
+                sx={{
                   py: 0.5,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
+                  px: open ? 1.5 : 0.75,
+                  mx: open ? 0.5 : 0.15,
+                  my: 0.13,
+                  borderRadius: open ? '8px' : '6px',
+                  minHeight: '32px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  backgroundColor: hoveredItem === 'assignments' 
+                    ? 'rgba(178, 34, 34, 0.04)' 
+                    : 'transparent',
+                  transform: hoveredItem === 'assignments' ? 'translateX(4px)' : 'translateX(0px)',
+                  boxShadow: hoveredItem === 'assignments' 
+                    ? '0 2px 4px rgba(0, 0, 0, 0.08)' 
+                    : 'none',
+                }}
+              >
+                <ListItemIcon sx={{
+                  minWidth: open ? '32px' : '20px',
                   color: '#6C757D',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '& .MuiSvgIcon-root': {
+                    fontSize: '16px'
+                  }
                 }}>
-                  Reportes
-                </Typography>
-              </Collapse>
-              
-              <Tooltip 
-                title={open ? "" : "Asignaciones Académicas"} 
-                placement="right"
-                arrow
-                enterDelay={300}
+                  <CalendarMonthIcon />
+                </ListItemIcon>
+                <Collapse in={open} orientation="horizontal">
+                  <ListItemText 
+                    primary="Asignaciones Académicas"
+                    sx={{
+                      '& .MuiListItemText-primary': {
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        color: '#495057',
+                        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        letterSpacing: '-0.01em',
+                        whiteSpace: 'nowrap'
+                      }
+                    }}
+                  />
+                </Collapse>
+              </ListItem>
+            </Tooltip>
+            
+            <Tooltip 
+              title={open ? "" : "Listado docentes"} 
+              placement="right"
+              arrow
+              enterDelay={300}
+            >
+              <ListItem 
+                button 
+                onClick={() => openExternalLink('https://docs.google.com/spreadsheets/d/13mWox6_Ep8exOjK4Tv8K56LUgffTLgoOiLpw8CkoE9o/edit?gid=1623641148#gid=1623641148')}
+                onMouseEnter={() => setHoveredItem('docentes')}
+                onMouseLeave={() => setHoveredItem(null)}
+                sx={{
+                  py: 0.5,
+                  px: open ? 1.5 : 0.75,
+                  mx: open ? 0.5 : 0.15,
+                  my: 0.13,
+                  borderRadius: open ? '8px' : '6px',
+                  minHeight: '32px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  backgroundColor: hoveredItem === 'docentes' 
+                    ? 'rgba(178, 34, 34, 0.04)' 
+                    : 'transparent',
+                  transform: hoveredItem === 'docentes' ? 'translateX(4px)' : 'translateX(0px)',
+                  boxShadow: hoveredItem === 'docentes' 
+                    ? '0 2px 4px rgba(0, 0, 0, 0.08)' 
+                    : 'none',
+                }}
               >
-                <ListItem 
-                  button 
-                  onClick={() => openExternalLink('https://lookerstudio.google.com/reporting/9e58572e-acd8-411a-8635-3767e4729091/page/p_7d13ppzeqd')}
-                  onMouseEnter={() => setHoveredItem('assignments')}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  sx={{
-                    py: 1,
-                    px: open ? 2 : 1.5,
-                    mx: open ? 0.75 : 0.5,
-                    my: 0.25,
-                    borderRadius: open ? '10px' : '8px',
-                    minHeight: '40px',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    backgroundColor: hoveredItem === 'assignments' 
-                      ? 'rgba(178, 34, 34, 0.04)' 
-                      : 'transparent',
-                    transform: hoveredItem === 'assignments' ? 'translateX(4px)' : 'translateX(0px)',
-                    boxShadow: hoveredItem === 'assignments' 
-                      ? '0 2px 4px rgba(0, 0, 0, 0.08)' 
-                      : 'none',
-                  }}
-                >
-                  <ListItemIcon sx={{
-                    minWidth: open ? '36px' : '24px',
-                    color: '#6C757D',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '& .MuiSvgIcon-root': {
-                      fontSize: '18px'
-                    }
-                  }}>
-                    <CalendarMonthIcon />
-                  </ListItemIcon>
-                  <Collapse in={open} orientation="horizontal">
-                    <ListItemText 
-                      primary="Asignaciones Académicas"
-                      sx={{
-                        '& .MuiListItemText-primary': {
-                          fontSize: '0.8125rem',
-                          fontWeight: 500,
-                          color: '#495057',
-                          fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                          letterSpacing: '-0.01em'
-                        }
-                      }}
-                    />
-                  </Collapse>
-                </ListItem>
-              </Tooltip>
-              
-              <Tooltip 
-                title={open ? "" : "Generar reporte de actividades"} 
-                placement="right"
-                arrow
-                enterDelay={300}
+                <ListItemIcon sx={{
+                  minWidth: open ? '32px' : '20px',
+                  color: '#6C757D',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '& .MuiSvgIcon-root': {
+                    fontSize: '16px'
+                  }
+                }}>
+                  <DescriptionIcon />
+                </ListItemIcon>
+                <Collapse in={open} orientation="horizontal">
+                  <ListItemText 
+                    primary="Listado docentes"
+                    sx={{
+                      '& .MuiListItemText-primary': {
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        color: '#495057',
+                        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        letterSpacing: '-0.01em',
+                        whiteSpace: 'nowrap'
+                      }
+                    }}
+                  />
+                </Collapse>
+              </ListItem>
+            </Tooltip>
+
+            <Tooltip 
+              title={open ? "" : "Generar reporte de actividades"} 
+              placement="right"
+              arrow
+              enterDelay={300}
+            >
+              <ListItem 
+                button 
+                onClick={handleGenerateReport}
+                disabled={isLoading}
+                onMouseEnter={() => setHoveredItem('report')}
+                onMouseLeave={() => setHoveredItem(null)}
+                sx={{
+                  py: 0.5,
+                  px: open ? 1.5 : 0.75,
+                  mx: open ? 0.5 : 0.15,
+                  my: 0.13,
+                  borderRadius: open ? '8px' : '6px',
+                  minHeight: '32px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  backgroundColor: hoveredItem === 'report' 
+                    ? 'rgba(178, 34, 34, 0.04)' 
+                    : 'transparent',
+                  transform: hoveredItem === 'report' ? 'translateX(4px)' : 'translateX(0px)',
+                  boxShadow: hoveredItem === 'report' 
+                    ? '0 2px 4px rgba(0, 0, 0, 0.08)' 
+                    : 'none',
+                  '&.Mui-disabled': {
+                    opacity: 0.6
+                  }
+                }}
               >
-                <ListItem 
-                  button 
-                  onClick={handleGenerateReport}
-                  disabled={isLoading}
-                  onMouseEnter={() => setHoveredItem('report')}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  sx={{
-                    py: 1,
-                    px: open ? 2 : 1.5,
-                    mx: open ? 0.75 : 0.5,
-                    my: 0.25,
-                    borderRadius: open ? '10px' : '8px',
-                    minHeight: '40px',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    backgroundColor: hoveredItem === 'report' 
-                      ? 'rgba(178, 34, 34, 0.04)' 
-                      : 'transparent',
-                    transform: hoveredItem === 'report' ? 'translateX(4px)' : 'translateX(0px)',
-                    boxShadow: hoveredItem === 'report' 
-                      ? '0 2px 4px rgba(0, 0, 0, 0.08)' 
-                      : 'none',
-                    '&.Mui-disabled': {
-                      opacity: 0.6
-                    }
-                  }}
-                >
-                  <ListItemIcon sx={{
-                    minWidth: open ? '36px' : '24px',
-                    color: isLoading ? '#B22222' : '#6C757D',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '& .MuiSvgIcon-root': {
-                      fontSize: '18px'
-                    }
-                  }}>
-                    {isLoading ? <CircularProgress size={18} sx={{ color: '#B22222' }} /> : <SummarizeIcon />}
-                  </ListItemIcon>
-                  <Collapse in={open} orientation="horizontal">
-                    <ListItemText 
-                      primary="Reporte de Actividad"
-                      sx={{
-                        '& .MuiListItemText-primary': {
-                          fontSize: '0.8125rem',
-                          fontWeight: 500,
-                          color: '#495057',
-                          fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                          letterSpacing: '-0.01em'
-                        }
-                      }}
-                    />
-                  </Collapse>
-                </ListItem>
-              </Tooltip>
-            </Box>
+                <ListItemIcon sx={{
+                  minWidth: open ? '32px' : '20px',
+                  color: isLoading ? '#B22222' : '#6C757D',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '& .MuiSvgIcon-root': {
+                    fontSize: '16px'
+                  }
+                }}>
+                  {isLoading ? <CircularProgress size={16} sx={{ color: '#B22222' }} /> : <SummarizeIcon />}
+                </ListItemIcon>
+                <Collapse in={open} orientation="horizontal">
+                  <ListItemText 
+                    primary="Reporte de Actividad"
+                    sx={{
+                      '& .MuiListItemText-primary': {
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        color: '#495057',
+                        fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        letterSpacing: '-0.01em',
+                        whiteSpace: 'nowrap'
+                      }
+                    }}
+                  />
+                </Collapse>
+              </ListItem>
+            </Tooltip>
           </Box>
         </Box>
       </Drawer>
+
+      {/* Botón flotante cuando el menú está oculto */}
+      {isHidden && (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: 16,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 1200,
+          }}
+        >
+          <Tooltip 
+            title="Mostrar menú"
+            placement="right"
+            arrow
+          >
+            <IconButton
+              onClick={() => {
+                setIsHidden(false);
+                setOpen(true);
+              }}
+              sx={{
+                width: 24,
+                height: 24,
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                '&:hover': {
+                  backgroundColor: '#FAFBFC',
+                  transform: 'scale(1.05)',
+                },
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              <KeyboardArrowRightRoundedIcon sx={{ fontSize: 16, color: '#6C757D' }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
     </>
   );
 };
