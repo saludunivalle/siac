@@ -58,7 +58,7 @@ const Sidebar = ({ isCargo }) => {
       
       if (res.length > 0) {
         console.log('Campos disponibles:', Object.keys(res[0]));
-        const usuarioExtraido = res[0].usuario || res[0].email || res[0].user || '';
+        const usuarioExtraido = res[0]?.user || res[0]?.usuario || res[0]?.email || '';
         console.log('Usuario extraído:', usuarioExtraido);
         setUser(usuarioExtraido);
       }
