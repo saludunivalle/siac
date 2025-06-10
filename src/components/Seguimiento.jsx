@@ -60,7 +60,7 @@ const Seguimiento = ({ handleButtonClick }) => {
     const [open, setOpen] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState(null);
     const [inputValue, setInputValue] = useState('');
-    const [Filtro21Data, setFiltro21Data] = useState({ id_doc: '', url: '' });
+    const [Filtro21Data, setFiltro21Data] = useState([]);
     const [successMessage, setSuccessMessage] = useState('');
     const [dataUpdated, setDataUpdated] = useState(false);
     const [sentDocId, setSentDocId] = useState(null);

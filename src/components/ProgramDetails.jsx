@@ -22,7 +22,7 @@ const ProgramDetails = () => {
     const rowData = location.state;
     const { globalVariable, userEmail } = location.state || {}; 
     const navigate = useNavigate();
-    const [clickedButton, setClickedButton] = useState(''); 
+    const [clickedButton, setClickedButton] = useState('crea'); 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
     const [filteredDataSeg, setFilteredDataSeg] = useState(() => {
         const cachedData = localStorage.getItem('filteredDataSeg');
