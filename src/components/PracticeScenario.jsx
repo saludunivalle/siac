@@ -630,17 +630,23 @@ const PracticeScenario = ({ data }) => {
             try {
                 console.log("Obteniendo anexos para el programa:", data.id_programa);
                 const response = await axios.post('https://siac-server.vercel.app/getAnexos', { sheetName: 'ANEXOS_TEC' });
+                
+                console.log("Respuesta completa del servidor:", response.data);
+                
                 if (response.data && response.data.status) {
                     // Filtrar los anexos por el id_programa actual
                     const anexosFiltrados = response.data.data.filter(anexo => 
                         anexo.id_programa === data.id_programa
                     );
                     
+                    console.log("Anexos filtrados por programa:", anexosFiltrados);
+                    
                     // Procesar los anexos para asegurar que todos los campos estén presentes
                     const anexosProcesados = anexosFiltrados.map(anexo => {
                         return {
                             ...anexo,
                             // Asegurar que los campos estén mapeados correctamente
+                            idEscenario: anexo.id_escenario || anexo.idEscenario, // Mapear id_escenario a idEscenario para consistencia
                             tipo: anexo.tipo || '',
                             version: anexo.version || '',
                             proceso_calidad: anexo.proceso_calidad || '',
@@ -652,6 +658,7 @@ const PracticeScenario = ({ data }) => {
                         };
                     });
                     
+                    console.log("Anexos procesados:", anexosProcesados);
                     console.log(`✅ Se cargaron ${anexosProcesados.length} anexos para el programa ${data.id_programa}`);
                     
                     setAnexos(anexosProcesados || []);
@@ -684,35 +691,52 @@ const PracticeScenario = ({ data }) => {
         
         const handleEdit = (anexo) => {
           setEditingId(anexo.id);
-          setEditedAnexo({ ...anexo });
+          setEditedAnexo({ 
+            ...anexo,
+            // Asegurar consistencia en los nombres de campos
+            idEscenario: anexo.id_escenario || anexo.idEscenario
+          });
         };
       
         const handleSave = async (id) => {
             try {
+              console.log('=== DATOS ANTES DE ENVIAR ===');
+              console.log('editedAnexo:', editedAnexo);
+              console.log('ID del anexo:', id);
+              
+              // Preparar los datos con verificación de campos
+              const updateData = [
+                editedAnexo.id,
+                editedAnexo.id_programa,
+                editedAnexo.idEscenario || editedAnexo.id_escenario, // Usar idEscenario como campo consistente
+                editedAnexo.nombre,
+                editedAnexo.url,
+                editedAnexo.estado,
+                editedAnexo.tipo,
+                formatearFechaParaHoja(editedAnexo.vigencia_desde), // vigencia desde en formato DD/MM/AAAA
+                formatearFechaParaHoja(editedAnexo.vigencia_hasta), // vigencia hasta en formato DD/MM/AAAA
+                editedAnexo.version,
+                editedAnexo.proceso_calidad,
+                editedAnexo.cierre,
+                editedAnexo.observaciones
+              ];
+              
+              console.log('updateData formateada:', updateData);
+              console.log('==============================');
+              
               await axios.post('https://siac-server.vercel.app/updateAnexo', {
                 id,
                 sheetName: 'ANEXOS_TEC',
-                updateData: [
-                  editedAnexo.id,
-                  editedAnexo.id_programa,
-                  editedAnexo.id_escenario,
-                  editedAnexo.nombre,
-                  editedAnexo.url,
-                  editedAnexo.estado,
-                  editedAnexo.tipo,
-                  formatearFechaParaHoja(editedAnexo.vigencia_desde), // vigencia desde en formato DD/MM/AAAA
-                  formatearFechaParaHoja(editedAnexo.vigencia_hasta), // vigencia hasta en formato DD/MM/AAAA
-                  editedAnexo.version,
-                  editedAnexo.proceso_calidad,
-                  editedAnexo.cierre,
-                  editedAnexo.observaciones
-                ]
+                updateData
               });
+              
+              console.log('✅ Anexo actualizado correctamente');
               setEditingId(null);
               setEditedAnexo({});
               await fetchAnexos();
             } catch (error) {
-              console.error('Error al guardar el anexo:', error);
+              console.error('❌ Error al guardar el anexo:', error);
+              console.error('Respuesta del servidor:', error.response?.data);
             }
         };
           
@@ -788,6 +812,7 @@ const PracticeScenario = ({ data }) => {
                                                         setEditedAnexo({
                                                             ...editedAnexo,
                                                             idEscenario: selectedId,
+                                                            id_escenario: selectedId, // Mantener ambos campos por compatibilidad
                                                             nombre: selectedScenario ? selectedScenario.nombre : ''
                                                         });
                                                     }}
