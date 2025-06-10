@@ -430,7 +430,6 @@ const PracticeScenario = ({ data }) => {
         nombreEscenario: '', // Guardará el nombre del escenario
         urlAnexo: '',
         estadoAnexo: 'Pendiente',
-        fechaFormalizacion: '', // Guardará la fecha seleccionada
         tipo: '',
         vigenciaDesde: '',
         vigenciaHasta: '',
@@ -442,6 +441,7 @@ const PracticeScenario = ({ data }) => {
     
     
     const [anexosList, setAnexosList] = useState([]);
+    const [reloadAnexos, setReloadAnexos] = useState(false);
 
     // Obtener los anexos actuales de la hoja ANEXOS_TEC
     const toggleAnexoForm = () => {
@@ -477,21 +477,13 @@ const PracticeScenario = ({ data }) => {
                 return;
             }
     
-            if (!anexoFormData.fechaFormalizacion) {
-                alert('Por favor selecciona una fecha válida.');
-                return;
-            }
-
-
-    
             const newAnexo = {
-                id: anexosList.length + 1, // id generado localmente
+                id: Date.now(), // usar timestamp para un ID único
                 id_programa: data.id_programa, // id del programa principal
                 idEscenario: anexoFormData.idEscenario, // id del escenario
                 nombre: anexoFormData.nombreEscenario, // nombre del escenario
                 url: anexoFormData.urlAnexo, // URL del anexo o archivo
                 estado: anexoFormData.estadoAnexo, // estado del anexo (Pendiente, En proceso, Listo)
-                fecha_formalización: anexoFormData.fechaFormalizacion, // fecha de formalización
                 tipo: anexoFormData.tipo,
                 vigencia_desde: anexoFormData.vigenciaDesde,
                 vigencia_hasta: anexoFormData.vigenciaHasta,
@@ -516,7 +508,6 @@ const PracticeScenario = ({ data }) => {
                 nombreEscenario: '',
                 urlAnexo: '',
                 estadoAnexo: 'Pendiente',
-                fechaFormalizacion: '',
                 tipo: '',
                 vigenciaDesde: '',
                 vigenciaHasta: '',
@@ -527,12 +518,60 @@ const PracticeScenario = ({ data }) => {
             });
             
             setShowAnexoForm(false);
+            
+            // Recargar los anexos inmediatamente después de un pequeño delay
+            setTimeout(() => {
+                setReloadAnexos(true);
+            }, 500);
+            
+            // Mostrar mensaje de éxito
+            console.log('Anexo guardado correctamente');
+            
         } catch (error) {
             console.error('Error al guardar el anexo:', error);
+            alert('Error al guardar el anexo. Por favor intenta de nuevo.');
         }
     };
 
+    // Función para formatear fechas a DD/MM/AAAA
+    const formatearFechaParaHoja = (fecha) => {
+        if (!fecha) return '';
+        try {
+            const date = new Date(fecha);
+            const dia = date.getDate().toString().padStart(2, '0');
+            const mes = (date.getMonth() + 1).toString().padStart(2, '0');
+            const año = date.getFullYear();
+            return `${dia}/${mes}/${año}`;
+        } catch {
+            return fecha;
+        }
+    };
 
+    // Función para convertir fecha de DD/MM/AAAA a AAAA-MM-DD (para inputs de tipo date)
+    const convertirFechaParaInput = (fechaString) => {
+        if (!fechaString || fechaString.trim() === '') return '';
+        
+        try {
+            // Si ya está en formato AAAA-MM-DD, devolver tal como está
+            if (fechaString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return fechaString;
+            }
+            
+            // Si está en formato DD/MM/AAAA, convertir a AAAA-MM-DD
+            const fechaMatch = fechaString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (fechaMatch) {
+                const dia = fechaMatch[1].padStart(2, '0');
+                const mes = fechaMatch[2].padStart(2, '0');
+                const año = fechaMatch[3];
+                return `${año}-${mes}-${dia}`;
+            }
+            
+            return fechaString; // Devolver tal como está si no coincide con ningún formato
+        } catch (error) {
+            console.error('Error convirtiendo fecha:', error);
+            return fechaString;
+        }
+    };
 
     // Función para enviar un anexo al servidor    
     const sendAnexoToSheet = async (anexo) => {
@@ -546,10 +585,9 @@ const PracticeScenario = ({ data }) => {
                     anexo.nombre, // nombre del escenario
                     anexo.url, // URL del anexo
                     anexo.estado, // estado del anexo (Pendiente, En proceso, Listo)
-                    anexo.fecha_formalización, // fecha de formalización
                     anexo.tipo, // tipo
-                    anexo.vigencia_desde, // vigencia desde
-                    anexo.vigencia_hasta, // vigencia hasta
+                    formatearFechaParaHoja(anexo.vigencia_desde), // vigencia desde en formato DD/MM/AAAA
+                    formatearFechaParaHoja(anexo.vigencia_hasta), // vigencia hasta en formato DD/MM/AAAA
                     anexo.version, // versión
                     anexo.proceso_calidad, // proceso de calidad
                     anexo.cierre, // cierre
@@ -557,8 +595,12 @@ const PracticeScenario = ({ data }) => {
                 ]
             ];
     
-            console.log("Datos enviados al servidor:", insertData); // DEBUG: Verificar la estructura antes de enviar
-    
+            console.log("=== ENVIANDO ANEXO A SHEETS ===");
+            console.log("Hoja destino: ANEXOS_TEC");
+            console.log("Datos del anexo a enviar:", anexo);
+            console.log("Datos formateados para envío:", insertData);
+            console.log("================================");
+
             // Especificar el nombre de la hoja de cálculo
             const sheetName = 'ANEXOS_TEC';
     
@@ -569,33 +611,50 @@ const PracticeScenario = ({ data }) => {
             });
     
             if (response.status === 200) {
-                console.log('Anexo guardado correctamente en la hoja:', response.data);
+                console.log('✅ Anexo guardado correctamente en la hoja ANEXOS_TEC:', response.data);
             } else {
-                console.error('Error al guardar el anexo en la hoja:', response.statusText);
+                console.error('❌ Error al guardar el anexo en la hoja:', response.statusText);
             }
         } catch (error) {
-            console.error('Error al enviar el anexo al servidor:', error);
+            console.error('❌ Error al enviar el anexo al servidor:', error);
         }
     };
     
     // Función para la tabla de anexos
-    const AnexosTable = () => {
+    const AnexosTable = ({ reloadTrigger }) => {
         const [anexos, setAnexos] = useState([]);
         const [editingId, setEditingId] = useState(null);
         const [editedAnexo, setEditedAnexo] = useState({});
       
         const fetchAnexos = async () => {
             try {
+                console.log("Obteniendo anexos para el programa:", data.id_programa);
                 const response = await axios.post('https://siac-server.vercel.app/getAnexos', { sheetName: 'ANEXOS_TEC' });
                 if (response.data && response.data.status) {
-                    console.log("Datos obtenidos del servidor:", response.data.data); // Verificar los datos obtenidos
-                    
                     // Filtrar los anexos por el id_programa actual
                     const anexosFiltrados = response.data.data.filter(anexo => 
                         anexo.id_programa === data.id_programa
                     );
                     
-                    setAnexos(anexosFiltrados || []);
+                    // Procesar los anexos para asegurar que todos los campos estén presentes
+                    const anexosProcesados = anexosFiltrados.map(anexo => {
+                        return {
+                            ...anexo,
+                            // Asegurar que los campos estén mapeados correctamente
+                            tipo: anexo.tipo || '',
+                            version: anexo.version || '',
+                            proceso_calidad: anexo.proceso_calidad || '',
+                            cierre: anexo.cierre || '',
+                            observaciones: anexo.observaciones || '',
+                            // Las fechas de vigencia ya vienen separadas del servidor
+                            vigencia_desde: anexo.vigencia_desde || '',
+                            vigencia_hasta: anexo.vigencia_hasta || ''
+                        };
+                    });
+                    
+                    console.log(`✅ Se cargaron ${anexosProcesados.length} anexos para el programa ${data.id_programa}`);
+                    
+                    setAnexos(anexosProcesados || []);
                 } else {
                     console.warn('No se pudieron obtener los anexos:', response.data);
                     setAnexos([]); // Establecer un array vacío en caso de error
@@ -612,27 +671,37 @@ const PracticeScenario = ({ data }) => {
                 fetchAnexos();
             }
         }, [data.id_programa]);
+
+        // Recargar cuando cambie el trigger
+        useEffect(() => {
+            if (reloadTrigger && data.id_programa) {
+                console.log('Recargando anexos por trigger...');
+                fetchAnexos();
+                // Reset del trigger después de la recarga
+                setReloadAnexos(false);
+            }
+        }, [reloadTrigger]);
         
         const handleEdit = (anexo) => {
           setEditingId(anexo.id);
-          setEditedAnexo(anexo);
+          setEditedAnexo({ ...anexo });
         };
       
         const handleSave = async (id) => {
             try {
               await axios.post('https://siac-server.vercel.app/updateAnexo', {
                 id,
+                sheetName: 'ANEXOS_TEC',
                 updateData: [
                   editedAnexo.id,
                   editedAnexo.id_programa,
                   editedAnexo.id_escenario,
-                  editedAnexo.nombre, // Asegúrate de que estos campos sean correctos
+                  editedAnexo.nombre,
                   editedAnexo.url,
                   editedAnexo.estado,
-                  editedAnexo.fecha_formalización,
                   editedAnexo.tipo,
-                  editedAnexo.vigencia_desde,
-                  editedAnexo.vigencia_hasta,
+                  formatearFechaParaHoja(editedAnexo.vigencia_desde), // vigencia desde en formato DD/MM/AAAA
+                  formatearFechaParaHoja(editedAnexo.vigencia_hasta), // vigencia hasta en formato DD/MM/AAAA
                   editedAnexo.version,
                   editedAnexo.proceso_calidad,
                   editedAnexo.cierre,
@@ -651,7 +720,10 @@ const PracticeScenario = ({ data }) => {
         const handleDelete = async (id) => {
             try {
                 console.log("Eliminando anexo con ID:", id);  // Verifica que el ID sea el correcto
-                const response = await axios.post('https://siac-server.vercel.app/deleteAnexo', { id });
+                const response = await axios.post('https://siac-server.vercel.app/deleteAnexo', { 
+                    id,
+                    sheetName: 'ANEXOS_TEC'
+                });
                 
                 if (response.status === 200) {
                     setAnexos(anexos.filter(anexo => anexo.id !== id));
@@ -683,220 +755,272 @@ const PracticeScenario = ({ data }) => {
         
       
         return (
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Escenario de Práctica</TableCell>
-                            <TableCell>URL</TableCell>
-                            <TableCell>Estado</TableCell>
-                            <TableCell>Fecha Formalización</TableCell>
-                            <TableCell>Tipo</TableCell>
-                            <TableCell>Vigencia Desde</TableCell>
-                            <TableCell>Vigencia Hasta</TableCell>
-                            <TableCell>Versión</TableCell>
-                            <TableCell>Proceso de Calidad</TableCell>
-                            <TableCell>Cierre</TableCell>
-                            <TableCell>Observaciones</TableCell>
-                            <TableCell>Acciones</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {anexos.map((anexo) => (
-                            <TableRow key={anexo.id}>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <FormControl fullWidth>
-                                            <Select
-                                                name="idEscenario"
-                                                value={editedAnexo.idEscenario || ''}
-                                                onChange={(e) => {
-                                                    const selectedId = e.target.value;
-                                                    const selectedScenario = filtro14Data.find(item => item.id === selectedId);
-                                                    setEditedAnexo({
-                                                        ...editedAnexo,
-                                                        idEscenario: selectedId,
-                                                        nombre: selectedScenario ? selectedScenario.nombre : ''
-                                                    });
-                                                }}
+            <Box sx={{ width: '100%', marginTop: 2 }}>
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Escenario de Práctica</TableCell>
+                                <TableCell>URL</TableCell>
+                                <TableCell>Estado</TableCell>
+                                <TableCell>Tipo</TableCell>
+                                <TableCell>Vigencia Desde</TableCell>
+                                <TableCell>Vigencia Hasta</TableCell>
+                                <TableCell>Versión</TableCell>
+                                <TableCell>Proceso de Calidad</TableCell>
+                                <TableCell>Cierre</TableCell>
+                                <TableCell>Observaciones</TableCell>
+                                <TableCell>Acciones</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {anexos.map((anexo) => (
+                                <TableRow key={anexo.id} hover>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <FormControl fullWidth>
+                                                <Select
+                                                    name="idEscenario"
+                                                    value={editedAnexo.idEscenario || ''}
+                                                    onChange={(e) => {
+                                                        const selectedId = e.target.value;
+                                                        const selectedScenario = filtro14Data.find(item => item.id === selectedId);
+                                                        setEditedAnexo({
+                                                            ...editedAnexo,
+                                                            idEscenario: selectedId,
+                                                            nombre: selectedScenario ? selectedScenario.nombre : ''
+                                                        });
+                                                    }}
+                                                >
+                                                    {filtro14Data.map((item) => (
+                                                        <MenuItem key={item.id} value={item.id}>
+                                                            {item.nombre}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        ) : (
+                                            anexo.nombre // Muestra el nombre del escenario cuando no está en edición
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <TextField name="url" value={editedAnexo.url || ''} onChange={(e) => setEditedAnexo({ ...editedAnexo, url: e.target.value })} />
+                                        ) : (
+                                            anexo.url || ''
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <RadioGroup
+                                                name="estado"
+                                                value={editedAnexo.estado || 'Pendiente'}
+                                                onChange={(e) => setEditedAnexo({ ...editedAnexo, estado: e.target.value })}
+                                                sx={{ display: 'flex', flexDirection: 'row' }}
                                             >
-                                                {filtro14Data.map((item) => (
-                                                    <MenuItem key={item.id} value={item.id}>
-                                                        {item.nombre}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    ) : (
-                                        anexo.nombre // Muestra el nombre del escenario cuando no está en edición
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <TextField name="url" value={editedAnexo.url || ''} onChange={(e) => setEditedAnexo({ ...editedAnexo, url: e.target.value })} />
-                                    ) : (
-                                        anexo.url || ''
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <RadioGroup
-                                            name="estado"
-                                            value={editedAnexo.estado || 'Pendiente'}
-                                            onChange={(e) => setEditedAnexo({ ...editedAnexo, estado: e.target.value })}
-                                            sx={{ display: 'flex', flexDirection: 'row' }}
-                                        >
-                                            <FormControlLabel value="Pendiente" control={<Radio />} label="Pendiente" />
-                                            <FormControlLabel value="En proceso" control={<Radio />} label="En proceso" />
-                                            <FormControlLabel value="Listo" control={<Radio />} label="Listo" />
-                                            <FormControlLabel value="Inactivo" control={<Radio />} label="Inactivo" />
-                                        </RadioGroup>
-                                    ) : (
-                                        anexo.estado || 'Pendiente'
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <TextField
-                                            name="fecha_formalización"
-                                            type="date"
-                                            value={editedAnexo.fecha_formalización || ''}
-                                            onChange={(e) => setEditedAnexo({ ...editedAnexo, fecha_formalización: e.target.value })}
-                                            InputLabelProps={{
-                                                shrink: true,
-                                            }}
-                                        />
-                                    ) : (
-                                        anexo.fecha_formalización || "No definida"
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <FormControl fullWidth>
-                                            <Select
-                                                name="tipo"
-                                                value={editedAnexo.tipo || ''}
-                                                onChange={(e) => setEditedAnexo({ ...editedAnexo, tipo: e.target.value })}
-                                                size="small"
-                                            >
-                                                <MenuItem value="C.D.S. Clinicos">C.D.S. Clinicos</MenuItem>
-                                                <MenuItem value="C.D.S. No clinicos">C.D.S. No clinicos</MenuItem>
-                                                <MenuItem value="C. Integración de propiedad">C. Integración de propiedad</MenuItem>
-                                                <MenuItem value="C. Interinstitucionales">C. Interinstitucionales</MenuItem>
-                                                <MenuItem value="C. Cooperación Académica">C. Cooperación Académica</MenuItem>
-                                                <MenuItem value="OtroSi">OtroSi</MenuItem>
-                                                <MenuItem value="Otros Anexos Técnicos">Otros Anexos Técnicos</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    ) : (
-                                        anexo.tipo || ""
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <TextField
-                                            name="vigencia_desde"
-                                            type="date"
-                                            value={editedAnexo.vigencia_desde || ''}
-                                            onChange={(e) => setEditedAnexo({ ...editedAnexo, vigencia_desde: e.target.value })}
-                                            size="small"
-                                            InputLabelProps={{
-                                                shrink: true,
-                                            }}
-                                        />
-                                    ) : (
-                                        anexo.vigencia_desde || ""
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <TextField
-                                            name="vigencia_hasta"
-                                            type="date"
-                                            value={editedAnexo.vigencia_hasta || ''}
-                                            onChange={(e) => setEditedAnexo({ ...editedAnexo, vigencia_hasta: e.target.value })}
-                                            size="small"
-                                            InputLabelProps={{
-                                                shrink: true,
-                                            }}
-                                        />
-                                    ) : (
-                                        anexo.vigencia_hasta || ""
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <TextField
-                                            name="version"
-                                            value={editedAnexo.version || ''}
-                                            onChange={(e) => setEditedAnexo({ ...editedAnexo, version: e.target.value })}
-                                        />
-                                    ) : (
-                                        anexo.version || ""
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <FormControl fullWidth>
-                                            <Select
-                                                name="proceso_calidad"
-                                                value={editedAnexo.proceso_calidad || ''}
-                                                onChange={(e) => setEditedAnexo({ ...editedAnexo, proceso_calidad: e.target.value })}
-                                                size="small"
-                                            >
-                                                <MenuItem value="RC">RC</MenuItem>
-                                                <MenuItem value="RRC">RRC</MenuItem>
-                                                <MenuItem value="AAC">AAC</MenuItem>
-                                                <MenuItem value="RAAC">RAAC</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    ) : (
-                                        anexo.proceso_calidad || ""
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <TextField
-                                            name="cierre"
-                                            value={editedAnexo.cierre || ''}
-                                            onChange={(e) => setEditedAnexo({ ...editedAnexo, cierre: e.target.value })}
-                                        />
-                                    ) : (
-                                        anexo.cierre || ""
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        editedAnexo.estado === 'Inactivo' ? (
+                                                <FormControlLabel value="Pendiente" control={<Radio />} label="Pendiente" />
+                                                <FormControlLabel value="En proceso" control={<Radio />} label="En proceso" />
+                                                <FormControlLabel value="Listo" control={<Radio />} label="Listo" />
+                                                <FormControlLabel value="Inactivo" control={<Radio />} label="Inactivo" />
+                                            </RadioGroup>
+                                        ) : (
+                                            anexo.estado || 'Pendiente'
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <FormControl fullWidth>
+                                                <Select
+                                                    name="tipo"
+                                                    value={editedAnexo.tipo || ''}
+                                                    onChange={(e) => setEditedAnexo({ ...editedAnexo, tipo: e.target.value })}
+                                                    size="small"
+                                                >
+                                                    <MenuItem value="C.D.S. Clinicos">C.D.S. Clinicos</MenuItem>
+                                                    <MenuItem value="C.D.S. No clinicos">C.D.S. No clinicos</MenuItem>
+                                                    <MenuItem value="C. Integración de propiedad">C. Integración de propiedad</MenuItem>
+                                                    <MenuItem value="C. Interinstitucionales">C. Interinstitucionales</MenuItem>
+                                                    <MenuItem value="C. Cooperación Académica">C. Cooperación Académica</MenuItem>
+                                                    <MenuItem value="OtroSi">OtroSi</MenuItem>
+                                                    <MenuItem value="Otros Anexos Técnicos">Otros Anexos Técnicos</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                        ) : (
+                                            anexo.tipo || ""
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
                                             <TextField
-                                                name="observaciones"
-                                                value={editedAnexo.observaciones || ''}
-                                                onChange={(e) => setEditedAnexo({ ...editedAnexo, observaciones: e.target.value })}
-                                                multiline
-                                                rows={2}
+                                                name="vigencia_desde"
+                                                type="date"
+                                                label="Vigencia Desde"
+                                                value={convertirFechaParaInput(editedAnexo.vigencia_desde) || ''}
+                                                onChange={(e) => setEditedAnexo({ ...editedAnexo, vigencia_desde: e.target.value })}
                                                 fullWidth
-                                                size="small"
+                                                InputLabelProps={{
+                                                    shrink: true,
+                                                }}
+                                                sx={{ minWidth: 150 }}
                                             />
                                         ) : (
-                                            "N/A"
-                                        )
-                                    ) : (
-                                        anexo.estado === 'Inactivo' ? (anexo.observaciones || "Sin observaciones") : "N/A"
-                                    )}
-                                </TableCell>    
-                                <TableCell>
-                                    {editingId === anexo.id ? (
-                                        <Button onClick={() => handleSave(anexo.id)}>Guardar</Button>
-                                    ) : (
-                                        <Button onClick={() => handleEdit(anexo)}>Editar</Button>
-                                    )}
-                                    <Button onClick={() => handleDelete(anexo.id)}>Eliminar</Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                                            anexo.vigencia_desde || "-"
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <TextField
+                                                name="vigencia_hasta"
+                                                type="date"
+                                                label="Vigencia Hasta"
+                                                value={convertirFechaParaInput(editedAnexo.vigencia_hasta) || ''}
+                                                onChange={(e) => setEditedAnexo({ ...editedAnexo, vigencia_hasta: e.target.value })}
+                                                fullWidth
+                                                InputLabelProps={{
+                                                    shrink: true,
+                                                }}
+                                                sx={{ minWidth: 150 }}
+                                            />
+                                        ) : (
+                                            anexo.vigencia_hasta || "-"
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <TextField
+                                                name="version"
+                                                type="number"
+                                                label="Versión"
+                                                placeholder="Ej: 1"
+                                                value={editedAnexo.version || ''}
+                                                onChange={(e) => setEditedAnexo({ ...editedAnexo, version: e.target.value })}
+                                                fullWidth
+                                                inputProps={{ min: 1, step: 1 }}
+                                                sx={{ minWidth: 100 }}
+                                            />
+                                        ) : (
+                                            anexo.version || "-"
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <FormControl fullWidth sx={{ minWidth: 120 }}>
+                                                <InputLabel id="proceso-calidad-edit-label">Proceso de Calidad</InputLabel>
+                                                <Select
+                                                    labelId="proceso-calidad-edit-label"
+                                                    name="proceso_calidad"
+                                                    value={editedAnexo.proceso_calidad || ''}
+                                                    onChange={(e) => setEditedAnexo({ ...editedAnexo, proceso_calidad: e.target.value })}
+                                                    label="Proceso de Calidad"
+                                                >
+                                                    <MenuItem value="RC">RC</MenuItem>
+                                                    <MenuItem value="RRC">RRC</MenuItem>
+                                                    <MenuItem value="AAC">AAC</MenuItem>
+                                                    <MenuItem value="RAAC">RAAC</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                        ) : (
+                                            anexo.proceso_calidad || "-"
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <TextField
+                                                name="cierre"
+                                                label="Cierre"
+                                                placeholder="Opcional"
+                                                value={editedAnexo.cierre || ''}
+                                                onChange={(e) => setEditedAnexo({ ...editedAnexo, cierre: e.target.value })}
+                                                fullWidth
+                                                sx={{ minWidth: 120 }}
+                                            />
+                                        ) : (
+                                            anexo.cierre || "-"
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            editedAnexo.estado === 'Inactivo' ? (
+                                                <TextField
+                                                    name="observaciones"
+                                                    label="Observaciones"
+                                                    placeholder="Escriba las observaciones aquí..."
+                                                    value={editedAnexo.observaciones || ''}
+                                                    onChange={(e) => setEditedAnexo({ ...editedAnexo, observaciones: e.target.value })}
+                                                    multiline
+                                                    rows={3}
+                                                    fullWidth
+                                                    sx={{ minWidth: 200 }}
+                                                />
+                                            ) : (
+                                                <TextField
+                                                    name="observaciones"
+                                                    label="Observaciones"
+                                                    placeholder="N/A - Solo para estado Inactivo"
+                                                    value=""
+                                                    disabled
+                                                    fullWidth
+                                                    sx={{ minWidth: 200 }}
+                                                />
+                                            )
+                                        ) : (
+                                            anexo.estado === 'Inactivo' ? (anexo.observaciones || "-") : "N/A"
+                                        )}
+                                    </TableCell>    
+                                    <TableCell>
+                                        {editingId === anexo.id ? (
+                                            <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+                                                <Button 
+                                                    variant="contained" 
+                                                    color="success" 
+                                                    size="small"
+                                                    onClick={() => handleSave(anexo.id)}
+                                                    sx={{ minWidth: 80 }}
+                                                >
+                                                    Guardar
+                                                </Button>
+                                                <Button 
+                                                    variant="outlined" 
+                                                    color="secondary" 
+                                                    size="small"
+                                                    onClick={() => {
+                                                        setEditingId(null);
+                                                        setEditedAnexo({});
+                                                    }}
+                                                    sx={{ minWidth: 80 }}
+                                                >
+                                                    Cancelar
+                                                </Button>
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+                                                <Button 
+                                                    variant="outlined" 
+                                                    color="primary" 
+                                                    size="small"
+                                                    onClick={() => handleEdit(anexo)}
+                                                    sx={{ minWidth: 80 }}
+                                                >
+                                                    Editar
+                                                </Button>
+                                                <Button 
+                                                    variant="outlined" 
+                                                    color="error" 
+                                                    size="small"
+                                                    onClick={() => handleDelete(anexo.id)}
+                                                    sx={{ minWidth: 80 }}
+                                                >
+                                                    Eliminar
+                                                </Button>
+                                            </Box>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Box>
         );
     };
     
@@ -1271,19 +1395,7 @@ const PracticeScenario = ({ data }) => {
                             margin="normal"
                             required
                         />
-                        <TextField
-                            label="Fecha de Formalización"
-                            name="fechaFormalizacion"
-                            type="date"
-                            value={anexoFormData.fechaFormalizacion}
-                            onChange={handleAnexoInputChange}
-                            InputLabelProps={{
-                                shrink: true,
-                            }}
-                            margin="normal"
-                            required
-                        />
-                        <FormControl fullWidth margin="normal">
+                        <FormControl fullWidth margin="normal" required>
                             <InputLabel id="tipo-label">Tipo</InputLabel>
                             <Select
                                 labelId="tipo-label"
@@ -1291,6 +1403,7 @@ const PracticeScenario = ({ data }) => {
                                 value={anexoFormData.tipo}
                                 onChange={handleAnexoInputChange}
                                 label="Tipo"
+                                required
                             >
                                 <MenuItem value="C.D.S. Clinicos">C.D.S. Clinicos</MenuItem>
                                 <MenuItem value="C.D.S. No clinicos">C.D.S. No clinicos</MenuItem>
@@ -1312,6 +1425,7 @@ const PracticeScenario = ({ data }) => {
                                     shrink: true,
                                 }}
                                 fullWidth
+                                required
                             />
                             <TextField
                                 label="Vigencia Hasta"
@@ -1323,17 +1437,21 @@ const PracticeScenario = ({ data }) => {
                                     shrink: true,
                                 }}
                                 fullWidth
+                                required
                             />
                         </Box>
-                        <TextField
-                            label="Versión"
-                            name="version"
-                            value={anexoFormData.version}
-                            onChange={handleAnexoInputChange}
-                            margin="normal"
-                        />
                         <Box sx={{ display: 'flex', gap: 2, marginTop: 2 }}>
-                            <FormControl fullWidth>
+                            <TextField
+                                label="Versión"
+                                name="version"
+                                type="number"
+                                value={anexoFormData.version}
+                                onChange={handleAnexoInputChange}
+                                required
+                                sx={{ width: '50%' }}
+                                inputProps={{ min: 1, step: 1 }}
+                            />
+                            <FormControl sx={{ width: '50%' }} required>
                                 <InputLabel id="proceso-calidad-label">Proceso de Calidad</InputLabel>
                                 <Select
                                     labelId="proceso-calidad-label"
@@ -1341,6 +1459,7 @@ const PracticeScenario = ({ data }) => {
                                     value={anexoFormData.procesoCalidad}
                                     onChange={handleAnexoInputChange}
                                     label="Proceso de Calidad"
+                                    required
                                 >
                                     <MenuItem value="RC">RC</MenuItem>
                                     <MenuItem value="RRC">RRC</MenuItem>
@@ -1348,14 +1467,16 @@ const PracticeScenario = ({ data }) => {
                                     <MenuItem value="RAAC">RAAC</MenuItem>
                                 </Select>
                             </FormControl>
-                            <TextField
-                                label="Cierre"
-                                name="cierre"
-                                value={anexoFormData.cierre}
-                                onChange={handleAnexoInputChange}
-                                fullWidth
-                            />
                         </Box>
+                        <TextField
+                            label="Cierre (Opcional)"
+                            placeholder="Este campo es opcional"
+                            name="cierre"
+                            value={anexoFormData.cierre}
+                            onChange={handleAnexoInputChange}
+                            margin="normal"
+                            fullWidth
+                        />
                         <FormGroup sx={{ marginTop: 2 }}>
                             <FormLabel component="legend">Estado</FormLabel>
                             <RadioGroup
@@ -1389,7 +1510,7 @@ const PracticeScenario = ({ data }) => {
                     </Button>
                 </Box>
                 )}
-                <AnexosTable />
+                <AnexosTable reloadTrigger={reloadAnexos} />
             </div>
 
             <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={saving}>
