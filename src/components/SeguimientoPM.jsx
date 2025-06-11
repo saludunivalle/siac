@@ -49,6 +49,7 @@ const RowContainer = styled(Box)(({ theme }) => ({
 
 const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimientoRRC, fechaVencAC }) => {
     const [estadoProceso, setEstadoProceso] = useState('');
+    const [estadoAcreditacion, setEstadoAcreditacion] = useState('');
     const [porcentaje, setPorcentaje] = useState('');
     const [recopilacionEvidencias, setRecopilacionEvidencias] = useState('No');
     const [numeroProgramas, setNumeroProgramas] = useState('No');
@@ -77,16 +78,17 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
                     acc[record.id] = [
                         record.id,
                         record.id_programa,
-                        record.estado_pm,
+                        record.estado_rc || '',            // estado_RC (columna C)
+                        record.estado_ac || '',            // estado_AC (columna D)
                         record.porc_anexos,
                         record.tiene_rc,
                         record.tiene_aac,
                         record.formacion,
                         record.escuela,
                         record.fecha || null,
-                        record.url_herramienta_rrc,        // índice 9 (columna J)
-                        record.recibio_visitas,            // índice 10 (columna K)
-                        record.url_herramienta_aac
+                        record.url_herramienta_rrc,        // índice 10
+                        record.recibio_visitas,            // índice 11
+                        record.url_herramienta_aac         // índice 12
                     ];
                     console.log("Array construido:", acc[record.id]);
                     return acc;
@@ -96,14 +98,15 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
                 const lastRecord = Object.values(records).slice(-1)[0];
                 setCurrentId(lastRecord[0]);
                 setEstadoProceso(lastRecord[2]);
-                setPorcentaje(lastRecord[3]);
-                setRecopilacionEvidencias(lastRecord[4]);
-                setNumeroProgramas(lastRecord[5]);
-                setRecibioVisitaPares(lastRecord[10]);
-                setUrlHSCPM_RRC(lastRecord[9] || '');
-                setTieneHSCPM_RC(lastRecord[9] && lastRecord[9].trim() !== '' ? 'Si' : 'No');
-                setUrlHSCPM_AAC(lastRecord[11] || '');
-                setTieneHSCPM_AAC(lastRecord[11] && lastRecord[11].trim() !== '' ? 'Si' : 'No');
+                setEstadoAcreditacion(lastRecord[3]);
+                setPorcentaje(lastRecord[4]);
+                setRecopilacionEvidencias(lastRecord[5]);
+                setNumeroProgramas(lastRecord[6]);
+                setRecibioVisitaPares(lastRecord[11]);
+                setUrlHSCPM_RRC(lastRecord[10] || '');
+                setTieneHSCPM_RC(lastRecord[10] && lastRecord[10].trim() !== '' ? 'Si' : 'No');
+                setUrlHSCPM_AAC(lastRecord[12] || '');
+                setTieneHSCPM_AAC(lastRecord[12] && lastRecord[12].trim() !== '' ? 'Si' : 'No');
                 setIsSaved(true);
                 setHasData(true);
             } else {
@@ -142,16 +145,17 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
         const newRecord = [
             currentId,
             idPrograma,
-            estadoProceso,
-            porcentaje,
-            recopilacionEvidencias,
-            numeroProgramas,
-            formacion,
-            escuela,
-            null,
-            urlHSCPM_RRC,
-            recibioVisitaPares,
-            urlHSCPM_AAC
+            estadoProceso,           // estado_RC (columna C)
+            estadoAcreditacion,      // estado_AC (columna D) - NUEVO
+            porcentaje,              // porc_anexos
+            recopilacionEvidencias,  // tiene_rc
+            numeroProgramas,         // tiene_aac
+            formacion,               // nivel
+            escuela,                 // escuela
+            null,                    // fecha_corte
+            urlHSCPM_RRC,           // url_herramienta_rrc
+            recibioVisitaPares,     // recibio_visitas
+            urlHSCPM_AAC            // url_herramienta_aac
         ];
 
 
@@ -272,8 +276,9 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
     return (
         <>
 
-        {/* NUEVO BLOQUE: Select para Estado del Programa */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
+        {/* Bloque para Estados del Programa - Registro Calificado y Acreditación */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '30px' }}>
+            {/* Select para Estado Registro Calificado */}
             <Box
                 sx={{
                 p: 3,
@@ -281,27 +286,63 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
                 borderColor: 'divider',
                 borderRadius: '12px',
                 backgroundColor: 'background.paper',
-                width: '800px',
+                width: '450px',
                 textAlign: 'center'
                 }}
             >
-                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500, color: 'text.secondary' }}>
-                    Estado del Programa
+                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500, color: 'text.secondary' }}>
+                    Estado del Programa - Registro Calificado
                 </Typography>
                 <FormControl 
                     variant="outlined" 
                     disabled={!isPlan}
                     fullWidth
                 >
-                    <InputLabel id="estadoProceso-label">Seleccione el estado del programa</InputLabel>
+                    <InputLabel id="estadoRC-label">Seleccione el estado para RC</InputLabel>
                     <Select
-                        labelId="estadoProceso-label"
-                        id="estadoProceso"
+                        labelId="estadoRC-label"
+                        id="estadoRC"
                         value={estadoProceso}
                         onChange={handleFieldChange(setEstadoProceso)}
-                        label="Seleccione el estado del programa"
+                        label="Seleccione el estado para RC"
                     >
-                        <MenuItem value=""><em>Seleccione el estado del programa</em></MenuItem>
+                        <MenuItem value=""><em>Seleccione el estado para RC</em></MenuItem>
+                        <MenuItem value="Diseño">Diseño</MenuItem>
+                        <MenuItem value="Rediseño">Rediseño</MenuItem>
+                        <MenuItem value="Seguimiento">Seguimiento</MenuItem>
+                    </Select>
+                </FormControl>
+            </Box>
+
+            {/* Select para Estado Acreditación */}
+            <Box
+                sx={{
+                p: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: '12px',
+                backgroundColor: 'background.paper',
+                width: '450px',
+                textAlign: 'center'
+                }}
+            >
+                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500, color: 'text.secondary' }}>
+                    Estado del Programa - Acreditación
+                </Typography>
+                <FormControl 
+                    variant="outlined" 
+                    disabled={!isPlan}
+                    fullWidth
+                >
+                    <InputLabel id="estadoAC-label">Seleccione el estado para AC</InputLabel>
+                    <Select
+                        labelId="estadoAC-label"
+                        id="estadoAC"
+                        value={estadoAcreditacion}
+                        onChange={handleFieldChange(setEstadoAcreditacion)}
+                        label="Seleccione el estado para AC"
+                    >
+                        <MenuItem value=""><em>Seleccione el estado para AC</em></MenuItem>
                         <MenuItem value="Diseño">Diseño</MenuItem>
                         <MenuItem value="Rediseño">Rediseño</MenuItem>
                         <MenuItem value="Seguimiento">Seguimiento</MenuItem>
