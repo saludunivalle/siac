@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop, Typography, RadioGroup, FormControlLabel, Radio, FormLabel } from '@mui/material';
+import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop, Typography, RadioGroup, FormControlLabel, Radio, FormLabel, Autocomplete } from '@mui/material';
 import { Filtro13, Filtro14, Filtro15, Filtro16, sendDataRelEscPract, sendDataHorariosPract } from '../service/data';
 import '/src/styles/home.css';
 import axios from 'axios';
@@ -30,6 +30,7 @@ const PracticeScenario = ({ data }) => {
     const [isScheduleSaved, setIsScheduleSaved] = useState(false);
     const [newScenario, setNewScenario] = useState(false);
     const [showPracticeForm, setShowPracticeForm] = useState(false);
+    const [programasData, setProgramasData] = useState([]);
     const togglePracticeForm = () => {
         setShowPracticeForm(!showPracticeForm);
     };
@@ -68,11 +69,47 @@ const PracticeScenario = ({ data }) => {
             console.error('Error al cargar los datos de las prácticas:', error);
         }
     };
+
+    // Función para obtener los datos de programas
+    const fetchProgramas = async () => {
+        try {
+            const response = await axios.post('https://siac-server.vercel.app/seguimiento', {
+                sheetName: 'Programas'
+            });
+            
+            if (response.data && response.data.status) {
+                console.log("Programas obtenidos:", response.data.data);
+                const programas = response.data.data || [];
+                setProgramasData(programas);
+                
+                // Preseleccionar el programa actual si existe
+                if (data.id_programa) {
+                    const programaActual = programas.find(p => p.id_programa === data.id_programa);
+                    if (programaActual) {
+                        setAnexoFormData(prev => ({
+                            ...prev,
+                            idPrograma: data.id_programa,
+                            programasSeleccionados: [programaActual]
+                        }));
+                    }
+                }
+                
+                return programas;
+            } else {
+                console.warn('No se pudieron obtener los programas:', response.data);
+                return [];
+            }
+        } catch (error) {
+            console.error('Error al obtener los programas:', error);
+            return [];
+        }
+    };
     
 
     useEffect(() => {
         if (data.id_programa) {
             fetchPractices();
+            fetchProgramas();
         }
     }, [data.id_programa]);  // El hook depende de que data.id_programa esté disponible
 
@@ -229,20 +266,56 @@ const PracticeScenario = ({ data }) => {
         const fetchData = async () => {
             try {
                 const [data13, data14, data15, data16] = await Promise.all([Filtro13(), Filtro14(), Filtro15(), Filtro16()]);
-                setFilteredData(data13.filter(asignatura => asignatura.id_programa === data.id_programa));
-                setFiltro14Data(data14);
-                setFiltro15Data(data15);
-                setFiltro16Data(data16);
-                const lastIdRel = data15.length > 0 ? Math.max(...data15.map(item => item.id)) : 0;
-                setRelationId(lastIdRel + 1);
+                
+                // Validar que los datos existan y sean arrays antes de procesarlos
+                if (data13 && Array.isArray(data13)) {
+                    setFilteredData(data13.filter(asignatura => asignatura && asignatura.id_programa === data.id_programa));
+                } else {
+                    console.warn('data13 no es un array válido:', data13);
+                    setFilteredData([]);
+                }
+                
+                if (data14 && Array.isArray(data14)) {
+                    setFiltro14Data(data14);
+                } else {
+                    console.warn('data14 no es un array válido:', data14);
+                    setFiltro14Data([]);
+                }
+                
+                if (data15 && Array.isArray(data15)) {
+                    setFiltro15Data(data15);
+                    const lastIdRel = data15.length > 0 ? Math.max(...data15.map(item => item.id)) : 0;
+                    setRelationId(lastIdRel + 1);
+                } else {
+                    console.warn('data15 no es un array válido:', data15);
+                    setFiltro15Data([]);
+                    setRelationId(1);
+                }
+                
+                if (data16 && Array.isArray(data16)) {
+                    setFiltro16Data(data16);
+                } else {
+                    console.warn('data16 no es un array válido:', data16);
+                    setFiltro16Data([]);
+                }
+                
                 console.log('Datos cargados:', { data13, data14, data15, data16 });
                 console.log('Contenido de filtro16Data:', data16);
             } catch (error) {
                 console.error('Error al obtener los datos:', error);
+                // Establecer valores por defecto en caso de error
+                setFilteredData([]);
+                setFiltro14Data([]);
+                setFiltro15Data([]);
+                setFiltro16Data([]);
+                setRelationId(1);
             }
         };
 
-        fetchData();
+        // Solo ejecutar si data.id_programa existe
+        if (data && data.id_programa) {
+            fetchData();
+        }
     }, [data.id_programa]);
 
     useEffect(() => {
@@ -313,7 +386,14 @@ const PracticeScenario = ({ data }) => {
         setSaving(true);
         try {
             const horario = JSON.stringify(horasPorDia);
-            const selectedFiltro14 = filtro14Data.find(item => item.nombre === selectedFiltro14Id);
+            const selectedFiltro14 = (filtro14Data && Array.isArray(filtro14Data)) 
+                ? filtro14Data.find(item => item && item.nombre === selectedFiltro14Id) 
+                : null;
+
+            if (!selectedFiltro14) {
+                console.error('No se encontró el escenario seleccionado:', selectedFiltro14Id);
+                return;
+            }
 
             const dataSendRel = [
                 relationID,
@@ -363,7 +443,12 @@ const PracticeScenario = ({ data }) => {
 
     //Función para calcular el total de horas
     const calculateTotalHoras = (id_programa, id_asignatura) => {
-        const filteredData = filtro15Data.filter(item => item.id_programa === id_programa && item.id_asignatura === id_asignatura);
+        if (!filtro15Data || !Array.isArray(filtro15Data)) {
+            console.warn('filtro15Data no es un array válido:', filtro15Data);
+            return 0;
+        }
+        
+        const filteredData = filtro15Data.filter(item => item && item.id_programa === id_programa && item.id_asignatura === id_asignatura);
         const totalHoras = filteredData.reduce((total, item) => {
             const horas = parseInt(item.total_horas, 10);
             return isNaN(horas) ? total : total + horas;
@@ -375,7 +460,13 @@ const PracticeScenario = ({ data }) => {
     //Función para obtener el horario
     const getHorario = (relationID) => {
         console.log('Buscando horario para relationID:', relationID);
-        const horarioData = filtro16Data.find(item => item.id_relacion === relationID);
+        
+        if (!filtro16Data || !Array.isArray(filtro16Data)) {
+            console.warn('filtro16Data no es un array válido:', filtro16Data);
+            return { lunes: [], martes: [], miercoles: [], jueves: [], viernes: [] };
+        }
+        
+        const horarioData = filtro16Data.find(item => item && item.id_relacion === relationID);
         console.log('Horario obtenido:', horarioData);
         if (!horarioData) {
             console.warn(`No se encontró un horario para relationID: ${relationID}`);
@@ -426,6 +517,8 @@ const PracticeScenario = ({ data }) => {
 
     const [showAnexoForm, setShowAnexoForm] = useState(false);
     const [anexoFormData, setAnexoFormData] = useState({
+        idPrograma: '', // Guardará el ID del programa principal
+        programasSeleccionados: [], // Array de programas seleccionados
         idEscenario: '', // Guardará el ID del escenario seleccionado
         nombreEscenario: '', // Guardará el nombre del escenario
         urlAnexo: '',
@@ -445,6 +538,17 @@ const PracticeScenario = ({ data }) => {
 
     // Obtener los anexos actuales de la hoja ANEXOS_TEC
     const toggleAnexoForm = () => {
+        if (!showAnexoForm && data.id_programa && programasData.length > 0) {
+            // Al abrir el formulario, preseleccionar el programa actual
+            const programaActual = programasData.find(p => p.id_programa === data.id_programa);
+            if (programaActual) {
+                setAnexoFormData(prev => ({
+                    ...prev,
+                    idPrograma: data.id_programa,
+                    programasSeleccionados: [programaActual]
+                }));
+            }
+        }
         setShowAnexoForm(!showAnexoForm);
     };
 
@@ -453,7 +557,9 @@ const PracticeScenario = ({ data }) => {
     
         if (name === 'idEscenario') {
             // Obtener el nombre del escenario seleccionado
-            const selectedScenario = filtro14Data.find(item => item.id === value);
+            const selectedScenario = (filtro14Data && Array.isArray(filtro14Data)) 
+                ? filtro14Data.find(item => item && item.id === value) 
+                : null;
             
             setAnexoFormData({
                 ...anexoFormData,
@@ -467,19 +573,38 @@ const PracticeScenario = ({ data }) => {
             });
         }
     };
+
+    // Función para manejar la selección de múltiples programas con Autocomplete
+    const handleProgramaChange = (event, newValue) => {
+        setAnexoFormData({
+            ...anexoFormData,
+            programasSeleccionados: newValue || [], // newValue será un array
+            idPrograma: newValue && newValue.length > 0 ? newValue.map(p => p.id_programa).join(',') : '' // IDs separados por coma
+        });
+    };
     
     // Manejar el envío del formulario de anexos
     const handleAnexoFormSubmit = async (e) => {
         e.preventDefault();
         try {
+            console.log('Programas seleccionados:', anexoFormData.programasSeleccionados);
+            console.log('Cantidad de programas:', anexoFormData.programasSeleccionados?.length);
+            
+            if (!anexoFormData.programasSeleccionados || anexoFormData.programasSeleccionados.length === 0) {
+                alert('Por favor selecciona al menos un programa académico válido.');
+                return;
+            }
+            
             if (!anexoFormData.idEscenario || !anexoFormData.nombreEscenario) {
                 alert('Por favor selecciona un escenario de práctica válido.');
                 return;
             }
-    
-            const newAnexo = {
-                id: Date.now(), // usar timestamp para un ID único
-                id_programa: data.id_programa, // id del programa principal
+
+            // Crear anexos para cada programa seleccionado
+            const baseTimestamp = Date.now();
+            const newAnexos = anexoFormData.programasSeleccionados.map((programa, index) => ({
+                id: baseTimestamp + (index * 1000), // usar timestamp base + offset para evitar duplicados
+                id_programa: programa.id_programa, // usar el id del programa seleccionado
                 idEscenario: anexoFormData.idEscenario, // id del escenario
                 nombre: anexoFormData.nombreEscenario, // nombre del escenario
                 url: anexoFormData.urlAnexo, // URL del anexo o archivo
@@ -491,45 +616,72 @@ const PracticeScenario = ({ data }) => {
                 proceso_calidad: anexoFormData.procesoCalidad,
                 cierre: anexoFormData.cierre,
                 observaciones: anexoFormData.observaciones
-            };
-    
-            // Verificar los datos a enviar
-            console.log("Datos del nuevo anexo:", newAnexo);
-    
-            // Enviar los datos a la hoja de cálculo
-            await sendAnexoToSheet(newAnexo);
+            }));
 
-            // Actualizar la lista de anexos en el estado local
-            setAnexosList([...anexosList, newAnexo]);
-    
-            // Reiniciar el formulario
-            setAnexoFormData({
-                idEscenario: '',
-                nombreEscenario: '',
-                urlAnexo: '',
-                estadoAnexo: 'Pendiente',
-                tipo: '',
-                vigenciaDesde: '',
-                vigenciaHasta: '',
-                version: '',
-                procesoCalidad: '',
-                cierre: '',
-                observaciones: ''
-            });
-            
-            setShowAnexoForm(false);
-            
-            // Recargar los anexos inmediatamente después de un pequeño delay
-            setTimeout(() => {
-                setReloadAnexos(true);
-            }, 500);
-            
-            // Mostrar mensaje de éxito
-            console.log('Anexo guardado correctamente');
+            // Verificar los datos a enviar
+            console.log("Datos de los nuevos anexos:", newAnexos);
+
+            // Enviar los anexos secuencialmente para evitar conflictos
+            const resultados = [];
+            for (let i = 0; i < newAnexos.length; i++) {
+                console.log(`Enviando anexo ${i + 1} de ${newAnexos.length}:`, newAnexos[i]);
+                try {
+                    const resultado = await sendAnexoToSheet(newAnexos[i]);
+                    resultados.push(resultado);
+                    // Pequeña pausa entre envíos para evitar conflictos
+                    if (i < newAnexos.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                } catch (error) {
+                    console.error(`Error enviando anexo ${i + 1}:`, error);
+                    resultados.push(false);
+                }
+            }
+
+            const todosExitosos = resultados.every(Boolean);
+            console.log('Resultados de envío:', resultados);
+            console.log('Todos exitosos:', todosExitosos);
+
+            if (todosExitosos) {
+                // Actualizar la lista de anexos en el estado local
+                setAnexosList([...anexosList, ...newAnexos]);
+        
+                // Reiniciar el formulario manteniendo el programa actual preseleccionado
+                const programaActual = programasData.find(p => p.id_programa === data.id_programa);
+                setAnexoFormData({
+                    idPrograma: data.id_programa,
+                    programasSeleccionados: programaActual ? [programaActual] : [],
+                    idEscenario: '',
+                    nombreEscenario: '',
+                    urlAnexo: '',
+                    estadoAnexo: 'Pendiente',
+                    tipo: '',
+                    vigenciaDesde: '',
+                    vigenciaHasta: '',
+                    version: '',
+                    procesoCalidad: '',
+                    cierre: '',
+                    observaciones: ''
+                });
+                
+                setShowAnexoForm(false);
+                
+                // Recargar los anexos inmediatamente después de un pequeño delay
+                setTimeout(() => {
+                    setReloadAnexos(true);
+                }, 500);
+                
+                // Mostrar mensaje de éxito
+                alert(`${newAnexos.length} anexo${newAnexos.length !== 1 ? 's' : ''} guardado${newAnexos.length !== 1 ? 's' : ''} correctamente`);
+            } else {
+                const exitosos = resultados.filter(Boolean).length;
+                const fallidos = resultados.length - exitosos;
+                alert(`Error: Solo se guardaron ${exitosos} de ${resultados.length} anexos. ${fallidos} anexo${fallidos !== 1 ? 's' : ''} fallaron. Por favor intenta de nuevo.`);
+            }
             
         } catch (error) {
-            console.error('Error al guardar el anexo:', error);
-            alert('Error al guardar el anexo. Por favor intenta de nuevo.');
+            console.error('Error al guardar los anexos:', error);
+            alert('Error al guardar los anexos. Por favor intenta de nuevo.');
         }
     };
 
@@ -612,11 +764,14 @@ const PracticeScenario = ({ data }) => {
     
             if (response.status === 200) {
                 console.log('✅ Anexo guardado correctamente en la hoja ANEXOS_TEC:', response.data);
+                return true;
             } else {
                 console.error('❌ Error al guardar el anexo en la hoja:', response.statusText);
+                return false;
             }
         } catch (error) {
             console.error('❌ Error al enviar el anexo al servidor:', error);
+            return false;
         }
     };
     
@@ -817,11 +972,11 @@ const PracticeScenario = ({ data }) => {
                                                         });
                                                     }}
                                                 >
-                                                    {filtro14Data.map((item) => (
-                                                        <MenuItem key={item.id} value={item.id}>
-                                                            {item.nombre}
-                                                        </MenuItem>
-                                                    ))}
+                                                                                {(filtro14Data && Array.isArray(filtro14Data) ? filtro14Data : []).map((item) => item && (
+                                <MenuItem key={item.id} value={item.id}>
+                                    {item.nombre}
+                                </MenuItem>
+                            ))}
                                                 </Select>
                                             </FormControl>
                                         ) : (
@@ -1056,7 +1211,7 @@ const PracticeScenario = ({ data }) => {
             </div>
             <div>
                 <div style={{ marginTop: "20px" }}>
-                    {filteredData.map((asignatura, index) => (
+                    {(filteredData && Array.isArray(filteredData) ? filteredData : []).map((asignatura, index) => asignatura && (
                         <div key={asignatura.id}>
                             <CollapsibleButton
                                 buttonText={`${asignatura.asignatura} (${asignatura.horas_presencial} horas presenciales)`}
@@ -1065,7 +1220,7 @@ const PracticeScenario = ({ data }) => {
                                         <div style={{ marginTop: '10px', textAlign: 'center', fontWeight: 'bold' }}>
                                             Total horas en todos los Escenarios: {calculateTotalHoras(data.id_programa, asignatura.id)}
                                         </div>
-                                        {filtro15Data.filter(f15 => f15.id_programa === data.id_programa && f15.id_asignatura === asignatura.id).map((f15, idx) => (
+                                        {(filtro15Data && Array.isArray(filtro15Data) ? filtro15Data : []).filter(f15 => f15 && f15.id_programa === data.id_programa && f15.id_asignatura === asignatura.id).map((f15, idx) => (
                                             <Box key={idx} sx={{ marginBottom: '20px', marginTop: '10px' }}>
                                                 <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' }}>
                                                     <Box sx={{ width: '30%', padding: '20px', marginLeft: '20px', textAlign: 'center' }}>
@@ -1092,9 +1247,9 @@ const PracticeScenario = ({ data }) => {
                                                                     value={filtro14Data.find(item => item.id === f15.id_escenario)?.nombre || ''}
                                                                     disabled
                                                                 >
-                                                                    {filtro14Data.map(item => (
-                                                                        <MenuItem key={item.id} value={item.nombre}>{item.nombre}</MenuItem>
-                                                                    ))}
+                                                                                                                                            {(filtro14Data && Array.isArray(filtro14Data) ? filtro14Data : []).map(item => item && (
+                                                                            <MenuItem key={item.id} value={item.nombre}>{item.nombre}</MenuItem>
+                                                                        ))}
                                                                 </Select>
                                                             </FormControl>
                                                         </FormGroup>
@@ -1149,7 +1304,7 @@ const PracticeScenario = ({ data }) => {
                                                                         value={selectedFiltro14Id}
                                                                         onChange={(e) => setSelectedFiltro14Id(e.target.value)}
                                                                     >
-                                                                        {filtro14Data.map(item => (
+                                                                        {(filtro14Data && Array.isArray(filtro14Data) ? filtro14Data : []).map(item => item && (
                                                                             <MenuItem key={item.id} value={item.nombre}>{item.nombre}</MenuItem>
                                                                         ))}
                                                                     </Select>
@@ -1395,6 +1550,42 @@ const PracticeScenario = ({ data }) => {
                 {showAnexoForm && (
                 <Box component="form" onSubmit={handleAnexoFormSubmit} sx={{ marginTop: 2 }}>
                     <FormGroup>
+                        {/* Campo de selección de múltiples programas con búsqueda inteligente */}
+                        <Autocomplete
+                            multiple
+                            options={programasData}
+                            getOptionLabel={(option) => option['programa académico'] || ''}
+                            value={anexoFormData.programasSeleccionados}
+                            onChange={handleProgramaChange}
+                            filterOptions={(options, params) => {
+                                const filtered = options.filter((option) =>
+                                    option['programa académico'] && 
+                                    option['programa académico'].toLowerCase().includes(params.inputValue.toLowerCase())
+                                );
+                                return filtered;
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Programas Académicos"
+                                    placeholder="Buscar y seleccionar programas académicos..."
+                                    margin="normal"
+                                    fullWidth
+                                    helperText="Puedes seleccionar múltiples programas académicos. El programa actual está preseleccionado."
+                                />
+                            )}
+                            renderOption={(props, option, { index }) => (
+                                <Box component="li" {...props} key={`programa-option-${option.id_programa || index}`}>
+                                    <Typography variant="body1">
+                                        {option['programa académico']}
+                                    </Typography>
+                                </Box>
+                            )}
+                            noOptionsText="No se encontraron programas"
+                            loadingText="Cargando programas..."
+                            isOptionEqualToValue={(option, value) => option.id_programa === value?.id_programa}
+                        />
+
                         <FormControl fullWidth>
                             <InputLabel id="escenarios-label">Escenarios de Práctica</InputLabel>
                             <Select
@@ -1405,11 +1596,11 @@ const PracticeScenario = ({ data }) => {
                                 onChange={handleAnexoInputChange} // La misma función maneja todos los cambios
                                 required
                             >
-                                {filtro14Data.map((item) => (
-                                    <MenuItem key={item.id} value={item.id}>
-                                        {item.nombre}
-                                    </MenuItem>
-                                ))}
+                                                                                                {(filtro14Data && Array.isArray(filtro14Data) ? filtro14Data : []).map((item) => item && (
+                                                                    <MenuItem key={item.id} value={item.id}>
+                                                                        {item.nombre}
+                                                                    </MenuItem>
+                                                                ))}
                             </Select>
                         </FormControl>
                         <TextField
