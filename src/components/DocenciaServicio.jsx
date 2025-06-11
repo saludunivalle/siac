@@ -597,9 +597,9 @@ const DocenciaServicio = () => {
                             )}
                             <TableCell><strong>Escenario</strong></TableCell>
                             <TableCell><strong>Estado</strong></TableCell>
-                            <TableCell><strong>Fecha Formalización</strong></TableCell>
                             <TableCell><strong>Tipo</strong></TableCell>
-                            <TableCell><strong>Vigencia</strong></TableCell>
+                            <TableCell><strong>Vigencia Desde</strong></TableCell>
+                            <TableCell><strong>Vigencia Hasta</strong></TableCell>
                             <TableCell><strong>Versión</strong></TableCell>
                             <TableCell><strong>Proceso Calidad</strong></TableCell>
                             <TableCell><strong>Cierre</strong></TableCell>
@@ -623,9 +623,9 @@ const DocenciaServicio = () => {
                                         size="small"
                                     />
                                 </TableCell>
-                                <TableCell>{formatearFecha(anexo.fecha_formalización)}</TableCell>
                                 <TableCell>{anexo.tipo || 'No especificado'}</TableCell>
-                                <TableCell>{anexo.vigencia || 'No especificada'}</TableCell>
+                                <TableCell>{anexo.vigencia_desde || 'No especificada'}</TableCell>
+                                <TableCell>{anexo.vigencia_hasta || 'No especificada'}</TableCell>
                                 <TableCell>{anexo.version || 'N/A'}</TableCell>
                                 <TableCell>{anexo.proceso_calidad || 'N/A'}</TableCell>
                                 <TableCell>{anexo.cierre || 'N/A'}</TableCell>
