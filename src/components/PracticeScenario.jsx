@@ -987,7 +987,22 @@ const PracticeScenario = ({ data }) => {
                                         {editingId === anexo.id ? (
                                             <TextField name="url" value={editedAnexo.url || ''} onChange={(e) => setEditedAnexo({ ...editedAnexo, url: e.target.value })} />
                                         ) : (
-                                            anexo.url || ''
+                                            anexo.url ? (
+                                                <Button 
+                                                    variant="outlined" 
+                                                    size="small" 
+                                                    onClick={() => window.open(anexo.url, '_blank')}
+                                                    sx={{ 
+                                                        textTransform: 'none',
+                                                        minWidth: 'auto',
+                                                        padding: '4px 8px'
+                                                    }}
+                                                >
+                                                    Ver Anexo
+                                                </Button>
+                                            ) : (
+                                                'Sin URL'
+                                            )
                                         )}
                                     </TableCell>
                                     <TableCell>

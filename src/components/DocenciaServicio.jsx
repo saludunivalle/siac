@@ -595,7 +595,7 @@ const DocenciaServicio = () => {
                                     <TableCell><strong>Escuela</strong></TableCell>
                                 </>
                             )}
-                            <TableCell><strong>Escenario</strong></TableCell>
+                            <TableCell><strong>URL/Archivo</strong></TableCell>
                             <TableCell><strong>Estado</strong></TableCell>
                             <TableCell><strong>Tipo</strong></TableCell>
                             <TableCell><strong>Vigencia Desde</strong></TableCell>
@@ -615,7 +615,24 @@ const DocenciaServicio = () => {
                                         <TableCell>{anexo.programa_info?.escuela || 'N/A'}</TableCell>
                                     </>
                                 )}
-                                <TableCell>{anexo.nombre || 'Sin escenario'}</TableCell>
+                                <TableCell>
+                                    {anexo.url ? (
+                                        <Button 
+                                            variant="outlined" 
+                                            size="small" 
+                                            onClick={() => window.open(anexo.url, '_blank')}
+                                            sx={{ 
+                                                textTransform: 'none',
+                                                minWidth: 'auto',
+                                                padding: '4px 8px'
+                                            }}
+                                        >
+                                            Ver Anexo
+                                        </Button>
+                                    ) : (
+                                        'Sin URL'
+                                    )}
+                                </TableCell>
                                 <TableCell>
                                     <Chip 
                                         label={anexo.estado || 'Sin estado'} 
