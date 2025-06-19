@@ -783,15 +783,17 @@ const DocenciaServicio = () => {
                     
                     {/* Botón y formulario para añadir anexos técnicos */}
                     <Box sx={{ mb: 4, textAlign: 'center' }}>
-                        <Button 
-                            variant="contained" 
-                            onClick={toggleAnexoForm}
-                            sx={{ mb: 2 }}
-                        >
-                            Añadir Anexo Técnico
-                        </Button>
+                        {(isCargo.includes('Convenio Docencia Servicio') || isCargo.includes('Sistemas')) && (
+                            <Button 
+                                variant="contained" 
+                                onClick={toggleAnexoForm}
+                                sx={{ mb: 2 }}
+                            >
+                                Añadir Anexo Técnico
+                            </Button>
+                        )}
 
-                        {showAnexoForm && (
+                        {(isCargo.includes('Convenio Docencia Servicio') || isCargo.includes('Sistemas')) && showAnexoForm && (
                             <Box component="form" onSubmit={handleAnexoFormSubmit} sx={{ 
                                 marginTop: 2, 
                                 maxWidth: '800px', 
