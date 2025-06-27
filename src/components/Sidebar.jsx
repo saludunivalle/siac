@@ -557,7 +557,7 @@ const Sidebar = ({ isCargo }) => {
               >
                 <ListItem 
                   button 
-                  onClick={() => openExternalLink('https://lookerstudio.google.com/reporting/9e58572e-acd8-411a-8635-3767e4729091/page/p_7d13ppzeqd')}
+                  onClick={() => openExternalLink('https://lookerstudio.google.com/u/1/reporting/9e58572e-acd8-411a-8635-3767e4729091/page/p_9zoaa6qptd')}
                   onMouseEnter={() => setHoveredItem('assignments')}
                   onMouseLeave={() => setHoveredItem(null)}
                   sx={{
