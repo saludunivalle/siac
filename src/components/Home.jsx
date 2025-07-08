@@ -183,6 +183,12 @@ const Home = () => {
       try {
         const response = await Filtro5();
         
+        // Validar que response sea un array antes de usar filter
+        if (!response || !Array.isArray(response)) {
+          console.error('Error: La respuesta de Filtro5 no es un array válido:', response);
+          return;
+        }
+        
         const activosPregradoUniversitario = response.filter(
           (item) =>
             item['pregrado/posgrado'] === 'Pregrado' &&

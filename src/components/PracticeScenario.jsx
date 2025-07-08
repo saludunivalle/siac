@@ -105,16 +105,38 @@ const PracticeScenario = ({ data }) => {
         }
     };
     
+    // Función para obtener los escenarios de práctica de la hoja ESC_PRACTICA
+    const fetchEscenarios = async () => {
+        try {
+            const response = await axios.post('https://siac-server.vercel.app/getInstituciones', { sheetName: 'ESC_PRACTICA' });
+            if (response.data && response.data.status) {
+                console.log("=== DEBUG ESC_PRACTICA DATA (PracticeScenario) ===");
+                console.log("Escenarios de práctica obtenidos:", response.data.data);
+                console.log("Primer escenario ejemplo:", response.data.data[0]);
+                console.log("Estructura de campos:", Object.keys(response.data.data[0] || {}));
+                console.log("================================================");
+                
+                setEscenariosData(response.data.data || []);
+                return response.data.data || [];
+            } else {
+                console.warn('No se pudieron obtener los escenarios de práctica:', response.data);
+                setEscenariosData([]);
+                return [];
+            }
+        } catch (error) {
+            console.error('Error al obtener los escenarios de práctica:', error);
+            setEscenariosData([]);
+            return [];
+        }
+    };
 
     useEffect(() => {
         if (data.id_programa) {
             fetchPractices();
             fetchProgramas();
+            fetchEscenarios();
         }
-    }, [data.id_programa]);  // El hook depende de que data.id_programa esté disponible
-
-
-    
+    }, [data.id_programa]);
 
     // Manejar los cambios en los inputs
     const handlePracticeInputChange = (e) => {
@@ -529,9 +551,24 @@ const PracticeScenario = ({ data }) => {
         version: '',
         procesoCalidad: '',
         cierre: '',
-        observaciones: ''
+        observaciones: '',
+        localFile: null
     });
     
+    // Estados para el formulario de documentos de escenario
+    const [showDocEscenarioForm, setShowDocEscenarioForm] = useState(null); // Cambiado a null para rastrear cuál escenario
+    const [docEscenarioFormData, setDocEscenarioFormData] = useState({
+        idPrograma: '',
+        programaSeleccionado: null,
+        idEscenario: '',
+        nombreEscenario: '',
+        url: '',
+        tipologia: '',
+        codigo: '',
+        fechaInicio: '',
+        fechaFin: ''
+    });
+    const [escenariosData, setEscenariosData] = useState([]);
     
     const [anexosList, setAnexosList] = useState([]);
     const [reloadAnexos, setReloadAnexos] = useState(false);
@@ -553,9 +590,15 @@ const PracticeScenario = ({ data }) => {
     };
 
     const handleAnexoInputChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, files } = e.target;
     
-        if (name === 'idEscenario') {
+        if (name === 'localFile') {
+            setAnexoFormData({
+                ...anexoFormData,
+                localFile: files[0],
+                urlAnexo: '' // Limpiar la URL si se selecciona un archivo
+            });
+        } else if (name === 'idEscenario') {
             // Obtener el nombre del escenario seleccionado
             const selectedScenario = (filtro14Data && Array.isArray(filtro14Data)) 
                 ? filtro14Data.find(item => item && item.id === value) 
@@ -569,7 +612,8 @@ const PracticeScenario = ({ data }) => {
         } else {
             setAnexoFormData({
                 ...anexoFormData,
-                [name]: value
+                [name]: value,
+                localFile: name === 'urlAnexo' ? null : anexoFormData.localFile // Limpiar archivo si se escribe en URL
             });
         }
     };
@@ -600,6 +644,39 @@ const PracticeScenario = ({ data }) => {
                 return;
             }
 
+            if (!anexoFormData.urlAnexo && !anexoFormData.localFile) {
+                alert('Por favor proporciona una URL o selecciona un archivo local para el anexo.');
+                return;
+            }
+
+            let fileUrl = anexoFormData.urlAnexo;
+
+            // Si hay un archivo local, subirlo primero
+            if (anexoFormData.localFile) {
+                const formData = new FormData();
+                formData.append('file', anexoFormData.localFile);
+                formData.append('scenarioName', anexoFormData.nombreEscenario); // Usamos el nombre del escenario para la carpeta
+
+                try {
+                    const response = await axios.post('https://siac-server.vercel.app/upload', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+
+                    if (response.data.success) {
+                        fileUrl = response.data.fileUrl;
+                    } else {
+                        alert('Error al subir el archivo del anexo. Por favor intenta de nuevo.');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error al subir el archivo del anexo:', error);
+                    alert('Error al subir el archivo del anexo. Por favor intenta de nuevo.');
+                    return;
+                }
+            }
+
             // Crear anexos para cada programa seleccionado
             const baseTimestamp = Date.now();
             const newAnexos = anexoFormData.programasSeleccionados.map((programa, index) => ({
@@ -607,7 +684,7 @@ const PracticeScenario = ({ data }) => {
                 id_programa: programa.id_programa, // usar el id del programa seleccionado
                 idEscenario: anexoFormData.idEscenario, // id del escenario
                 nombre: anexoFormData.nombreEscenario, // nombre del escenario
-                url: anexoFormData.urlAnexo, // URL del anexo o archivo
+                url: fileUrl, // URL del anexo o archivo
                 estado: anexoFormData.estadoAnexo, // estado del anexo (Pendiente, En proceso, Listo)
                 tipo: anexoFormData.tipo,
                 vigencia_desde: anexoFormData.vigenciaDesde,
@@ -661,7 +738,8 @@ const PracticeScenario = ({ data }) => {
                     version: '',
                     procesoCalidad: '',
                     cierre: '',
-                    observaciones: ''
+                    observaciones: '',
+                    localFile: null
                 });
                 
                 setShowAnexoForm(false);
@@ -931,6 +1009,83 @@ const PracticeScenario = ({ data }) => {
             const date = new Date(fecha);
             return date.toLocaleDateString('es-ES'); // Esto mostrará la fecha en formato 'DD/MM/YYYY'
         };
+
+    // Función para calcular la vigencia y determinar el color de la celda
+    const calcularVigenciaYColor = (fechaFin) => {
+        if (!fechaFin || fechaFin.trim() === '') {
+            return { diasRestantes: null, colorFondo: '#f5f5f5', estado: 'Sin fecha' };
+        }
+
+        try {
+            // Convertir fecha de DD/MM/AAAA a Date
+            let fechaFinDate;
+            
+            if (fechaFin.includes('/')) {
+                // Formato DD/MM/AAAA
+                const partes = fechaFin.split('/');
+                if (partes.length === 3) {
+                    const dia = parseInt(partes[0], 10);
+                    const mes = parseInt(partes[1], 10) - 1; // Los meses en JS van de 0-11
+                    const año = parseInt(partes[2], 10);
+                    fechaFinDate = new Date(año, mes, dia);
+                }
+            } else if (fechaFin.includes('-')) {
+                // Formato AAAA-MM-DD o DD-MM-AAAA
+                const partes = fechaFin.split('-');
+                if (partes.length === 3) {
+                    if (partes[0].length === 4) {
+                        // AAAA-MM-DD
+                        fechaFinDate = new Date(fechaFin);
+                    } else {
+                        // DD-MM-AAAA
+                        const dia = parseInt(partes[0], 10);
+                        const mes = parseInt(partes[1], 10) - 1;
+                        const año = parseInt(partes[2], 10);
+                        fechaFinDate = new Date(año, mes, dia);
+                    }
+                }
+            } else {
+                return { diasRestantes: null, colorFondo: '#f5f5f5', estado: 'Fecha inválida' };
+            }
+
+            if (!fechaFinDate || isNaN(fechaFinDate.getTime())) {
+                return { diasRestantes: null, colorFondo: '#f5f5f5', estado: 'Fecha inválida' };
+            }
+
+            const fechaActual = new Date();
+            fechaActual.setHours(0, 0, 0, 0); // Resetear a medianoche para comparación precisa
+            fechaFinDate.setHours(23, 59, 59, 999); // Fin del día para la fecha de vencimiento
+            
+            const diferenciaTiempo = fechaFinDate.getTime() - fechaActual.getTime();
+            const diasRestantes = Math.ceil(diferenciaTiempo / (1000 * 3600 * 24));
+
+            // Determinar color según días restantes
+            let colorFondo, estado;
+            if (diasRestantes < 0) {
+                colorFondo = '#ffcccb'; // Rojo claro - Vencido
+                estado = 'Vencido';
+            } else if (diasRestantes <= 90) {
+                colorFondo = '#ffcccb'; // Rojo claro - Próximo a vencer (3 meses)
+                estado = 'Próximo a vencer';
+            } else if (diasRestantes <= 730) {
+                colorFondo = '#ffd699'; // Naranja claro - Entre 3 meses y 2 años
+                estado = 'Vigencia media';
+            } else {
+                colorFondo = '#f5f5f5'; // Gris claro - Más de 2 años (cambio de verde a gris)
+                estado = 'Vigencia amplia';
+            }
+
+            return {
+                diasRestantes,
+                colorFondo,
+                estado,
+                fechaVencimiento: fechaFinDate.toLocaleDateString('es-ES')
+            };
+        } catch (error) {
+            console.error('Error calculando vigencia:', error);
+            return { diasRestantes: null, colorFondo: '#f5f5f5', estado: 'Error' };
+        }
+        };
         
       
         return (
@@ -939,6 +1094,8 @@ const PracticeScenario = ({ data }) => {
                     <Table>
                         <TableHead>
                             <TableRow>
+                                <TableCell>Escuela</TableCell>
+                                <TableCell>Programa</TableCell>
                                 <TableCell>Escenario de Práctica</TableCell>
                                 <TableCell>URL</TableCell>
                                 <TableCell>Estado</TableCell>
@@ -953,8 +1110,18 @@ const PracticeScenario = ({ data }) => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {anexos.map((anexo) => (
+                            {anexos.map((anexo) => {
+                                // Buscar información del programa para obtener escuela y nombre del programa
+                                const programaInfo = programasData.find(p => p.id_programa === anexo.id_programa);
+                                
+                                return (
                                 <TableRow key={anexo.id} hover>
+                                    <TableCell>
+                                        {programaInfo?.escuela || 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        {programaInfo?.['programa académico'] || 'N/A'}
+                                    </TableCell>
                                     <TableCell>
                                         {editingId === anexo.id ? (
                                             <FormControl fullWidth>
@@ -1059,7 +1226,13 @@ const PracticeScenario = ({ data }) => {
                                                 sx={{ minWidth: 150 }}
                                             />
                                         ) : (
-                                            anexo.vigencia_desde || "-"
+                                            <Box sx={{ 
+                                                backgroundColor: calcularVigenciaYColor(anexo.vigencia_desde).colorFondo,
+                                                padding: '4px 8px',
+                                                borderRadius: '4px'
+                                            }}>
+                                                {anexo.vigencia_desde || "-"}
+                                            </Box>
                                         )}
                                     </TableCell>
                                     <TableCell>
@@ -1077,7 +1250,13 @@ const PracticeScenario = ({ data }) => {
                                                 sx={{ minWidth: 150 }}
                                             />
                                         ) : (
-                                            anexo.vigencia_hasta || "-"
+                                            <Box sx={{ 
+                                                backgroundColor: calcularVigenciaYColor(anexo.vigencia_hasta).colorFondo,
+                                                padding: '4px 8px',
+                                                borderRadius: '4px'
+                                            }}>
+                                                {anexo.vigencia_hasta || "-"}
+                                            </Box>
                                         )}
                                     </TableCell>
                                     <TableCell>
@@ -1211,7 +1390,8 @@ const PracticeScenario = ({ data }) => {
                                         )}
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </TableContainer>
@@ -1219,10 +1399,215 @@ const PracticeScenario = ({ data }) => {
         );
     };
     
+    // Funciones para el formulario de documentos de escenario
+    const toggleDocEscenarioForm = (escenarioId = null) => {
+        setShowDocEscenarioForm(showDocEscenarioForm === escenarioId ? null : escenarioId);
+    };
+
+    const handleDocEscenarioInputChange = (e) => {
+        const { name, value } = e.target;
+        
+        if (name === 'idEscenario') {
+            // Cuando se cambia el escenario, buscar su información completa en escenariosData
+            const selectedScenario = escenariosData.find(esc => esc.id === value);
+            
+            // Debug: mostrar qué datos están llegando
+            console.log('=== DEBUG ESCENARIO SELECCIONADO (PracticeScenario) ===');
+            console.log('ID seleccionado:', value);
+            console.log('Escenario encontrado:', selectedScenario);
+            console.log('escenariosData completo:', escenariosData);
+            console.log('======================================================');
+            
+            if (selectedScenario) {
+                setDocEscenarioFormData({
+                    ...docEscenarioFormData,
+                    idEscenario: value,
+                    nombreEscenario: selectedScenario.nombre,
+                    tipologia: selectedScenario.tipologia || '',
+                    codigo: selectedScenario.codigo || '',
+                    fechaInicio: convertirFechaParaInput(selectedScenario.fecha_inicio) || '',
+                    fechaFin: convertirFechaParaInput(selectedScenario.fecha_fin) || ''
+                });
+            } else {
+                setDocEscenarioFormData({
+                    ...docEscenarioFormData,
+                    idEscenario: value,
+                    nombreEscenario: '',
+                    tipologia: '',
+                    codigo: '',
+                    fechaInicio: '',
+                    fechaFin: ''
+                });
+            }
+        } else {
+            setDocEscenarioFormData({
+                ...docEscenarioFormData,
+                [name]: value
+            });
+        }
+    };
+
+    // Función para manejar la selección de programa (opcional)
+    const handleDocEscenarioProgramaChange = (event, newValue) => {
+        setDocEscenarioFormData({
+            ...docEscenarioFormData,
+            programaSeleccionado: newValue,
+            idPrograma: newValue ? newValue.id_programa : ''
+        });
+    };
+
+    // Función para pre-llenar el formulario con datos del escenario actual
+    const openDocEscenarioFormWithScenario = (escenarioId, escenarioNombre) => {
+        // Buscar la información completa del escenario en escenariosData
+        const escenarioCompleto = escenariosData.find(esc => esc.id === escenarioId);
+        
+        if (escenarioCompleto) {
+            setDocEscenarioFormData({
+                idPrograma: data.id_programa,
+                programaSeleccionado: programasData.find(p => p.id_programa === data.id_programa) || null,
+                idEscenario: escenarioId,
+                nombreEscenario: escenarioNombre,
+                url: '',
+                tipologia: escenarioCompleto.tipologia || '',
+                codigo: escenarioCompleto.codigo || '',
+                fechaInicio: convertirFechaParaInput(escenarioCompleto.fecha_inicio) || '',
+                fechaFin: convertirFechaParaInput(escenarioCompleto.fecha_fin) || ''
+            });
+        } else {
+            // Si no se encuentra el escenario completo, usar solo la información básica
+            setDocEscenarioFormData({
+                idPrograma: data.id_programa,
+                programaSeleccionado: programasData.find(p => p.id_programa === data.id_programa) || null,
+                idEscenario: escenarioId,
+                nombreEscenario: escenarioNombre,
+                url: '',
+                tipologia: '',
+                codigo: '',
+                fechaInicio: '',
+                fechaFin: ''
+            });
+        }
+        
+        setShowDocEscenarioForm(true);
+    };
+
+    // Función para enviar un documento de escenario al servidor
+    const sendDocEscenarioToSheet = async (docEscenario) => {
+        try {
+            // Preparar los datos para enviar en el formato que requiere la API del servidor
+            const insertData = [
+                [
+                    docEscenario.id, // id único del documento
+                    docEscenario.id_programa || '', // id del programa (opcional)
+                    docEscenario.idEscenario, // id del escenario
+                    docEscenario.institucion, // institución (nombre del escenario)
+                    docEscenario.url, // URL del documento
+                    docEscenario.tipologia, // tipología
+                    docEscenario.codigo, // código
+                    formatearFechaParaHoja(docEscenario.fechaInicio), // fecha inicio
+                    formatearFechaParaHoja(docEscenario.fechaFin) // fecha fin
+                ]
+            ];
+
+            console.log("=== ENVIANDO DOCUMENTO ESCENARIO A SHEETS ===");
+            console.log("Hoja destino: ANEXOS_ESC");
+            console.log("Datos del documento a enviar:", docEscenario);
+            console.log("Datos formateados para envío:", insertData);
+            console.log("==============================================");
+
+            // Especificar el nombre de la hoja de cálculo
+            const sheetName = 'ANEXOS_ESC';
+
+            // Hacer la solicitud POST al servidor con los datos y el nombre de la hoja
+            const response = await axios.post('https://siac-server.vercel.app/sendDocEscenario', {
+                insertData,
+                sheetName
+            });
+
+            if (response.status === 200) {
+                console.log('✅ Documento de escenario guardado correctamente en la hoja ANEXOS_ESC:', response.data);
+                return true;
+            } else {
+                console.error('❌ Error al guardar el documento de escenario en la hoja:', response.statusText);
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ Error al enviar el documento de escenario al servidor:', error);
+            return false;
+        }
+    };
+
+    // Manejar el envío del formulario de documentos de escenario
+    const handleDocEscenarioFormSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            // Validar campos obligatorios
+            if (!docEscenarioFormData.idEscenario || !docEscenarioFormData.nombreEscenario) {
+                alert('Error: No se pudo identificar el escenario de práctica.');
+                return;
+            }
+
+            if (!docEscenarioFormData.url) {
+                alert('Por favor proporciona una URL válida para el documento.');
+                return;
+            }
+
+            if (!docEscenarioFormData.fechaInicio || !docEscenarioFormData.fechaFin) {
+                alert('Por favor proporciona las fechas de inicio y fin.');
+                return;
+            }
+
+            // Crear el documento de escenario (la institución es el nombre del escenario)
+            const newDocEscenario = {
+                id: Date.now(), // ID único basado en timestamp
+                id_programa: docEscenarioFormData.idPrograma, // Opcional
+                idEscenario: docEscenarioFormData.idEscenario,
+                institucion: docEscenarioFormData.nombreEscenario, // Usar el nombre del escenario como institución
+                url: docEscenarioFormData.url,
+                tipologia: docEscenarioFormData.tipologia,
+                codigo: docEscenarioFormData.codigo,
+                fechaInicio: docEscenarioFormData.fechaInicio,
+                fechaFin: docEscenarioFormData.fechaFin
+            };
+
+            console.log("Datos del nuevo documento de escenario:", newDocEscenario);
+
+            // Enviar el documento de escenario
+            const resultado = await sendDocEscenarioToSheet(newDocEscenario);
+
+            if (resultado) {
+                // Reiniciar el formulario
+                setDocEscenarioFormData({
+                    idPrograma: '',
+                    programaSeleccionado: null,
+                    idEscenario: '',
+                    nombreEscenario: '',
+                    url: '',
+                    tipologia: '',
+                    codigo: '',
+                    fechaInicio: '',
+                    fechaFin: ''
+                });
+                
+                setShowDocEscenarioForm(null);
+                
+                // Mostrar mensaje de éxito
+                alert('Documento de escenario guardado correctamente');
+                
+            } else {
+                alert('Error al guardar el documento de escenario. Por favor intenta de nuevo.');
+            }
+            
+        } catch (error) {
+            console.error('Error al guardar el documento de escenario:', error);
+            alert('Error al guardar el documento de escenario. Por favor intenta de nuevo.');
+        }
+    };
+
     return (
         <>
             <div style={{ display: 'flex', justifyContent: 'center', width: '100%', fontSize: '20px' }}>
-                <h2>Escenarios de Practica</h2>
+                <h2>Seguimiento del Proceso de Convenio Docencia Servicio</h2>
             </div>
             <div>
                 <div style={{ marginTop: "20px" }}>
@@ -1262,12 +1647,192 @@ const PracticeScenario = ({ data }) => {
                                                                     value={filtro14Data.find(item => item.id === f15.id_escenario)?.nombre || ''}
                                                                     disabled
                                                                 >
-                                                                                                                                            {(filtro14Data && Array.isArray(filtro14Data) ? filtro14Data : []).map(item => item && (
-                                                                            <MenuItem key={item.id} value={item.nombre}>{item.nombre}</MenuItem>
-                                                                        ))}
+                                                                    {(filtro14Data && Array.isArray(filtro14Data) ? filtro14Data : []).map(item => item && (
+                                                                        <MenuItem key={item.id} value={item.id}>
+                                                                            {item.nombre}
+                                                                        </MenuItem>
+                                                                    ))}
                                                                 </Select>
                                                             </FormControl>
                                                         </FormGroup>
+                                                        
+                                                        {/* Botón para añadir documento de escenario */}
+                                                        {(tienePermisoConvenio()) && (
+                                                            <Box sx={{ 
+                                                                display: 'flex', 
+                                                                justifyContent: 'center', 
+                                                                marginTop: 2,
+                                                                marginBottom: 2
+                                                            }}>
+                                                                <Button 
+                                                                    variant="outlined" 
+                                                                    size="small"
+                                                                    onClick={() => {
+                                                                        const escenarioSeleccionado = filtro14Data.find(item => item.id === f15.id_escenario);
+                                                                        if (escenarioSeleccionado) {
+                                                                            openDocEscenarioFormWithScenario(
+                                                                                escenarioSeleccionado.id, 
+                                                                                escenarioSeleccionado.nombre
+                                                                            );
+                                                                        }
+                                                                        toggleDocEscenarioForm(f15.id_escenario);
+                                                                    }}
+                                                                    sx={{ 
+                                                                        textTransform: 'none',
+                                                                        fontWeight: 500,
+                                                                        fontSize: '0.8rem'
+                                                                    }}
+                                                                >
+                                                                    Añadir documento escenario
+                                                                </Button>
+                                                            </Box>
+                                                        )}
+
+                                                        {/* Formulario para documentos de escenario - Aparece aquí cerca del botón */}
+                                                        {(tienePermisoConvenio()) && showDocEscenarioForm === f15.id_escenario && (
+                                                            <Box component="form" onSubmit={handleDocEscenarioFormSubmit} sx={{ 
+                                                                marginTop: 2, 
+                                                                marginBottom: 3,
+                                                                maxWidth: '800px', 
+                                                                mx: 'auto',
+                                                                p: 3,
+                                                                border: '1px solid #ddd',
+                                                                borderRadius: 2,
+                                                                backgroundColor: '#f0f8ff'
+                                                            }}>
+                                                                <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', color: '#1976d2' }}>
+                                                                    Nuevo Documento de Escenario: {docEscenarioFormData.nombreEscenario}
+                                                                </Typography>
+                                                                
+                                                                <FormGroup>
+                                                                    {/* Campo de selección de programa (opcional) - prellenado con el programa actual */}
+                                                                    <Autocomplete
+                                                                        options={programasData}
+                                                                        getOptionLabel={(option) => option['programa académico'] || ''}
+                                                                        value={docEscenarioFormData.programaSeleccionado}
+                                                                        onChange={handleDocEscenarioProgramaChange}
+                                                                        filterOptions={(options, params) => {
+                                                                            const filtered = options.filter((option) =>
+                                                                                option['programa académico'] && 
+                                                                                option['programa académico'].toLowerCase().includes(params.inputValue.toLowerCase())
+                                                                            );
+                                                                            return filtered;
+                                                                        }}
+                                                                        renderInput={(params) => (
+                                                                            <TextField
+                                                                                {...params}
+                                                                                label="Programa Académico (Opcional)"
+                                                                                placeholder="Buscar programa académico..."
+                                                                                margin="normal"
+                                                                                fullWidth
+                                                                                helperText="Este campo es opcional - viene pre-llenado con el programa actual"
+                                                                            />
+                                                                        )}
+                                                                        renderOption={(props, option, { index }) => (
+                                                                            <Box component="li" {...props} key={`doc-programa-option-${option.id_programa || index}`}>
+                                                                                <Typography variant="body1">
+                                                                                    {option['programa académico']}
+                                                                                </Typography>
+                                                                            </Box>
+                                                                        )}
+                                                                        noOptionsText="No se encontraron programas"
+                                                                        isOptionEqualToValue={(option, value) => option?.id_programa === value?.id_programa}
+                                                                    />
+
+                                                                    {/* Campo de selección de escenario de práctica (modificable) */}
+                                                                    <FormControl fullWidth margin="normal" required>
+                                                                        <InputLabel id="doc-escenario-label">Escenario de Práctica</InputLabel>
+                                                                        <Select
+                                                                            labelId="doc-escenario-label"
+                                                                            name="idEscenario"
+                                                                            value={docEscenarioFormData.idEscenario}
+                                                                            onChange={handleDocEscenarioInputChange}
+                                                                            required
+                                                                            label="Escenario de Práctica"
+                                                                        >
+                                                                            {escenariosData && Array.isArray(escenariosData) ? escenariosData.map((escenario) => (
+                                                                                <MenuItem key={escenario.id} value={escenario.id}>
+                                                                                    {escenario.nombre}
+                                                                                </MenuItem>
+                                                                            )) : []}
+                                                                        </Select>
+                                                                    </FormControl>
+
+                                                                    {/* Campos editables con información pre-llenada de ESC_PRACTICA */}
+                                                                    <Box sx={{ display: 'flex', gap: 2, marginTop: 2 }}>
+                                                                        <TextField
+                                                                            label="Tipología"
+                                                                            name="tipologia"
+                                                                            value={docEscenarioFormData.tipologia}
+                                                                            onChange={handleDocEscenarioInputChange}
+                                                                            fullWidth
+                                                                            placeholder={docEscenarioFormData.tipologia || "Tipología del escenario"}
+                                                                        />
+                                                                        <TextField
+                                                                            label="Código"
+                                                                            name="codigo"
+                                                                            value={docEscenarioFormData.codigo}
+                                                                            onChange={handleDocEscenarioInputChange}
+                                                                            fullWidth
+                                                                            placeholder={docEscenarioFormData.codigo || "Código del escenario"}
+                                                                        />
+                                                                    </Box>
+                                                                    
+                                                                    <TextField
+                                                                        label="URL del Documento"
+                                                                        name="url"
+                                                                        value={docEscenarioFormData.url}
+                                                                        onChange={handleDocEscenarioInputChange}
+                                                                        margin="normal"
+                                                                        required
+                                                                        fullWidth
+                                                                        placeholder="https://drive.google.com/..."
+                                                                        helperText="URL donde se encuentra almacenado el documento"
+                                                                    />
+                                                                    
+                                                                    <Box sx={{ display: 'flex', gap: 2, marginTop: 2 }}>
+                                                                        <TextField
+                                                                            label="Fecha de Inicio"
+                                                                            name="fechaInicio"
+                                                                            type="date"
+                                                                            value={docEscenarioFormData.fechaInicio}
+                                                                            onChange={handleDocEscenarioInputChange}
+                                                                            InputLabelProps={{
+                                                                                shrink: true,
+                                                                            }}
+                                                                            fullWidth
+                                                                            required
+                                                                        />
+                                                                        <TextField
+                                                                            label="Fecha de Fin"
+                                                                            name="fechaFin"
+                                                                            type="date"
+                                                                            value={docEscenarioFormData.fechaFin}
+                                                                            onChange={handleDocEscenarioInputChange}
+                                                                            InputLabelProps={{
+                                                                                shrink: true,
+                                                                            }}
+                                                                            fullWidth
+                                                                            required
+                                                                        />
+                                                                    </Box>
+
+                                                                </FormGroup>
+                                                                
+                                                                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', marginTop: 3 }}>
+                                                                    <Button type="submit" variant="contained" color="primary">
+                                                                        Guardar Documento
+                                                                    </Button>
+                                                                    <Button 
+                                                                        type="button" 
+                                                                        variant="outlined" 
+                                                                        onClick={() => toggleDocEscenarioForm(null)}
+                                                                    >
+                                                                        Cancelar
+                                                                    </Button>
+                                                                </Box>
+                                                            </Box>
+                                                        )}
                                                     </Box>
                                                     <Box sx={{ width: '70%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                                         <div style={{ marginBottom: '13px', marginTop: '15px', display: 'flex', justifyContent: 'center' }}>
@@ -1395,167 +1960,6 @@ const PracticeScenario = ({ data }) => {
                     ))}
                 </div>
             </div>
-            {/* Sección de Solicitud de Práctica oculta
-            <div style={{ marginTop: "20px", marginBottom:"20px" }}>
-                <Button variant="contained" onClick={togglePracticeForm}>
-                    Solicitud de Práctica
-                </Button>
-
-                {showPracticeForm && (
-                    <Box component="form" onSubmit={handlePracticeFormSubmit} sx={{ marginTop: 2 }}>
-                        <FormGroup>
-                            <TextField
-                                label="Nombre de Rotación"
-                                name="nombrerotacion"
-                                value={practiceFormData.nombrerotacion}
-                                onChange={handlePracticeInputChange}
-                                margin="normal"
-                                required
-                            />
-                            <TextField
-                                label="No. de Estudiantes"
-                                name="numeroestudiantes"
-                                value={practiceFormData.numeroestudiantes}
-                                onChange={handlePracticeInputChange}
-                                margin="normal"
-                                required
-                            />
-                            <TextField
-                                label="No. Horas y Semanas a Rotar"
-                                name="horassemanas"
-                                value={practiceFormData.horassemanas}
-                                onChange={handlePracticeInputChange}
-                                margin="normal"
-                                required
-                            />
-                            <TextField
-                                label="Docentes"
-                                name="docentes"
-                                value={practiceFormData.docentes}
-                                onChange={handlePracticeInputChange}
-                                margin="normal"
-                                required
-                            />
-                            <TextField
-                                label="Servicios"
-                                name="servicios"
-                                value={practiceFormData.servicios}
-                                onChange={handlePracticeInputChange}
-                                margin="normal"
-                                required
-                            />
-                            <TextField
-                                label="Intensidad Horaria"
-                                name="intensidadhoraria"
-                                value={practiceFormData.intensidadhoraria}
-                                onChange={handlePracticeInputChange}
-                                margin="normal"
-                                required
-                            />
-                        </FormGroup>
-                        <Button type="submit" variant="contained" sx={{ marginTop: 2 }}>
-                            Guardar
-                        </Button>
-                    </Box>
-                )}
-
-                <TableContainer component={Paper} sx={{ marginTop: 2 }}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Nombre de Rotación</TableCell>
-                                <TableCell>Número de Estudiantes</TableCell>
-                                <TableCell>Horas por Semana</TableCell>
-                                <TableCell>Docentes</TableCell>
-                                <TableCell>Servicios</TableCell>
-                                <TableCell>Intensidad Horaria</TableCell>
-                                <TableCell>Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {practiceTables.map((practice) => (
-                                <TableRow key={practice.id}>
-                                    <TableCell>
-                                        {editingId === practice.id ? (
-                                            <TextField
-                                                name="nombrerotacion"
-                                                value={editedPractice.nombrerotacion}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, nombrerotacion: e.target.value })}
-                                            />
-                                        ) : (
-                                            practice.nombrerotacion
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {editingId === practice.id ? (
-                                            <TextField
-                                                name="numeroestudiantes"
-                                                value={editedPractice.numeroestudiantes}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, numeroestudiantes: e.target.value })}
-                                            />
-                                        ) : (
-                                            practice.numeroestudiantes
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {editingId === practice.id ? (
-                                            <TextField
-                                                name="horassemanas"
-                                                value={editedPractice.horassemanas}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, horassemanas: e.target.value })}
-                                            />
-                                        ) : (
-                                            practice.horassemanas
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {editingId === practice.id ? (
-                                            <TextField
-                                                name="docentes"
-                                                value={editedPractice.docentes}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, docentes: e.target.value })}
-                                            />
-                                        ) : (
-                                            practice.docentes
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {editingId === practice.id ? (
-                                            <TextField
-                                                name="servicios"
-                                                value={editedPractice.servicios}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, servicios: e.target.value })}
-                                            />
-                                        ) : (
-                                            practice.servicios
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {editingId === practice.id ? (
-                                            <TextField
-                                                name="intensidadhoraria"
-                                                value={editedPractice.intensidadhoraria}
-                                                onChange={(e) => setEditedPractice({ ...editedPractice, intensidadhoraria: e.target.value })}
-                                            />
-                                        ) : (
-                                            practice.intensidadhoraria
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {editingId === practice.id ? (
-                                            <Button onClick={() => handleSave(practice.id)}>Guardar</Button>
-                                        ) : (
-                                            <Button onClick={() => handleEdit(practice)}>Editar</Button>
-                                        )}
-                                        <Button onClick={() => handleDelete(practice.id)}>Eliminar</Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </div>
-            */}
 
             <div style={{ marginTop: "20px", marginBottom: "40px" }}>
                 <Button variant="contained" onClick={toggleAnexoForm}>
@@ -1619,13 +2023,39 @@ const PracticeScenario = ({ data }) => {
                             </Select>
                         </FormControl>
                         <TextField
-                            label="URL/Archivo"
+                            label="URL del Documento"
                             name="urlAnexo"
                             value={anexoFormData.urlAnexo}
                             onChange={handleAnexoInputChange}
                             margin="normal"
-                            required
+                            fullWidth
+                            placeholder="https://drive.google.com/..."
+                            helperText="URL donde se encuentra almacenado el documento"
+                            required={!anexoFormData.localFile}
                         />
+
+                        <Typography variant="body2" sx={{ my: 1, textAlign: 'center' }}>
+                            O
+                        </Typography>
+
+                        <Button
+                            variant="outlined"
+                            component="label"
+                            fullWidth
+                        >
+                            Seleccionar Archivo Local
+                            <input
+                                type="file"
+                                hidden
+                                onChange={handleAnexoInputChange}
+                                name="localFile"
+                            />
+                        </Button>
+                        {anexoFormData.localFile && (
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                Archivo seleccionado: {anexoFormData.localFile.name}
+                            </Typography>
+                        )}
                         <FormControl fullWidth margin="normal" required>
                             <InputLabel id="tipo-label">Tipo</InputLabel>
                             <Select
@@ -1744,10 +2174,11 @@ const PracticeScenario = ({ data }) => {
                 <AnexosTable reloadTrigger={reloadAnexos} />
             </div>
 
+
+
             <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={saving}>
                 <CircularProgress color="inherit" />
             </Backdrop>
-
         </>
     );
 };

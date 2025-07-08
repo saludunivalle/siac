@@ -24,6 +24,12 @@ const filterByProperty = async (sheetName, data, propertyName) => {
       urlEndPoint: 'https://siac-server.vercel.app/'
     });
 
+    // Validar que response y response.data existan y sean arrays
+    if (!response || !response.data || !Array.isArray(response.data)) {
+      console.error('Error: La respuesta no contiene un array válido en data:', response);
+      return [];
+    }
+
     if (data) {
       const searchTerm = data.searchTerm;
 
@@ -39,7 +45,7 @@ const filterByProperty = async (sheetName, data, propertyName) => {
     return response.data;
   } catch (error) {
     console.error('Error en la solicitud:', error);
-    throw error;
+    return []; // Retornar array vacío en caso de error
   }
 };
 
@@ -577,3 +583,26 @@ export const updateDataSegui = async (data, id) => {
 
 
 export const FiltroHistorico = () => filterByProperty(hojaHistorico, {}, '');
+
+// Funciones para documentos de escenario y instituciones
+export const FiltroInstituciones = () => filterByProperty('INFO_ESC', {}, '');
+
+export const sendDataDocEscenario = async (data) => {
+  try {
+    const dataSend = {
+      insertData: [data]
+    };
+    const response = await fetchPostGeneral({
+      dataSend,
+      sheetName: 'ANEXOS_ESC',
+      urlEndPoint: 'https://siac-server.vercel.app/sendData',
+    });
+    if (response.status) {
+      console.log('Documento de escenario enviado correctamente al servidor.');
+    } else {
+      console.error('Error al enviar documento de escenario al servidor.');
+    }
+  } catch (error) {
+    console.error('Error al procesar la solicitud:', error);
+  }
+};

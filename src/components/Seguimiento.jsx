@@ -1380,7 +1380,6 @@ const Seguimiento = ({ handleButtonClick }) => {
                     )}
                     {handleButtonClick === 'conv' && (
                         <>
-                            <h3>Seguimiento del Proceso de Convenio Docencia Servicio</h3>
                             <PracticeScenario data={rowData} />
                         </>
                     )}
