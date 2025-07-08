@@ -85,16 +85,13 @@ const DocenciaServicio = () => {
     });
     const [escenariosData, setEscenariosData] = useState([]);
     const [uniqueTipologias, setUniqueTipologias] = useState([]);
-    const [uniqueCodigos, setUniqueCodigos] = useState([]);
     const [reloadDocEscenarios, setReloadDocEscenarios] = useState(false);
 
     // Efecto para extraer tipologías y códigos únicos
     useEffect(() => {
         if (escenariosData && escenariosData.length > 0) {
             const tipologias = [...new Set(escenariosData.map(e => e.tipologia).filter(Boolean))];
-            const codigos = [...new Set(escenariosData.map(e => e.codigo).filter(Boolean))];
             setUniqueTipologias(tipologias);
-            setUniqueCodigos(codigos);
         }
     }, [escenariosData]);
 
@@ -1209,18 +1206,6 @@ const DocenciaServicio = () => {
                             <Table size="small">
                                 <TableHead>
                                     <TableRow>
-                                        {tipoVista === 'escenario' && (
-                                            <>
-                                                <TableCell><strong>Escuela</strong></TableCell>
-                                                <TableCell><strong>Programa</strong></TableCell>
-                                            </>
-                                        )}
-                                        {(tipoVista === 'escuela' || tipoVista === 'programa') && (
-                                            <>
-                                                <TableCell><strong>Programa</strong></TableCell>
-                                                <TableCell><strong>Escuela</strong></TableCell>
-                                            </>
-                                        )}
                                         <TableCell><strong>Institución/Escenario</strong></TableCell>
                                         <TableCell><strong>URL/Documento</strong></TableCell>
                                         <TableCell><strong>Tipología</strong></TableCell>
@@ -1232,18 +1217,6 @@ const DocenciaServicio = () => {
                                 <TableBody>
                                     {documentosEscenario.map((doc, index) => (
                                         <TableRow key={`doc-${index}`}>
-                                            {tipoVista === 'escenario' && (
-                                                <>
-                                                    <TableCell>{doc.programa_info?.escuela || 'N/A'}</TableCell>
-                                                    <TableCell>{doc.programa_info?.['programa académico'] || 'N/A'}</TableCell>
-                                                </>
-                                            )}
-                                            {(tipoVista === 'escuela' || tipoVista === 'programa') && (
-                                                <>
-                                                    <TableCell>{doc.programa_info?.['programa académico'] || 'N/A'}</TableCell>
-                                                    <TableCell>{doc.programa_info?.escuela || 'N/A'}</TableCell>
-                                                </>
-                                            )}
                                             <TableCell>{doc.institucion || 'N/A'}</TableCell>
                                             <TableCell>
                                                 {doc.url ? (
@@ -1967,23 +1940,17 @@ const DocenciaServicio = () => {
                                                                                     helperText="Seleccione una existente o escriba una nueva"
                                                                                 />
                                                                             )}
+                                                                            sx={{ width: '50%' }}
                                                                         />
-                                                                        <Autocomplete
-                                                                            freeSolo
-                                                                            options={uniqueCodigos}
+                                                                        <TextField
+                                                                            label="Código"
+                                                                            name="codigo"
+                                                                            type="number"
                                                                             value={docEscenarioFormData.codigo}
-                                                                            onInputChange={(event, newInputValue) => {
-                                                                                setDocEscenarioFormData({ ...docEscenarioFormData, codigo: newInputValue });
-                                                                            }}
-                                                                            renderInput={(params) => (
-                                                                                <TextField
-                                                                                    {...params}
-                                                                                    label="Código"
-                                                                                    required
-                                                                                    fullWidth
-                                                                                    helperText="Seleccione uno existente o escriba uno nuevo"
-                                                                                />
-                                                                            )}
+                                                                            onChange={handleDocEscenarioInputChange}
+                                                                            required
+                                                                            placeholder="Código del escenario"
+                                                                            sx={{ width: '50%' }}
                                                                         />
                                                                     </Box>
                                                                     
