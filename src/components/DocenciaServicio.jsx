@@ -74,8 +74,6 @@ const DocenciaServicio = () => {
     // Estados para el formulario de documentos de escenario
     const [showDocEscenarioForm, setShowDocEscenarioForm] = useState(null); // Cambiado a null para rastrear cuál escenario
     const [docEscenarioFormData, setDocEscenarioFormData] = useState({
-        idPrograma: '',
-        programaSeleccionado: null,
         idEscenario: '',
         nombreEscenario: '',
         url: '',
@@ -86,7 +84,19 @@ const DocenciaServicio = () => {
         localFile: null
     });
     const [escenariosData, setEscenariosData] = useState([]);
+    const [uniqueTipologias, setUniqueTipologias] = useState([]);
+    const [uniqueCodigos, setUniqueCodigos] = useState([]);
     const [reloadDocEscenarios, setReloadDocEscenarios] = useState(false);
+
+    // Efecto para extraer tipologías y códigos únicos
+    useEffect(() => {
+        if (escenariosData && escenariosData.length > 0) {
+            const tipologias = [...new Set(escenariosData.map(e => e.tipologia).filter(Boolean))];
+            const codigos = [...new Set(escenariosData.map(e => e.codigo).filter(Boolean))];
+            setUniqueTipologias(tipologias);
+            setUniqueCodigos(codigos);
+        }
+    }, [escenariosData]);
 
     // Obtener los permisos del usuario desde sessionStorage
     useEffect(() => {
@@ -626,15 +636,6 @@ const DocenciaServicio = () => {
         }
     };
 
-    // Función para manejar la selección de programa (opcional)
-    const handleDocEscenarioProgramaChange = (event, newValue) => {
-        setDocEscenarioFormData({
-            ...docEscenarioFormData,
-            programaSeleccionado: newValue,
-            idPrograma: newValue ? newValue.id_programa : ''
-        });
-    };
-
     const handleAnexoInputChange = (e) => {
         const { name, value, files } = e.target;
     
@@ -768,7 +769,7 @@ const DocenciaServicio = () => {
             const insertData = [
                 [
                     docEscenario.id, // id único del documento
-                    docEscenario.id_programa || '', // id del programa (opcional)
+                    '', // id del programa (opcional, siempre vacío ahora)
                     docEscenario.idEscenario, // id del escenario
                     docEscenario.institucion, // institución
                     docEscenario.url, // URL del documento
@@ -974,6 +975,16 @@ const DocenciaServicio = () => {
                 return;
             }
 
+            if (!docEscenarioFormData.tipologia) {
+                alert('Por favor ingrese la tipología.');
+                return;
+            }
+
+            if (!docEscenarioFormData.codigo) {
+                alert('Por favor ingrese el código.');
+                return;
+            }
+
             if (!docEscenarioFormData.fechaInicio || !docEscenarioFormData.fechaFin) {
                 alert('Por favor proporciona las fechas de inicio y fin.');
                 return;
@@ -1011,7 +1022,6 @@ const DocenciaServicio = () => {
             // Crear el documento de escenario (la institución se llena automáticamente desde el escenario)
             const newDocEscenario = {
                 id: Date.now(), // ID único basado en timestamp
-                id_programa: docEscenarioFormData.idPrograma, // Opcional
                 idEscenario: docEscenarioFormData.idEscenario,
                 institucion: docEscenarioFormData.nombreEscenario, // Usar el nombre del escenario como institución
                 url: fileUrl,
@@ -1029,8 +1039,6 @@ const DocenciaServicio = () => {
             if (resultado) {
                 // Reiniciar el formulario
                 setDocEscenarioFormData({
-                    idPrograma: '',
-                    programaSeleccionado: null,
                     idEscenario: '',
                     nombreEscenario: '',
                     url: '',
@@ -1871,8 +1879,6 @@ const DocenciaServicio = () => {
                                                                         
                                                                         if (escenarioCompleto) {
                                                                             setDocEscenarioFormData({
-                                                                                idPrograma: '',
-                                                                                programaSeleccionado: null,
                                                                                 idEscenario: escenarioCompleto.id,
                                                                                 nombreEscenario: escenarioCompleto.nombre,
                                                                                 url: '',
@@ -1884,8 +1890,6 @@ const DocenciaServicio = () => {
                                                                         } else if (escenarioInfo) {
                                                                             // Si no se encuentra el escenario completo, usar la información de escenarioInfo
                                                                             setDocEscenarioFormData({
-                                                                                idPrograma: '',
-                                                                                programaSeleccionado: null,
                                                                                 idEscenario: escenarioInfo.id,
                                                                                 nombreEscenario: escenarioInfo.nombre,
                                                                                 url: '',
@@ -1926,40 +1930,6 @@ const DocenciaServicio = () => {
                                                                 </Typography>
                                                                 
                                                                 <FormGroup>
-                                                                    {/* Campo de selección de programa (opcional) */}
-                                                                    <Autocomplete
-                                                                        options={programasData}
-                                                                        getOptionLabel={(option) => option['programa académico'] || ''}
-                                                                        value={docEscenarioFormData.programaSeleccionado}
-                                                                        onChange={handleDocEscenarioProgramaChange}
-                                                                        filterOptions={(options, params) => {
-                                                                            const filtered = options.filter((option) =>
-                                                                                option['programa académico'] && 
-                                                                                option['programa académico'].toLowerCase().includes(params.inputValue.toLowerCase())
-                                                                            );
-                                                                            return filtered;
-                                                                        }}
-                                                                        renderInput={(params) => (
-                                                                            <TextField
-                                                                                {...params}
-                                                                                label="Programa Académico (Opcional)"
-                                                                                placeholder="Buscar programa académico..."
-                                                                                margin="normal"
-                                                                                fullWidth
-                                                                                helperText="Este campo es opcional"
-                                                                            />
-                                                                        )}
-                                                                        renderOption={(props, option, { index }) => (
-                                                                            <Box component="li" {...props} key={`doc-programa-option-${option.id_programa || index}`}>
-                                                                                <Typography variant="body1">
-                                                                                    {option['programa académico']}
-                                                                                </Typography>
-                                                                            </Box>
-                                                                        )}
-                                                                        noOptionsText="No se encontraron programas"
-                                                                        isOptionEqualToValue={(option, value) => option?.id_programa === value?.id_programa}
-                                                                    />
-
                                                                     {/* Campo de selección de escenario de práctica (modificable) */}
                                                                     <FormControl fullWidth margin="normal" required>
                                                                         <InputLabel id="doc-escenario-label">Escenario de Práctica</InputLabel>
@@ -1981,21 +1951,39 @@ const DocenciaServicio = () => {
 
                                                                     {/* Campos editables con placeholders pre-llenados desde ESC_PRACTICA */}
                                                                     <Box sx={{ display: 'flex', gap: 2, marginTop: 2 }}>
-                                                                        <TextField
-                                                                            label="Tipología"
-                                                                            name="tipologia"
+                                                                        <Autocomplete
+                                                                            freeSolo
+                                                                            options={uniqueTipologias}
                                                                             value={docEscenarioFormData.tipologia}
-                                                                            onChange={handleDocEscenarioInputChange}
-                                                                            fullWidth
-                                                                            placeholder={docEscenarioFormData.tipologia || "Tipología del escenario"}
+                                                                            onInputChange={(event, newInputValue) => {
+                                                                                setDocEscenarioFormData({ ...docEscenarioFormData, tipologia: newInputValue });
+                                                                            }}
+                                                                            renderInput={(params) => (
+                                                                                <TextField
+                                                                                    {...params}
+                                                                                    label="Tipología"
+                                                                                    required
+                                                                                    fullWidth
+                                                                                    helperText="Seleccione una existente o escriba una nueva"
+                                                                                />
+                                                                            )}
                                                                         />
-                                                                        <TextField
-                                                                            label="Código"
-                                                                            name="codigo"
+                                                                        <Autocomplete
+                                                                            freeSolo
+                                                                            options={uniqueCodigos}
                                                                             value={docEscenarioFormData.codigo}
-                                                                            onChange={handleDocEscenarioInputChange}
-                                                                            fullWidth
-                                                                            placeholder={docEscenarioFormData.codigo || "Código del escenario"}
+                                                                            onInputChange={(event, newInputValue) => {
+                                                                                setDocEscenarioFormData({ ...docEscenarioFormData, codigo: newInputValue });
+                                                                            }}
+                                                                            renderInput={(params) => (
+                                                                                <TextField
+                                                                                    {...params}
+                                                                                    label="Código"
+                                                                                    required
+                                                                                    fullWidth
+                                                                                    helperText="Seleccione uno existente o escriba uno nuevo"
+                                                                                />
+                                                                            )}
                                                                         />
                                                                     </Box>
                                                                     
