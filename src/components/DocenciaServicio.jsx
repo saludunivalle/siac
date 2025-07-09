@@ -1105,7 +1105,7 @@ const DocenciaServicio = () => {
                 {anexosTecnicos.length > 0 && (
                     <Box sx={{ mb: 3 }}>
                         <Typography variant="h6" sx={{ mb: 2, color: '#1976d2', fontWeight: 600 }}>
-                            Anexos Técnicos ({anexosTecnicos.length})
+                            Convenio D.S. ({anexosTecnicos.length})
                         </Typography>
                         <TableContainer component={Paper} sx={{ mb: 2 }}>
                 <Table size="small">
@@ -1482,7 +1482,7 @@ const DocenciaServicio = () => {
                                 onClick={toggleAnexoForm}
                                 sx={{ mb: 2 }}
                             >
-                                Añadir Anexo Técnico
+                                Añadir Anexo  Convenio D.S.
                             </Button>
                         )}
 
