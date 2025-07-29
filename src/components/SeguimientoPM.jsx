@@ -310,6 +310,7 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
                         <MenuItem value="Diseño">Diseño</MenuItem>
                         <MenuItem value="Rediseño">Rediseño</MenuItem>
                         <MenuItem value="Seguimiento">Seguimiento</MenuItem>
+                        <MenuItem value="Otorgado por oficio">Otorgado por oficio</MenuItem>
                     </Select>
                 </FormControl>
             </Box>
