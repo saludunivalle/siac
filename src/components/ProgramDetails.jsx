@@ -4,7 +4,7 @@ import axios from 'axios';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
 import Seguimiento from './Seguimiento';
-import { Filtro5, Filtro7, FiltroHistorico } from "../service/data";
+import { Filtro5, Filtro7, FiltroHistorico, getSeguimientoPMByPrograma } from "../service/data";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'; 
 import { Tabs, Tab, Box, Button, TextField, Grid } from '@mui/material';
 import { format } from 'date-fns';
@@ -33,6 +33,7 @@ const ProgramDetails = () => {
         raac: '',
     });
     const [isEditing, setIsEditing] = useState(false);    
+    const [seguimientoPMData, setSeguimientoPMData] = useState(null);
 
     const [options, setOptions] = useState({
         Sede: [],
@@ -205,6 +206,20 @@ const ProgramDetails = () => {
         };
 
         fetchFiltroHistorico();
+    }, [rowData]);
+
+    useEffect(() => {
+        const fetchSeguimientoPM = async () => {
+            try {
+                const data = await getSeguimientoPMByPrograma(rowData.id_programa);
+                console.log('Datos de seguimiento PM obtenidos:', data);
+                setSeguimientoPMData(data);
+            } catch (error) {
+                console.error('Error al obtener datos de seguimiento PM:', error);
+            }
+        };
+
+        fetchSeguimientoPM();
     }, [rowData]);
 
     const handleTabChange = (event, newValue) => {
@@ -386,6 +401,12 @@ const ProgramDetails = () => {
                             <div className='about-program'><strong>Fecha Vencimiento RAAC: </strong>&nbsp; {formData['Fecha RAAC'] || 'N/A'}</div>
                             <div className='about-program'><strong>Resolución RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
                             <div className='about-program'><strong>Acreditable: </strong>&nbsp; {formData['Acreditable'] || 'N/A'}</div>
+                        </div>
+
+                        {/* Sección 6: Estados de Seguimiento PM */}
+                        <div className='about-program-section'>
+                            <div className='about-program'><strong>Estado del programa en Registro Calificado: </strong>&nbsp; {seguimientoPMData?.estado_rc || 'N/A'}</div>
+                            <div className='about-program'><strong>Estado del programa en Acreditación: </strong>&nbsp; {seguimientoPMData?.estado_ac || 'N/A'}</div>
                         </div>
                     </div>
                     

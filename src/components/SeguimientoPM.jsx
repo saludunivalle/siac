@@ -67,6 +67,27 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
     const [hasData, setHasData] = useState(false);
     const [estadoRRC, setEstadoRRC] = useState('Inactivo');
 
+    // Función para normalizar los valores de estado
+    const normalizarEstado = (estado) => {
+        if (!estado) return '';
+        
+        const estadoNormalizado = estado.toString().trim();
+        
+        // Mapeo de valores posibles a los valores exactos de los selects
+        const mapeoEstados = {
+            'diseño': 'Diseño',
+            'diseno': 'Diseño',
+            'rediseño': 'Rediseño',
+            'rediseno': 'Rediseño',
+            'seguimiento': 'Seguimiento',
+            'otorgado por oficio': 'Otorgado por oficio',
+            'otorgado': 'Otorgado por oficio'
+        };
+        
+        const estadoLower = estadoNormalizado.toLowerCase();
+        return mapeoEstados[estadoLower] || estadoNormalizado;
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             
@@ -96,9 +117,15 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
             setSavedRecords(Object.values(records));
             if (Object.values(records).length > 0) {
                 const lastRecord = Object.values(records).slice(-1)[0];
+                console.log('Último registro encontrado:', lastRecord);
+                console.log('estado_rc original:', lastRecord[2]);
+                console.log('estado_ac original:', lastRecord[3]);
+                console.log('estado_rc normalizado:', normalizarEstado(lastRecord[2]));
+                console.log('estado_ac normalizado:', normalizarEstado(lastRecord[3]));
+                
                 setCurrentId(lastRecord[0]);
-                setEstadoProceso(lastRecord[2]);
-                setEstadoAcreditacion(lastRecord[3]);
+                setEstadoProceso(normalizarEstado(lastRecord[2]));
+                setEstadoAcreditacion(normalizarEstado(lastRecord[3]));
                 setPorcentaje(lastRecord[4]);
                 setRecopilacionEvidencias(lastRecord[5]);
                 setNumeroProgramas(lastRecord[6]);
@@ -158,6 +185,10 @@ const SeguimientoPM = ({ idPrograma, escuela, formacion, isPlan, fechaVencimient
             urlHSCPM_AAC            // url_herramienta_aac
         ];
 
+        console.log('Guardando registro con estados:', {
+            estadoProceso,
+            estadoAcreditacion
+        });
 
 
         if (currentId !== null) {

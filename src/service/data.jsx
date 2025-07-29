@@ -606,3 +606,45 @@ export const sendDataDocEscenario = async (data) => {
     console.error('Error al procesar la solicitud:', error);
   }
 };
+
+export const getSeguimientoPMByPrograma = async (idPrograma) => {
+  try {
+    console.log('Buscando datos de seguimiento PM para programa:', idPrograma);
+    const response = await fetchPostGeneral({
+      dataSend: {},
+      sheetName: 'Programas_pm',
+      urlEndPoint: 'https://siac-server.vercel.app/seguimiento'
+    });
+    
+    if (!response || !response.data || !Array.isArray(response.data)) {
+      console.error('Error: La respuesta no contiene un array válido en data:', response);
+      return null;
+    }
+
+    console.log('Todos los datos de seguimiento PM:', response.data);
+
+    // Filtrar por id_programa y obtener el registro más reciente
+    const filteredData = response.data
+      .filter(record => {
+        const recordId = String(record.id_programa || '').trim();
+        const searchId = String(idPrograma || '').trim();
+        console.log('Comparando:', recordId, 'con', searchId);
+        return recordId === searchId;
+      })
+      .sort((a, b) => {
+        // Ordenar por fecha descendente si existe, sino por ID
+        if (a.fecha && b.fecha) {
+          const fechaA = new Date(a.fecha.split('/').reverse().join('-'));
+          const fechaB = new Date(b.fecha.split('/').reverse().join('-'));
+          return fechaB - fechaA;
+        }
+        return (b.id || 0) - (a.id || 0);
+      });
+
+    console.log('Datos filtrados para programa', idPrograma, ':', filteredData);
+    return filteredData.length > 0 ? filteredData[0] : null;
+  } catch (error) {
+    console.error('Error al obtener datos de seguimiento PM:', error);
+    return null;
+  }
+};
