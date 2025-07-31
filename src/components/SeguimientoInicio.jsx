@@ -35,8 +35,8 @@ const escuelas = [
 const programasBase = [
     'Porcentaje de programas Acreditados de la Escuela de {tipo}',
     'Porcentaje de programas con Registro Calificado vigente de la Escuela de {tipo}',
-    'Porcentaje de programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Acreditación de {tipo}',
-    'Porcentaje de programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Registro Calificado de {tipo}',
+    'Porcentaje de programas en Diseño, Rediseño, Seguimiento y Otorgado por oficio del Plan de Mejoramiento para Acreditación de {tipo}',
+    'Porcentaje de programas en Diseño, Rediseño, Seguimiento y Otorgado por oficio del Plan de Mejoramiento para Registro Calificado de {tipo}',
 ];
 
 const ponderacionesProgramas = [
@@ -364,12 +364,13 @@ const SeguimientoInicio = () => {
       
           console.log(`Programas con SI en hscpm_rrc: ${programasConHSCPMRC.length}`);
           
-          // 5. De estos, contar cuántos están en estado Diseño, Rediseño o Seguimiento (numerador)
+          // 5. De estos, contar cuántos están en estado Diseño, Rediseño, Seguimiento u Otorgado por oficio (numerador)
           const programasConHSCPMRCEnEstados = programasConHSCPMRC.filter(item => {
             const estado = (item.estado_pm || '').toString().toLowerCase();
             return estado === "diseño" || estado === "diseno" || 
                    estado === "rediseño" || estado === "rediseno" || 
-                   estado === "seguimiento";
+                   estado === "seguimiento" ||
+                   estado === "otorgado por oficio";
           });
           
           const totalProgramasConHSCPMRC = programasConHSCPMRC.length;
@@ -427,6 +428,7 @@ const SeguimientoInicio = () => {
           const programasEnDiseno = [];
           const programasEnRediseno = [];
           const programasEnSeguimiento = [];
+          const programasOtorgadoPorOficio = [];
           
           programasFiltrados.forEach(item => {
             // Verificar si tiene "SI" en hscpm_rrc
@@ -453,6 +455,8 @@ const SeguimientoInicio = () => {
               programasEnRediseno.push(nombrePrograma);
             } else if (estado === "seguimiento") {
               programasEnSeguimiento.push(nombrePrograma);
+            } else if (estado === "otorgado por oficio") {
+              programasOtorgadoPorOficio.push(nombrePrograma);
             }
           });
           
@@ -460,14 +464,15 @@ const SeguimientoInicio = () => {
           const totalDiseno = programasEnDiseno.length;
           const totalRediseno = programasEnRediseno.length;
           const totalSeguimiento = programasEnSeguimiento.length;
-          const totalProgramas = totalDiseno + totalRediseno + totalSeguimiento;
+          const totalOtorgadoPorOficio = programasOtorgadoPorOficio.length;
+          const totalProgramas = totalDiseno + totalRediseno + totalSeguimiento + totalOtorgadoPorOficio;
           
           if (totalProgramas === 0) {
-            return `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Registro Calificado de ${tipo} son (0).\n<b>No hay ningún programa en Plan de Mejoramiento para Registro Calificado</b>`;
+            return `Los programas en Diseño, Rediseño, Seguimiento y Otorgado por oficio del Plan de Mejoramiento para Registro Calificado de ${tipo} son (0).\n<b>No hay ningún programa en Plan de Mejoramiento para Registro Calificado</b>`;
           }
           
-          let resultado = `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Registro Calificado de ${tipo} son (${totalProgramas}):\n`;
-          resultado += `En Diseño (${totalDiseno}), En Rediseño (${totalRediseno}), En Seguimiento (${totalSeguimiento}).\n\n`;
+          let resultado = `Los programas en Diseño, Rediseño, Seguimiento y Otorgado por oficio del Plan de Mejoramiento para Registro Calificado de ${tipo} son (${totalProgramas}):\n`;
+          resultado += `En Diseño (${totalDiseno}), En Rediseño (${totalRediseno}), En Seguimiento (${totalSeguimiento}), Otorgado por oficio (${totalOtorgadoPorOficio}).\n\n`;
           
           // Mostrar programas en Diseño
           if (totalDiseno > 0) {
@@ -491,6 +496,15 @@ const SeguimientoInicio = () => {
           if (totalSeguimiento > 0) {
             resultado += `En Seguimiento los programas son:\n`;
             programasEnSeguimiento.forEach(prog => {
+              resultado += `- ${prog}\n`;
+            });
+            resultado += '\n';
+          }
+          
+          // Mostrar programas Otorgado por oficio
+          if (totalOtorgadoPorOficio > 0) {
+            resultado += `Otorgado por oficio los programas son:\n`;
+            programasOtorgadoPorOficio.forEach(prog => {
               resultado += `- ${prog}\n`;
             });
           }
@@ -925,7 +939,8 @@ const SeguimientoInicio = () => {
           const estado = (item.estado_pm || '').toString().toLowerCase();
           return estado === "diseño" || estado === "diseno" || 
                  estado === "rediseño" || estado === "rediseno" || 
-                 estado === "seguimiento";
+                 estado === "seguimiento" ||
+                 estado === "otorgado por oficio";
         });
         
         const totalProgramasConHSCPM = programasConHSCPM.length;
@@ -983,6 +998,7 @@ const SeguimientoInicio = () => {
         const programasEnDiseno = [];
         const programasEnRediseno = [];
         const programasEnSeguimiento = [];
+        const programasOtorgadoPorOficio = [];
         
         programasFiltrados.forEach(item => {
           // Verificar si tiene "SI" en hscpm_aac
@@ -1009,6 +1025,8 @@ const SeguimientoInicio = () => {
             programasEnRediseno.push(nombrePrograma);
           } else if (estado === "seguimiento") {
             programasEnSeguimiento.push(nombrePrograma);
+          } else if (estado === "otorgado por oficio") {
+            programasOtorgadoPorOficio.push(nombrePrograma);
           }
         });
         
@@ -1016,14 +1034,15 @@ const SeguimientoInicio = () => {
         const totalDiseno = programasEnDiseno.length;
         const totalRediseno = programasEnRediseno.length;
         const totalSeguimiento = programasEnSeguimiento.length;
-        const totalProgramas = totalDiseno + totalRediseno + totalSeguimiento;
+        const totalOtorgadoPorOficio = programasOtorgadoPorOficio.length;
+        const totalProgramas = totalDiseno + totalRediseno + totalSeguimiento + totalOtorgadoPorOficio;
         
         if (totalProgramas === 0) {
-          return `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Acreditación de ${tipo} son (0).\n<b>No hay ningún programa en Plan de Mejoramiento para Acreditación</b>`;
+          return `Los programas en Diseño, Rediseño, Seguimiento y Otorgado por oficio del Plan de Mejoramiento para Acreditación de ${tipo} son (0).\n<b>No hay ningún programa en Plan de Mejoramiento para Acreditación</b>`;
         }
         
-        let resultado = `Los programas en Diseño, Rediseño y Seguimiento del Plan de Mejoramiento para Acreditación de ${tipo} son (${totalProgramas}):\n`;
-        resultado += `En Diseño (${totalDiseno}), En Rediseño (${totalRediseno}), En Seguimiento (${totalSeguimiento}).\n\n`;
+        let resultado = `Los programas en Diseño, Rediseño, Seguimiento y Otorgado por oficio del Plan de Mejoramiento para Acreditación de ${tipo} son (${totalProgramas}):\n`;
+        resultado += `En Diseño (${totalDiseno}), En Rediseño (${totalRediseno}), En Seguimiento (${totalSeguimiento}), Otorgado por oficio (${totalOtorgadoPorOficio}).\n\n`;
         
         // Mostrar programas en Diseño
         if (totalDiseno > 0) {
@@ -1049,6 +1068,15 @@ const SeguimientoInicio = () => {
           programasEnSeguimiento.forEach(prog => {
             resultado += `- ${prog}\n`;
           });
+          resultado += '\n';
+        }
+        
+        // Mostrar programas Otorgado por oficio
+        if (totalOtorgadoPorOficio > 0) {
+          resultado += `Otorgado por oficio los programas son:\n`;
+          programasOtorgadoPorOficio.forEach(prog => {
+            resultado += `- ${prog}\n`;
+          });
         }
         
         return resultado.trim();
@@ -1058,26 +1086,227 @@ const SeguimientoInicio = () => {
       }
     };
 
-    // Función para generar el resumen agrupado por estado (Diseño, Rediseño, Seguimiento)
-    const generateResumen = (data) => {
+    // Función para generar el resumen agrupado por estado (Diseño, Rediseño, Seguimiento, Otorgado por oficio)
+    const generateResumen = (data, programas) => {
+        console.log('🔍 generateResumen - Datos PM recibidos:', data);
+        console.log('🔍 generateResumen - Cantidad de elementos PM:', data?.length);
+        console.log('🔍 generateResumen - Datos programas disponibles:', programas?.length);
+        
+        // Contadores para debugging
+        let contadorPM = 0;
+        let contadorRC = 0;
+        let contadorAC = 0;
+        let contadorSinEstados = 0;
+        
         const resumen = {};
 
-        data.forEach((item) => {
-            const { escuela, estado_pm } = item;
-
-            if (!resumen[escuela]) {
-                resumen[escuela] = { diseño: 0, rediseño: 0, seguimiento: 0 };
-            }
-
-            // Contar el estado de cada programa
-            if (estado_pm === 'Diseño') {
-                resumen[escuela].diseño += 1;
-            } else if (estado_pm === 'Rediseño') {
-                resumen[escuela].rediseño += 1;
-            } else if (estado_pm === 'Seguimiento') {
-                resumen[escuela].seguimiento += 1;
+        // Crear mapa de programas por ID
+        const programasMap = {};
+        programas.forEach(programa => {
+            const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
+            if (idPrograma) {
+                programasMap[idPrograma] = programa;
             }
         });
+
+        console.log('🔍 Mapa de programas creado:', Object.keys(programasMap).length, 'programas');
+
+        data.forEach((item, index) => {
+            // Solo mostrar logs detallados para los primeros 3 elementos
+            if (index < 3) {
+                console.log(`🔍 Elemento PM ${index}:`, item);
+            }
+            
+            const idPrograma = item.id_programa;
+            const programaCompleto = programasMap[idPrograma];
+            
+            if (!programaCompleto) {
+                if (index < 3) console.log(`❌ No se encontró programa completo para ID: ${idPrograma}`);
+                return;
+            }
+
+            const escuela = programaCompleto.escuela || programaCompleto.Escuela;
+            if (!escuela) {
+                if (index < 3) console.log(`❌ No se encontró escuela para programa ID: ${idPrograma}`);
+                return;
+            }
+
+            if (!resumen[escuela]) {
+                resumen[escuela] = { diseño: 0, rediseño: 0, seguimiento: 0, otorgadoPorOficio: 0 };
+                console.log(`🏫 Nueva escuela agregada: ${escuela}`);
+            }
+
+            // Contar estados de PM (Plan de Mejoramiento)
+            const estadoPM = item.estado_pm;
+            if (estadoPM) {
+                contadorPM++;
+                const estadoPMNormalizado = estadoPM.toLowerCase().trim();
+                if (estadoPMNormalizado === 'diseño' || estadoPMNormalizado === 'diseno') {
+                    resumen[escuela].diseño += 1;
+                    if (index < 3) console.log(`✅ PM Diseño +1 para ${escuela}`);
+                } else if (estadoPMNormalizado === 'rediseño' || estadoPMNormalizado === 'rediseno') {
+                    resumen[escuela].rediseño += 1;
+                    if (index < 3) console.log(`✅ PM Rediseño +1 para ${escuela}`);
+                } else if (estadoPMNormalizado === 'seguimiento') {
+                    resumen[escuela].seguimiento += 1;
+                    if (index < 3) console.log(`✅ PM Seguimiento +1 para ${escuela}`);
+                } else if (estadoPMNormalizado === 'otorgado por oficio') {
+                    resumen[escuela].otorgadoPorOficio += 1;
+                    if (index < 3) console.log(`✅ PM Otorgado por oficio +1 para ${escuela}`);
+                } else {
+                    if (index < 3) console.log(`❌ Estado PM no reconocido: "${estadoPM}" para escuela "${escuela}"`);
+                }
+            }
+
+            // Contar estados de RC (Registro Calificado)
+            const estadoRC = item.estado_rc;
+            if (estadoRC) {
+                contadorRC++;
+                const estadoRCNormalizado = estadoRC.toLowerCase().trim();
+                if (estadoRCNormalizado === 'diseño' || estadoRCNormalizado === 'diseno') {
+                    resumen[escuela].diseño += 1;
+                    if (index < 3) console.log(`✅ RC Diseño +1 para ${escuela}`);
+                } else if (estadoRCNormalizado === 'rediseño' || estadoRCNormalizado === 'rediseno') {
+                    resumen[escuela].rediseño += 1;
+                    if (index < 3) console.log(`✅ RC Rediseño +1 para ${escuela}`);
+                } else if (estadoRCNormalizado === 'seguimiento') {
+                    resumen[escuela].seguimiento += 1;
+                    if (index < 3) console.log(`✅ RC Seguimiento +1 para ${escuela}`);
+                } else if (estadoRCNormalizado === 'otorgado por oficio') {
+                    resumen[escuela].otorgadoPorOficio += 1;
+                    if (index < 3) console.log(`✅ RC Otorgado por oficio +1 para ${escuela}`);
+                } else {
+                    if (index < 3) console.log(`❌ Estado RC no reconocido: "${estadoRC}" para escuela "${escuela}"`);
+                }
+            }
+
+            // Contar estados de AC (Acreditación)
+            const estadoAC = item.estado_ac;
+            if (estadoAC) {
+                contadorAC++;
+                const estadoACNormalizado = estadoAC.toLowerCase().trim();
+                if (estadoACNormalizado === 'diseño' || estadoACNormalizado === 'diseno') {
+                    resumen[escuela].diseño += 1;
+                    if (index < 3) console.log(`✅ AC Diseño +1 para ${escuela}`);
+                } else if (estadoACNormalizado === 'rediseño' || estadoACNormalizado === 'rediseno') {
+                    resumen[escuela].rediseño += 1;
+                    if (index < 3) console.log(`✅ AC Rediseño +1 para ${escuela}`);
+                } else if (estadoACNormalizado === 'seguimiento') {
+                    resumen[escuela].seguimiento += 1;
+                    if (index < 3) console.log(`✅ AC Seguimiento +1 para ${escuela}`);
+                } else if (estadoACNormalizado === 'otorgado por oficio') {
+                    resumen[escuela].otorgadoPorOficio += 1;
+                    if (index < 3) console.log(`✅ AC Otorgado por oficio +1 para ${escuela}`);
+                } else {
+                    if (index < 3) console.log(`❌ Estado AC no reconocido: "${estadoAC}" para escuela "${escuela}"`);
+                }
+            }
+
+            // Si no tiene ningún estado, mostrar log
+            if (!estadoPM && !estadoRC && !estadoAC) {
+                contadorSinEstados++;
+                if (index < 3) console.log(`⚠️ Programa ${idPrograma} sin estados para escuela "${escuela}"`);
+            }
+        });
+
+        // Mostrar resumen de contadores
+        console.log('📊 RESUMEN DE CONTEO:');
+        console.log(`📊 Programas con estado PM: ${contadorPM}`);
+        console.log(`📊 Programas con estado RC: ${contadorRC}`);
+        console.log(`📊 Programas con estado AC: ${contadorAC}`);
+        console.log(`📊 Programas sin estados: ${contadorSinEstados}`);
+        console.log(`📊 Total procesados: ${contadorPM + contadorRC + contadorAC + contadorSinEstados}`);
+
+        // Si no hay resumen generado, inicializar con escuelas vacías
+        if (Object.keys(resumen).length === 0) {
+            console.log('⚠️ No se generó resumen con datos reales, inicializando escuelas vacías');
+            escuelas.forEach(escuela => {
+                resumen[escuela] = { diseño: 0, rediseño: 0, seguimiento: 0, otorgadoPorOficio: 0 };
+            });
+        }
+
+        console.log('🔍 Resumen final:', resumen);
+        return resumen;
+    };
+
+    // Función limpia sin logs (para usar una vez confirmado que funciona)
+    const generateResumenClean = (data, programas) => {
+        const resumen = {};
+
+        // Crear mapa de programas por ID
+        const programasMap = {};
+        programas.forEach(programa => {
+            const idPrograma = programa.id_programa || programa.ID_PROGRAMA;
+            if (idPrograma) {
+                programasMap[idPrograma] = programa;
+            }
+        });
+
+        data.forEach((item) => {
+            const idPrograma = item.id_programa;
+            const programaCompleto = programasMap[idPrograma];
+            
+            if (!programaCompleto) return;
+
+            const escuela = programaCompleto.escuela || programaCompleto.Escuela;
+            if (!escuela) return;
+
+            if (!resumen[escuela]) {
+                resumen[escuela] = { diseño: 0, rediseño: 0, seguimiento: 0, otorgadoPorOficio: 0 };
+            }
+
+            // Contar estados de PM (Plan de Mejoramiento)
+            const estadoPM = item.estado_pm;
+            if (estadoPM) {
+                const estadoPMNormalizado = estadoPM.toLowerCase().trim();
+                if (estadoPMNormalizado === 'diseño' || estadoPMNormalizado === 'diseno') {
+                    resumen[escuela].diseño += 1;
+                } else if (estadoPMNormalizado === 'rediseño' || estadoPMNormalizado === 'rediseno') {
+                    resumen[escuela].rediseño += 1;
+                } else if (estadoPMNormalizado === 'seguimiento') {
+                    resumen[escuela].seguimiento += 1;
+                } else if (estadoPMNormalizado === 'otorgado por oficio') {
+                    resumen[escuela].otorgadoPorOficio += 1;
+                }
+            }
+
+            // Contar estados de RC (Registro Calificado)
+            const estadoRC = item.estado_rc;
+            if (estadoRC) {
+                const estadoRCNormalizado = estadoRC.toLowerCase().trim();
+                if (estadoRCNormalizado === 'diseño' || estadoRCNormalizado === 'diseno') {
+                    resumen[escuela].diseño += 1;
+                } else if (estadoRCNormalizado === 'rediseño' || estadoRCNormalizado === 'rediseno') {
+                    resumen[escuela].rediseño += 1;
+                } else if (estadoRCNormalizado === 'seguimiento') {
+                    resumen[escuela].seguimiento += 1;
+                } else if (estadoRCNormalizado === 'otorgado por oficio') {
+                    resumen[escuela].otorgadoPorOficio += 1;
+                }
+            }
+
+            // Contar estados de AC (Acreditación)
+            const estadoAC = item.estado_ac;
+            if (estadoAC) {
+                const estadoACNormalizado = estadoAC.toLowerCase().trim();
+                if (estadoACNormalizado === 'diseño' || estadoACNormalizado === 'diseno') {
+                    resumen[escuela].diseño += 1;
+                } else if (estadoACNormalizado === 'rediseño' || estadoACNormalizado === 'rediseno') {
+                    resumen[escuela].rediseño += 1;
+                } else if (estadoACNormalizado === 'seguimiento') {
+                    resumen[escuela].seguimiento += 1;
+                } else if (estadoACNormalizado === 'otorgado por oficio') {
+                    resumen[escuela].otorgadoPorOficio += 1;
+                }
+            }
+        });
+
+        // Si no hay resumen generado, inicializar con escuelas vacías
+        if (Object.keys(resumen).length === 0) {
+            escuelas.forEach(escuela => {
+                resumen[escuela] = { diseño: 0, rediseño: 0, seguimiento: 0, otorgadoPorOficio: 0 };
+            });
+        }
 
         return resumen;
     };
@@ -1086,8 +1315,26 @@ const SeguimientoInicio = () => {
         setSelectedEscuela(''); 
         setShowResumen(true); 
         try {
-            const data = await dataSegui(); 
-            const resumen = generateResumen(data); 
+            // Asegurar que ambos conjuntos de datos estén cargados
+            console.log('🔄 Cargando datos para resumen...');
+            
+            const [dataPM, programas] = await Promise.all([
+                dataSegui(),
+                programasData.length > 0 ? Promise.resolve(programasData) : dataProgramas()
+            ]);
+            
+            console.log('📊 Datos de dataSegui() para resumen:', dataPM);
+            console.log('📊 Primer elemento PM:', dataPM[0]);
+            console.log('📊 Propiedades del primer elemento PM:', dataPM[0] ? Object.keys(dataPM[0]) : 'No hay datos');
+            console.log('📊 Datos de programas disponibles:', programas?.length);
+            
+            // Si programasData no estaba cargado, actualizarlo
+            if (programasData.length === 0 && programas.length > 0) {
+                setProgramasData(programas);
+            }
+            
+            const resumen = generateResumen(dataPM, programas); 
+            console.log('📊 Resumen generado:', resumen);
             setResumenData(resumen);
         } catch (error) {
             console.error('Error al obtener datos para el resumen:', error);
@@ -1103,19 +1350,21 @@ const SeguimientoInicio = () => {
         let totalDiseño = 0;
         let totalRediseño = 0;
         let totalSeguimiento = 0;
+        let totalOtorgadoPorOficio = 0;
 
         if (resumenData) {
             Object.values(resumenData).forEach((counts) => {
                 totalDiseño += counts.diseño;
                 totalRediseño += counts.rediseño;
                 totalSeguimiento += counts.seguimiento;
+                totalOtorgadoPorOficio += counts.otorgadoPorOficio;
             });
         }
 
-        return { totalDiseño, totalRediseño, totalSeguimiento };
+        return { totalDiseño, totalRediseño, totalSeguimiento, totalOtorgadoPorOficio };
     };
 
-    const { totalDiseño, totalRediseño, totalSeguimiento } = calculateTotals();
+    const { totalDiseño, totalRediseño, totalSeguimiento, totalOtorgadoPorOficio } = calculateTotals();
 
     return (
         <>
@@ -1154,6 +1403,7 @@ const SeguimientoInicio = () => {
                                         <StyledTableCell>Diseño</StyledTableCell>
                                         <StyledTableCell>Rediseño</StyledTableCell>
                                         <StyledTableCell>Seguimiento</StyledTableCell>
+                                        <StyledTableCell>Otorgado por oficio</StyledTableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -1163,6 +1413,7 @@ const SeguimientoInicio = () => {
                                             <TableCell>{resumenData[escuela].diseño}</TableCell>
                                             <TableCell>{resumenData[escuela].rediseño}</TableCell>
                                             <TableCell>{resumenData[escuela].seguimiento}</TableCell>
+                                            <TableCell>{resumenData[escuela].otorgadoPorOficio}</TableCell>
                                         </TableRow>
                                     ))}
                                     <TableRow>
@@ -1170,6 +1421,7 @@ const SeguimientoInicio = () => {
                                         <StyledTableCell><strong>{totalDiseño}</strong></StyledTableCell>
                                         <StyledTableCell><strong>{totalRediseño}</strong></StyledTableCell>
                                         <StyledTableCell><strong>{totalSeguimiento}</strong></StyledTableCell>
+                                        <StyledTableCell><strong>{totalOtorgadoPorOficio}</strong></StyledTableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
