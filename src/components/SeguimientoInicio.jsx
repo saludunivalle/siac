@@ -65,6 +65,87 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
     fontWeight: 'bold'
 }));
 
+// ===================================================================
+// CRITERIO 1: PORCENTAJE DE PROGRAMAS ACREDITADOS (Ponderación: 30%)
+// ===================================================================
+/*
+ * FÓRMULA: (Programas Acreditados Vigentes / Programas Acreditables) × 100
+ * 
+ * DENOMINADOR: acreditable_pre + acreditable_pos
+ * NUMERADOR: cant_acvigente_pre + cant_acvigente_pos
+ * 
+ * LÓGICA:
+ * - Si no hay acreditables NI acreditados → "-"
+ * - Si hay acreditables pero ninguno acreditado → "0%"
+ * - Mide qué porcentaje de programas que PUEDEN ser acreditados efectivamente LO ESTÁN
+ */
+
+// ===================================================================
+// CRITERIO 2: PORCENTAJE DE PROGRAMAS CON RC VIGENTE (Ponderación: 30%)
+// ===================================================================
+/*
+ * FÓRMULA: (Programas con RC Vigente="SI" / Programas con Fecha RC válida) × 100
+ * 
+ * DENOMINADOR: Programas con fechaexpedrc válida (no vacía, no "N/A", no "#N/A")
+ * NUMERADOR: Programas con "rc vigente" = "SI"
+ * 
+ * LÓGICA:
+ * - Solo considera programas que tienen fecha de expedición RC válida
+ * - De esos, calcula cuántos mantienen su RC vigente actualmente
+ * - Excluye programas sin fecha de expedición del cálculo
+ */
+
+// ===================================================================
+// CRITERIO 3: PORCENTAJE DE PM PARA ACREDITACIÓN (Ponderación: 20%)
+// ===================================================================
+/*
+ * FÓRMULA: (Programas con HSCPM_AAC="SI" en estados D/R/S/O / Programas con HSCPM_AAC="SI") × 100
+ * 
+ * DENOMINADOR: Programas con hscpm_aac = "SI"
+ * NUMERADOR: De los anteriores, los que tienen estado_pm en:
+ *            - Diseño
+ *            - Rediseño
+ *            - Seguimiento
+ *            - Otorgado por oficio
+ * 
+ * LÓGICA:
+ * - Solo evalúa programas que TIENEN herramienta HSCPM para acreditación
+ * - De esos, mide qué porcentaje está activamente trabajando en plan de mejoramiento
+ * - Si no hay programas con HSCPM_AAC="SI" → "-"
+ */
+
+// ===================================================================
+// CRITERIO 4: PORCENTAJE DE PM PARA RC (Ponderación: 20%)
+// ===================================================================
+/*
+ * FÓRMULA: (Programas con HSCPM_RRC="SI" en estados D/R/S/O / Programas con HSCPM_RRC="SI") × 100
+ * 
+ * DENOMINADOR: Programas con hscpm_rrc = "SI"  
+ * NUMERADOR: De los anteriores, los que tienen estado_pm en:
+ *            - Diseño
+ *            - Rediseño
+ *            - Seguimiento
+ *            - Otorgado por oficio
+ * 
+ * LÓGICA:
+ * - Solo evalúa programas que TIENEN herramienta HSCPM para registro calificado
+ * - De esos, mide qué porcentaje está activamente trabajando en plan de mejoramiento
+ * - Si no hay programas con HSCPM_RRC="SI" → "-"
+ */
+
+// ===================================================================
+// FILTROS APLICADOS A TODOS LOS CRITERIOS:
+// ===================================================================
+/*
+ * - POR ESCUELA: Filtra según escuela seleccionada
+ * - POR TIPO: 
+ *   • "pre" → Solo programas de pregrado
+ *   • "pos" → Solo programas de posgrado
+ *   • "ambos" → Suma pregrado + posgrado
+ * 
+ * PONDERACIÓN TOTAL: 30% + 30% + 20% + 20% = 100%
+ */
+
 const SeguimientoInicio = () => {
     const [resumenData, setResumenData] = useState(null);
     const [showResumen, setShowResumen] = useState(true);
@@ -1087,16 +1168,15 @@ const SeguimientoInicio = () => {
     };
 
     // Función para generar el resumen agrupado por estado (Diseño, Rediseño, Seguimiento, Otorgado por oficio)
+    // SOLO cuenta estados de Registro Calificado (estado_rc)
     const generateResumen = (data, programas) => {
-        console.log('🔍 generateResumen - Datos PM recibidos:', data);
-        console.log('🔍 generateResumen - Cantidad de elementos PM:', data?.length);
+        console.log('🔍 generateResumen - Datos RC recibidos:', data);
+        console.log('🔍 generateResumen - Cantidad de elementos RC:', data?.length);
         console.log('🔍 generateResumen - Datos programas disponibles:', programas?.length);
         
         // Contadores para debugging
-        let contadorPM = 0;
         let contadorRC = 0;
-        let contadorAC = 0;
-        let contadorSinEstados = 0;
+        let contadorSinEstadoRC = 0;
         
         const resumen = {};
 
@@ -1114,7 +1194,7 @@ const SeguimientoInicio = () => {
         data.forEach((item, index) => {
             // Solo mostrar logs detallados para los primeros 3 elementos
             if (index < 3) {
-                console.log(`🔍 Elemento PM ${index}:`, item);
+                console.log(`🔍 Elemento RC ${index}:`, item);
             }
             
             const idPrograma = item.id_programa;
@@ -1136,29 +1216,7 @@ const SeguimientoInicio = () => {
                 console.log(`🏫 Nueva escuela agregada: ${escuela}`);
             }
 
-            // Contar estados de PM (Plan de Mejoramiento)
-            const estadoPM = item.estado_pm;
-            if (estadoPM) {
-                contadorPM++;
-                const estadoPMNormalizado = estadoPM.toLowerCase().trim();
-                if (estadoPMNormalizado === 'diseño' || estadoPMNormalizado === 'diseno') {
-                    resumen[escuela].diseño += 1;
-                    if (index < 3) console.log(`✅ PM Diseño +1 para ${escuela}`);
-                } else if (estadoPMNormalizado === 'rediseño' || estadoPMNormalizado === 'rediseno') {
-                    resumen[escuela].rediseño += 1;
-                    if (index < 3) console.log(`✅ PM Rediseño +1 para ${escuela}`);
-                } else if (estadoPMNormalizado === 'seguimiento') {
-                    resumen[escuela].seguimiento += 1;
-                    if (index < 3) console.log(`✅ PM Seguimiento +1 para ${escuela}`);
-                } else if (estadoPMNormalizado === 'otorgado por oficio') {
-                    resumen[escuela].otorgadoPorOficio += 1;
-                    if (index < 3) console.log(`✅ PM Otorgado por oficio +1 para ${escuela}`);
-                } else {
-                    if (index < 3) console.log(`❌ Estado PM no reconocido: "${estadoPM}" para escuela "${escuela}"`);
-                }
-            }
-
-            // Contar estados de RC (Registro Calificado)
+            // Contar ÚNICAMENTE estados de RC (Registro Calificado)
             const estadoRC = item.estado_rc;
             if (estadoRC) {
                 contadorRC++;
@@ -1178,44 +1236,18 @@ const SeguimientoInicio = () => {
                 } else {
                     if (index < 3) console.log(`❌ Estado RC no reconocido: "${estadoRC}" para escuela "${escuela}"`);
                 }
-            }
-
-            // Contar estados de AC (Acreditación)
-            const estadoAC = item.estado_ac;
-            if (estadoAC) {
-                contadorAC++;
-                const estadoACNormalizado = estadoAC.toLowerCase().trim();
-                if (estadoACNormalizado === 'diseño' || estadoACNormalizado === 'diseno') {
-                    resumen[escuela].diseño += 1;
-                    if (index < 3) console.log(`✅ AC Diseño +1 para ${escuela}`);
-                } else if (estadoACNormalizado === 'rediseño' || estadoACNormalizado === 'rediseno') {
-                    resumen[escuela].rediseño += 1;
-                    if (index < 3) console.log(`✅ AC Rediseño +1 para ${escuela}`);
-                } else if (estadoACNormalizado === 'seguimiento') {
-                    resumen[escuela].seguimiento += 1;
-                    if (index < 3) console.log(`✅ AC Seguimiento +1 para ${escuela}`);
-                } else if (estadoACNormalizado === 'otorgado por oficio') {
-                    resumen[escuela].otorgadoPorOficio += 1;
-                    if (index < 3) console.log(`✅ AC Otorgado por oficio +1 para ${escuela}`);
-                } else {
-                    if (index < 3) console.log(`❌ Estado AC no reconocido: "${estadoAC}" para escuela "${escuela}"`);
-                }
-            }
-
-            // Si no tiene ningún estado, mostrar log
-            if (!estadoPM && !estadoRC && !estadoAC) {
-                contadorSinEstados++;
-                if (index < 3) console.log(`⚠️ Programa ${idPrograma} sin estados para escuela "${escuela}"`);
+            } else {
+                // Si no tiene estado RC, mostrar log
+                contadorSinEstadoRC++;
+                if (index < 3) console.log(`⚠️ Programa ${idPrograma} sin estado RC para escuela "${escuela}"`);
             }
         });
 
         // Mostrar resumen de contadores
-        console.log('📊 RESUMEN DE CONTEO:');
-        console.log(`📊 Programas con estado PM: ${contadorPM}`);
+        console.log('📊 RESUMEN DE CONTEO (SOLO REGISTRO CALIFICADO):');
         console.log(`📊 Programas con estado RC: ${contadorRC}`);
-        console.log(`📊 Programas con estado AC: ${contadorAC}`);
-        console.log(`📊 Programas sin estados: ${contadorSinEstados}`);
-        console.log(`📊 Total procesados: ${contadorPM + contadorRC + contadorAC + contadorSinEstados}`);
+        console.log(`📊 Programas sin estado RC: ${contadorSinEstadoRC}`);
+        console.log(`📊 Total procesados: ${contadorRC + contadorSinEstadoRC}`);
 
         // Si no hay resumen generado, inicializar con escuelas vacías
         if (Object.keys(resumen).length === 0) {
@@ -1225,11 +1257,11 @@ const SeguimientoInicio = () => {
             });
         }
 
-        console.log('🔍 Resumen final:', resumen);
+        console.log('🔍 Resumen final (solo RC):', resumen);
         return resumen;
     };
 
-    // Función limpia sin logs (para usar una vez confirmado que funciona)
+    // Función limpia sin logs - SOLO cuenta estados de Registro Calificado (estado_rc)
     const generateResumenClean = (data, programas) => {
         const resumen = {};
 
@@ -1255,22 +1287,7 @@ const SeguimientoInicio = () => {
                 resumen[escuela] = { diseño: 0, rediseño: 0, seguimiento: 0, otorgadoPorOficio: 0 };
             }
 
-            // Contar estados de PM (Plan de Mejoramiento)
-            const estadoPM = item.estado_pm;
-            if (estadoPM) {
-                const estadoPMNormalizado = estadoPM.toLowerCase().trim();
-                if (estadoPMNormalizado === 'diseño' || estadoPMNormalizado === 'diseno') {
-                    resumen[escuela].diseño += 1;
-                } else if (estadoPMNormalizado === 'rediseño' || estadoPMNormalizado === 'rediseno') {
-                    resumen[escuela].rediseño += 1;
-                } else if (estadoPMNormalizado === 'seguimiento') {
-                    resumen[escuela].seguimiento += 1;
-                } else if (estadoPMNormalizado === 'otorgado por oficio') {
-                    resumen[escuela].otorgadoPorOficio += 1;
-                }
-            }
-
-            // Contar estados de RC (Registro Calificado)
+            // Contar ÚNICAMENTE estados de RC (Registro Calificado)
             const estadoRC = item.estado_rc;
             if (estadoRC) {
                 const estadoRCNormalizado = estadoRC.toLowerCase().trim();
@@ -1281,21 +1298,6 @@ const SeguimientoInicio = () => {
                 } else if (estadoRCNormalizado === 'seguimiento') {
                     resumen[escuela].seguimiento += 1;
                 } else if (estadoRCNormalizado === 'otorgado por oficio') {
-                    resumen[escuela].otorgadoPorOficio += 1;
-                }
-            }
-
-            // Contar estados de AC (Acreditación)
-            const estadoAC = item.estado_ac;
-            if (estadoAC) {
-                const estadoACNormalizado = estadoAC.toLowerCase().trim();
-                if (estadoACNormalizado === 'diseño' || estadoACNormalizado === 'diseno') {
-                    resumen[escuela].diseño += 1;
-                } else if (estadoACNormalizado === 'rediseño' || estadoACNormalizado === 'rediseno') {
-                    resumen[escuela].rediseño += 1;
-                } else if (estadoACNormalizado === 'seguimiento') {
-                    resumen[escuela].seguimiento += 1;
-                } else if (estadoACNormalizado === 'otorgado por oficio') {
                     resumen[escuela].otorgadoPorOficio += 1;
                 }
             }
