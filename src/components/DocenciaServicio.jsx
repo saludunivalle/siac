@@ -107,7 +107,8 @@ const DocenciaServicio = () => {
     // Función para obtener los datos de programas
     const fetchProgramas = async () => {
         try {
-            const response = await axios.post('https://siac-server.vercel.app/seguimiento', {
+            // Cambiar a la ruta correcta que apunta a la base de datos principal
+            const response = await axios.post('https://siac-server.vercel.app/', {
                 sheetName: 'Programas'
             });
             

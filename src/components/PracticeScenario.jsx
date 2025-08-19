@@ -5,6 +5,16 @@ import '/src/styles/home.css';
 import axios from 'axios';
 import CollapsibleButton from './CollapsibleButton';
 
+// Configurar axios con timeout
+const axiosInstance = axios.create({
+    timeout: 30000, // 30 segundos
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+
+
 const PracticeScenario = ({ data }) => {
     const [filteredData, setFilteredData] = useState([]);
     const [showForm, setShowForm] = useState(null);
@@ -50,30 +60,69 @@ const PracticeScenario = ({ data }) => {
     // Para obtener los datos actuales de la hoja SOLICITUD_PRACT
     const fetchPractices = async () => {
         try {
-            const response = await axios.post('https://siac-server.vercel.app/getPractices', { sheetName: 'SOLICITUD_PRACT' });
+            console.log('fetchPractices: Iniciando solicitud para SOLICITUD_PRACT...');
+            
+            const response = await axiosInstance.post('https://siac-server.vercel.app/getPractices', { 
+                sheetName: 'SOLICITUD_PRACT' 
+            });
     
             // Verificar si la respuesta trae los datos esperados
-            console.log("Response:", response);
+            console.log("fetchPractices: Respuesta completa:", response);
+            console.log("fetchPractices: response.data:", response.data);
             
-            if (response.data.status) {
+            if (response.data && response.data.status) {
                 const practices = response.data.data;
+                console.log("fetchPractices: Prácticas obtenidas:", practices?.length || 0, "registros");
     
                 // Filtrar las prácticas que tienen un ID vacío o son "filas eliminadas"
                 const filteredPractices = practices.filter(practice => practice.id && practice.nombrerotacion);
+                console.log("fetchPractices: Prácticas filtradas:", filteredPractices.length, "registros válidos");
     
-                setPracticeTables(filteredPractices);  // Asegúrate de que el estado se esté actualizando
+                setPracticeTables(filteredPractices);
             } else {
-                console.error('Error en la respuesta al traer las prácticas:', response.data);
+                const errorMsg = response.data?.error || 'Error desconocido';
+                const errorDetails = response.data?.details || '';
+                const errorCode = response.data?.code || 'UNKNOWN';
+                
+                console.error('Error en la respuesta al traer las prácticas:', {
+                    error: errorMsg,
+                    details: errorDetails,
+                    code: errorCode,
+                    fullResponse: response.data
+                });
+                
+                // Establecer array vacío en caso de error
+                setPracticeTables([]);
             }
         } catch (error) {
-            console.error('Error al cargar los datos de las prácticas:', error);
+            console.error('Error al cargar los datos de las prácticas (catch):', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                statusText: error.response?.statusText
+            });
+            
+            // Si es un error de red, proporcionar información adicional
+            if (error.code === 'ECONNABORTED') {
+                console.error('Error de timeout - El servidor no respondió a tiempo');
+            } else if (error.code === 'ERR_NETWORK') {
+                console.error('Error de red - Verificar conectividad y URL del servidor');
+            } else if (error.response?.status === 404) {
+                console.error('Endpoint no encontrado - Verificar URL del servidor');
+            } else if (error.response?.status === 500) {
+                console.error('Error interno del servidor - Verificar logs del servidor');
+            }
+            
+            // Establecer array vacío en caso de error
+            setPracticeTables([]);
         }
     };
 
     // Función para obtener los datos de programas
     const fetchProgramas = async () => {
         try {
-            const response = await axios.post('https://siac-server.vercel.app/seguimiento', {
+            // Cambiar a la ruta correcta que apunta a la base de datos principal
+            const response = await axiosInstance.post('https://siac-server.vercel.app/', {
                 sheetName: 'Programas'
             });
             
@@ -108,7 +157,7 @@ const PracticeScenario = ({ data }) => {
     // Función para obtener los escenarios de práctica de la hoja ESC_PRACTICA
     const fetchEscenarios = async () => {
         try {
-            const response = await axios.post('https://siac-server.vercel.app/getInstituciones', { sheetName: 'ESC_PRACTICA' });
+            const response = await axiosInstance.post('https://siac-server.vercel.app/getInstituciones', { sheetName: 'ESC_PRACTICA' });
             if (response.data && response.data.status) {
                 console.log("=== DEBUG ESC_PRACTICA DATA (PracticeScenario) ===");
                 console.log("Escenarios de práctica obtenidos:", response.data.data);
@@ -187,7 +236,7 @@ const PracticeScenario = ({ data }) => {
                 ]
             ];
             const sheetName = 'SOLICITUD_PRACT';
-            const response = await axios.post('https://siac-server.vercel.app/sendPractice', {
+            const response = await axiosInstance.post('https://siac-server.vercel.app/sendPractice', {
                 insertData,
                 sheetName
             });
@@ -235,7 +284,7 @@ const PracticeScenario = ({ data }) => {
         ];
         const sheetName = 'SOLICITUD_PRACT';
         try {
-            const response = await axios.post('https://siac-server.vercel.app/updatePractice', {
+            const response = await axiosInstance.post('https://siac-server.vercel.app/updatePractice', {
                 updateData,
                 id,
                 sheetName
@@ -265,7 +314,7 @@ const PracticeScenario = ({ data }) => {
           const sheetName = 'SOLICITUD_PRACT';
           console.log('Enviando solicitud de eliminación para el ID:', id);
       
-          const response = await axios.post('https://siac-server.vercel.app/deletePractice', {
+          const response = await axiosInstance.post('https://siac-server.vercel.app/deletePractice', {
             id,
             sheetName
           });
@@ -287,44 +336,63 @@ const PracticeScenario = ({ data }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [data13, data14, data15, data16] = await Promise.all([Filtro13(), Filtro14(), Filtro15(), Filtro16()]);
+                console.log('PracticeScenario: Iniciando carga de datos...');
+                console.log('PracticeScenario: ID del programa:', data.id_programa);
+                
+                const [data13, data14, data15, data16] = await Promise.all([
+                    Filtro13(), 
+                    Filtro14(), 
+                    Filtro15(), 
+                    Filtro16()
+                ]);
+                
+                console.log('PracticeScenario: Datos obtenidos:', {
+                    data13: data13?.length || 0,
+                    data14: data14?.length || 0,
+                    data15: data15?.length || 0,
+                    data16: data16?.length || 0
+                });
                 
                 // Validar que los datos existan y sean arrays antes de procesarlos
                 if (data13 && Array.isArray(data13)) {
-                    setFilteredData(data13.filter(asignatura => asignatura && asignatura.id_programa === data.id_programa));
+                    const filteredData13 = data13.filter(asignatura => asignatura && asignatura.id_programa === data.id_programa);
+                    console.log(`PracticeScenario: data13 filtrado - ${filteredData13.length} asignaturas para el programa ${data.id_programa}`);
+                    setFilteredData(filteredData13);
                 } else {
-                    console.warn('data13 no es un array válido:', data13);
+                    console.warn('PracticeScenario: data13 no es un array válido:', data13);
                     setFilteredData([]);
                 }
                 
                 if (data14 && Array.isArray(data14)) {
+                    console.log(`PracticeScenario: data14 (escenarios) - ${data14.length} escenarios cargados`);
                     setFiltro14Data(data14);
                 } else {
-                    console.warn('data14 no es un array válido:', data14);
+                    console.warn('PracticeScenario: data14 no es un array válido:', data14);
                     setFiltro14Data([]);
                 }
                 
                 if (data15 && Array.isArray(data15)) {
-                    setFiltro15Data(data15);
                     const lastIdRel = data15.length > 0 ? Math.max(...data15.map(item => item.id)) : 0;
+                    console.log(`PracticeScenario: data15 (relaciones) - ${data15.length} relaciones, último ID: ${lastIdRel}`);
+                    setFiltro15Data(data15);
                     setRelationId(lastIdRel + 1);
                 } else {
-                    console.warn('data15 no es un array válido:', data15);
+                    console.warn('PracticeScenario: data15 no es un array válido:', data15);
                     setFiltro15Data([]);
                     setRelationId(1);
                 }
                 
                 if (data16 && Array.isArray(data16)) {
+                    console.log(`PracticeScenario: data16 (horarios) - ${data16.length} horarios cargados`);
                     setFiltro16Data(data16);
                 } else {
-                    console.warn('data16 no es un array válido:', data16);
+                    console.warn('PracticeScenario: data16 no es un array válido:', data16);
                     setFiltro16Data([]);
                 }
                 
-                console.log('Datos cargados:', { data13, data14, data15, data16 });
-                console.log('Contenido de filtro16Data:', data16);
+                console.log('PracticeScenario: Carga de datos completada');
             } catch (error) {
-                console.error('Error al obtener los datos:', error);
+                console.error('PracticeScenario: Error al obtener los datos:', error);
                 // Establecer valores por defecto en caso de error
                 setFilteredData([]);
                 setFiltro14Data([]);
@@ -336,7 +404,10 @@ const PracticeScenario = ({ data }) => {
 
         // Solo ejecutar si data.id_programa existe
         if (data && data.id_programa) {
+            console.log('PracticeScenario: Ejecutando fetchData para programa:', data.id_programa);
             fetchData();
+        } else {
+            console.warn('PracticeScenario: No hay ID de programa disponible, no se pueden cargar datos');
         }
     }, [data.id_programa]);
 
@@ -574,6 +645,8 @@ const PracticeScenario = ({ data }) => {
     const [reloadAnexos, setReloadAnexos] = useState(false);
 
     // Obtener los anexos actuales de la hoja ANEXOS_TEC
+
+    // Obtener los anexos actuales de la hoja ANEXOS_TEC
     const toggleAnexoForm = () => {
         if (!showAnexoForm && data.id_programa && programasData.length > 0) {
             // Al abrir el formulario, preseleccionar el programa actual
@@ -658,7 +731,7 @@ const PracticeScenario = ({ data }) => {
                 formData.append('scenarioName', anexoFormData.nombreEscenario); // Usamos el nombre del escenario para la carpeta
 
                 try {
-                    const response = await axios.post('https://siac-server.vercel.app/upload', formData, {
+                    const response = await axiosInstance.post('https://siac-server.vercel.app/upload', formData, {
                         headers: {
                             'Content-Type': 'multipart/form-data'
                         }
@@ -835,7 +908,7 @@ const PracticeScenario = ({ data }) => {
             const sheetName = 'ANEXOS_TEC';
     
             // Hacer la solicitud POST al servidor con los datos y el nombre de la hoja
-            const response = await axios.post('https://siac-server.vercel.app/sendDocServ', {
+            const response = await axiosInstance.post('https://siac-server.vercel.app/sendDocServ', {
                 insertData,
                 sheetName
             });
@@ -862,7 +935,7 @@ const PracticeScenario = ({ data }) => {
         const fetchAnexos = async () => {
             try {
                 console.log("Obteniendo anexos para el programa:", data.id_programa);
-                const response = await axios.post('https://siac-server.vercel.app/getAnexos', { sheetName: 'ANEXOS_TEC' });
+                const response = await axiosInstance.post('https://siac-server.vercel.app/getAnexos', { sheetName: 'ANEXOS_TEC' });
                 
                 console.log("Respuesta completa del servidor:", response.data);
                 
@@ -957,7 +1030,7 @@ const PracticeScenario = ({ data }) => {
               console.log('updateData formateada:', updateData);
               console.log('==============================');
               
-              await axios.post('https://siac-server.vercel.app/updateAnexo', {
+                                await axiosInstance.post('https://siac-server.vercel.app/updateAnexo', {
                 id,
                 sheetName: 'ANEXOS_TEC',
                 updateData
@@ -977,7 +1050,7 @@ const PracticeScenario = ({ data }) => {
         const handleDelete = async (id) => {
             try {
                 console.log("Eliminando anexo con ID:", id);  // Verifica que el ID sea el correcto
-                const response = await axios.post('https://siac-server.vercel.app/deleteAnexo', { 
+                const response = await axiosInstance.post('https://siac-server.vercel.app/deleteAnexo', { 
                     id,
                     sheetName: 'ANEXOS_TEC'
                 });
@@ -1519,7 +1592,7 @@ const PracticeScenario = ({ data }) => {
             const sheetName = 'ANEXOS_ESC';
 
             // Hacer la solicitud POST al servidor con los datos y el nombre de la hoja
-            const response = await axios.post('https://siac-server.vercel.app/sendDocEscenario', {
+            const response = await axiosInstance.post('https://siac-server.vercel.app/sendDocEscenario', {
                 insertData,
                 sheetName
             });
@@ -1604,11 +1677,15 @@ const PracticeScenario = ({ data }) => {
         }
     };
 
+
+
     return (
         <>
             <div style={{ display: 'flex', justifyContent: 'center', width: '100%', fontSize: '20px' }}>
                 <h2>Seguimiento del Proceso de Convenio Docencia Servicio</h2>
             </div>
+            
+ 
             <div>
                 <div style={{ marginTop: "20px" }}>
                     {(filteredData && Array.isArray(filteredData) ? filteredData : []).map((asignatura, index) => asignatura && (
@@ -1725,7 +1802,7 @@ const PracticeScenario = ({ data }) => {
                                                                                 placeholder="Buscar programa académico..."
                                                                                 margin="normal"
                                                                                 fullWidth
-                                                                                helperText="Este campo es opcional - viene pre-llenado con el programa actual"
+                                                                        helperText="Este campo es opcional - viene pre-llenado con el programa actual"
                                                                             />
                                                                         )}
                                                                         renderOption={(props, option, { index }) => (
@@ -1885,7 +1962,7 @@ const PracticeScenario = ({ data }) => {
                                                                         onChange={(e) => setSelectedFiltro14Id(e.target.value)}
                                                                     >
                                                                         {(filtro14Data && Array.isArray(filtro14Data) ? filtro14Data : []).map(item => item && (
-                                                                            <MenuItem key={item.id} value={item.nombre}>{item.nombre}</MenuItem>
+                                                                            <MenuItem key={item.id} value={item.id}>{item.nombre}</MenuItem>
                                                                         ))}
                                                                     </Select>
                                                                 </FormControl>

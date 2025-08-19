@@ -63,15 +63,23 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
     useEffect(() => {
         const fetchProgramas = async () => {
             try {
-                const response = await axios.post('https://siac-server.vercel.app/seguimiento', {
+                // Cambiar a la ruta correcta que apunta a la base de datos principal
+                const response = await axios.post('https://siac-server.vercel.app/', {
                     sheetName: 'Programas'
                 });
                 
                 if (response.data && response.data.status) {
-                    setProgramasData(response.data.data || []);
+                    console.log("Programas obtenidos:", response.data.data);
+                    const programas = response.data.data || [];
+                    setProgramasData(programas);
+                    return programas;
+                } else {
+                    console.warn('No se pudieron obtener los programas:', response.data);
+                    return [];
                 }
             } catch (error) {
-                console.error('Error al obtener programas:', error);
+                console.error('Error al obtener los programas:', error);
+                return [];
             }
         };
         

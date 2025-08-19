@@ -295,15 +295,29 @@ export const obtenerFasesProceso = async () => {
 export const Filtro12 = () => filterByProperty(hojaProc_Fases_Doc, {}, '');
 export const Filtro13 = async () => {
   try {
+      console.log('Filtro13: Iniciando solicitud para Asig_X_Prog...');
+      
       const response = await fetchPostGeneral({
           dataSend: {}, 
           sheetName: 'Asig_X_Prog', 
           urlEndPoint: 'https://siac-server.vercel.app/docServ'
       });
 
+      console.log('Filtro13: Respuesta del servidor:', response);
+
       // Validar que la respuesta sea exitosa
       if (!response || response.status === false) {
-        console.error('Error del servidor en Filtro13:', response?.error || 'Error desconocido');
+        const errorMsg = response?.error || 'Error desconocido';
+        const errorDetails = response?.details || '';
+        const errorCode = response?.code || 'UNKNOWN';
+        
+        console.error('Error del servidor en Filtro13:', {
+          error: errorMsg,
+          details: errorDetails,
+          code: errorCode,
+          fullResponse: response
+        });
+        
         return [];
       }
 
@@ -313,24 +327,46 @@ export const Filtro13 = async () => {
         return [];
       }
 
+      console.log(`Filtro13: Datos obtenidos exitosamente, ${response.data.length} registros`);
       return response.data;
   } catch (error) {
-      console.error('Error en Filtro13:', error);
+      console.error('Error en Filtro13 (catch):', error);
+      
+      // Si es un error de red, proporcionar información adicional
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Error de red detectado - verificar conectividad y URL del servidor');
+      }
+      
       return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
 export const Filtro14 = async () => {
   try {
+      console.log('Filtro14: Iniciando solicitud para Esc_Practica...');
+      
       const response = await fetchPostGeneral({
           dataSend: {}, 
           sheetName: 'Esc_Practica', 
           urlEndPoint: 'https://siac-server.vercel.app/docServ'
       });
 
+      console.log('Filtro14: Respuesta del servidor:', response);
+
       // Validar que la respuesta sea exitosa
       if (!response || response.status === false) {
-        console.error('Error del servidor en Filtro14:', response?.error || 'Error desconocido');
+        const errorMsg = response?.error || 'Error desconocido';
+        const errorDetails = response?.details || '';
+        const errorCode = response?.code || 'UNKNOWN';
+        
+        console.error('Error del servidor en Filtro14:', {
+          error: errorMsg,
+          details: errorDetails,
+          code: errorCode,
+          fullResponse: response
+        });
+        
+        // Retornar array vacío en lugar de lanzar error para evitar que la app se rompa
         return [];
       }
 
@@ -340,24 +376,45 @@ export const Filtro14 = async () => {
         return [];
       }
 
+      console.log(`Filtro14: Datos obtenidos exitosamente, ${response.data.length} registros`);
       return response.data;
   } catch (error) {
-      console.error('Error en Filtro14:', error);
+      console.error('Error en Filtro14 (catch):', error);
+      
+      // Si es un error de red, proporcionar información adicional
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Error de red detectado - verificar conectividad y URL del servidor');
+      }
+      
       return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
 export const Filtro15 = async () => {
   try {
+      console.log('Filtro15: Iniciando solicitud para Rel_Esc_Practica...');
+      
       const response = await fetchPostGeneral({
           dataSend: {}, 
           sheetName: 'Rel_Esc_Practica', 
           urlEndPoint: 'https://siac-server.vercel.app/docServ'
       });
 
+      console.log('Filtro15: Respuesta del servidor:', response);
+
       // Validar que la respuesta sea exitosa
       if (!response || response.status === false) {
-        console.error('Error del servidor en Filtro15:', response?.error || 'Error desconocido');
+        const errorMsg = response?.error || 'Error desconocido';
+        const errorDetails = response?.details || '';
+        const errorCode = response?.code || 'UNKNOWN';
+        
+        console.error('Error del servidor en Filtro15:', {
+          error: errorMsg,
+          details: errorDetails,
+          code: errorCode,
+          fullResponse: response
+        });
+        
         return [];
       }
 
@@ -367,24 +424,45 @@ export const Filtro15 = async () => {
         return [];
       }
 
+      console.log(`Filtro15: Datos obtenidos exitosamente, ${response.data.length} registros`);
       return response.data;
   } catch (error) {
-      console.error('Error en Filtro15:', error);
+      console.error('Error en Filtro15 (catch):', error);
+      
+      // Si es un error de red, proporcionar información adicional
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Error de red detectado - verificar conectividad y URL del servidor');
+      }
+      
       return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
 export const Filtro16 = async () => {
   try {
+      console.log('Filtro16: Iniciando solicitud para Horario...');
+      
       const response = await fetchPostGeneral({
           dataSend: {}, 
           sheetName: 'Horario', 
           urlEndPoint: 'https://siac-server.vercel.app/docServ'
       });
 
+      console.log('Filtro16: Respuesta del servidor:', response);
+
       // Validar que la respuesta sea exitosa
       if (!response || response.status === false) {
-        console.error('Error del servidor en Filtro16:', response?.error || 'Error desconocido');
+        const errorMsg = response?.error || 'Error desconocido';
+        const errorDetails = response?.details || '';
+        const errorCode = response?.code || 'UNKNOWN';
+        
+        console.error('Error del servidor en Filtro16:', {
+          error: errorMsg,
+          details: errorDetails,
+          code: errorCode,
+          fullResponse: response
+        });
+        
         return [];
       }
 
@@ -394,9 +472,16 @@ export const Filtro16 = async () => {
         return [];
       }
 
+      console.log(`Filtro16: Datos obtenidos exitosamente, ${response.data.length} registros`);
       return response.data;
   } catch (error) {
-      console.error('Error en Filtro16:', error);
+      console.error('Error en Filtro16 (catch):', error);
+      
+      // Si es un error de red, proporcionar información adicional
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Error de red detectado - verificar conectividad y URL del servidor');
+      }
+      
       return []; // Retornar array vacío en lugar de lanzar error
   }
 };
