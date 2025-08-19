@@ -18,17 +18,30 @@ import SimpleTimeline from './SimpleTimeline';
 import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker } from '@mui/x-date-pickers';
 import { v4 as uuidv4 } from 'uuid';
 
-const Seguimiento = ({ handleButtonClick }) => {
+const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) => {
     const [selectedDate, setSelectedDate] = useState(null);
     const [menuItems, setMenuItems] = useState([]);
     const [selectedOption, setSelectedOption] = useState(0);
     const [selectedPhase, setSelectedPhase] = useState('');
     const location = useLocation();
-    const rowData = location.state;
-    const programaAcademico = rowData['programa académico'];
-    const idPrograma = rowData['id_programa'];
-    const escuela = rowData['escuela'];
-    const formacion = rowData['pregrado/posgrado'];
+    // Usar rowData de props si está disponible, sino usar location.state
+    const rowData = propRowData || location.state;
+    
+    // Debug: verificar si rowData existe
+    console.log('Seguimiento component - propRowData:', propRowData);
+    console.log('Seguimiento component - location.state:', location.state);
+    console.log('Seguimiento component - rowData final:', rowData);
+    console.log('Seguimiento component - fechas disponibles:', {
+        fechaexpedrc: rowData ? rowData['fechaexpedrc'] : 'undefined',
+        fechavencrc: rowData ? rowData['fechavencrc'] : 'undefined',
+        fechaexpedac: rowData ? rowData['fechaexpedac'] : 'undefined',
+        fechavencac: rowData ? rowData['fechavencac'] : 'undefined'
+    });
+    // Validar que rowData exista antes de extraer propiedades
+    const programaAcademico = rowData ? rowData['programa académico'] : 'N/A';
+    const idPrograma = rowData ? rowData['id_programa'] : 'N/A';
+    const escuela = rowData ? rowData['escuela'] : 'N/A';
+    const formacion = rowData ? rowData['pregrado/posgrado'] : 'N/A';
     const [value, setValue] = useState('');
     const [showCollapsible, setShowCollapsible] = useState({});
     const [filteredData, setFilteredData] = useState([]);
@@ -95,6 +108,13 @@ const Seguimiento = ({ handleButtonClick }) => {
     };
 
     const handleSubmit = async () => {
+        // Validar que idPrograma sea válido antes de proceder
+        if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
+            console.error('handleSubmit: idPrograma no válido:', idPrograma);
+            setErrorMessage('Error: ID del programa no válido');
+            return;
+        }
+
         setLoading(true);
         const date = new Date();
         const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
@@ -108,6 +128,7 @@ const Seguimiento = ({ handleButtonClick }) => {
             Filtro21Data.push({ id_doc: selectedDoc.id, id_programa: idPrograma, url: inputValue });
         } catch (error) {
             console.error('Error al enviar los datos:', error);
+            setErrorMessage('Error al enviar los datos al servidor');
         } finally {
             setLoading(false);
             handleClose();
@@ -131,45 +152,106 @@ const Seguimiento = ({ handleButtonClick }) => {
 
     // Función para calcular fechas 
     function calcularFechas(fechaexpedrc, fechavencrc) {
-        const partesFechaExpedicion = fechaexpedrc.split('/');
-        const partesFechaVencimiento = fechavencrc.split('/');
-        const diaExpedicion = parseInt(partesFechaExpedicion[0], 10);
-        const mesExpedicion = parseInt(partesFechaExpedicion[1], 10) - 1;
-        const añoExpedicion = parseInt(partesFechaExpedicion[2], 10);
-        const diaVencimiento = parseInt(partesFechaVencimiento[0], 10);
-        const mesVencimiento = parseInt(partesFechaVencimiento[1], 10) - 1;
-        const añoVencimiento = parseInt(partesFechaVencimiento[2], 10);
+        // Validar que ambas fechas existan y tengan el formato correcto
+        if (!fechaexpedrc || !fechavencrc || 
+            typeof fechaexpedrc !== 'string' || 
+            typeof fechavencrc !== 'string' ||
+            fechaexpedrc.trim() === '' || 
+            fechavencrc.trim() === '' ||
+            fechaexpedrc === 'N/A' || 
+            fechavencrc === 'N/A' ||
+            fechaexpedrc === '#N/A' || 
+            fechavencrc === '#N/A') {
+            return {
+                unAñoSeisMesesDespues: 'N/A',
+                cuatroAñosAntesVencimiento: 'N/A',
+                dosAñosAntesVencimiento: 'N/A',
+                dieciochoMesesAntes: 'N/A'
+            };
+        }
 
-        const fechaUnAñoSeisMesesDespues = new Date(añoExpedicion, mesExpedicion, diaExpedicion);
-        fechaUnAñoSeisMesesDespues.setMonth(fechaUnAñoSeisMesesDespues.getMonth() + 6);
-        fechaUnAñoSeisMesesDespues.setFullYear(fechaUnAñoSeisMesesDespues.getFullYear() + 1);
+        try {
+            const partesFechaExpedicion = fechaexpedrc.split('/');
+            const partesFechaVencimiento = fechavencrc.split('/');
+            
+            // Validar que las fechas tengan el formato correcto (dd/mm/yyyy)
+            if (partesFechaExpedicion.length !== 3 || partesFechaVencimiento.length !== 3) {
+                return {
+                    unAñoSeisMesesDespues: 'N/A',
+                    cuatroAñosAntesVencimiento: 'N/A',
+                    dosAñosAntesVencimiento: 'N/A',
+                    dieciochoMesesAntes: 'N/A'
+                };
+            }
 
-        const fechaCuatroAñosAntesVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
-        fechaCuatroAñosAntesVencimiento.setFullYear(fechaCuatroAñosAntesVencimiento.getFullYear() - 4);
+            const diaExpedicion = parseInt(partesFechaExpedicion[0], 10);
+            const mesExpedicion = parseInt(partesFechaExpedicion[1], 10) - 1;
+            const añoExpedicion = parseInt(partesFechaExpedicion[2], 10);
+            const diaVencimiento = parseInt(partesFechaVencimiento[0], 10);
+            const mesVencimiento = parseInt(partesFechaVencimiento[1], 10) - 1;
+            const añoVencimiento = parseInt(partesFechaVencimiento[2], 10);
 
-        const fechaDosAñosAntesVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
-        fechaDosAñosAntesVencimiento.setFullYear(fechaDosAñosAntesVencimiento.getFullYear() - 2);
+            // Validar que las fechas sean válidas
+            if (isNaN(diaExpedicion) || isNaN(mesExpedicion) || isNaN(añoExpedicion) ||
+                isNaN(diaVencimiento) || isNaN(mesVencimiento) || isNaN(añoVencimiento)) {
+                return {
+                    unAñoSeisMesesDespues: 'N/A',
+                    cuatroAñosAntesVencimiento: 'N/A',
+                    dosAñosAntesVencimiento: 'N/A',
+                    dieciochoMesesAntes: 'N/A'
+                };
+            }
 
-        const fechaDieciochoMesesAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
-        fechaDieciochoMesesAntes.setMonth(fechaDieciochoMesesAntes.getMonth() - 18);
+            const fechaUnAñoSeisMesesDespues = new Date(añoExpedicion, mesExpedicion, diaExpedicion);
+            fechaUnAñoSeisMesesDespues.setMonth(fechaUnAñoSeisMesesDespues.getMonth() + 6);
+            fechaUnAñoSeisMesesDespues.setFullYear(fechaUnAñoSeisMesesDespues.getFullYear() + 1);
 
-        const formatDate = (date) => {
-            const day = (`0${date.getDate()}`).slice(-2);
-            const month = (`0${date.getMonth() + 1}`).slice(-2);
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        };
+            const fechaCuatroAñosAntesVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
+            fechaCuatroAñosAntesVencimiento.setFullYear(fechaCuatroAñosAntesVencimiento.getFullYear() - 4);
 
-        return {
-            unAñoSeisMesesDespues: formatDate(fechaUnAñoSeisMesesDespues),
-            cuatroAñosAntesVencimiento: formatDate(fechaCuatroAñosAntesVencimiento),
-            dosAñosAntesVencimiento: formatDate(fechaDosAñosAntesVencimiento),
-            dieciochoMesesAntes: formatDate(fechaDieciochoMesesAntes)
-        };
+            const fechaDosAñosAntesVencimiento = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
+            fechaDosAñosAntesVencimiento.setFullYear(fechaDosAñosAntesVencimiento.getFullYear() - 2);
+
+            const fechaDieciochoMesesAntes = new Date(añoVencimiento, mesVencimiento, diaVencimiento);
+            fechaDieciochoMesesAntes.setMonth(fechaDieciochoMesesAntes.getMonth() - 18);
+
+            const formatDate = (date) => {
+                const day = (`0${date.getDate()}`).slice(-2);
+                const month = (`0${date.getMonth() + 1}`).slice(-2);
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            };
+
+            return {
+                unAñoSeisMesesDespues: formatDate(fechaUnAñoSeisMesesDespues),
+                cuatroAñosAntesVencimiento: formatDate(fechaCuatroAñosAntesVencimiento),
+                dosAñosAntesVencimiento: formatDate(fechaDosAñosAntesVencimiento),
+                dieciochoMesesAntes: formatDate(fechaDieciochoMesesAntes)
+            };
+        } catch (error) {
+            console.error('Error al calcular fechas:', error);
+            return {
+                unAñoSeisMesesDespues: 'N/A',
+                cuatroAñosAntesVencimiento: 'N/A',
+                dosAñosAntesVencimiento: 'N/A',
+                dieciochoMesesAntes: 'N/A'
+            };
+        }
     }
 
-    const fechasCalculadas = calcularFechas(rowData['fechaexpedrc'], rowData['fechavencrc']);
-    const fechasCalculadasAC = calcularFechas(rowData['fechaexpedac'], rowData['fechavencac']);
+    // Validar que rowData exista antes de calcular fechas
+    const fechasCalculadas = rowData ? calcularFechas(rowData['fechaexpedrc'], rowData['fechavencrc']) : {
+        unAñoSeisMesesDespues: 'N/A',
+        cuatroAñosAntesVencimiento: 'N/A',
+        dosAñosAntesVencimiento: 'N/A',
+        dieciochoMesesAntes: 'N/A'
+    };
+    const fechasCalculadasAC = rowData ? calcularFechas(rowData['fechaexpedac'], rowData['fechavencac']) : {
+        unAñoSeisMesesDespues: 'N/A',
+        cuatroAñosAntesVencimiento: 'N/A',
+        dosAñosAntesVencimiento: 'N/A',
+        dieciochoMesesAntes: 'N/A'
+    };
 
     useEffect(() => {
         if (handleButtonClick != null) {
@@ -239,6 +321,16 @@ const Seguimiento = ({ handleButtonClick }) => {
                 return;
             }
     
+            // Validar que idPrograma sea válido antes de filtrar
+            if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
+                console.warn('cargarFases: idPrograma no válido:', idPrograma, 'no se pueden cargar fases');
+                setFases([]);
+                setFasesName([]);
+                setDocs([]);
+                setLoading(false);
+                return;
+            }
+
             const fasesFiltradas = response.filter(item => item.id_programa === idPrograma);
             const result2 = fasesFiltradas.map(fase => {
                 const filtro10Item = general.find(item => item.id === fase.id_fase);
@@ -337,16 +429,24 @@ const Seguimiento = ({ handleButtonClick }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // Validar que idPrograma sea válido antes de hacer la llamada
+                if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
+                    console.warn('Seguimiento: idPrograma no válido:', idPrograma, 'no se pueden cargar datos filtrados');
+                    setFilteredData([]);
+                    return;
+                }
+
                 const response = await Filtro7();
                 const response2 = await Filtro9(response.filter(item => item['id_programa'] === idPrograma), idPrograma);
                 console.log('Datos cargados:', response2);
                 setFilteredData(response2);
             } catch (error) {
                 console.error('Error al filtrar datos:', error);
+                setFilteredData([]); // Establecer array vacío en caso de error
             }
         };
         fetchData();
-    }, [updateTrigger]);
+    }, [updateTrigger, idPrograma]);
 
     // Obtener color de fondo basado en el riesgo
     const getBackgroundColor = (riesgo) => {
@@ -543,6 +643,14 @@ const Seguimiento = ({ handleButtonClick }) => {
 
         const handleGuardarClick = async () => {
             try {
+                // Validar que idPrograma sea válido antes de proceder
+                if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
+                    console.error('handleGuardarClick: idPrograma no válido:', idPrograma);
+                    setErrorMessage('Error: ID del programa no válido');
+                    setFormSubmitted(true);
+                    return;
+                }
+
                 if (comment.trim() === '' || value.trim() === '' || selectedPhase.trim() === '') {
                     setLoading(false);
                     const errorMessage = 'Por favor, complete todos los campos obligatorios.';
@@ -781,6 +889,14 @@ const Seguimiento = ({ handleButtonClick }) => {
 
         const handleGuardarClickDefault = async () => {
             try {
+                // Validar que idPrograma sea válido antes de proceder
+                if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
+                    console.error('handleGuardarClickDefault: idPrograma no válido:', idPrograma);
+                    setErrorMessage('Error: ID del programa no válido');
+                    setFormSubmitted(true);
+                    return;
+                }
+
                 setLoading(true);
                 let enlace;
                 if (fileType === 'upload' && fileInputRef.current) {
@@ -1215,6 +1331,19 @@ const Seguimiento = ({ handleButtonClick }) => {
         );
     };
 
+    // Validar que rowData exista antes de renderizar el componente
+    if (!rowData) {
+        return (
+            <div style={{ marginRight: '20px', width: 'auto' }}>
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <h3>Error: No se encontraron datos del programa</h3>
+                    <p>Por favor, regrese a la lista de programas y seleccione uno válido.</p>
+                    <p>Debug info: propRowData = {JSON.stringify(propRowData)}, location.state = {JSON.stringify(location.state)}</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             <div style={{ marginRight: '20px', width: 'auto' }}>
@@ -1227,8 +1356,8 @@ const Seguimiento = ({ handleButtonClick }) => {
                                 escuela={escuela}
                                 formacion={formacion}
                                 isPlan={avaibleRange(isPlan)}
-                                fechaVencimientoRRC={rowData['fechavencrc']}
-                                fechaVencAC={rowData['fechavencac']} 
+                                fechaVencimientoRRC={rowData ? rowData['fechavencrc'] : null}
+                                fechaVencAC={rowData ? rowData['fechavencac'] : null} 
                             />
                             <CollapsibleButton buttonText="Seguimiento al cumplimiento del Plan de Mejoramiento" content={
                                 <>
@@ -1253,8 +1382,8 @@ const Seguimiento = ({ handleButtonClick }) => {
                         <>
                             <h3>Seguimiento del Proceso de Renovación Registro Calificado</h3>
                             <SimpleTimeline
-                                fechaExpedicion={rowData['fechaexpedrc']}
-                                fechaVencimiento={rowData['fechavencrc']}
+                                fechaExpedicion={rowData ? rowData['fechaexpedrc'] : null}
+                                fechaVencimiento={rowData ? rowData['fechavencrc'] : null}
                                 fechasCalculadas={fechasCalculadas}
                                 tipo='RRC'
                             />
@@ -1305,8 +1434,8 @@ const Seguimiento = ({ handleButtonClick }) => {
                         <>
                             <h3>Seguimiento del Proceso de Renovación Acreditación</h3>
                             <SimpleTimeline
-                                fechaExpedicion={rowData['fechaexpedac']}
-                                fechaVencimiento={rowData['fechavencac']}
+                                fechaExpedicion={rowData ? rowData['fechaexpedac'] : null}
+                                fechaVencimiento={rowData ? rowData['fechavencac'] : null}
                                 fechasCalculadas={fechasCalculadasAC}
                                 tipo='RAAC'
                             />
@@ -1380,7 +1509,7 @@ const Seguimiento = ({ handleButtonClick }) => {
                     )}
                     {handleButtonClick === 'conv' && (
                         <>
-                            <PracticeScenario data={rowData} />
+                            <PracticeScenario data={rowData || {}} />
                         </>
                     )}
                 </div>

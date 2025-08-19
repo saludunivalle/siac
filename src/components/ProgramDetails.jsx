@@ -564,7 +564,12 @@ const ProgramDetails = () => {
                         <Tab label="Seguimiento PM" value="Seg" sx={tabSx('Seg')} />
                     </Tabs>
                 </Box>
-                <Seguimiento handleButtonClick={clickedButton} key={reloadSeguimiento} fechavencrc={rowData.fechavencrc} />
+                <Seguimiento 
+                    handleButtonClick={clickedButton} 
+                    key={reloadSeguimiento} 
+                    fechavencrc={rowData.fechavencrc}
+                    rowData={rowData}
+                />
                 {!userEmail && !isemail && (
                     <Button onClick={handleBackClick} variant="contained" style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', margin: '10px 0px -15px' }}>
                         Atrás

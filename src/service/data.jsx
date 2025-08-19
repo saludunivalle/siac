@@ -24,8 +24,20 @@ const filterByProperty = async (sheetName, data, propertyName) => {
       urlEndPoint: 'https://siac-server.vercel.app/'
     });
 
-    // Validar que response y response.data existan y sean arrays
-    if (!response || !response.data || !Array.isArray(response.data)) {
+    // Validar que response exista
+    if (!response) {
+      console.error('Error: No se recibió respuesta del servidor');
+      return [];
+    }
+
+    // Validar el status de la respuesta
+    if (response.status === false) {
+      console.error('Error del servidor:', response.error || 'Error desconocido');
+      return [];
+    }
+
+    // Validar que response.data exista y sea un array
+    if (!response.data || !Array.isArray(response.data)) {
       console.error('Error: La respuesta no contiene un array válido en data:', response);
       return [];
     }
@@ -103,22 +115,28 @@ export const Filtro8 = (datos, terminos_a_filtrar) => {
 export const Filtro9 = (datos, termino_a_filtrar) => {
   try {
     if (!Array.isArray(datos)) {
-      throw new Error('Los datos proporcionados no son un array');
+      console.warn('Filtro9: Los datos proporcionados no son un array, retornando array vacío');
+      return [];
     }
 
-    if (!termino_a_filtrar || typeof termino_a_filtrar !== 'string') {
-      throw new Error('El término de filtrado proporcionado no es válido');
+    // Validar que el término de filtrado sea válido
+    if (!termino_a_filtrar || 
+        typeof termino_a_filtrar !== 'string' || 
+        termino_a_filtrar.trim() === '' || 
+        termino_a_filtrar === 'N/A') {
+      console.warn('Filtro9: El término de filtrado no es válido:', termino_a_filtrar, 'retornando array vacío');
+      return [];
     }
 
     const filteredData = datos.filter(item => {
       const propiedadValue = item['id_programa'];
-      return propiedadValue && propiedadValue.toLowerCase().includes(termino_a_filtrar.toLowerCase());
+      return propiedadValue && propiedadValue.toString().toLowerCase().includes(termino_a_filtrar.toLowerCase());
     });
 
     return filteredData;
   } catch (error) {
-    console.error('Error en el filtro:', error);
-    throw error;
+    console.error('Error en Filtro9:', error);
+    return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -233,6 +251,19 @@ export const obtenerFasesProceso = async () => {
       sheetName: 'Proc_X_Prog',
       urlEndPoint: 'https://siac-server.vercel.app/'
     });
+
+    // Validar que la respuesta sea exitosa
+    if (!hoja1Response || hoja1Response.status === false) {
+      console.error('Error del servidor en obtenerFasesProceso:', hoja1Response?.error || 'Error desconocido');
+      return [];
+    }
+
+    // Validar que response.data exista y sea un array
+    if (!hoja1Response.data || !Array.isArray(hoja1Response.data)) {
+      console.error('Error: La respuesta no contiene un array válido en data:', hoja1Response);
+      return [];
+    }
+
     const hoja1Data = hoja1Response.data;
 
     const fasesOrdenadas = hoja1Data.sort((a, b) => {
@@ -242,15 +273,22 @@ export const obtenerFasesProceso = async () => {
     });
 
     function convertirFecha(fechaStr) {
-      const partes = fechaStr.split('/');
-      const fecha = new Date(partes[2], partes[1] - 1, partes[0]);
-      return fecha;
+      if (!fechaStr || typeof fechaStr !== 'string') return new Date(0);
+      try {
+        const partes = fechaStr.split('/');
+        if (partes.length !== 3) return new Date(0);
+        const fecha = new Date(partes[2], partes[1] - 1, partes[0]);
+        return isNaN(fecha.getTime()) ? new Date(0) : fecha;
+      } catch (error) {
+        console.warn('Error al convertir fecha:', fechaStr, error);
+        return new Date(0);
+      }
     }
 
     return fasesOrdenadas;
   } catch (error) {
-    console.error('Error en la solicitud:', error);
-    throw error;
+    console.error('Error en obtenerFasesProceso:', error);
+    return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -262,11 +300,23 @@ export const Filtro13 = async () => {
           sheetName: 'Asig_X_Prog', 
           urlEndPoint: 'https://siac-server.vercel.app/docServ'
       });
-      //console.log(response.data);
+
+      // Validar que la respuesta sea exitosa
+      if (!response || response.status === false) {
+        console.error('Error del servidor en Filtro13:', response?.error || 'Error desconocido');
+        return [];
+      }
+
+      // Validar que response.data exista y sea un array
+      if (!response.data || !Array.isArray(response.data)) {
+        console.error('Error: La respuesta no contiene un array válido en data:', response);
+        return [];
+      }
+
       return response.data;
   } catch (error) {
-      console.error('Error en la solicitud:', error);
-      throw error; 
+      console.error('Error en Filtro13:', error);
+      return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -277,11 +327,23 @@ export const Filtro14 = async () => {
           sheetName: 'Esc_Practica', 
           urlEndPoint: 'https://siac-server.vercel.app/docServ'
       });
-      //console.log(response.data);
+
+      // Validar que la respuesta sea exitosa
+      if (!response || response.status === false) {
+        console.error('Error del servidor en Filtro14:', response?.error || 'Error desconocido');
+        return [];
+      }
+
+      // Validar que response.data exista y sea un array
+      if (!response.data || !Array.isArray(response.data)) {
+        console.error('Error: La respuesta no contiene un array válido en data:', response);
+        return [];
+      }
+
       return response.data;
   } catch (error) {
-      console.error('Error en la solicitud:', error);
-      throw error; 
+      console.error('Error en Filtro14:', error);
+      return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -292,11 +354,23 @@ export const Filtro15 = async () => {
           sheetName: 'Rel_Esc_Practica', 
           urlEndPoint: 'https://siac-server.vercel.app/docServ'
       });
-      //console.log(response.data);
+
+      // Validar que la respuesta sea exitosa
+      if (!response || response.status === false) {
+        console.error('Error del servidor en Filtro15:', response?.error || 'Error desconocido');
+        return [];
+      }
+
+      // Validar que response.data exista y sea un array
+      if (!response.data || !Array.isArray(response.data)) {
+        console.error('Error: La respuesta no contiene un array válido en data:', response);
+        return [];
+      }
+
       return response.data;
   } catch (error) {
-      console.error('Error en la solicitud:', error);
-      throw error; 
+      console.error('Error en Filtro15:', error);
+      return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -307,11 +381,23 @@ export const Filtro16 = async () => {
           sheetName: 'Horario', 
           urlEndPoint: 'https://siac-server.vercel.app/docServ'
       });
-      //console.log(response.data);
+
+      // Validar que la respuesta sea exitosa
+      if (!response || response.status === false) {
+        console.error('Error del servidor en Filtro16:', response?.error || 'Error desconocido');
+        return [];
+      }
+
+      // Validar que response.data exista y sea un array
+      if (!response.data || !Array.isArray(response.data)) {
+        console.error('Error: La respuesta no contiene un array válido en data:', response);
+        return [];
+      }
+
       return response.data;
   } catch (error) {
-      console.error('Error en la solicitud:', error);
-      throw error; 
+      console.error('Error en Filtro16:', error);
+      return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -403,10 +489,23 @@ export const FiltroFirmas = async () => {
       sheetName: 'firmas',
       urlEndPoint: 'https://siac-server.vercel.app/docServ'
     });
+
+    // Validar que la respuesta sea exitosa
+    if (!response || response.status === false) {
+      console.error('Error del servidor en FiltroFirmas:', response?.error || 'Error desconocido');
+      return [];
+    }
+
+    // Validar que response.data exista y sea un array
+    if (!response.data || !Array.isArray(response.data)) {
+      console.error('Error: La respuesta no contiene un array válido en data:', response);
+      return [];
+    }
+
     return response.data;
   } catch (error) {
-    console.error('Error en la solicitud:', error);
-    throw error;
+    console.error('Error en FiltroFirmas:', error);
+    return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -437,10 +536,23 @@ export const dataSegui = async () => {
       sheetName: 'Programas_pm',
       urlEndPoint: 'https://siac-server.vercel.app/seguimiento'
     });
+
+    // Validar que la respuesta sea exitosa
+    if (!response || response.status === false) {
+      console.error('Error del servidor en dataSegui:', response?.error || 'Error desconocido');
+      return [];
+    }
+
+    // Validar que response.data exista y sea un array
+    if (!response.data || !Array.isArray(response.data)) {
+      console.error('Error: La respuesta no contiene un array válido en data:', response);
+      return [];
+    }
+
     return response.data;
   } catch (error) {
-    console.error('Error en la solicitud:', error);
-    throw error;
+    console.error('Error en dataSegui:', error);
+    return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -451,10 +563,23 @@ export const dataEscuelas = async () => {
       sheetName: 'Escuela_om',
       urlEndPoint: 'https://siac-server.vercel.app/seguimiento'
     });
+
+    // Validar que la respuesta sea exitosa
+    if (!response || response.status === false) {
+      console.error('Error del servidor en dataEscuelas:', response?.error || 'Error desconocido');
+      return [];
+    }
+
+    // Validar que response.data exista y sea un array
+    if (!response.data || !Array.isArray(response.data)) {
+      console.error('Error: La respuesta no contiene un array válido en data:', response);
+      return [];
+    }
+
     return response.data;
   } catch (error) {
-    console.error('Error en la solicitud:', error);
-    throw error;
+    console.error('Error en dataEscuelas:', error);
+    return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
@@ -506,10 +631,23 @@ export const dataProgramas = async () => {
       sheetName: 'Programas', // Nombre de la hoja en el backend
       urlEndPoint: 'https://siac-server.vercel.app/seguimiento' // Endpoint principal
     });
+
+    // Validar que la respuesta sea exitosa
+    if (!response || response.status === false) {
+      console.error('Error del servidor en dataProgramas:', response?.error || 'Error desconocido');
+      return [];
+    }
+
+    // Validar que response.data exista y sea un array
+    if (!response.data || !Array.isArray(response.data)) {
+      console.error('Error: La respuesta no contiene un array válido en data:', response);
+      return [];
+    }
+
     return response.data;
   } catch (error) {
-    console.error('Error al obtener datos de programas:', error);
-    throw error;
+    console.error('Error en dataProgramas:', error);
+    return []; // Retornar array vacío en lugar de lanzar error
   }
 };
 
