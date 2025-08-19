@@ -90,7 +90,7 @@ const DocenciaServicio = () => {
     // Efecto para extraer tipologías y códigos únicos
     useEffect(() => {
         if (escenariosData && escenariosData.length > 0) {
-            const tipologias = [...new Set(escenariosData.map(e => e.tipologia).filter(Boolean))];
+            const tipologias = [...new Set(escenariosData.map(e => e.tipologia || '').filter(Boolean))];
             setUniqueTipologias(tipologias);
         }
     }, [escenariosData]);
@@ -606,8 +606,8 @@ const DocenciaServicio = () => {
             if (selectedScenario) {
                 setDocEscenarioFormData({
                     ...docEscenarioFormData,
-                    idEscenario: value,
-                    nombreEscenario: selectedScenario.nombre,
+                    idEscenario: value || '',
+                    nombreEscenario: selectedScenario.nombre || '',
                     tipologia: selectedScenario.tipologia || '',
                     codigo: selectedScenario.codigo || '',
                     fechaInicio: convertirFechaParaInput(selectedScenario.fecha_inicio) || '',
@@ -616,7 +616,7 @@ const DocenciaServicio = () => {
             } else {
                 setDocEscenarioFormData({
                     ...docEscenarioFormData,
-                    idEscenario: value,
+                    idEscenario: value || '',
                     nombreEscenario: '',
                     tipologia: '',
                     codigo: '',
@@ -627,7 +627,7 @@ const DocenciaServicio = () => {
         } else {
             setDocEscenarioFormData({
                 ...docEscenarioFormData,
-                [name]: value,
+                [name]: value || '',
                 localFile: name === 'url' ? null : docEscenarioFormData.localFile // Limpiar archivo si se escribe en URL
             });
         }
@@ -1852,8 +1852,8 @@ const DocenciaServicio = () => {
                                                                         
                                                                         if (escenarioCompleto) {
                                                                             setDocEscenarioFormData({
-                                                                                idEscenario: escenarioCompleto.id,
-                                                                                nombreEscenario: escenarioCompleto.nombre,
+                                                                                idEscenario: escenarioCompleto.id || '',
+                                                                                nombreEscenario: escenarioCompleto.nombre || '',
                                                                                 url: '',
                                                                                 tipologia: escenarioCompleto.tipologia || '',
                                                                                 codigo: escenarioCompleto.codigo || '',
@@ -1863,8 +1863,8 @@ const DocenciaServicio = () => {
                                                                         } else if (escenarioInfo) {
                                                                             // Si no se encuentra el escenario completo, usar la información de escenarioInfo
                                                                             setDocEscenarioFormData({
-                                                                                idEscenario: escenarioInfo.id,
-                                                                                nombreEscenario: escenarioInfo.nombre,
+                                                                                idEscenario: escenarioInfo.id || '',
+                                                                                nombreEscenario: escenarioInfo.nombre || '',
                                                                                 url: '',
                                                                                 tipologia: '',
                                                                                 codigo: '',

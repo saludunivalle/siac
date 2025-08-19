@@ -1421,8 +1421,8 @@ const PracticeScenario = ({ data }) => {
             if (selectedScenario) {
                 setDocEscenarioFormData({
                     ...docEscenarioFormData,
-                    idEscenario: value,
-                    nombreEscenario: selectedScenario.nombre,
+                    idEscenario: value || '',
+                    nombreEscenario: selectedScenario.nombre || '',
                     tipologia: selectedScenario.tipologia || '',
                     codigo: selectedScenario.codigo || '',
                     fechaInicio: convertirFechaParaInput(selectedScenario.fecha_inicio) || '',
@@ -1431,7 +1431,7 @@ const PracticeScenario = ({ data }) => {
             } else {
                 setDocEscenarioFormData({
                     ...docEscenarioFormData,
-                    idEscenario: value,
+                    idEscenario: value || '',
                     nombreEscenario: '',
                     tipologia: '',
                     codigo: '',
@@ -1442,7 +1442,7 @@ const PracticeScenario = ({ data }) => {
         } else {
             setDocEscenarioFormData({
                 ...docEscenarioFormData,
-                [name]: value
+                [name]: value || ''
             });
         }
     };
@@ -1463,10 +1463,10 @@ const PracticeScenario = ({ data }) => {
         
         if (escenarioCompleto) {
             setDocEscenarioFormData({
-                idPrograma: data.id_programa,
+                idPrograma: data.id_programa || '',
                 programaSeleccionado: programasData.find(p => p.id_programa === data.id_programa) || null,
-                idEscenario: escenarioId,
-                nombreEscenario: escenarioNombre,
+                idEscenario: escenarioId || '',
+                nombreEscenario: escenarioNombre || '',
                 url: '',
                 tipologia: escenarioCompleto.tipologia || '',
                 codigo: escenarioCompleto.codigo || '',
@@ -1476,10 +1476,10 @@ const PracticeScenario = ({ data }) => {
         } else {
             // Si no se encuentra el escenario completo, usar solo la información básica
             setDocEscenarioFormData({
-                idPrograma: data.id_programa,
+                idPrograma: data.id_programa || '',
                 programaSeleccionado: programasData.find(p => p.id_programa === data.id_programa) || null,
-                idEscenario: escenarioId,
-                nombreEscenario: escenarioNombre,
+                idEscenario: escenarioId || '',
+                nombreEscenario: escenarioNombre || '',
                 url: '',
                 tipologia: '',
                 codigo: '',

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Radio, RadioGroup, FormControl, FormControlLabel, TextField, InputLabel, ListSubheader, Input, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Select, MenuItem, Button, Typography, Modal, CircularProgress, FormLabel, useMediaQuery } from '@mui/material';
 import { Container, Grid, IconButton, Box, Paper } from '@mui/material';
@@ -17,6 +17,7 @@ import SeguimientoPM from './SeguimientoPM';
 import SimpleTimeline from './SimpleTimeline';
 import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker } from '@mui/x-date-pickers';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 
 const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) => {
     const [selectedDate, setSelectedDate] = useState(null);
@@ -31,6 +32,8 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
     console.log('Seguimiento component - propRowData:', propRowData);
     console.log('Seguimiento component - location.state:', location.state);
     console.log('Seguimiento component - rowData final:', rowData);
+    console.log('Seguimiento component - campos disponibles en rowData:', rowData ? Object.keys(rowData) : 'No hay rowData');
+    console.log('Seguimiento component - id_programa raw:', rowData ? rowData['id_programa'] : 'undefined');
     console.log('Seguimiento component - fechas disponibles:', {
         fechaexpedrc: rowData ? rowData['fechaexpedrc'] : 'undefined',
         fechavencrc: rowData ? rowData['fechavencrc'] : 'undefined',
@@ -39,7 +42,59 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
     });
     // Validar que rowData exista antes de extraer propiedades
     const programaAcademico = rowData ? rowData['programa académico'] : 'N/A';
-    const idPrograma = rowData ? rowData['id_programa'] : 'N/A';
+    // Buscar id_programa en diferentes campos posibles
+    const idPrograma = rowData ? (
+        rowData['id_programa'] || 
+        rowData['idPrograma'] || 
+        rowData['id'] || 
+        rowData['ID'] || 
+        rowData['programa_id'] ||
+        rowData['programaId'] ||
+        'N/A'
+    ) : 'N/A';
+    
+    // Debug adicional para el idPrograma
+    console.log('Seguimiento component - idPrograma extraído:', idPrograma);
+    console.log('Seguimiento component - tipo de idPrograma:', typeof idPrograma);
+    
+    // Si no se encontró el ID, intentar buscarlo por nombre del programa
+    const [programasData, setProgramasData] = useState([]);
+    
+    useEffect(() => {
+        const fetchProgramas = async () => {
+            try {
+                const response = await axios.post('https://siac-server.vercel.app/seguimiento', {
+                    sheetName: 'Programas'
+                });
+                
+                if (response.data && response.data.status) {
+                    setProgramasData(response.data.data || []);
+                }
+            } catch (error) {
+                console.error('Error al obtener programas:', error);
+            }
+        };
+        
+        fetchProgramas();
+    }, []);
+    
+    // Buscar el ID del programa por nombre si no se encontró
+    const idProgramaFinal = useMemo(() => {
+        if (idPrograma && idPrograma !== 'N/A') {
+            return idPrograma;
+        }
+        
+        if (rowData && rowData['programa académico'] && programasData.length > 0) {
+            const programaEncontrado = programasData.find(p => 
+                p['programa académico'] === rowData['programa académico']
+            );
+            return programaEncontrado ? programaEncontrado.id_programa : 'N/A';
+        }
+        
+        return 'N/A';
+    }, [idPrograma, rowData, programasData]);
+    
+    console.log('Seguimiento component - idPrograma final:', idProgramaFinal);
     const escuela = rowData ? rowData['escuela'] : 'N/A';
     const formacion = rowData ? rowData['pregrado/posgrado'] : 'N/A';
     const [value, setValue] = useState('');
@@ -322,8 +377,8 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             }
     
             // Validar que idPrograma sea válido antes de filtrar
-            if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
-                console.warn('cargarFases: idPrograma no válido:', idPrograma, 'no se pueden cargar fases');
+            if (!idProgramaFinal || idProgramaFinal === 'N/A' || idProgramaFinal === 'undefined') {
+                console.warn('cargarFases: idPrograma no válido:', idProgramaFinal, 'no se pueden cargar fases');
                 setFases([]);
                 setFasesName([]);
                 setDocs([]);
@@ -331,7 +386,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                 return;
             }
 
-            const fasesFiltradas = response.filter(item => item.id_programa === idPrograma);
+            const fasesFiltradas = response.filter(item => item.id_programa === idProgramaFinal);
             const result2 = fasesFiltradas.map(fase => {
                 const filtro10Item = general.find(item => item.id === fase.id_fase);
                 return filtro10Item ? filtro10Item : null;
@@ -430,14 +485,14 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
         const fetchData = async () => {
             try {
                 // Validar que idPrograma sea válido antes de hacer la llamada
-                if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
-                    console.warn('Seguimiento: idPrograma no válido:', idPrograma, 'no se pueden cargar datos filtrados');
+                if (!idProgramaFinal || idProgramaFinal === 'N/A' || idProgramaFinal === 'undefined') {
+                    console.warn('Seguimiento: idPrograma no válido:', idProgramaFinal, 'no se pueden cargar datos filtrados');
                     setFilteredData([]);
                     return;
                 }
 
                 const response = await Filtro7();
-                const response2 = await Filtro9(response.filter(item => item['id_programa'] === idPrograma), idPrograma);
+                const response2 = await Filtro9(response.filter(item => item['id_programa'] === idProgramaFinal), idProgramaFinal);
                 console.log('Datos cargados:', response2);
                 setFilteredData(response2);
             } catch (error) {
@@ -446,7 +501,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             }
         };
         fetchData();
-    }, [updateTrigger, idPrograma]);
+    }, [updateTrigger, idProgramaFinal]);
 
     // Obtener color de fondo basado en el riesgo
     const getBackgroundColor = (riesgo) => {
@@ -522,9 +577,9 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                                                 <tbody>
                                                     {docs.map((doc, index) => {
-                                                        const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idPrograma);
+                                                        const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
                                                         const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'pointer' } : { cursor: 'pointer' };
-                                                        const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idPrograma);
+                                                        const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
                                                         const filtroUrl = filtro ? filtro.url : null;
                                                         const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
                                                         const handleLinkClick = (event) => {
@@ -644,8 +699,8 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
         const handleGuardarClick = async () => {
             try {
                 // Validar que idPrograma sea válido antes de proceder
-                if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
-                    console.error('handleGuardarClick: idPrograma no válido:', idPrograma);
+                if (!idProgramaFinal || idProgramaFinal === 'N/A' || idProgramaFinal === 'undefined') {
+                    console.error('handleGuardarClick: idPrograma no válido:', idProgramaFinal);
                     setErrorMessage('Error: ID del programa no válido');
                     setFormSubmitted(true);
                     return;
@@ -671,7 +726,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                     : (selectedPhase === 'RAAC' ? 'Plan de Mejoramiento RAAC' : 'Plan de Mejoramiento AAC');
 
                 const dataSend = [
-                    idPrograma,
+                    idProgramaFinal,
                     formattedDate,
                     comment,
                     value,
@@ -681,7 +736,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                 ];
 
                 const dataSendCrea = [
-                    idPrograma,
+                    idProgramaFinal,
                     selectedOption.id,
                     formattedDate,
                 ];
@@ -855,7 +910,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             const formattedResolutionDate = resolutionDate ? dayjs(resolutionDate).format('DD/MM/YYYY') : '';
             const historicalData = [
                 shortUUID,
-                idPrograma,
+                idProgramaFinal,
                 handleButtonClick,
                 formattedResolutionDate,
                 duration,
@@ -890,9 +945,10 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
         const handleGuardarClickDefault = async () => {
             try {
                 // Validar que idPrograma sea válido antes de proceder
-                if (!idPrograma || idPrograma === 'N/A' || idPrograma === 'undefined') {
-                    console.error('handleGuardarClickDefault: idPrograma no válido:', idPrograma);
-                    setErrorMessage('Error: ID del programa no válido');
+                if (!idProgramaFinal || idProgramaFinal === 'N/A' || idProgramaFinal === 'undefined' || idProgramaFinal === 'null') {
+                    console.error('handleGuardarClickDefault: idPrograma no válido:', idProgramaFinal);
+                    console.error('rowData completo:', rowData);
+                    setErrorMessage('Error: ID del programa no válido. Por favor, verifique que el programa esté correctamente seleccionado.');
                     setFormSubmitted(true);
                     return;
                 }
@@ -934,7 +990,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                 }
 
                 const dataSend = [
-                    idPrograma,
+                    idProgramaFinal,
                     formattedDate,
                     comment,
                     value,
@@ -945,7 +1001,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                 ];
 
                 const dataSendCrea = [
-                    idPrograma,
+                    idProgramaFinal,
                     selectedOption.id,
                     formattedDate,
                 ];
@@ -1143,7 +1199,6 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                                 },
                                             },
                                         }}
-                                        disablePortal
                                     >
                                         <MenuItem
                                             value={0}
@@ -1183,7 +1238,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                     </Select>
                                 </FormControl>
                             </div>
-                            <style jsx>{`
+                            <style>{`
                                 .main-container {
                                     display: flex;
                                     flex-direction: column;
@@ -1352,7 +1407,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                         <>
                             <h3>Seguimiento al Plan de Mejoramiento.</h3>
                             <SeguimientoPM
-                                idPrograma={idPrograma}
+                                idPrograma={idProgramaFinal}
                                 escuela={escuela}
                                 formacion={formacion}
                                 isPlan={avaibleRange(isPlan)}

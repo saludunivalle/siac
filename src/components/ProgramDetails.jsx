@@ -568,7 +568,10 @@ const ProgramDetails = () => {
                     handleButtonClick={clickedButton} 
                     key={reloadSeguimiento} 
                     fechavencrc={rowData.fechavencrc}
-                    rowData={rowData}
+                    rowData={{
+                        ...rowData,
+                        id_programa: rowData.id_programa || rowData.id || rowData.ID || 'N/A'
+                    }}
                 />
                 {!userEmail && !isemail && (
                     <Button onClick={handleBackClick} variant="contained" style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', margin: '10px 0px -15px' }}>
