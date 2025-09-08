@@ -19,6 +19,7 @@ import Aac from './components/Aac';
 import Mod from './components/Mod';
 import RegistroCalificado from './components/RegistroCalificado';
 import AcreditacionAltaCalidad from './components/AltaCalidad';
+import DashboardEstadisticas from './components/DashboardEstadisticas';
 
 function App() {
   const [isLogged, setLogged] = useState(false);
@@ -54,6 +55,7 @@ function App() {
               <Route path="/mod" element={<Mod />} />
               <Route path="/registro-calificado" element={<RegistroCalificado />} />
               <Route path="/acreditacion-alta-calidad" element={<AcreditacionAltaCalidad />} />
+              <Route path="/estadisticas" element={<DashboardEstadisticas />} />
               <Route
                         path="*"
                         element={

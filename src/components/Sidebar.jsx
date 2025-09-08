@@ -30,6 +30,7 @@ import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRigh
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { Filtro5, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
 
 const Sidebar = ({ isCargo }) => {
@@ -186,6 +187,12 @@ const Sidebar = ({ isCargo }) => {
           icon: <DescriptionIcon />,
           path: '/programas-venc',
           tooltip: 'Programas por Vencer'
+        },
+        {
+          text: 'Estadísticas',
+          icon: <QueryStatsIcon />,
+          path: '/estadisticas',
+          tooltip: 'Dashboard de Estadísticas'
         }
       ]
     },

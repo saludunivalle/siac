@@ -871,3 +871,5 @@ export const getSeguimientoPMByPrograma = async (idPrograma) => {
     return null;
   }
 };
+
+export const FiltroEstadisticas = () => filterByProperty('ESTADISTICAS', {}, '');

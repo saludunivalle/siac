@@ -1,6 +1,9 @@
 .table-container {
   margin-top: 0px;
   padding-bottom: 20px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%);
+  border: 1px solid rgba(74, 74, 74, 0.1);
 }
 
 .table-container table {
@@ -9,21 +12,28 @@
 }
 
 .row-container th {
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(74, 74, 74, 0.2);
   width: 150px;
-  padding: 8px;
+  padding: 12px 8px;
   text-align: center;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  background: linear-gradient(135deg, #B22222 0%, #8B0000 100%);
+  color: white;
 }
 
 .table-container td {
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(74, 74, 74, 0.1);
   width: 150px;
-  padding: 8px;
+  padding: 10px 8px;
   text-align: center;
   font-size: 14px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table-container td:hover {
+  background-color: rgba(178, 34, 34, 0.05);
 }
 
 .bold {
