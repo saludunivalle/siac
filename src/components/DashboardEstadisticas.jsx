@@ -5,8 +5,9 @@ import Sidebar from './Sidebar';
 import LoadingSpinner from './common/LoadingSpinner';
 import TabsContainer from './common/TabsContainer';
 import IndicadoresMatricula from './dashboard/IndicadoresMatricula';
+import IndicadoresCupos from './dashboard/IndicadoresCupos';
 import VistaGeneral from './dashboard/VistaGeneral';
-import { useDashboardData, useMatriculaData, useProcessedMatriculaData } from '../hooks/useDashboardData';
+import { useDashboardData, useMatriculaData, useProcessedMatriculaData, useCuposData, useProcessedCuposData } from '../hooks/useDashboardData';
 import { useFilters } from '../hooks/useFilters';
 import { NIVELES_ACADEMICOS } from '../constants/dashboardConstants';
 import '../utils/chartConfig'; // Configuración de Chart.js
@@ -42,6 +43,14 @@ const DashboardEstadisticas = () => {
 
   const datosMatriculaProcesados = useProcessedMatriculaData(matriculaFilteredData);
 
+  const {
+    yearRangeCupos,
+    setYearRangeCupos,
+    cuposFilteredData
+  } = useCuposData(estadisticas, filters);
+
+  const datosCuposProcesados = useProcessedCuposData(cuposFilteredData);
+
   useEffect(() => {
     const cargo = sessionStorage.getItem('cargo');
     if (cargo) {
@@ -49,12 +58,16 @@ const DashboardEstadisticas = () => {
     }
   }, []);
 
+  // Obtener períodos únicos para filtros de cupos
+  const periodos = [...new Set(estadisticas.map(item => item.periodo))].sort();
+
   // Opciones disponibles para los filtros
   const availableOptions = {
     years,
     semesters,
     niveles: NIVELES_ACADEMICOS,
-    programas
+    programas,
+    periodos
   };
 
   // Función para renderizar el contenido según la pestaña activa
@@ -75,6 +88,20 @@ const DashboardEstadisticas = () => {
           />
         );
       case 1:
+        return (
+          <IndicadoresCupos
+            filters={filters}
+            onFilterChange={updateFilter}
+            yearRange={yearRangeCupos}
+            onYearRangeChange={(e, newValue) => setYearRangeCupos(newValue)}
+            minYear={minYear}
+            maxYear={maxYear}
+            cuposFilteredData={cuposFilteredData}
+            datosCuposProcesados={datosCuposProcesados}
+            availableOptions={availableOptions}
+          />
+        );
+      case 2:
         return <VistaGeneral />;
       default:
         return (

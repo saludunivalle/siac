@@ -1,4 +1,4 @@
-import { INDICADORES_CONFIG } from '../constants/dashboardConstants';
+import { INDICADORES_CONFIG, INDICADORES_ASIGNACION } from '../constants/dashboardConstants';
 
 /**
  * Función para calcular tasa de crecimiento anual
@@ -136,4 +136,59 @@ export const obtenerValoresUnicos = (datos, propiedad) => {
  */
 export const calcularTotal = (datos, campo) => {
   return datos.reduce((sum, item) => sum + (parseInt(item[campo]) || 0), 0);
+};
+
+/**
+ * Función para calcular la tasa de asignación de cupos
+ * @param {number} primeraVez - Número de estudiantes matriculados por primera vez
+ * @param {number} cuposMax - Número máximo de cupos disponibles
+ * @returns {number} Tasa de asignación en porcentaje
+ */
+export const calcularTasaAsignacion = (primeraVez, cuposMax) => {
+  if (!cuposMax || cuposMax === 0) return 0;
+  return (primeraVez / cuposMax) * 100;
+};
+
+/**
+ * Función para determinar el indicador de asignación basado en la tasa
+ * @param {number} tasaAsignacion - Tasa de asignación en porcentaje
+ * @returns {Object} Objeto con label, color e icon del indicador
+ */
+export const getIndicadorAsignacion = (tasaAsignacion) => {
+  const tasa = parseFloat(tasaAsignacion);
+  
+  if (tasa >= 100) {
+    return INDICADORES_ASIGNACION.completa;
+  } else if (tasa >= 50) {
+    return INDICADORES_ASIGNACION.alta;
+  } else {
+    return INDICADORES_ASIGNACION.baja;
+  }
+};
+
+/**
+ * Función para filtrar datos de cupos con criterios específicos
+ * @param {Array} datos - Array de datos a filtrar
+ * @param {Object} filtros - Objeto con criterios de filtrado específicos para cupos
+ * @returns {Array} Datos filtrados
+ */
+export const filtrarDatosCupos = (datos, filtros) => {
+  return datos.filter(item => {
+    const {
+      yearRange,
+      selectedNivel = 'Todos',
+      selectedPrograma = 'Todos',
+      selectedPeriodo = 'Todos'
+    } = filtros;
+
+    const parsedPeriodo = parsearPeriodo(item.periodo);
+    if (!parsedPeriodo) return false;
+    
+    const yearInRange = parsedPeriodo.año >= yearRange[0] && parsedPeriodo.año <= yearRange[1];
+    const nivelMatch = selectedNivel === 'Todos' || item.nivel === selectedNivel;
+    const programaMatch = selectedPrograma === 'Todos' || item.plan === selectedPrograma;
+    const periodoMatch = selectedPeriodo === 'Todos' || item.periodo === selectedPeriodo;
+    
+    return yearInRange && nivelMatch && programaMatch && periodoMatch;
+  });
 };

@@ -6,8 +6,10 @@ import {
   calcularTasaCrecimientoSemestral,
   filtrarDatos,
   filtrarDatosMatricula,
+  filtrarDatosCupos,
   obtenerValoresUnicos,
-  calcularTotal
+  calcularTotal,
+  calcularTasaAsignacion
 } from '../utils/dashboardUtils';
 import { YEARS_RANGE } from '../constants/dashboardConstants';
 
@@ -163,4 +165,89 @@ export const useProcessedMatriculaData = (matriculaFilteredData) => {
   };
 
   return procesarDatosMatricula();
+};
+
+export const useCuposData = (estadisticas, filtros) => {
+  const [yearRangeCupos, setYearRangeCupos] = useState([YEARS_RANGE.DEFAULT_MIN, YEARS_RANGE.DEFAULT_MAX]);
+
+  // Actualizar rango de años automáticamente cuando se cargan los datos
+  useEffect(() => {
+    if (estadisticas.length > 0) {
+      const allYears = estadisticas
+        .map(item => {
+          const periodo = parsearPeriodo(item.periodo);
+          return periodo ? periodo.año : null;
+        })
+        .filter(year => year !== null);
+      
+      if (allYears.length > 0) {
+        const minYear = Math.min(...allYears);
+        const maxYear = Math.max(...allYears);
+        setYearRangeCupos([minYear, maxYear]);
+      }
+    }
+  }, [estadisticas]);
+
+  // Filtrar datos para indicadores de cupos
+  const cuposFilteredData = filtrarDatosCupos(estadisticas, {
+    yearRange: yearRangeCupos,
+    selectedNivel: filtros.selectedNivelCupos,
+    selectedPrograma: filtros.selectedProgramaCupos,
+    selectedPeriodo: filtros.selectedPeriodoCupos
+  });
+
+  return {
+    yearRangeCupos,
+    setYearRangeCupos,
+    cuposFilteredData
+  };
+};
+
+export const useProcessedCuposData = (cuposFilteredData) => {
+  // Procesar datos para el gráfico de cupos con tasas de asignación
+  const procesarDatosCupos = () => {
+    // Agrupar por periodo
+    const datosPorPeriodo = {};
+    
+    cuposFilteredData.forEach(item => {
+      const periodo = item.periodo;
+      if (!datosPorPeriodo[periodo]) {
+        datosPorPeriodo[periodo] = {
+          periodo,
+          cuposMax: 0,
+          primeraVez: 0,
+          programas: new Set()
+        };
+      }
+      datosPorPeriodo[periodo].cuposMax += parseInt(item.cupos_max) || 0;
+      datosPorPeriodo[periodo].primeraVez += parseInt(item.primera_vez) || 0;
+      datosPorPeriodo[periodo].programas.add(item.plan);
+    });
+
+    // Convertir a array y ordenar por periodo
+    const periodosOrdenados = Object.values(datosPorPeriodo).sort((a, b) => {
+      const periodoA = parsearPeriodo(a.periodo);
+      const periodoB = parsearPeriodo(b.periodo);
+      if (!periodoA || !periodoB) return 0;
+      
+      if (periodoA.año !== periodoB.año) {
+        return periodoA.año - periodoB.año;
+      }
+      return periodoA.semestre - periodoB.semestre;
+    });
+
+    // Calcular tasas de asignación
+    const datosConTasas = periodosOrdenados.map((item) => {
+      const tasaAsignacion = calcularTasaAsignacion(item.primeraVez, item.cuposMax);
+
+      return {
+        ...item,
+        tasaAsignacion: Math.round(tasaAsignacion * 100) / 100 // Redondear a 2 decimales
+      };
+    });
+
+    return datosConTasas;
+  };
+
+  return procesarDatosCupos();
 };

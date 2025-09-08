@@ -12,6 +12,11 @@ export const useFilters = () => {
   // Estados específicos para Indicadores de Matrícula
   const [selectedNivelMatricula, setSelectedNivelMatricula] = useState('Todos');
   const [selectedProgramaMatricula, setSelectedProgramaMatricula] = useState('Todos');
+  
+  // Estados específicos para Indicadores de Cupos
+  const [selectedNivelCupos, setSelectedNivelCupos] = useState('Todos');
+  const [selectedProgramaCupos, setSelectedProgramaCupos] = useState('Todos');
+  const [selectedPeriodoCupos, setSelectedPeriodoCupos] = useState('Todos');
 
   const updateFilter = (filterName, value) => {
     switch (filterName) {
@@ -30,6 +35,15 @@ export const useFilters = () => {
       case 'selectedProgramaMatricula':
         setSelectedProgramaMatricula(value);
         break;
+      case 'selectedNivelCupos':
+        setSelectedNivelCupos(value);
+        break;
+      case 'selectedProgramaCupos':
+        setSelectedProgramaCupos(value);
+        break;
+      case 'selectedPeriodoCupos':
+        setSelectedPeriodoCupos(value);
+        break;
       default:
         break;
     }
@@ -41,6 +55,9 @@ export const useFilters = () => {
     setSelectedNivel('Todos');
     setSelectedNivelMatricula('Todos');
     setSelectedProgramaMatricula('Todos');
+    setSelectedNivelCupos('Todos');
+    setSelectedProgramaCupos('Todos');
+    setSelectedPeriodoCupos('Todos');
   };
 
   return {
@@ -51,6 +68,9 @@ export const useFilters = () => {
     activeTab,
     selectedNivelMatricula,
     selectedProgramaMatricula,
+    selectedNivelCupos,
+    selectedProgramaCupos,
+    selectedPeriodoCupos,
     
     // Funciones
     setActiveTab,
@@ -63,7 +83,10 @@ export const useFilters = () => {
       selectedSemester,
       selectedNivel,
       selectedNivelMatricula,
-      selectedProgramaMatricula
+      selectedProgramaMatricula,
+      selectedNivelCupos,
+      selectedProgramaCupos,
+      selectedPeriodoCupos
     }
   };
 };

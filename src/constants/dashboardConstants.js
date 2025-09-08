@@ -44,6 +44,11 @@ export const TABS_CONFIG = [
   },
   {
     id: 1,
+    label: 'Indicadores de Cupos Asignados',
+    key: 'cupos'
+  },
+  {
+    id: 2,
     label: 'Vista General',
     key: 'general'
   }
@@ -77,4 +82,25 @@ export const INDICADORES_CONFIG = {
 export const YEARS_RANGE = {
   DEFAULT_MIN: 2020,
   DEFAULT_MAX: 2024
+};
+
+export const INDICADORES_ASIGNACION = {
+  completa: {
+    label: 'Completa',
+    color: 'success',
+    icon: '✅',
+    threshold: 100
+  },
+  alta: {
+    label: 'Alta',
+    color: 'warning',
+    icon: '⚠️',
+    threshold: 50
+  },
+  baja: {
+    label: 'Baja',
+    color: 'error',
+    icon: '❌',
+    threshold: 0
+  }
 };

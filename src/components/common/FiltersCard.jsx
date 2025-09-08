@@ -22,13 +22,15 @@ const FiltersCard = ({
   onYearRangeChange,
   minYear,
   maxYear,
-  availableOptions = {}
+  availableOptions = {},
+  showPeriodoFilter = false
 }) => {
   const {
     years = [],
     semesters = [],
     niveles = NIVELES_ACADEMICOS,
-    programas = []
+    programas = [],
+    periodos = []
   } = availableOptions;
 
   const handleFilterChange = (filterName, value) => {
@@ -112,6 +114,25 @@ const FiltersCard = ({
                   <MenuItem value="Todos">Todos</MenuItem>
                   {programas.map(programa => (
                     <MenuItem key={programa} value={programa}>{programa}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
+
+          {/* Filtro de Periodo - Solo para Cupos */}
+          {showPeriodoFilter && filters.hasOwnProperty('selectedPeriodo') && (
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel>Periodo</InputLabel>
+                <Select
+                  value={filters.selectedPeriodo}
+                  label="Periodo"
+                  onChange={(e) => handleFilterChange('selectedPeriodo', e.target.value)}
+                >
+                  <MenuItem value="Todos">Todos</MenuItem>
+                  {periodos.map(periodo => (
+                    <MenuItem key={periodo} value={periodo}>{periodo}</MenuItem>
                   ))}
                 </Select>
               </FormControl>

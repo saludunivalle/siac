@@ -12,7 +12,7 @@ import {
   Paper,
   Chip
 } from '@mui/material';
-import { getIndicadorMatricula } from '../../utils/dashboardUtils';
+import { getIndicadorMatricula, getIndicadorAsignacion } from '../../utils/dashboardUtils';
 
 const DataTable = ({ 
   title, 
@@ -41,6 +41,16 @@ const DataTable = ({
             label={`${indicador.icon} ${indicador.label}`}
             size="small" 
             color={indicador.color}
+            variant="outlined"
+          />
+        );
+      case 'indicadorAsignacion':
+        const indicadorAsignacion = getIndicadorAsignacion(item[column.sourceKey]);
+        return (
+          <Chip 
+            label={`${indicadorAsignacion.icon} ${indicadorAsignacion.label}`}
+            size="small" 
+            color={indicadorAsignacion.color}
             variant="outlined"
           />
         );
