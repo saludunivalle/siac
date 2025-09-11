@@ -64,10 +64,10 @@ const DocenciaServicio = () => {
         vigenciaDesde: '',
         vigenciaHasta: '',
         version: '',
-        procesoCalidad: '',
+        // procesoCalidad: '',
         cierre: '',
         observaciones: '',
-        localFile: null
+        // localFile: null
     });
     const [reloadAnexos, setReloadAnexos] = useState(false);
 
@@ -1649,33 +1649,15 @@ const DocenciaServicio = () => {
                                             sx={{ width: '50%' }}
                                             inputProps={{ min: 1, step: 1 }}
                                         />
-                                        <FormControl sx={{ width: '50%' }} required>
-                                            <InputLabel id="proceso-calidad-label">Proceso de Calidad</InputLabel>
-                                            <Select
-                                                labelId="proceso-calidad-label"
-                                                name="procesoCalidad"
-                                                value={anexoFormData.procesoCalidad}
-                                                onChange={handleAnexoInputChange}
-                                                label="Proceso de Calidad"
-                                                required
-                                            >
-                                                <MenuItem value="RC">RC</MenuItem>
-                                                <MenuItem value="RRC">RRC</MenuItem>
-                                                <MenuItem value="AAC">AAC</MenuItem>
-                                                <MenuItem value="RAAC">RAAC</MenuItem>
-                                            </Select>
-                                        </FormControl>
+                                        <TextField
+                                            label="Cierre (Opcional)"
+                                            placeholder="Este campo es opcional"
+                                            name="cierre"
+                                            value={anexoFormData.cierre}
+                                            onChange={handleAnexoInputChange}
+                                            sx={{ width: '50%' }}
+                                        />
                                     </Box>
-                                    
-                                    <TextField
-                                        label="Cierre (Opcional)"
-                                        placeholder="Este campo es opcional"
-                                        name="cierre"
-                                        value={anexoFormData.cierre}
-                                        onChange={handleAnexoInputChange}
-                                        margin="normal"
-                                        fullWidth
-                                    />
                                     
                                     <FormGroup sx={{ marginTop: 2 }}>
                                         <FormLabel component="legend">Estado</FormLabel>

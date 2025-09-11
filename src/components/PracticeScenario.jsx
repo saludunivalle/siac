@@ -620,10 +620,10 @@ const PracticeScenario = ({ data }) => {
         vigenciaDesde: '',
         vigenciaHasta: '',
         version: '',
-        procesoCalidad: '',
+        // procesoCalidad: '',
         cierre: '',
         observaciones: '',
-        localFile: null
+        // localFile: null
     });
     
     // Estados para el formulario de documentos de escenario
@@ -665,13 +665,14 @@ const PracticeScenario = ({ data }) => {
     const handleAnexoInputChange = (e) => {
         const { name, value, files } = e.target;
     
-        if (name === 'localFile') {
-            setAnexoFormData({
-                ...anexoFormData,
-                localFile: files[0],
-                urlAnexo: '' // Limpiar la URL si se selecciona un archivo
-            });
-        } else if (name === 'idEscenario') {
+        // if (name === 'localFile') {
+        //     setAnexoFormData({
+        //         ...anexoFormData,
+        //         localFile: files[0],
+        //         urlAnexo: '' // Limpiar la URL si se selecciona un archivo
+        //     });
+        // } else 
+        if (name === 'idEscenario') {
             // Obtener el nombre del escenario seleccionado
             const selectedScenario = (filtro14Data && Array.isArray(filtro14Data)) 
                 ? filtro14Data.find(item => item && item.id === value) 
@@ -685,8 +686,8 @@ const PracticeScenario = ({ data }) => {
         } else {
             setAnexoFormData({
                 ...anexoFormData,
-                [name]: value,
-                localFile: name === 'urlAnexo' ? null : anexoFormData.localFile // Limpiar archivo si se escribe en URL
+                [name]: value
+                // localFile: name === 'urlAnexo' ? null : anexoFormData.localFile // Limpiar archivo si se escribe en URL
             });
         }
     };
@@ -717,38 +718,38 @@ const PracticeScenario = ({ data }) => {
                 return;
             }
 
-            if (!anexoFormData.urlAnexo && !anexoFormData.localFile) {
-                alert('Por favor proporciona una URL o selecciona un archivo local para el anexo.');
+            if (!anexoFormData.urlAnexo) {
+                alert('Por favor proporciona una URL para el anexo.');
                 return;
             }
 
             let fileUrl = anexoFormData.urlAnexo;
 
-            // Si hay un archivo local, subirlo primero
-            if (anexoFormData.localFile) {
-                const formData = new FormData();
-                formData.append('file', anexoFormData.localFile);
-                formData.append('scenarioName', anexoFormData.nombreEscenario); // Usamos el nombre del escenario para la carpeta
+            // // Si hay un archivo local, subirlo primero
+            // if (anexoFormData.localFile) {
+            //     const formData = new FormData();
+            //     formData.append('file', anexoFormData.localFile);
+            //     formData.append('scenarioName', anexoFormData.nombreEscenario); // Usamos el nombre del escenario para la carpeta
 
-                try {
-                    const response = await axiosInstance.post('https://siac-server.vercel.app/upload', formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    });
+            //     try {
+            //         const response = await axiosInstance.post('https://siac-server.vercel.app/upload', formData, {
+            //             headers: {
+            //                 'Content-Type': 'multipart/form-data'
+            //             }
+            //         });
 
-                    if (response.data.success) {
-                        fileUrl = response.data.fileUrl;
-                    } else {
-                        alert('Error al subir el archivo del anexo. Por favor intenta de nuevo.');
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Error al subir el archivo del anexo:', error);
-                    alert('Error al subir el archivo del anexo. Por favor intenta de nuevo.');
-                    return;
-                }
-            }
+            //         if (response.data.success) {
+            //             fileUrl = response.data.fileUrl;
+            //         } else {
+            //             alert('Error al subir el archivo del anexo. Por favor intenta de nuevo.');
+            //             return;
+            //         }
+            //     } catch (error) {
+            //         console.error('Error al subir el archivo del anexo:', error);
+            //         alert('Error al subir el archivo del anexo. Por favor intenta de nuevo.');
+            //         return;
+            //     }
+            // }
 
             // Crear anexos para cada programa seleccionado
             const baseTimestamp = Date.now();
@@ -763,7 +764,7 @@ const PracticeScenario = ({ data }) => {
                 vigencia_desde: anexoFormData.vigenciaDesde,
                 vigencia_hasta: anexoFormData.vigenciaHasta,
                 version: anexoFormData.version,
-                proceso_calidad: anexoFormData.procesoCalidad,
+                proceso_calidad: '', // anexoFormData.procesoCalidad,
                 cierre: anexoFormData.cierre,
                 observaciones: anexoFormData.observaciones
             }));
@@ -809,10 +810,10 @@ const PracticeScenario = ({ data }) => {
                     vigenciaDesde: '',
                     vigenciaHasta: '',
                     version: '',
-                    procesoCalidad: '',
+                    // procesoCalidad: '',
                     cierre: '',
                     observaciones: '',
-                    localFile: null
+                    // localFile: null
                 });
                 
                 setShowAnexoForm(false);
@@ -955,7 +956,7 @@ const PracticeScenario = ({ data }) => {
                             idEscenario: anexo.id_escenario || anexo.idEscenario, // Mapear id_escenario a idEscenario para consistencia
                             tipo: anexo.tipo || '',
                             version: anexo.version || '',
-                            proceso_calidad: anexo.proceso_calidad || '',
+                            // proceso_calidad: anexo.proceso_calidad || '',
                             cierre: anexo.cierre || '',
                             observaciones: anexo.observaciones || '',
                             // Las fechas de vigencia ya vienen separadas del servidor
@@ -1022,7 +1023,7 @@ const PracticeScenario = ({ data }) => {
                 formatearFechaParaHoja(editedAnexo.vigencia_desde), // vigencia desde en formato DD/MM/AAAA
                 formatearFechaParaHoja(editedAnexo.vigencia_hasta), // vigencia hasta en formato DD/MM/AAAA
                 editedAnexo.version,
-                editedAnexo.proceso_calidad,
+                '', // editedAnexo.proceso_calidad,
                 editedAnexo.cierre,
                 editedAnexo.observaciones
               ];
@@ -1176,7 +1177,7 @@ const PracticeScenario = ({ data }) => {
                                 <TableCell>Vigencia Desde</TableCell>
                                 <TableCell>Vigencia Hasta</TableCell>
                                 <TableCell>Versión</TableCell>
-                                <TableCell>Proceso de Calidad</TableCell>
+                                {/* <TableCell>Proceso de Calidad</TableCell> */}
                                 <TableCell>Cierre</TableCell>
                                 <TableCell>Observaciones</TableCell>
                                 <TableCell>Acciones</TableCell>
@@ -1274,10 +1275,10 @@ const PracticeScenario = ({ data }) => {
                                                     <MenuItem value="C.D.S. Clinicos">C.D.S. Clinicos</MenuItem>
                                                     <MenuItem value="C.D.S. No clinicos">C.D.S. No clinicos</MenuItem>
                                                     <MenuItem value="C. Integración de propiedad">C. Integración de propiedad</MenuItem>
-                                                    <MenuItem value="C. Interinstitucionales">C. Interinstitucionales</MenuItem>
-                                                    <MenuItem value="C. Cooperación Académica">C. Cooperación Académica</MenuItem>
-                                                    <MenuItem value="OtroSi">OtroSi</MenuItem>
-                                                    <MenuItem value="Otros Anexos Técnicos">Otros Anexos Técnicos</MenuItem>
+                                                    {/*<MenuItem value="C. Interinstitucionales">C. Interinstitucionales</MenuItem>*/}
+                                                    {/*<MenuItem value="C. Cooperación Académica">C. Cooperación Académica</MenuItem>*/}
+                                                    {/*<MenuItem value="OtroSi">Otro Si</MenuItem>*/}
+                                                    {/*<MenuItem value="Otros Anexos Técnicos">Otros Anexos Técnicos</MenuItem>*/}
                                                 </Select>
                                             </FormControl>
                                         ) : (
@@ -1349,7 +1350,7 @@ const PracticeScenario = ({ data }) => {
                                             anexo.version || "-"
                                         )}
                                     </TableCell>
-                                    <TableCell>
+                                    {/* <TableCell>
                                         {editingId === anexo.id ? (
                                             <FormControl fullWidth sx={{ minWidth: 120 }}>
                                                 <InputLabel id="proceso-calidad-edit-label">Proceso de Calidad</InputLabel>
@@ -1369,7 +1370,7 @@ const PracticeScenario = ({ data }) => {
                                         ) : (
                                             anexo.proceso_calidad || "-"
                                         )}
-                                    </TableCell>
+                                    </TableCell> */}
                                     <TableCell>
                                         {editingId === anexo.id ? (
                                             <TextField
@@ -2108,10 +2109,10 @@ const PracticeScenario = ({ data }) => {
                             fullWidth
                             placeholder="https://drive.google.com/..."
                             helperText="URL donde se encuentra almacenado el documento"
-                            required={!anexoFormData.localFile}
+                            required
                         />
 
-                        <Typography variant="body2" sx={{ my: 1, textAlign: 'center' }}>
+                        {/* <Typography variant="body2" sx={{ my: 1, textAlign: 'center' }}>
                             O
                         </Typography>
 
@@ -2132,7 +2133,7 @@ const PracticeScenario = ({ data }) => {
                             <Typography variant="body2" sx={{ mt: 1 }}>
                                 Archivo seleccionado: {anexoFormData.localFile.name}
                             </Typography>
-                        )}
+                        )} */}
                         <FormControl fullWidth margin="normal" required>
                             <InputLabel id="tipo-label">Tipo</InputLabel>
                             <Select
@@ -2146,10 +2147,10 @@ const PracticeScenario = ({ data }) => {
                                 <MenuItem value="C.D.S. Clinicos">C.D.S. Clinicos</MenuItem>
                                 <MenuItem value="C.D.S. No clinicos">C.D.S. No clinicos</MenuItem>
                                 <MenuItem value="C. Integración de propiedad">C. Integración de propiedad</MenuItem>
-                                <MenuItem value="C. Interinstitucionales">C. Interinstitucionales</MenuItem>
-                                <MenuItem value="C. Cooperación Académica">C. Cooperación Académica</MenuItem>
-                                <MenuItem value="OtroSi">Otro Si</MenuItem>
-                                <MenuItem value="Otros Anexos Técnicos">Otros Anexos Técnicos</MenuItem>
+                                {/*<MenuItem value="C. Interinstitucionales">C. Interinstitucionales</MenuItem>*/}
+                                {/*<MenuItem value="C. Cooperación Académica">C. Cooperación Académica</MenuItem>*/}
+                                {/*<MenuItem value="OtroSi">Otro Si</MenuItem>*/}
+                                {/*<MenuItem value="Otros Anexos Técnicos">Otros Anexos Técnicos</MenuItem>*/}
                             </Select>
                         </FormControl>
                         <Box sx={{ display: 'flex', gap: 2, marginTop: 2 }}>
@@ -2189,32 +2190,31 @@ const PracticeScenario = ({ data }) => {
                                 sx={{ width: '50%' }}
                                 inputProps={{ min: 1, step: 1 }}
                             />
-                            <FormControl sx={{ width: '50%' }} required>
-                                <InputLabel id="proceso-calidad-label">Proceso de Calidad</InputLabel>
-                                <Select
-                                    labelId="proceso-calidad-label"
-                                    name="procesoCalidad"
-                                    value={anexoFormData.procesoCalidad}
-                                    onChange={handleAnexoInputChange}
-                                    label="Proceso de Calidad"
-                                    required
-                                >
-                                    <MenuItem value="RC">RC</MenuItem>
-                                    <MenuItem value="RRC">RRC</MenuItem>
-                                    <MenuItem value="AAC">AAC</MenuItem>
-                                    <MenuItem value="RAAC">RAAC</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <TextField
+                                label="Cierre (Opcional)"
+                                placeholder="Este campo es opcional"
+                                name="cierre"
+                                value={anexoFormData.cierre}
+                                onChange={handleAnexoInputChange}
+                                sx={{ width: '50%' }}
+                            />
                         </Box>
-                        <TextField
-                            label="Cierre (Opcional)"
-                            placeholder="Este campo es opcional"
-                            name="cierre"
-                            value={anexoFormData.cierre}
-                            onChange={handleAnexoInputChange}
-                            margin="normal"
-                            fullWidth
-                        />
+                        {/* <FormControl sx={{ width: '50%' }} required>
+                            <InputLabel id="proceso-calidad-label">Proceso de Calidad</InputLabel>
+                            <Select
+                                labelId="proceso-calidad-label"
+                                name="procesoCalidad"
+                                value={anexoFormData.procesoCalidad}
+                                onChange={handleAnexoInputChange}
+                                label="Proceso de Calidad"
+                                required
+                            >
+                                <MenuItem value="RC">RC</MenuItem>
+                                <MenuItem value="RRC">RRC</MenuItem>
+                                <MenuItem value="AAC">AAC</MenuItem>
+                                <MenuItem value="RAAC">RAAC</MenuItem>
+                            </Select>
+                        </FormControl> */}
                         <FormGroup sx={{ marginTop: 2 }}>
                             <FormLabel component="legend">Estado</FormLabel>
                             <RadioGroup
