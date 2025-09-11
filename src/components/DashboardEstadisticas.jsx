@@ -7,6 +7,7 @@ import TabsContainer from './common/TabsContainer';
 import IndicadoresMatricula from './dashboard/IndicadoresMatricula';
 import IndicadoresCupos from './dashboard/IndicadoresCupos';
 import VistaGeneral from './dashboard/VistaGeneral';
+import IndicadoresDemanda from './dashboard/IndicadoresDemanda';
 import { useDashboardData, useMatriculaData, useProcessedMatriculaData, useCuposData, useProcessedCuposData } from '../hooks/useDashboardData';
 import { useFilters } from '../hooks/useFilters';
 import { NIVELES_ACADEMICOS } from '../constants/dashboardConstants';
@@ -102,6 +103,19 @@ const DashboardEstadisticas = () => {
           />
         );
       case 2:
+        return (
+          <IndicadoresDemanda
+            filters={filters}
+            onFilterChange={updateFilter}
+            yearRange={yearRangeCupos}
+            onYearRangeChange={(e, newValue) => setYearRangeCupos(newValue)}
+            minYear={minYear}
+            maxYear={maxYear}
+            datos={cuposFilteredData}
+            availableOptions={availableOptions}
+          />
+        );
+      case 3:
         return <VistaGeneral />;
       default:
         return (
@@ -139,7 +153,7 @@ const DashboardEstadisticas = () => {
       <Header />
       <Sidebar isCargo={isCargo} />
       <Box className="dashboard-container">
-        <Box className="dashboard-content">
+        <Box className="dashboard-content" sx={{ maxWidth: '1300px', margin: '0 auto', px: 2 }}>
           <Fade in timeout={800}>
             <Box>
               <Typography variant="h4" className="dashboard-title">

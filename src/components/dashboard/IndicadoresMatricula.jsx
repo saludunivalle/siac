@@ -176,13 +176,16 @@ const IndicadoresMatricula = ({
         title="Filtros de Indicadores de Matrícula"
         filters={{
           selectedNivel: filters.selectedNivelMatricula,
-          selectedPrograma: filters.selectedProgramaMatricula
+          selectedPrograma: filters.selectedProgramaMatricula,
+          selectedPeriodo: filters.selectedPeriodoMatricula
         }}
         onFilterChange={(filterName, value) => {
           if (filterName === 'selectedNivel') {
             onFilterChange('selectedNivelMatricula', value);
           } else if (filterName === 'selectedPrograma') {
             onFilterChange('selectedProgramaMatricula', value);
+          } else if (filterName === 'selectedPeriodo') {
+            onFilterChange('selectedPeriodoMatricula', value);
           }
         }}
         showYearRange={true}
@@ -191,6 +194,7 @@ const IndicadoresMatricula = ({
         minYear={minYear}
         maxYear={maxYear}
         availableOptions={availableOptions}
+        showPeriodoFilter={true}
       />
 
       {/* Tarjetas de resumen por nivel académico */}

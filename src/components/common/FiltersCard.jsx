@@ -45,10 +45,10 @@ const FiltersCard = ({
         <Typography variant="h6" className="filters-title">
           {title}
         </Typography>
-        <Grid container spacing={3} justifyContent="center">
+        <Grid container spacing={2} justifyContent="center">
           {/* Filtro de Año */}
           {filters.hasOwnProperty('selectedYear') && (
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Año</InputLabel>
                 <Select
@@ -67,7 +67,7 @@ const FiltersCard = ({
 
           {/* Filtro de Semestre */}
           {filters.hasOwnProperty('selectedSemester') && (
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Semestre</InputLabel>
                 <Select
@@ -86,7 +86,7 @@ const FiltersCard = ({
 
           {/* Filtro de Nivel */}
           {filters.hasOwnProperty('selectedNivel') && !hideNivel && (
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Nivel de Formación</InputLabel>
                 <Select
@@ -105,7 +105,7 @@ const FiltersCard = ({
 
           {/* Filtro de Programa */}
           {filters.hasOwnProperty('selectedPrograma') && !hidePrograma && (
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Programa Académico</InputLabel>
                 <Select
@@ -124,7 +124,7 @@ const FiltersCard = ({
 
           {/* Filtro de Periodo - Solo para Cupos */}
           {showPeriodoFilter && filters.hasOwnProperty('selectedPeriodo') && (
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Periodo</InputLabel>
                 <Select

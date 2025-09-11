@@ -1,4 +1,4 @@
-import { INDICADORES_CONFIG, INDICADORES_ASIGNACION } from '../constants/dashboardConstants';
+import { INDICADORES_CONFIG, INDICADORES_ASIGNACION, INDICADORES_DEMANDA } from '../constants/dashboardConstants';
 
 /**
  * Función para calcular tasa de crecimiento anual
@@ -191,4 +191,31 @@ export const filtrarDatosCupos = (datos, filtros) => {
     
     return yearInRange && nivelMatch && programaMatch && periodoMatch;
   });
+};
+
+/**
+ * Calcula tasa de inscripción = inscritos / cupos * 100
+ */
+export const calcularTasaInscripcion = (inscritos, cupos) => {
+  const inscritosNum = parseInt(inscritos) || 0;
+  const cuposNum = parseInt(cupos) || 0;
+  if (!cuposNum || cuposNum === 0) return 0;
+  return (inscritosNum / cuposNum) * 100;
+};
+
+/**
+ * Determina indicador de demanda para un agregado (inscritos vs cupos mínimos/máximos)
+ */
+export const getIndicadorDemanda = ({ inscritos = 0, cuposMin = 0, cuposMax = 0 }) => {
+  const ins = parseInt(inscritos) || 0;
+  const cMin = parseInt(cuposMin) || 0;
+  const cMax = parseInt(cuposMax) || 0;
+
+  if (cMin === 0 && cMax === 0) return INDICADORES_DEMANDA.sinOferta;
+  if (ins === 0) return INDICADORES_DEMANDA.sinInscritos;
+  if (ins > cMax && cMax > 0) return INDICADORES_DEMANDA.alta;
+  if (ins >= cMin && ins <= cMax && cMin > 0 && cMax > 0) return INDICADORES_DEMANDA.moderada;
+  if (ins < cMin && cMin > 0) return INDICADORES_DEMANDA.baja;
+  // Fallback
+  return INDICADORES_DEMANDA.moderada;
 };

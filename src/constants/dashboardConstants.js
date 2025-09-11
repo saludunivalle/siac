@@ -49,6 +49,11 @@ export const TABS_CONFIG = [
   },
   {
     id: 2,
+    label: 'Indicadores de demanda',
+    key: 'demanda'
+  },
+  {
+    id: 3,
     label: 'Vista General',
     key: 'general'
   }
@@ -103,4 +108,13 @@ export const INDICADORES_ASIGNACION = {
     icon: '❌',
     threshold: 0
   }
+};
+
+// Indicadores de Demanda según relación inscritos vs cupos
+export const INDICADORES_DEMANDA = {
+  alta: { label: 'Alta', color: 'success', icon: '📈' },
+  moderada: { label: 'Moderada', color: 'warning', icon: '⚖️' },
+  baja: { label: 'Baja', color: 'error', icon: '📉' },
+  sinOferta: { label: 'Sin oferta', color: 'default', icon: '⛔' },
+  sinInscritos: { label: 'Sin inscritos', color: 'default', icon: '➖' }
 };

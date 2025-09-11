@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Grid, Alert } from '@mui/material';
 import LoadingSpinner from './common/LoadingSpinner';
 import TabsContainer from './common/TabsContainer';
+import IndicadoresDemanda from './dashboard/IndicadoresDemanda';
 import NivelStatsCard from './common/NivelStatsCard';
 import ChartCard from './common/ChartCard';
 import DataTable from './common/DataTable';
@@ -459,6 +460,22 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
               </>
             )}
           </Box>
+        );
+      case 2:
+        return (
+          <IndicadoresDemanda
+            filters={filters}
+            onFilterChange={updateFilter}
+            yearRange={yearRangeCupos}
+            onYearRangeChange={(e, newValue) => setYearRangeCupos(newValue)}
+            minYear={minYear}
+            maxYear={maxYear}
+            datos={cuposFilteredData}
+            availableOptions={availableOptions}
+            showPeriodoFilter={true}
+            hidePrograma={true}
+            hideNivel={true}
+          />
         );
       default:
         return null;

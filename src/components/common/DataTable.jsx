@@ -12,7 +12,7 @@ import {
   Paper,
   Chip
 } from '@mui/material';
-import { getIndicadorMatricula, getIndicadorAsignacion } from '../../utils/dashboardUtils';
+import { getIndicadorMatricula, getIndicadorAsignacion, getIndicadorDemanda } from '../../utils/dashboardUtils';
 
 const DataTable = ({ 
   title, 
@@ -58,6 +58,20 @@ const DataTable = ({
         return typeof item[column.key] === 'number' 
           ? item[column.key].toLocaleString() 
           : item[column.key];
+      case 'indicadorDemanda':
+        const indicadorDemanda = getIndicadorDemanda({
+          inscritos: item.inscritos,
+          cuposMin: item.cuposMin,
+          cuposMax: item.cuposMax
+        });
+        return (
+          <Chip 
+            label={`${indicadorDemanda.icon} ${indicadorDemanda.label}`}
+            size="small" 
+            color={indicadorDemanda.color}
+            variant="outlined"
+          />
+        );
       default:
         return item[column.key];
     }
