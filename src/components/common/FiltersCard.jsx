@@ -23,7 +23,9 @@ const FiltersCard = ({
   minYear,
   maxYear,
   availableOptions = {},
-  showPeriodoFilter = false
+  showPeriodoFilter = false,
+  hidePrograma = false,
+  hideNivel = false
 }) => {
   const {
     years = [],
@@ -38,12 +40,12 @@ const FiltersCard = ({
   };
 
   return (
-    <Card className="card-shadow" sx={{ mb: 3 }}>
-      <CardContent>
+    <Card className="card-shadow" sx={{ mb: 3, width: '100%' }}>
+      <CardContent sx={{ padding: '16px !important', width: '100%' }}>
         <Typography variant="h6" className="filters-title">
           {title}
         </Typography>
-        <Grid container spacing={3}>
+        <Grid container spacing={3} justifyContent="center">
           {/* Filtro de Año */}
           {filters.hasOwnProperty('selectedYear') && (
             <Grid item xs={12} sm={4}>
@@ -83,7 +85,7 @@ const FiltersCard = ({
           )}
 
           {/* Filtro de Nivel */}
-          {filters.hasOwnProperty('selectedNivel') && (
+          {filters.hasOwnProperty('selectedNivel') && !hideNivel && (
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth>
                 <InputLabel>Nivel de Formación</InputLabel>
@@ -102,7 +104,7 @@ const FiltersCard = ({
           )}
 
           {/* Filtro de Programa */}
-          {filters.hasOwnProperty('selectedPrograma') && (
+          {filters.hasOwnProperty('selectedPrograma') && !hidePrograma && (
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth>
                 <InputLabel>Programa Académico</InputLabel>

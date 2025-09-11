@@ -8,9 +8,12 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { TABS_CONFIG } from '../../constants/dashboardConstants';
 
-const TabsContainer = ({ activeTab, onTabChange, tabs = TABS_CONFIG }) => {
+const TabsContainer = ({ activeTab, onTabChange, tabs = TABS_CONFIG, showGeneralTab = true }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  // Filtrar pestañas si se especifica showGeneralTab
+  const filteredTabs = showGeneralTab ? tabs : tabs.filter(tab => tab.key !== 'general');
 
   return (
     <Card className="card-shadow" sx={{ mb: 3 }}>
@@ -40,7 +43,7 @@ const TabsContainer = ({ activeTab, onTabChange, tabs = TABS_CONFIG }) => {
           }
         }}
       >
-        {tabs.map((tab) => (
+        {filteredTabs.map((tab) => (
           <Tab 
             key={tab.id}
             label={tab.label} 

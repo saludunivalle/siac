@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import '/src/styles/programDetails.css'; 
 import Header from './Header';
 import Seguimiento from './Seguimiento';
+import EstadisticasPrograma from './EstadisticasPrograma';
 import { Filtro5, Filtro7, FiltroHistorico, getSeguimientoPMByPrograma } from "../service/data";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'; 
 import { Tabs, Tab, Box, Button, TextField, Grid } from '@mui/material';
@@ -20,8 +21,7 @@ const normalizeValue = (value) => {
 const ProgramDetails = () => {
     const location = useLocation();
     const rowData = location.state;
-    const { globalVariable, userEmail } = location.state || {}; 
-    const navigate = useNavigate();
+    const { globalVariable, userEmail } = location.state || {};
     const [clickedButton, setClickedButton] = useState('crea'); 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
     const [filteredDataSeg, setFilteredDataSeg] = useState(() => {
@@ -229,6 +229,13 @@ const ProgramDetails = () => {
     //  Función para obtener el color de fondo de los botones de seguimiento
     const getSeguimientoBackgroundColor = (process, isSelected) => {
         const defaultColor = 'rgb(241, 241, 241)';
+        
+        // Color especial para estadísticas
+        if (process === 'estadisticas') {
+            const estadisticasColor = '#E3F2FD'; // Azul claro
+            return isSelected ? darkenColor(estadisticasColor) : estadisticasColor;
+        }
+        
         if (!Array.isArray(filteredDataSeg) || filteredDataSeg.length === 0) {
             return isSelected ? darkenColor(defaultColor) : defaultColor;
         }
@@ -303,9 +310,6 @@ const ProgramDetails = () => {
         return (usePound ? "#" : "") + newColor.padStart(6, '0');
     };
 
-    const handleBackClick = () => {
-        navigate('/');
-    };
 
     const handleChange = (e) => {
         setFormData({
@@ -562,21 +566,34 @@ const ProgramDetails = () => {
                         <Tab label="RAAC" value="raac" sx={tabSx('raac')} />
                         <Tab label="Docencia Servicio" value="conv" sx={tabSx('conv')} />
                         <Tab label="Seguimiento PM" value="Seg" sx={tabSx('Seg')} />
+                        <Tab label="Estadísticas" value="estadisticas" sx={tabSx('estadisticas')} />
                     </Tabs>
                 </Box>
-                <Seguimiento 
-                    handleButtonClick={clickedButton} 
-                    key={reloadSeguimiento} 
-                    fechavencrc={rowData.fechavencrc}
-                    rowData={{
-                        ...rowData,
-                        id_programa: rowData.id_programa || rowData.id || rowData.ID || 'N/A'
-                    }}
-                />
-                {!userEmail && !isemail && (
-                    <Button onClick={handleBackClick} variant="contained" style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', margin: '10px 0px -15px' }}>
-                        Atrás
-                    </Button>
+                {clickedButton === 'estadisticas' ? (
+                    <Box sx={{ 
+                        width: '95%', 
+                        maxWidth: 'none', 
+                        margin: '0 auto',
+                        marginLeft: 'auto',
+                        marginRight: 'auto',
+                        position: 'relative',
+                        display: 'flex',
+                        justifyContent: 'center'
+                    }}>
+                        <EstadisticasPrograma 
+                            programaAcademico={programaAcademico}
+                        />
+                    </Box>
+                ) : (
+                    <Seguimiento 
+                        handleButtonClick={clickedButton} 
+                        key={reloadSeguimiento} 
+                        fechavencrc={rowData.fechavencrc}
+                        rowData={{
+                            ...rowData,
+                            id_programa: rowData.id_programa || rowData.id || rowData.ID || 'N/A'
+                        }}
+                    />
                 )}
             </div>
         </>

@@ -28,8 +28,8 @@ const ChartCard = ({
   };
 
   return (
-    <Card className="card-shadow">
-      <CardContent>
+    <Card className="card-shadow" sx={{ width: '100%' }}>
+      <CardContent sx={{ padding: '16px !important', width: '100%' }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
           {title}
         </Typography>
