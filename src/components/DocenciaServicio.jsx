@@ -1475,16 +1475,37 @@ const DocenciaServicio = () => {
                         </CardContent>
                     </Card>
                     
-                    {/* Botón y formulario para añadir anexos técnicos */}
+                    {/* Botones y formularios para añadir anexos técnicos y documentos de escenario */}
                     <Box sx={{ mb: 4, textAlign: 'center' }}>
                         {(isCargo.includes('Convenio Docencia Servicio') || isCargo.includes('Sistemas')) && (
-                            <Button 
-                                variant="contained" 
-                                onClick={toggleAnexoForm}
-                                sx={{ mb: 2 }}
-                            >
-                                Añadir Anexo  Convenio D.S.
-                            </Button>
+                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <Button 
+                                    variant="contained" 
+                                    onClick={toggleAnexoForm}
+                                    sx={{ mb: 2 }}
+                                >
+                                    Añadir Anexo  Convenio D.S.
+                                </Button>
+                                <Button 
+                                    variant="contained" 
+                                    onClick={() => {
+                                        // Reset form data for general document scenario form
+                                        setDocEscenarioFormData({
+                                            idEscenario: '',
+                                            nombreEscenario: '',
+                                            url: '',
+                                            tipologia: '',
+                                            codigo: '',
+                                            fechaInicio: '',
+                                            fechaFin: ''
+                                        });
+                                        toggleDocEscenarioForm('general');
+                                    }}
+                                    sx={{ mb: 2 }}
+                                >
+                                    Añadir documento escenario
+                                </Button>
+                            </Box>
                         )}
 
                         {(isCargo.includes('Convenio Docencia Servicio') || isCargo.includes('Sistemas')) && showAnexoForm && (
@@ -1704,6 +1725,113 @@ const DocenciaServicio = () => {
                             </Box>
                         )}
 
+                        {/* Formulario para documentos de escenario - Formulario general */}
+                        {(isCargo.includes('Convenio Docencia Servicio') || isCargo.includes('Sistemas')) && showDocEscenarioForm === 'general' && (
+                            <Box component="form" onSubmit={handleDocEscenarioFormSubmit} sx={{ 
+                                marginTop: 2, 
+                                marginBottom: 3,
+                                maxWidth: '800px', 
+                                mx: 'auto',
+                                p: 3,
+                                border: '1px solid #ddd',
+                                borderRadius: 2,
+                                backgroundColor: '#f0f8ff'
+                            }}>
+                                <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', color: '#1976d2' }}>
+                                    Nuevo Documento de Escenario
+                                </Typography>
+                                
+                                <FormGroup>
+                                    {/* Campo de selección de escenario de práctica */}
+                                    <FormControl fullWidth margin="normal" required>
+                                        <InputLabel id="doc-escenario-general-label">Escenario de Práctica</InputLabel>
+                                        <Select
+                                            labelId="doc-escenario-general-label"
+                                            name="idEscenario"
+                                            value={docEscenarioFormData.idEscenario}
+                                            onChange={handleDocEscenarioInputChange}
+                                            required
+                                            label="Escenario de Práctica"
+                                        >
+                                            {data && Array.isArray(data) ? data.map((escenario) => (
+                                                <MenuItem key={escenario.id} value={escenario.id}>
+                                                    {escenario.nombre}
+                                                </MenuItem>
+                                            )) : []}
+                                        </Select>
+                                    </FormControl>
+
+                                    <TextField
+                                        label="URL del Documento"
+                                        name="url"
+                                        value={docEscenarioFormData.url}
+                                        onChange={handleDocEscenarioInputChange}
+                                        margin="normal"
+                                        fullWidth
+                                        required
+                                        placeholder="https://ejemplo.com/documento.pdf"
+                                    />
+
+                                    <TextField
+                                        label="Tipología"
+                                        name="tipologia"
+                                        value={docEscenarioFormData.tipologia}
+                                        onChange={handleDocEscenarioInputChange}
+                                        margin="normal"
+                                        fullWidth
+                                        placeholder="Ej: Convenio, Anexo, etc."
+                                    />
+
+                                    <TextField
+                                        label="Código"
+                                        name="codigo"
+                                        value={docEscenarioFormData.codigo}
+                                        onChange={handleDocEscenarioInputChange}
+                                        margin="normal"
+                                        fullWidth
+                                        placeholder="Código del documento"
+                                    />
+
+                                    <Box sx={{ display: 'flex', gap: 2, marginTop: 2 }}>
+                                        <TextField
+                                            label="Fecha de Inicio"
+                                            name="fechaInicio"
+                                            type="date"
+                                            value={docEscenarioFormData.fechaInicio}
+                                            onChange={handleDocEscenarioInputChange}
+                                            InputLabelProps={{
+                                                shrink: true,
+                                            }}
+                                            fullWidth
+                                        />
+                                        <TextField
+                                            label="Fecha de Fin"
+                                            name="fechaFin"
+                                            type="date"
+                                            value={docEscenarioFormData.fechaFin}
+                                            onChange={handleDocEscenarioInputChange}
+                                            InputLabelProps={{
+                                                shrink: true,
+                                            }}
+                                            fullWidth
+                                        />
+                                    </Box>
+                                </FormGroup>
+                                
+                                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', marginTop: 3 }}>
+                                    <Button type="submit" variant="contained" color="primary">
+                                        Guardar Documento
+                                    </Button>
+                                    <Button 
+                                        type="button" 
+                                        variant="outlined" 
+                                        onClick={() => toggleDocEscenarioForm('general')}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                </Box>
+                            </Box>
+                        )}
 
                     </Box>
                     
@@ -1825,48 +1953,6 @@ const DocenciaServicio = () => {
                                                                 Documentos - {nombreEscenario}
                                                             </Typography>
                                                             
-                                                            {(isCargo.includes('Convenio Docencia Servicio') || isCargo.includes('Sistemas')) && (
-                                                                <Button 
-                                                                    variant="outlined" 
-                                                                    size="small"
-                                                                    onClick={() => {
-                                                                        // Buscar la información completa del escenario en escenariosData
-                                                                        const escenarioCompleto = escenariosData.find(esc => esc.nombre === nombreEscenario);
-                                                                        
-                                                                        if (escenarioCompleto) {
-                                                                            setDocEscenarioFormData({
-                                                                                idEscenario: escenarioCompleto.id || '',
-                                                                                nombreEscenario: escenarioCompleto.nombre || '',
-                                                                                url: '',
-                                                                                tipologia: escenarioCompleto.tipologia || '',
-                                                                                codigo: escenarioCompleto.codigo || '',
-                                                                                fechaInicio: convertirFechaParaInput(escenarioCompleto.fecha_inicio) || '',
-                                                                                fechaFin: convertirFechaParaInput(escenarioCompleto.fecha_fin) || ''
-                                                                            });
-                                                                        } else if (escenarioInfo) {
-                                                                            // Si no se encuentra el escenario completo, usar la información de escenarioInfo
-                                                                            setDocEscenarioFormData({
-                                                                                idEscenario: escenarioInfo.id || '',
-                                                                                nombreEscenario: escenarioInfo.nombre || '',
-                                                                                url: '',
-                                                                                tipologia: '',
-                                                                                codigo: '',
-                                                                                fechaInicio: '',
-                                                                                fechaFin: ''
-                                                                            });
-                                                                        }
-                                                                        
-                                                                        toggleDocEscenarioForm(nombreEscenario);
-                                                                    }}
-                                                                    sx={{ 
-                                                                        textTransform: 'none',
-                                                                        fontWeight: 500,
-                                                                        minWidth: 'auto'
-                                                                    }}
-                                                                >
-                                                                    Añadir documento escenario
-                                                                </Button>
-                                                            )}
                                                         </Box>
 
                                                         {/* Formulario para documentos de escenario - Aparece aquí cerca del botón */}
@@ -2071,20 +2157,6 @@ const DocenciaServicio = () => {
                                                                     Documentos - Escuela: {escuela}
                                                             </Typography>
                                                                 
-                                                                {(isCargo.includes('Convenio Docencia Servicio') || isCargo.includes('Sistemas')) && (
-                                                                    <Button 
-                                                                        variant="outlined" 
-                                                                        size="small"
-                                                                        onClick={() => toggleDocEscenarioForm(`escuela-${escuela}`)}
-                                                                        sx={{ 
-                                                                            textTransform: 'none',
-                                                                            fontWeight: 500,
-                                                                            minWidth: 'auto'
-                                                                        }}
-                                                                    >
-                                                                        Añadir documento escenario
-                                                                    </Button>
-                                                                )}
                                                             </Box>
                                                             <Typography variant="body2" sx={{ mb: 2, color: '#888' }}>
                                                                 Programas: {programasEnEscuela.join(', ')}
@@ -2148,20 +2220,6 @@ const DocenciaServicio = () => {
                                                                     Documentos - Programa: {programa}
                                                             </Typography>
                                                                 
-                                                                {(isCargo.includes('Convenio Docencia Servicio') || isCargo.includes('Sistemas')) && (
-                                                                    <Button 
-                                                                        variant="outlined" 
-                                                                        size="small"
-                                                                        onClick={() => toggleDocEscenarioForm(`programa-${programa}`)}
-                                                                        sx={{ 
-                                                                            textTransform: 'none',
-                                                                            fontWeight: 500,
-                                                                            minWidth: 'auto'
-                                                                        }}
-                                                                    >
-                                                                        Añadir documento escenario
-                                                                    </Button>
-                                                                )}
                                                             </Box>
                                                             <Typography variant="body2" sx={{ mb: 2, color: '#888' }}>
                                                                 Escuela(s): {escuelasEnPrograma.join(', ')}
