@@ -83,35 +83,34 @@ const DataTable = ({
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
           {title} ({data.length} {data.length === 1 ? 'registro' : 'registros'})
         </Typography>
-        <TableContainer component={Paper} className="table-container">
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                {columns.map((column, index) => (
-                  <TableCell key={index}>
-                    <strong>{column.header}</strong>
+        <Table className="table-container" stickyHeader>
+          <TableHead>
+            <TableRow>
+              {columns.map((column, index) => (
+                <TableCell key={index}>
+                  <strong>{column.header}</strong>
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {displayData.map((item, index) => (
+              <TableRow key={index} hover>
+                {columns.map((column, colIndex) => (
+                  <TableCell key={colIndex}>
+                    {renderCellContent(item, column)}
                   </TableCell>
                 ))}
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {displayData.map((item, index) => (
-                <TableRow key={index} hover>
-                  {columns.map((column, colIndex) => (
-                    <TableCell key={colIndex}>
-                      {renderCellContent(item, column)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            ))}
+          </TableBody>
+        </Table>
         {showPagination && data.length > maxRows && (
           <Typography 
             variant="body2" 
             color="text.secondary" 
             className="table-pagination"
+            sx={{ mt: 2 }}
           >
             Mostrando los primeros {maxRows} registros de {data.length} totales
           </Typography>

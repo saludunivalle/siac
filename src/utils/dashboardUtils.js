@@ -61,9 +61,9 @@ export const getIndicadorMatricula = (tcaAnualPromedio) => {
  */
 export const getColorPorNivel = (nivel) => {
   const colorMap = {
-    'Matrícula': 'linear-gradient(135deg, #B22222 0%, #8B0000 100%)', // Rojo sangre toro
+    'Total': 'linear-gradient(135deg, #B22222 0%, #8B0000 100%)', // Rojo sangre toro
     'Especialización': 'linear-gradient(135deg, #4A4A4A 0%, #2F2F2F 100%)', // Gris oscuro
-    'Especialización Médico Quirúrgica': 'linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%)', // Rojo intenso
+    'Especialidad médico quirúrgica': 'linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%)', // Rojo intenso
     'Maestría': 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)', // Verde oscuro
     'Doctorado': 'linear-gradient(135deg, #E67E22 0%, #D35400 100%)', // Naranja
   };
@@ -104,7 +104,8 @@ export const filtrarDatosMatricula = (datos, filtros) => {
     const {
       yearRange,
       selectedNivel = 'Todos',
-      selectedPrograma = 'Todos'
+      selectedPrograma = 'Todos',
+      selectedPeriodo = 'Todos'
     } = filtros;
 
     const parsedPeriodo = parsearPeriodo(item.periodo);
@@ -113,8 +114,9 @@ export const filtrarDatosMatricula = (datos, filtros) => {
     const yearInRange = parsedPeriodo.año >= yearRange[0] && parsedPeriodo.año <= yearRange[1];
     const nivelMatch = selectedNivel === 'Todos' || item.nivel === selectedNivel;
     const programaMatch = selectedPrograma === 'Todos' || item.plan === selectedPrograma;
+    const periodoMatch = selectedPeriodo === 'Todos' || item.periodo === selectedPeriodo;
     
-    return yearInRange && nivelMatch && programaMatch;
+    return yearInRange && nivelMatch && programaMatch && periodoMatch;
   });
 };
 

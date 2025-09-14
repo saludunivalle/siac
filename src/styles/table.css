@@ -4,11 +4,9 @@
   border-radius: 8px;
   background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%);
   border: 1px solid rgba(74, 74, 74, 0.1);
-}
-
-.table-container table {
   width: 100%;
   border-collapse: collapse;
+  overflow: visible;
 }
 
 .row-container th {
@@ -36,12 +34,26 @@
   background-color: rgba(178, 34, 34, 0.05);
 }
 
+.table-container th {
+  border: 1px solid rgba(74, 74, 74, 0.2);
+  padding: 12px 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #B22222 0%, #8B0000 100%);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .bold {
   font-weight: bold;
 }
 
 @media screen and (max-width: 768px) {
   .row-container th,
+  .table-container th,
   .table-container td {
       padding: 5px;
       font-size: 12px;

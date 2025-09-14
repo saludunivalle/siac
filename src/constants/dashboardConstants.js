@@ -1,9 +1,8 @@
 // Constantes para el Dashboard de Estadísticas
 
 export const NIVELES_ACADEMICOS = [
-  'Matrícula', 
   'Especialización', 
-  'Especialización Médico Quirúrgica', 
+  'Especialidad médico quirúrgica', 
   'Maestría', 
   'Doctorado'
 ];
@@ -28,9 +27,9 @@ export const CHART_COLORS = {
 };
 
 export const NIVEL_COLORS = {
-  'Matrícula': 'linear-gradient(135deg, #B22222 0%, #8B0000 100%)', // Rojo sangre toro
+  'Total': 'linear-gradient(135deg, #B22222 0%, #8B0000 100%)', // Rojo sangre toro
   'Especialización': 'linear-gradient(135deg, #4A4A4A 0%, #2F2F2F 100%)', // Gris oscuro
-  'Especialización Médico Quirúrgica': 'linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%)', // Rojo intenso
+  'Especialidad médico quirúrgica': 'linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%)', // Rojo intenso
   'Maestría': 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)', // Verde oscuro
   'Doctorado': 'linear-gradient(135deg, #E67E22 0%, #D35400 100%)', // Naranja
   'default': 'linear-gradient(135deg, #6c757d 0%, #495057 100%)'

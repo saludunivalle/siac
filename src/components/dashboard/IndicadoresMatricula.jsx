@@ -169,6 +169,13 @@ const IndicadoresMatricula = ({
     { header: 'Indicador', key: 'indicador', type: 'indicador', sourceKey: 'tcaAnualPromedio' }
   ];
 
+  // Obtener períodos únicos para el filtro
+  const periodosDisponibles = [...new Set(matriculaFilteredData.map(item => item.periodo))].sort();
+  const availableOptionsWithPeriods = {
+    ...availableOptions,
+    periodos: periodosDisponibles
+  };
+
   return (
     <Box>
       {/* Filtros específicos para Indicadores de Matrícula */}
@@ -193,7 +200,7 @@ const IndicadoresMatricula = ({
         onYearRangeChange={onYearRangeChange}
         minYear={minYear}
         maxYear={maxYear}
-        availableOptions={availableOptions}
+        availableOptions={availableOptionsWithPeriods}
         showPeriodoFilter={true}
       />
 

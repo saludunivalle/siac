@@ -44,6 +44,10 @@ export const useDashboardData = () => {
   const years = obtenerValoresUnicos(estadisticas, 'año');
   const semesters = obtenerValoresUnicos(estadisticas, 'semestre');
   const programas = obtenerValoresUnicos(estadisticas, 'plan');
+  
+  // Obtener niveles únicos de los datos reales para debug
+  const nivelesUnicos = obtenerValoresUnicos(estadisticas, 'nivel');
+  console.log('Niveles únicos encontrados en los datos originales:', nivelesUnicos);
 
   // Calcular rango de años
   const allYears = years.map(y => parseInt(y)).filter(y => !isNaN(y));
@@ -57,6 +61,7 @@ export const useDashboardData = () => {
     years,
     semesters,
     programas,
+    nivelesUnicos,
     minYear,
     maxYear
   };
@@ -83,11 +88,22 @@ export const useMatriculaData = (estadisticas, filtros) => {
     }
   }, [estadisticas]);
 
+  // Sincronizar rango de años con filtro de período
+  useEffect(() => {
+    if (filtros.selectedPeriodoMatricula !== 'Todos' && filtros.selectedPeriodoMatricula) {
+      const periodoSeleccionado = parsearPeriodo(filtros.selectedPeriodoMatricula);
+      if (periodoSeleccionado) {
+        setYearRangeMatricula([periodoSeleccionado.año, periodoSeleccionado.año]);
+      }
+    }
+  }, [filtros.selectedPeriodoMatricula]);
+
   // Filtrar datos para indicadores de matrícula
   const matriculaFilteredData = filtrarDatosMatricula(estadisticas, {
     yearRange: yearRangeMatricula,
     selectedNivel: filtros.selectedNivelMatricula,
-    selectedPrograma: filtros.selectedProgramaMatricula
+    selectedPrograma: filtros.selectedProgramaMatricula,
+    selectedPeriodo: filtros.selectedPeriodoMatricula
   });
 
   return {
@@ -187,6 +203,16 @@ export const useCuposData = (estadisticas, filtros) => {
       }
     }
   }, [estadisticas]);
+
+  // Sincronizar rango de años con filtro de período
+  useEffect(() => {
+    if (filtros.selectedPeriodoCupos !== 'Todos' && filtros.selectedPeriodoCupos) {
+      const periodoSeleccionado = parsearPeriodo(filtros.selectedPeriodoCupos);
+      if (periodoSeleccionado) {
+        setYearRangeCupos([periodoSeleccionado.año, periodoSeleccionado.año]);
+      }
+    }
+  }, [filtros.selectedPeriodoCupos]);
 
   // Filtrar datos para indicadores de cupos
   const cuposFilteredData = filtrarDatosCupos(estadisticas, {

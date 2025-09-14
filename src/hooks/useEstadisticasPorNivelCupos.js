@@ -7,29 +7,23 @@ import { NIVELES_ACADEMICOS } from '../constants/dashboardConstants';
 
 export const useEstadisticasPorNivelCupos = (cuposFilteredData) => {
   return useMemo(() => {
-    return NIVELES_ACADEMICOS.map(nivelActual => {
+    // Agregar "Total" como primer elemento para mostrar tarjeta general
+    const nivelesConMatricula = ['Total', ...NIVELES_ACADEMICOS];
+    
+    // Obtener valores únicos de la columna nivel para debug
+    const nivelesUnicos = [...new Set(cuposFilteredData.map(item => item.nivel).filter(Boolean))];
+    console.log('Niveles únicos encontrados en los datos de cupos:', nivelesUnicos);
+    
+    return nivelesConMatricula.map(nivelActual => {
       let datosNivel;
       
-      if (nivelActual === 'Matrícula') {
-        // Para "Matrícula", incluir todos los datos sin filtrar por nivel
+      if (nivelActual === 'Total') {
+        // Para "Total", incluir todos los datos sin filtrar por nivel
         datosNivel = cuposFilteredData;
-      } else if (nivelActual === 'Especialización Médico Quirúrgica') {
-        // Filtrar específicamente para especialización médico quirúrgica
-        datosNivel = cuposFilteredData.filter(item => 
-          item.nivel && item.nivel.toLowerCase().includes('médico') && 
-          item.nivel.toLowerCase().includes('quirúrgica')
-        );
-      } else if (nivelActual === 'Especialización') {
-        // Filtrar especialización pero excluir médico quirúrgica
-        datosNivel = cuposFilteredData.filter(item => 
-          item.nivel && item.nivel.toLowerCase().includes('especialización') &&
-          !item.nivel.toLowerCase().includes('médico') &&
-          !item.nivel.toLowerCase().includes('quirúrgica')
-        );
       } else {
-        // Para otros niveles, filtrar normalmente
+        // Para todos los demás niveles, usar coincidencia exacta
         datosNivel = cuposFilteredData.filter(item => 
-          item.nivel && item.nivel.toLowerCase().includes(nivelActual.toLowerCase())
+          item.nivel && item.nivel === nivelActual
         );
       }
       

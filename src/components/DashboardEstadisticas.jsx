@@ -11,6 +11,7 @@ import IndicadoresDemanda from './dashboard/IndicadoresDemanda';
 import { useDashboardData, useMatriculaData, useProcessedMatriculaData, useCuposData, useProcessedCuposData } from '../hooks/useDashboardData';
 import { useFilters } from '../hooks/useFilters';
 import { NIVELES_ACADEMICOS } from '../constants/dashboardConstants';
+import { parsearPeriodo } from '../utils/dashboardUtils';
 import '../utils/chartConfig'; // Configuración de Chart.js
 import '../styles/dashboard.css';
 
@@ -25,6 +26,7 @@ const DashboardEstadisticas = () => {
     years, 
     semesters, 
     programas, 
+    nivelesUnicos,
     minYear, 
     maxYear 
   } = useDashboardData();
@@ -50,6 +52,52 @@ const DashboardEstadisticas = () => {
     cuposFilteredData
   } = useCuposData(estadisticas, filters);
 
+  // Función para manejar cambios en el rango de años de matrícula
+  const handleYearRangeMatriculaChange = (e, newValue) => {
+    setYearRangeMatricula(newValue);
+    
+    // Si el rango se reduce a un año específico, buscar si hay un período que coincida
+    if (newValue[0] === newValue[1]) {
+      const periodosDisponibles = [...new Set(estadisticas.map(item => item.periodo))].sort();
+      const periodoCoincidente = periodosDisponibles.find(periodo => {
+        const parsedPeriodo = parsearPeriodo(periodo);
+        return parsedPeriodo && parsedPeriodo.año === newValue[0];
+      });
+      
+      if (periodoCoincidente && filters.selectedPeriodoMatricula === 'Todos') {
+        updateFilter('selectedPeriodoMatricula', periodoCoincidente);
+      }
+    } else {
+      // Si el rango incluye múltiples años, resetear el filtro de período a "Todos"
+      if (filters.selectedPeriodoMatricula !== 'Todos') {
+        updateFilter('selectedPeriodoMatricula', 'Todos');
+      }
+    }
+  };
+
+  // Función para manejar cambios en el rango de años de cupos
+  const handleYearRangeCuposChange = (e, newValue) => {
+    setYearRangeCupos(newValue);
+    
+    // Si el rango se reduce a un año específico, buscar si hay un período que coincida
+    if (newValue[0] === newValue[1]) {
+      const periodosDisponibles = [...new Set(estadisticas.map(item => item.periodo))].sort();
+      const periodoCoincidente = periodosDisponibles.find(periodo => {
+        const parsedPeriodo = parsearPeriodo(periodo);
+        return parsedPeriodo && parsedPeriodo.año === newValue[0];
+      });
+      
+      if (periodoCoincidente && filters.selectedPeriodoCupos === 'Todos') {
+        updateFilter('selectedPeriodoCupos', periodoCoincidente);
+      }
+    } else {
+      // Si el rango incluye múltiples años, resetear el filtro de período a "Todos"
+      if (filters.selectedPeriodoCupos !== 'Todos') {
+        updateFilter('selectedPeriodoCupos', 'Todos');
+      }
+    }
+  };
+
   const datosCuposProcesados = useProcessedCuposData(cuposFilteredData);
 
   useEffect(() => {
@@ -66,7 +114,7 @@ const DashboardEstadisticas = () => {
   const availableOptions = {
     years,
     semesters,
-    niveles: NIVELES_ACADEMICOS,
+    niveles: nivelesUnicos, // Usar los niveles únicos de los datos reales
     programas,
     periodos
   };
@@ -80,7 +128,7 @@ const DashboardEstadisticas = () => {
             filters={filters}
             onFilterChange={updateFilter}
             yearRange={yearRangeMatricula}
-            onYearRangeChange={(e, newValue) => setYearRangeMatricula(newValue)}
+            onYearRangeChange={handleYearRangeMatriculaChange}
             minYear={minYear}
             maxYear={maxYear}
             matriculaFilteredData={matriculaFilteredData}
@@ -94,7 +142,7 @@ const DashboardEstadisticas = () => {
             filters={filters}
             onFilterChange={updateFilter}
             yearRange={yearRangeCupos}
-            onYearRangeChange={(e, newValue) => setYearRangeCupos(newValue)}
+            onYearRangeChange={handleYearRangeCuposChange}
             minYear={minYear}
             maxYear={maxYear}
             cuposFilteredData={cuposFilteredData}
@@ -108,7 +156,7 @@ const DashboardEstadisticas = () => {
             filters={filters}
             onFilterChange={updateFilter}
             yearRange={yearRangeCupos}
-            onYearRangeChange={(e, newValue) => setYearRangeCupos(newValue)}
+            onYearRangeChange={handleYearRangeCuposChange}
             minYear={minYear}
             maxYear={maxYear}
             datos={cuposFilteredData}
@@ -123,7 +171,7 @@ const DashboardEstadisticas = () => {
             filters={filters}
             onFilterChange={updateFilter}
             yearRange={yearRangeMatricula}
-            onYearRangeChange={(e, newValue) => setYearRangeMatricula(newValue)}
+            onYearRangeChange={handleYearRangeMatriculaChange}
             minYear={minYear}
             maxYear={maxYear}
             matriculaFilteredData={matriculaFilteredData}
@@ -157,7 +205,7 @@ const DashboardEstadisticas = () => {
           <Fade in timeout={800}>
             <Box>
               <Typography variant="h4" className="dashboard-title">
-                Dashboard de Estadísticas Académicas
+                Dashboard de Estadísticas Académicas Posgrados
               </Typography>
 
               {/* Sistema de pestañas */}

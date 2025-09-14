@@ -51,7 +51,8 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
   const matriculaFilteredData = filtrarDatosMatricula(filtrarPorPrograma(estadisticas), {
     yearRange: yearRangeMatricula,
     selectedNivel: 'Todos', // Sin filtro de nivel
-    selectedPrograma: 'Todos' // Ya está filtrado por programa
+    selectedPrograma: 'Todos', // Ya está filtrado por programa
+    selectedPeriodo: filters.selectedPeriodoMatricula || 'Todos'
   });
 
   // Filtros específicos para cupos de este programa
@@ -291,6 +292,52 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
     },
   };
 
+  // Configuración del gráfico de distribución de programas por nivel y crecimiento
+  const programasDistribucionOptions = {
+    indexAxis: 'y', // Hace que las barras sean horizontales
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: true,
+        text: `Distribución de Programas por Nivel y Categoría de Crecimiento - ${programaAcademico}`
+      },
+      legend: {
+        position: 'top',
+      },
+      datalabels: {
+        display: true,
+        anchor: 'center',
+        align: 'center',
+        formatter: (value) => value > 0 ? value : '',
+        font: {
+          weight: 'bold'
+        }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Número de Programas'
+        },
+        stacked: true
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Nivel de Formación'
+        },
+        stacked: true
+      }
+    },
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    }
+  };
+
   // Configuración de columnas para las tablas
   const matriculaTableColumns = [
     { header: 'Código del Programa', key: 'codPrograma', type: 'text' },
@@ -316,9 +363,13 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
             {/* Filtros específicos para Indicadores de Matrícula */}
             <FiltersCard
               title="Filtros de Indicadores de Matrícula"
-              filters={{}}
+              filters={{
+                selectedPeriodo: filters.selectedPeriodoMatricula
+              }}
               onFilterChange={(filterName, value) => {
-                // No hay filtros de select, solo año
+                if (filterName === 'selectedPeriodo') {
+                  updateFilter('selectedPeriodoMatricula', value);
+                }
               }}
               showYearRange={true}
               yearRange={yearRangeMatricula}
@@ -326,6 +377,7 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
               minYear={minYear}
               maxYear={maxYear}
               availableOptions={availableOptions}
+              showPeriodoFilter={true}
               hidePrograma={true} // Ocultar filtro de programa
               hideNivel={true} // Ocultar filtro de nivel
             />
@@ -337,30 +389,24 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
               </Alert>
             ) : (
               <>
-                {/* Tarjetas de resumen por nivel académico */}
-                {estadisticasPorNivelMatricula.length > 0 && (
-                  <Grid container spacing={2} sx={{ mb: 3 }}>
-                    {estadisticasPorNivelMatricula.map((nivel) => (
-                      <Grid item xs={12} sm={6} md={2.4} lg={2.4} xl={2.4} key={nivel.nivel}>
-                        <NivelStatsCard
-                          nivel={nivel.nivel}
-                          totalMatriculados={nivel.totalMatriculados}
-                          tcaPromedio={nivel.tcaPromedio}
-                          color={nivel.color}
-                        />
-                      </Grid>
-                    ))}
-                  </Grid>
-                )}
 
-                {/* Gráfico de matrícula */}
+                {/* Gráficos lado a lado */}
                 {datosMatriculaProcesados.length > 0 && (
                   <Grid container spacing={3} sx={{ mb: 3 }}>
-                    <Grid item xs={12}>
+                    <Grid item xs={12} lg={6}>
                       <ChartCard
                         title={`Matriculados por Periodo y Tasas de Crecimiento - ${programaAcademico}`}
                         data={matriculaChartData}
                         options={matriculaChartOptions}
+                        type="bar"
+                        height={400}
+                      />
+                    </Grid>
+                    <Grid item xs={12} lg={6}>
+                      <ChartCard
+                        title={`Distribución de Programas por Nivel y Categoría de Crecimiento - ${programaAcademico}`}
+                        data={programasDistribucionData}
+                        options={programasDistribucionOptions}
                         type="bar"
                         height={400}
                       />
@@ -414,23 +460,6 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
               </Alert>
             ) : (
               <>
-                {/* Tarjetas de resumen por nivel académico */}
-                {estadisticasPorNivelCupos.length > 0 && (
-                  <Grid container spacing={2} sx={{ mb: 3 }}>
-                    {estadisticasPorNivelCupos.map((nivel) => (
-                      <Grid item xs={12} sm={6} md={2.4} lg={2.4} xl={2.4} key={nivel.nivel}>
-                        <NivelStatsCard
-                          nivel={nivel.nivel}
-                          totalMatriculados={nivel.totalCuposMax}
-                          tcaPromedio={nivel.tasaAsignacion}
-                          color={nivel.color}
-                          isCuposMode={true}
-                          totalPrimeraVez={nivel.totalPrimeraVez}
-                        />
-                      </Grid>
-                    ))}
-                  </Grid>
-                )}
 
                 {/* Gráfico de cupos */}
                 {datosCuposProcesados.length > 0 && (
