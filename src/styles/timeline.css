@@ -1,0 +1,137 @@
+/* Histórico Timeline Component - Simple like SimpleTimeline */
+.historico-timeline-container {
+  position: relative;
+  width: 95%;
+  height: 100px;
+  margin: 40px auto 20px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.historico-timeline-line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90%;
+  height: 2px;
+  background-color: #2196f3;
+  transform: translate(-50%, -50%);
+}
+
+.historico-timeline-segment {
+  position: absolute;
+  top: 50%;
+  height: 6px;
+  transform: translateY(-50%);
+  cursor: default;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.historico-timeline-label {
+  position: absolute;
+  top: -70px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  text-align: center;
+  width: 120px;
+  color: #2c3e50;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.historico-timeline-link {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 10px;
+  text-decoration: none;
+  color: #2196f3;
+}
+
+.historico-timeline-link:hover {
+  color: #1976d2;
+}
+
+.historico-timeline-year-marker {
+  position: absolute;
+  top: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
+  margin-top: 20px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.historico-timeline-year-marker::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  width: 1px;
+  height: 20px;
+  background-color: #ddd;
+  transform: translateX(-50%);
+  border-left: 1px dotted #ccc;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .historico-timeline-container {
+    height: 80px;
+    margin: 15px auto;
+  }
+  
+  .historico-timeline-label {
+    font-size: 10px;
+    width: 100px;
+    top: -60px;
+  }
+  
+  .historico-timeline-segment {
+    height: 5px;
+    border-radius: 2px;
+  }
+  
+  .historico-timeline-year-marker {
+    font-size: 9px;
+    margin-top: 15px;
+  }
+  
+  .historico-timeline-year-marker::before {
+    top: -15px;
+    height: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .historico-timeline-container {
+    height: 70px;
+    margin: 10px auto;
+  }
+  
+  .historico-timeline-label {
+    font-size: 9px;
+    width: 80px;
+    top: -50px;
+  }
+  
+  .historico-timeline-segment {
+    height: 4px;
+    border-radius: 2px;
+  }
+  
+  .historico-timeline-year-marker {
+    font-size: 8px;
+    margin-top: 12px;
+  }
+  
+  .historico-timeline-year-marker::before {
+    top: -12px;
+    height: 12px;
+  }
+}

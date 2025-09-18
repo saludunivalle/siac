@@ -5,9 +5,11 @@ import '/src/styles/programDetails.css';
 import Header from './Header';
 import Seguimiento from './Seguimiento';
 import EstadisticasPrograma from './EstadisticasPrograma';
-import { Filtro5, Filtro7, FiltroHistorico, getSeguimientoPMByPrograma } from "../service/data";
+import TimelineComponent from './Timeline';
+import { Filtro5, Filtro7, FiltroHistorico, FiltroHistoricoTimeline, getSeguimientoPMByPrograma } from "../service/data";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'; 
-import { Tabs, Tab, Box, Button, TextField, Grid } from '@mui/material';
+import { Tabs, Tab, Box, Button, TextField, Grid, Typography } from '@mui/material';
+import { Timeline as TimelineIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'; 
@@ -34,6 +36,7 @@ const ProgramDetails = () => {
     });
     const [isEditing, setIsEditing] = useState(false);    
     const [seguimientoPMData, setSeguimientoPMData] = useState(null);
+    const [timelineData, setTimelineData] = useState([]);
 
     const [options, setOptions] = useState({
         Sede: [],
@@ -220,6 +223,29 @@ const ProgramDetails = () => {
         };
 
         fetchSeguimientoPM();
+    }, [rowData]);
+
+    useEffect(() => {
+        const fetchTimelineData = async () => {
+            try {
+                const historicoData = await FiltroHistoricoTimeline();
+                console.log('Datos históricos para timeline:', historicoData);
+                
+                // Filter data for current program
+                const filteredTimelineData = historicoData.filter(item => 
+                    item.id_programa === rowData.id_programa
+                );
+                
+                console.log('Datos de timeline filtrados:', filteredTimelineData);
+                setTimelineData(filteredTimelineData);
+            } catch (error) {
+                console.error('Error al obtener datos de timeline:', error);
+            }
+        };
+
+        if (rowData?.id_programa) {
+            fetchTimelineData();
+        }
     }, [rowData]);
 
     const handleTabChange = (event, newValue) => {
@@ -412,6 +438,20 @@ const ProgramDetails = () => {
                             <div className='about-program'><strong>Estado del programa en Registro Calificado: </strong>&nbsp; {seguimientoPMData?.estado_rc || 'N/A'}</div>
                             <div className='about-program'><strong>Estado del programa en Acreditación: </strong>&nbsp; {seguimientoPMData?.estado_ac || 'N/A'}</div>
                         </div>
+
+                        {/* Sección 7: Línea del Tiempo */}
+                        {timelineData.length > 0 && (
+                            <>
+                                <div className='about-program' style={{ marginTop: '20px' }}>
+                                    <strong>Histórico: </strong>
+                                </div>
+                                <TimelineComponent 
+                                    data={timelineData}
+                                    programaAcademico={programaAcademico}
+                                    showTitle={false}
+                                />
+                            </>
+                        )}
                     </div>
                     
                 ) : (

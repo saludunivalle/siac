@@ -807,6 +807,9 @@ export const updateDataSegui = async (data, id) => {
 
 export const FiltroHistorico = () => filterByProperty(hojaHistorico, {}, '');
 
+// New function for timeline data with updated schema
+export const FiltroHistoricoTimeline = () => filterByProperty(hojaHistorico, {}, '');
+
 // Funciones para documentos de escenario y instituciones
 export const FiltroInstituciones = () => filterByProperty('INFO_ESC', {}, '');
 
