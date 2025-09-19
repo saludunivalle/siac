@@ -14,7 +14,7 @@
   top: 50%;
   left: 50%;
   width: 90%;
-  height: 2px;
+  height: 4px;
   background-color: #2196f3;
   transform: translate(-50%, -50%);
 }
@@ -22,10 +22,10 @@
 .historico-timeline-segment {
   position: absolute;
   top: 50%;
-  height: 6px;
+  height: 10px;
   transform: translateY(-50%);
   cursor: default;
-  border-radius: 3px;
+  border-radius: 5px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.8);
 }
@@ -93,8 +93,8 @@
   }
   
   .historico-timeline-segment {
-    height: 5px;
-    border-radius: 2px;
+    height: 8px;
+    border-radius: 4px;
   }
   
   .historico-timeline-year-marker {
@@ -121,8 +121,8 @@
   }
   
   .historico-timeline-segment {
-    height: 4px;
-    border-radius: 2px;
+    height: 7px;
+    border-radius: 3px;
   }
   
   .historico-timeline-year-marker {

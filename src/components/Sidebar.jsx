@@ -31,6 +31,7 @@ import SummarizeIcon from '@mui/icons-material/Summarize';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import TimelineIcon from '@mui/icons-material/Timeline';
 import { Filtro5, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
 
 const Sidebar = ({ isCargo }) => {
@@ -193,6 +194,12 @@ const Sidebar = ({ isCargo }) => {
           icon: <QueryStatsIcon />,
           path: '/estadisticas',
           tooltip: 'Dashboard de Estadísticas'
+        },
+        {
+          text: 'Consolidado Histórico',
+          icon: <TimelineIcon />,
+          path: '/consolidado-historico',
+          tooltip: 'Consolidado Histórico de Acreditaciones'
         }
       ]
     },
