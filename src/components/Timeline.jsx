@@ -164,33 +164,37 @@ const TimelineComponent = ({ data, programaAcademico, showTitle = true }) => {
     return totalDuration ? (segmentDuration / totalDuration) * 90 : 2;
   };
 
-  const minDate = timelineData.length > 0 ? Math.min(...timelineData.map(item => item.startDate?.getTime() || 0)) : 0;
-  const maxDate = timelineData.length > 0 ? Math.max(...timelineData.map(item => item.endDate?.getTime() || 0)) : 0;
+  // Fixed date range for all timelines (2000-2035)
+  const minDate = new Date(2000, 0, 1).getTime();
+  const maxDate = new Date(2035, 11, 31).getTime();
 
-  // Generate year markers for the timeline
-  const generateYearMarkers = () => {
-    if (!minDate || !maxDate) return [];
-    
-    const startYear = new Date(minDate).getFullYear();
-    const endYear = new Date(maxDate).getFullYear();
+  // Generate every-5-year markers from 2000 to 2035
+  const generateFiveYearMarkers = () => {
     const years = [];
-    
-    // Add markers every 2-3 years depending on the range
-    const step = Math.max(1, Math.ceil((endYear - startYear) / 8));
-    
-    for (let year = startYear; year <= endYear; year += step) {
+    for (let year = 2000; year <= 2035; year += 5) {
       years.push(year);
     }
-    
-    // Always include the end year if it's not already included
-    if (years[years.length - 1] !== endYear) {
-      years.push(endYear);
-    }
-    
+    if (years[years.length - 1] !== 2035) years.push(2035);
     return years;
   };
 
-  const yearMarkers = generateYearMarkers();
+  // Generate event markers based on actual start/end years in data
+  const generateEventYearMarkers = () => {
+    if (timelineData.length === 0) return [];
+    const years = new Set();
+    timelineData.forEach(item => {
+      if (item.startDate) years.add(item.startDate.getFullYear());
+      if (item.endDate) years.add(item.endDate.getFullYear());
+    });
+    // Filter to fixed range
+    return Array.from(years)
+      .filter(y => y >= 2000 && y <= 2035)
+      .sort((a, b) => a - b);
+  };
+
+  const fiveYearMarkers = generateFiveYearMarkers();
+  const eventYearMarkers = generateEventYearMarkers();
+  const eventYearMarkersSet = new Set(eventYearMarkers);
 
   return (
     <div className="historico-timeline-container">
@@ -199,8 +203,8 @@ const TimelineComponent = ({ data, programaAcademico, showTitle = true }) => {
       {timelineData.map((item, index) => {
         const startYear = item.startDate ? item.startDate.getFullYear() : '';
         const endYear = item.endDate ? item.endDate.getFullYear() : '';
-        const startPosition = getTimelinePosition(item.startDate, new Date(minDate), new Date(maxDate));
-        const segmentWidth = getSegmentWidth(item.startDate, item.endDate, new Date(minDate), new Date(maxDate));
+        const startPosition = getTimelinePosition(item.startDate, new Date(2000, 0, 1), new Date(2035, 11, 31));
+        const segmentWidth = getSegmentWidth(item.startDate, item.endDate, new Date(2000, 0, 1), new Date(2035, 11, 31));
         
         return (
           <div
@@ -213,8 +217,8 @@ const TimelineComponent = ({ data, programaAcademico, showTitle = true }) => {
             }}
           >
             <div className="historico-timeline-label">
-              <div>{item.resolucion}</div>
-              <div>{startYear} - {endYear}</div>
+              <div className="historico-timeline-resolution">{item.resolucion}</div>
+              <div className="historico-timeline-dates">{startYear} - {endYear}</div>
               {item.url_doc && (
                 <a 
                   href={item.url_doc} 
@@ -230,15 +234,31 @@ const TimelineComponent = ({ data, programaAcademico, showTitle = true }) => {
         );
       })}
       
-      {/* Year markers below the timeline */}
-      {yearMarkers.map((year, index) => {
+      {/* Fixed five-year markers below the timeline */}
+      {fiveYearMarkers.map((year) => {
+        // Skip fixed marker if an event marker exists for the same year
+        if (eventYearMarkersSet.has(year)) return null;
         const yearDate = new Date(year, 0, 1);
-        const position = getTimelinePosition(yearDate, new Date(minDate), new Date(maxDate));
-        
+        const position = getTimelinePosition(yearDate, new Date(2000, 0, 1), new Date(2035, 11, 31));
         return (
           <div
-            key={year}
-            className="historico-timeline-year-marker"
+            key={`fixed-${year}`}
+            className="historico-timeline-year-marker fixed"
+            style={{ left: `${position}%` }}
+          >
+            {year}
+          </div>
+        );
+      })}
+
+      {/* Event start/end year markers (emphasized) */}
+      {eventYearMarkers.map((year) => {
+        const yearDate = new Date(year, 0, 1);
+        const position = getTimelinePosition(yearDate, new Date(2000, 0, 1), new Date(2035, 11, 31));
+        return (
+          <div
+            key={`event-${year}`}
+            className="historico-timeline-year-marker event"
             style={{ left: `${position}%` }}
           >
             {year}

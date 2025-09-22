@@ -445,11 +445,13 @@ const ProgramDetails = () => {
                                 <div className='about-program' style={{ marginTop: '20px' }}>
                                     <strong>Histórico: </strong>
                                 </div>
-                                <TimelineComponent 
-                                    data={timelineData}
-                                    programaAcademico={programaAcademico}
-                                    showTitle={false}
-                                />
+                                <div className="program-details-timeline">
+                                    <TimelineComponent 
+                                        data={timelineData}
+                                        programaAcademico={programaAcademico}
+                                        showTitle={false}
+                                    />
+                                </div>
                             </>
                         )}
                     </div>
