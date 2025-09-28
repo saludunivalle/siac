@@ -206,25 +206,21 @@ const Home = () => {
         const activosPosgrado = {
           maestria: response.filter(
             (item) =>
-              item['pregrado/posgrado'] === 'Posgrado' &&
               item['nivel de formación'] === 'Maestría' &&
               (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
           ).length,
           especializacionUniversitaria: response.filter(
             (item) =>
-              item['pregrado/posgrado'] === 'Posgrado' &&
               item['nivel de formación'] === 'Especialización Universitaria' &&
               (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
           ).length,
           especializacionMedicoQuirurgica: response.filter(
             (item) =>
-              item['pregrado/posgrado'] === 'Posgrado' &&
               item['nivel de formación'] === 'Especialización Médico Quirúrgica' &&
               (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
           ).length,
           doctorado: response.filter(
             (item) =>
-              item['pregrado/posgrado'] === 'Posgrado' &&
               item['nivel de formación'] === 'Doctorado' &&
               (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
           ).length,
