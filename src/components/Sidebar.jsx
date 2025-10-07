@@ -256,7 +256,8 @@ const Sidebar = ({ isCargo }) => {
       if (item.externalUrl) {
         openExternalLink(item.externalUrl);
       } else if (item.path) {
-        navigate(item.path);
+        // 🔥 MODIFICAR ESTA LÍNEA - Agregar state para indicar navegación desde Sidebar
+        navigate(item.path, { state: { fromSidebar: true } });
       }
     };
     

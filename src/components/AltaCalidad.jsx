@@ -1,82 +1,53 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Filtro5, Filtro6, Filtro7, Filtro10, clearSheetExceptFirstRow, sendDataToSheetNew } from '../service/data';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Filtro5, Filtro6, Filtro7 } from '../service/data';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import '../styles/altaCalidad.css';
+import DetailedProcessView from './altaCalidad/DetailedProcessView';
+import GeneralProcessTable from './altaCalidad/GeneralProcessTable';
+import Acreditacion from './altaCalidad/Acreditacion';
+import RenovacionAcreditacion from './altaCalidad/RenovacionAcreditacion';
+import AcreditacionInternacional from './altaCalidad/AcreditacionInternacional';
 import * as XLSX from 'xlsx';
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper,
-  Grid,
+import {
   CircularProgress,
   Box,
-  Chip,
-  Fade,
-  Button,
-  Tooltip,
-  Divider,
-  Grow,
-  useTheme,
-  alpha
+  Typography
 } from '@mui/material';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import WarningIcon from '@mui/icons-material/Warning';
 import MediumIcon from '@mui/icons-material/ReportProblem';
 import LowIcon from '@mui/icons-material/CheckCircle';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import SchoolIcon from '@mui/icons-material/School';
-import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import StarIcon from '@mui/icons-material/Star';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import PublicIcon from '@mui/icons-material/Public';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import SummarizeIcon from '@mui/icons-material/Summarize';
 
 const AltaCalidad = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  
+  const location = useLocation();
+
   const [counts, setCounts] = useState({
     AAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
     RAAC: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 },
     INT: { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 }
   });
-  const [filteredData, setFilteredData] = useState(null);
   const [isCargo, setCargo] = useState([' ']);
   const [loading, setLoading] = useState(true);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [selectedValue, setSelectedValue] = useState(null);
   const [programDetails, setProgramDetails] = useState([]);
-  const [globalVariable, setGlobalVariable] = useState('');
-  const [programasVisible, setProgramasVisible] = useState(false);
-  const [hoveredCard, setHoveredCard] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState('');
-
-  // RAAC phase button states
   const [clickedRaacButton, setClickedRaacButton] = useState(null);
   const [selectedRaacOptions, setSelectedRaacOptions] = useState([]);
-  const [headerBackgroundColor, setHeaderBackgroundColor] = useState('#f2f2f2');
   const [raacProgramCounts, setRaacProgramCounts] = useState({
-    white: 0,  // PROGRAMAS VENCIDOS
-    green: 0,  // AÑO Y 6 MESES
-    yellow: 0, // 4 AÑOS ANTES DEL VENCIMIENTO
-    orange: 0, // 2 AÑOS ANTES DEL VENCIMIENTO
-    orange2: 0, // 18 MESES ANTES DEL VENCIMIENTO
-    red: 0,     // AÑO DE VENCIMIENTO
-    gray: 0     // SIN REGISTRO
+    white: 0,
+    green: 0,
+    yellow: 0,
+    orange: 0,
+    orange2: 0,
+    red: 0,
+    gray: 0
   });
-
-  // Nuevo estado para el riesgo seleccionado
   const [selectedRisk, setSelectedRisk] = useState(null);
   const [filteredByRisk, setFilteredByRisk] = useState(false);
 
@@ -86,11 +57,20 @@ const AltaCalidad = () => {
       const res = JSON.parse(sessionStorage.getItem('logged'));
       const permisos = res.map(item => item.permiso).flat();
       setCargo(permisos);
-      if (res.length > 0) {
-        setUser(res[0].usuario || '');
-      }
     }
   }, []);
+
+  // Resetear estado cuando se navega desde el Sidebar
+  useEffect(() => {
+    if (location.state?.fromSidebar) {
+      setSelectedRow(null);
+      setSelectedRisk(null);
+      setFilteredByRisk(false);
+      
+      // Limpiar el state para que no afecte futuras navegaciones
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Cargar datos de programas
   useEffect(() => {
@@ -104,8 +84,6 @@ const AltaCalidad = () => {
         } else {
           programas = await Filtro5();
         }
-        
-        setFilteredData(programas);
         
         // Load RAAC program counts
         try {
@@ -346,8 +324,6 @@ const AltaCalidad = () => {
     }
   }), []);
 
-  const getRiskColor = useCallback((riskLevel) => riskConfig[riskLevel]?.backgroundColor || 'white', [riskConfig]);
-  const getRiskIcon = useCallback((riskLevel) => riskConfig[riskLevel]?.icon || null, [riskConfig]);
   
   const getTotalByProcess = useCallback((proceso) => {
     return counts[proceso].Alto + counts[proceso].Medio + counts[proceso].Bajo + counts[proceso].SinRegistro;
@@ -364,34 +340,21 @@ const AltaCalidad = () => {
   }, [counts, getTotalByProcess]);
 
   const handleRowClick = useCallback((buttonValue, globalVar, rowKey) => {
-    setSelectedValue(buttonValue);
-    
     const validRowKeys = ['AAC', 'RAAC', 'INT'];
     if (validRowKeys.includes(rowKey)) {
       setSelectedRow(rowKey);
-      
-      // Reset selected options when changing sections
       if (rowKey === 'RAAC') {
         setSelectedRaacOptions([]);
       }
-      
-      // Reset risk filter
       setSelectedRisk(null);
       setFilteredByRisk(false);
     } else {
       setSelectedRow(null);
     }
-    
-    setProgramasVisible(false);
-    setGlobalVariable(globalVar);
   }, []);
 
   const handleBackClick = useCallback(() => {
     setSelectedRow(null);
-    setSelectedValue(null);
-    setProgramasVisible(false);
-    
-    // Reset risk filter
     setSelectedRisk(null);
     setFilteredByRisk(false);
   }, []);
@@ -409,840 +372,20 @@ const AltaCalidad = () => {
     });
   }, [navigate, selectedRow]);
 
-  const getTitle = useCallback(() => {
-    switch (selectedRow) {
-      case 'AAC':
-        return 'Programas en Proceso de Acreditación';
-      case 'RAAC':
-        return 'Programas en Proceso de Renovación de Acreditación';
-      case 'INT':
-        return 'Programas con Acreditación Internacional';
-      default:
-        return 'Procesos de Acreditación de Alta Calidad';
-    }
-  }, [selectedRow]);
-
-  // Componente ModernRiskChip
-  const ModernRiskChip = ({ riskLevel, value, size = 'medium' }) => {
-    const config = riskConfig[riskLevel];
-    
-    return (
-      <Chip 
-        icon={config.icon}
-        label={value}
-        sx={{
-          background: config.gradient,
-          color: 'white',
-          fontWeight: 600,
-          fontSize: size === 'large' ? '1rem' : '0.875rem',
-          height: size === 'large' ? 40 : 32,
-          minWidth: size === 'large' ? '80px' : '60px',
-          borderRadius: '10px',
-          boxShadow: `0 2px 8px ${alpha(config.color, 0.2)}`,
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: `0 4px 16px ${alpha(config.color, 0.3)}`,
-          },
-          '& .MuiChip-icon': {
-            color: 'white',
-            fontSize: size === 'large' ? '18px' : '16px'
-          }
-        }}
-      />
-    );
-  };
-
-  // Componente para mostrar la vista detallada de un proceso
-  const DetailedProcessView = () => {
-    const procesoProgramas = programDetails[selectedRow] || [];
-    
-    return (
-      <Box sx={{ width: '100%', mt: 2, display: 'flex', justifyContent: 'center' }}>
-        <Fade in timeout={400}>
-          <Box sx={{ width: '100%', maxWidth: { xs: '100%', md: '1200px' } }}>
-            {/* Header con título y botón de regreso */}
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              mb: 4,
-              p: { xs: 2, sm: 3 },
-              background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)',
-              borderRadius: '16px',
-              border: '1px solid rgba(0,0,0,0.04)',
-              width: '100%'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #B22222 0%, #DC143C 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 6px 16px rgba(178, 34, 34, 0.3)'
-                }}>
-                  {processConfig[selectedRow]?.icon && React.cloneElement(processConfig[selectedRow].icon, { 
-                    sx: { color: 'white', fontSize: '24px' } 
-                  })}
-                </Box>
-                <Box>
-                  <Typography variant="h4" sx={{
-                    fontWeight: 700,
-                    color: '#B22222',
-                    fontSize: '1.75rem',
-                    letterSpacing: '-0.02em',
-                    fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                    lineHeight: 1.2
-                  }}>
-                    {getTitle()}
-                  </Typography>
-                  <Typography variant="body1" sx={{ 
-                    color: '#6C757D',
-                    fontSize: '1rem',
-                    mt: 0.5
-                  }}>
-                    Análisis detallado de riesgos y programas
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SummarizeIcon />}
-                  onClick={() => handleGenerateReport(selectedRow)}
-                  disabled={isLoading}
-                  sx={{
-                    backgroundColor: '#1976d2',
-                    '&:hover': {
-                      backgroundColor: '#1565c0',
-                    },
-                  }}
-                >
-                  {isLoading ? 'Generando...' : 'Generar Reporte'}
-                </Button>
-                <Button 
-                  variant="outlined" 
-                  onClick={handleBackClick}
-                  startIcon={<KeyboardBackspaceIcon />}
-                  sx={{
-                    borderColor: '#B22222',
-                    color: '#B22222',
-                    fontWeight: 600,
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: '12px',
-                    '&:hover': {
-                      borderColor: '#8B1A1A',
-                      backgroundColor: 'rgba(178, 34, 34, 0.04)',
-                      color: '#8B1A1A'
-                    }
-                  }}
-                >
-                  Volver
-                </Button>
-              </Box>
-            </Box>
-            
-            {/* Botones de fases para RAAC (Semáforo) */}
-            {selectedRow === 'RAAC' && (
-              <Box sx={{ 
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: 2,
-                mb: 4,
-                mt: 2
-              }}>
-                {[
-                  { type: 'white', label: 'PROGRAMAS VENCIDOS', count: raacProgramCounts.white },
-                  { type: 'green', label: 'AÑO Y 6 MESES', count: raacProgramCounts.green },
-                  { type: 'yellow', label: '4 AÑOS ANTES DEL VENCIMIENTO', count: raacProgramCounts.yellow },
-                  { type: 'orange', label: '2 AÑOS ANTES DEL VENCIMIENTO', count: raacProgramCounts.orange },
-                  { type: 'orange2', label: '18 MESES ANTES DEL VENCIMIENTO', count: raacProgramCounts.orange2 },
-                  { type: 'red', label: 'AÑO DEL VENCIMIENTO', count: raacProgramCounts.red },
-                  { type: 'gray', label: 'SIN REGISTRO', count: counts.RAAC.SinRegistro }
-                ].map(({ type, label, count }) => (
-                  <Button
-                    key={type}
-                    onClick={() => handleRaacButtonClick(type)}
-                    sx={getRaacButtonStyles(type)}
-                  >
-                    {label}
-                    <Box sx={{ mt: 1, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {loading ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-                          {count}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Button>
-                ))}
-              </Box>
-            )}
-            
-            {/* Cards de métricas */}
-            <Grid container spacing={3} sx={{ mb: 4, width: '100%', mx: 0 }}>
-              {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk, index) => {
-                const config = riskConfig[risk];
-                const count = counts[selectedRow][risk];
-                
-                return (
-                  <Grid item xs={12} sm={6} md={3} key={risk}>
-                    <Grow in timeout={600 + index * 100}>
-                      <Card 
-                        elevation={0}
-                        onClick={() => handleRiskCardClick(risk)}
-                        onMouseEnter={() => setHoveredCard(risk)}
-                        onMouseLeave={() => setHoveredCard(null)}
-                        sx={{ 
-                          borderRadius: '20px',
-                          border: `2px solid ${selectedRisk === risk ? config.color : config.borderColor}`,
-                          backgroundColor: selectedRisk === risk ? alpha(config.color, 0.15) : config.backgroundColor,
-                          position: 'relative',
-                          overflow: 'hidden',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          transform: hoveredCard === risk || selectedRisk === risk ? 'translateY(-8px)' : 'translateY(0)',
-                          boxShadow: hoveredCard === risk || selectedRisk === risk
-                            ? `0 12px 32px ${alpha(config.color, 0.15)}`
-                            : `0 2px 8px ${alpha(config.color, 0.08)}`,
-                          cursor: 'pointer',
-                          '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: '4px',
-                            background: config.gradient,
-                            borderRadius: '20px 20px 0 0'
-                          }
-                        }}
-                      >
-                        <CardContent sx={{ p: 3 }}>
-                          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                            <Typography variant="h6" sx={{
-                              color: config.color,
-                              fontWeight: 600,
-                              fontSize: '1.125rem',
-                              fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                            }}>
-                              {risk === 'SinRegistro' ? 'Sin Registro' : `${risk} Riesgo`}
-                            </Typography>
-                            <Box sx={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: '12px',
-                              background: config.gradient,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: `0 4px 12px ${alpha(config.color, 0.2)}`
-                            }}>
-                              {React.cloneElement(config.icon, { 
-                                sx: { color: 'white', fontSize: '20px' } 
-                              })}
-                            </Box>
-                          </Box>
-                          <Typography variant="h2" sx={{ 
-                            fontWeight: 800,
-                            color: config.color,
-                            fontSize: '3rem',
-                            lineHeight: 1,
-                            mb: 1,
-                            fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                          }}>
-                            {count}
-                          </Typography>
-                          <Typography variant="body2" sx={{ 
-                            color: alpha(config.color, 0.7),
-                            fontSize: '0.875rem',
-                            fontWeight: 500
-                          }}>
-                            {count === 1 ? 'programa' : 'programas'}
-                          </Typography>
-                          {/* Mostrar porcentaje */}
-                          <Typography variant="body1" sx={{ 
-                            color: config.color,
-                            fontSize: '1.125rem',
-                            fontWeight: 600,
-                            mt: 1
-                          }}>
-                            {getTotalByProcess(selectedRow) > 0 
-                              ? `${((count / getTotalByProcess(selectedRow)) * 100).toFixed(1)}%` 
-                              : '0%'}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grow>
-                  </Grid>
-                );
-              })}
-            </Grid>
-
-            {/* Tabla de programas */}
-            <Card sx={{ 
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              border: '1px solid rgba(0,0,0,0.02)'
-            }}>
-              <Box sx={{ 
-                p: 3, 
-                background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)',
-                borderBottom: '1px solid rgba(0,0,0,0.06)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <Typography variant="h6" sx={{
-                    fontWeight: 600,
-                    color: '#212529',
-                    fontSize: '1.25rem',
-                    fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                  }}>
-                    Listado de Programas
-                    {selectedRisk && (
-                      <span style={{ 
-                        color: riskConfig[selectedRisk].color,
-                        marginLeft: '10px'
-                      }}>
-                        • Filtrado por: {selectedRisk === 'SinRegistro' ? 'Sin Registro' : `${selectedRisk} Riesgo`}
-                      </span>
-                    )}
-                  </Typography>
-                  <Typography variant="body2" sx={{ 
-                    color: '#6C757D',
-                    mt: 0.5
-                  }}>
-                    {filteredByRisk 
-                      ? `${procesoProgramas.filter(p => p.riesgo === selectedRisk).length} programa${procesoProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${procesoProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
-                      : `${procesoProgramas.length} programa${procesoProgramas.length !== 1 ? 's' : ''} encontrado${procesoProgramas.length !== 1 ? 's' : ''}`
-                    }
-                  </Typography>
-                </div>
-                {selectedRisk && (
-                  <Button 
-                    variant="outlined" 
-                    size="small"
-                    onClick={() => {
-                      setSelectedRisk(null);
-                      setFilteredByRisk(false);
-                    }}
-                    sx={{
-                      borderColor: '#6C757D',
-                      color: '#6C757D',
-                      '&:hover': {
-                        borderColor: '#495057',
-                        backgroundColor: 'rgba(108, 117, 125, 0.04)',
-                      }
-                    }}
-                  >
-                    Limpiar filtro
-                  </Button>
-                )}
-              </Box>
-              
-              {procesoProgramas.length === 0 ? (
-                <Box sx={{ p: 8, textAlign: 'center' }}>
-                  <EmojiEventsIcon sx={{ fontSize: 64, color: '#E9ECEF', mb: 2 }} />
-                  <Typography variant="h6" sx={{ 
-                    color: '#6C757D',
-                    fontWeight: 500,
-                    mb: 1
-                  }}>
-                    No hay programas disponibles
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#ADB5BD' }}>
-                    No se encontraron programas para este proceso de acreditación
-                  </Typography>
-                </Box>
-              ) : (
-                <TableContainer component={Paper} elevation={0} sx={{ 
-                  width: '100%', 
-                  overflowX: 'auto',
-                  '&::-webkit-scrollbar': {
-                    height: '8px'
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    backgroundColor: 'rgba(0,0,0,0.05)',
-                    borderRadius: '4px'
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: 'rgba(0,0,0,0.15)',
-                    borderRadius: '4px',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0,0,0,0.25)'
-                    }
-                  }
-                }}>
-                  <Table aria-label="lista de programas" sx={{ tableLayout: { xs: 'auto', md: 'fixed' }, width: '100%' }}>
-                    <TableHead>
-                      <TableRow>
-                        {[
-                          'Programa Académico',
-                          'Escuela',
-                          'Nivel',
-                          'Riesgo',
-                          'Observaciones'
-                        ].map((header) => (
-                          <TableCell 
-                            key={header}
-                            sx={{ 
-                              fontWeight: 600,
-                              fontSize: '0.875rem',
-                              color: '#495057',
-                              backgroundColor: '#F8F9FA',
-                              borderBottom: '2px solid rgba(0,0,0,0.06)',
-                              py: 2.5,
-                              px: { xs: 1, sm: 2 },
-                              fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                              position: 'sticky',
-                              top: 0,
-                              zIndex: 10
-                            }}
-                          >
-                            {header}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {(filteredByRisk 
-                        ? procesoProgramas.filter(program => program.riesgo === selectedRisk)
-                        : procesoProgramas
-                      ).map((program, index) => (
-                        <TableRow 
-                          key={program.id_programa}
-                          hover 
-                          onClick={() => handleNavigateToProgram(program)}
-                          sx={{ 
-                            cursor: 'pointer',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            '&:hover': { 
-                              backgroundColor: 'rgba(178, 34, 34, 0.02)',
-                              transform: 'translateX(4px)',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                            },
-                            '&:not(:last-child)': {
-                              borderBottom: '1px solid rgba(0,0,0,0.04)'
-                            }
-                          }}
-                        >
-                          <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
-                            <Typography variant="body1" sx={{
-                              fontWeight: 500,
-                              color: '#212529',
-                              fontSize: '0.9375rem',
-                              lineHeight: 1.4
-                            }}>
-                              {program['programa académico']}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
-                            <Typography variant="body2" sx={{ 
-                              color: '#6C757D',
-                              fontSize: '0.875rem'
-                            }}>
-                              {program.escuela}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
-                            <Typography variant="body2" sx={{ 
-                              color: '#6C757D',
-                              fontSize: '0.875rem'
-                            }}>
-                              {program['nivel de formación']}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
-                            <ModernRiskChip riskLevel={program.riesgo} value={program.riesgo} />
-                          </TableCell>
-                          <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
-                            <Tooltip title={program.mensaje} arrow placement="top">
-                              <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                  maxWidth: 300,
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  color: '#6C757D',
-                                  fontSize: '0.875rem',
-                                  cursor: 'help'
-                                }}
-                              >
-                                {program.mensaje}
-                              </Typography>
-                            </Tooltip>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </Card>
-          </Box>
-        </Fade>
-      </Box>
-    );
-  };
-
-  // Componentes para mantener compatibilidad con versiones anteriores
-  const Aac = () => {
-    if (selectedRow !== 'AAC') return null;
-    return <DetailedProcessView />;
-  };
-
-  const SemaforoAc = () => {
-    if (selectedRow !== 'RAAC') return null;
-    return <DetailedProcessView />;
-  };
-
-  // Componente para mostrar la tabla general de procesos
-  const GeneralProcessTable = () => (
-    <Box sx={{ width: '100%', mt: 2, display: 'flex', justifyContent: 'center' }}>
-      <Fade in timeout={600}>
-        <Card sx={{ 
-          boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
-          borderRadius: '20px',
-          overflow: 'hidden',
-          border: '1px solid rgba(0,0,0,0.02)',
-          background: 'linear-gradient(135deg, #FFFFFF 0%, #FAFBFC 100%)',
-          width: '100%',
-          maxWidth: { xs: '100%', md: '1200px' }
-        }}>
-          <Box sx={{ 
-            p: { xs: 2, sm: 3, md: 4 }, 
-            background: 'linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)',
-            borderBottom: '1px solid rgba(0,0,0,0.06)'
-          }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            </Box>
-            <Typography variant="h4" sx={{ 
-              fontWeight: 700,
-              color: '#B22222',
-              fontSize: '2rem',
-              letterSpacing: '-0.02em',
-              fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-              textAlign: 'center',
-              mb: 1
-            }}>
-              Acreditación de Alta Calidad
-            </Typography>
-            <Typography variant="body1" sx={{ 
-              color: '#6C757D',
-              textAlign: 'center',
-              fontSize: '1.125rem',
-              fontWeight: 400
-            }}>
-              Monitoreo de procesos y niveles de riesgo
-            </Typography>
-          </Box>
-
-          <CardContent sx={{ p: 0 }}>
-            <TableContainer sx={{ 
-              '& .MuiTable-root': {
-                borderCollapse: 'separate',
-                borderSpacing: '0'
-              },
-              overflowX: 'auto',
-              maxWidth: '100%',
-              width: '100%',
-              '&::-webkit-scrollbar': {
-                height: '8px'
-              },
-              '&::-webkit-scrollbar-track': {
-                backgroundColor: 'rgba(0,0,0,0.05)',
-                borderRadius: '4px'
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: 'rgba(0,0,0,0.15)',
-                borderRadius: '4px',
-                '&:hover': {
-                  backgroundColor: 'rgba(0,0,0,0.25)'
-                }
-              }
-            }}>
-              <Table aria-label="tabla de alta calidad" sx={{ 
-                tableLayout: { xs: 'auto', md: 'fixed' }, 
-                width: '100%',
-                ml: 0
-              }}>
-                <TableHead>
-                  <TableRow sx={{ 
-                    background: 'linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%)'
-                  }}>
-                    <TableCell sx={{ 
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      color: '#495057',
-                      py: 3,
-                      px: { xs: 1, sm: 2, md: 3 },
-                      fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                      borderBottom: '2px solid rgba(0,0,0,0.06)',
-                      width: { xs: '20%', sm: '25%', md: '30%' }
-                    }}>
-                      Proceso
-                    </TableCell>
-                    {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => (
-                      <TableCell 
-                        key={risk}
-                        align="center" 
-                        sx={{ 
-                          fontWeight: 700,
-                          fontSize: '0.875rem',
-                          color: riskConfig[risk].color,
-                          py: 3,
-                          px: 2,
-                          fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                          borderBottom: '2px solid rgba(0,0,0,0.06)'
-                        }}
-                      >
-                        <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
-                          {getRiskIcon(risk)}
-                          <span>{risk === 'SinRegistro' ? 'Sin Registro' : risk}</span>
-                        </Box>
-                      </TableCell>
-                    ))}
-                    <TableCell align="center" sx={{ 
-                      fontWeight: 700,
-                      fontSize: '1rem',
-                      color: '#495057',
-                      py: 3,
-                      px: 3,
-                      fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                      borderBottom: '2px solid rgba(0,0,0,0.06)'
-                    }}>
-                      Total
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {Object.keys(counts).map((proceso, index) => (
-                    <TableRow 
-                      key={proceso}
-                      hover
-                      onClick={() => handleRowClick(`option${proceso === 'AAC' ? '3' : proceso === 'RAAC' ? '2' : '6'}`, proceso, proceso)}
-                      sx={{ 
-                        cursor: 'pointer',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        '&:hover': { 
-                          backgroundColor: 'rgba(178, 34, 34, 0.04)',
-                          transform: 'translateX(4px)',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                        },
-                        '&:not(:last-child)': {
-                          borderBottom: '1px solid rgba(0,0,0,0.04)'
-                        }
-                      }}
-                    >
-                      <TableCell sx={{ 
-                        py: 3,
-                        px: { xs: 1, sm: 2, md: 3 },
-                        borderBottom: 'none'
-                      }}>
-                        <Box display="flex" alignItems="center" gap={2}>
-                          <Box sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: '12px',
-                            background: processConfig[proceso].color,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: `0 4px 12px ${alpha(processConfig[proceso].color, 0.2)}`
-                          }}>
-                            {React.cloneElement(processConfig[proceso].icon, { 
-                              sx: { color: 'white', fontSize: '20px' } 
-                            })}
-                          </Box>
-                          <Box>
-                            <Typography variant="h6" sx={{
-                              fontWeight: 600,
-                              color: '#212529',
-                              fontSize: '1.125rem',
-                              fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                            }}>
-                              {processConfig[proceso].name}
-                            </Typography>
-                            <Typography variant="body2" sx={{
-                              color: '#6C757D',
-                              fontSize: '0.875rem',
-                              mt: 0.5
-                            }}>
-                              {processConfig[proceso].description}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => (
-                        <TableCell key={risk} align="center" sx={{ py: 3, px: 2, borderBottom: 'none' }}>
-                          <ModernRiskChip riskLevel={risk} value={counts[proceso][risk]} />
-                        </TableCell>
-                      ))}
-                      <TableCell align="center" sx={{ py: 3, px: 3, borderBottom: 'none' }}>
-                        <Chip 
-                          label={getTotalByProcess(proceso)}
-                          sx={{ 
-                            background: 'linear-gradient(135deg, #495057 0%, #343A40 100%)',
-                            color: 'white',
-                            fontWeight: 700,
-                            fontSize: '1rem',
-                            height: 40,
-                            minWidth: '80px',
-                            borderRadius: '12px',
-                            boxShadow: '0 2px 8px rgba(73, 80, 87, 0.2)'
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  
-                  {/* Fila de totales */}
-                  <TableRow sx={{ 
-                    background: 'linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%)',
-                    borderTop: '2px solid rgba(0,0,0,0.06)'
-                  }}>
-                    <TableCell sx={{ 
-                      py: 3,
-                      px: 4,
-                      borderBottom: 'none'
-                    }}>
-                      <Box display="flex" alignItems="center" gap={2}>
-                        <Box sx={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: '12px',
-                          background: 'linear-gradient(135deg, #B22222 0%, #DC143C 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(178, 34, 34, 0.2)'
-                        }}>
-                          <EmojiEventsIcon sx={{ color: 'white', fontSize: '20px' }} />
-                        </Box>
-                        <Typography variant="h6" sx={{
-                          fontWeight: 700,
-                          color: '#212529',
-                          fontSize: '1.25rem',
-                          fontFamily: "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                        }}>
-                          TOTAL GENERAL
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => (
-                      <TableCell key={risk} align="center" sx={{ py: 3, px: 2, borderBottom: 'none' }}>
-                        <ModernRiskChip riskLevel={risk} value={getTotalByRisk(risk)} size="large" />
-                      </TableCell>
-                    ))}
-                    <TableCell align="center" sx={{ py: 3, px: 3, borderBottom: 'none' }}>
-                      <Chip 
-                        label={getGrandTotal()}
-                        sx={{ 
-                          background: 'linear-gradient(135deg, #B22222 0%, #8B1A1A 100%)',
-                          color: 'white',
-                          fontWeight: 800,
-                          fontSize: '1.125rem',
-                          height: 48,
-                          minWidth: '100px',
-                          borderRadius: '14px',
-                          boxShadow: '0 4px 16px rgba(178, 34, 34, 0.3)'
-                        }}
-                      />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      </Fade>
-    </Box>
-  );
-
-  const prepareReportData = async () => {
-    try {
-      const seguimientos = await Filtro7();
-      const programas = await Filtro5();
-      const fases = await Filtro10();
-
-      const filteredSeguimientos = seguimientos.filter(seg => seg.usuario === user);
-
-      const reportData = filteredSeguimientos.map(seg => {
-        const programa = programas.find(prog => prog.id_programa === seg.id_programa);
-        const fase = fases.find(f => f.id === seg.fase);
-
-        return {
-          timeStamp: seg.timestamp || '', 
-          programaAcademico: programa ? programa['programa académico'] : '', 
-          topic: seg.topic || '', 
-          mensaje: seg.mensaje || '', 
-          riesgo: seg.riesgo || '', 
-          urlAdjunto: seg.url_adjunto || '', 
-          fase: fase ? fase.fase : '' 
-        };
-      });
-
-      return reportData;
-    } catch (error) {
-      console.error('Error al preparar datos del reporte:', error);
-      throw error;
-    }
-  };
-
-  const downloadSheet = (spreadsheetId) => {
-    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
-    window.open(url, '_blank');
-  };
+  
 
   const handleGenerateReport = async (processType) => {
     setIsLoading(true);
     try {
-      if (processType === 'AAC' || processType === 'RAAC' || processType === 'INT') {
-        // Use the programDetails data which already includes risk information
-        const programsData = programDetails[processType] || [];
-        
-        // Generate Excel file using XLSX
-        const worksheet = XLSX.utils.json_to_sheet(programsData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos Filtrados');
-        
-        // Use specific filename for each process type
-        const filename = processType === 'AAC' ? 'datos_AAC.xlsx' :
-                        processType === 'RAAC' ? 'datos_RAAC.xlsx' :
-                        processType === 'INT' ? 'datos_INT.xlsx' :
-                        `datos_${processType}.xlsx`;
-        XLSX.writeFile(workbook, filename);
-      } else {
-        // Original report generation for other process types
-        const spreadsheetId = '1R4Ugfx43AoBjxjsEKYl7qZsAY8AfFNUN_gwcqETwgio';
-        const sheetName = 'REPORTE';
-
-        await clearSheetExceptFirstRow(spreadsheetId, sheetName);
-
-        const reportData = await prepareReportData();
-        const dataToSend = reportData.map(item => [
-          item.timeStamp,
-          item.programaAcademico,
-          item.topic,
-          item.mensaje,
-          item.riesgo,
-          item.urlAdjunto,
-          item.fase
-        ]);
-
-        await sendDataToSheetNew(dataToSend);
-        downloadSheet(spreadsheetId);
-      }
+      const programsData = programDetails[processType] || [];
+      const worksheet = XLSX.utils.json_to_sheet(programsData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos Filtrados');
+      const filename = processType === 'AAC' ? 'datos_AAC.xlsx' :
+                      processType === 'RAAC' ? 'datos_RAAC.xlsx' :
+                      processType === 'INT' ? 'datos_INT.xlsx' :
+                      `datos_${processType}.xlsx`;
+      XLSX.writeFile(workbook, filename);
     } catch (error) {
       console.error('Error al generar reporte:', error);
     } finally {
@@ -1678,7 +821,90 @@ const AltaCalidad = () => {
               <Typography sx={{ mt: 2, color: '#6C757D' }}>Cargando información...</Typography>
             </Box>
           ) : (
-            selectedRow ? <DetailedProcessView /> : <GeneralProcessTable />
+            selectedRow === 'AAC' ? (
+              <Acreditacion
+                counts={counts}
+                riskConfig={riskConfig}
+                programDetails={programDetails}
+                isLoading={isLoading}
+                handleGenerateReport={handleGenerateReport}
+                handleBackClick={handleBackClick}
+                handleNavigateToProgram={handleNavigateToProgram}
+                handleRiskCardClick={handleRiskCardClick}
+                selectedRisk={selectedRisk}
+                setSelectedRisk={setSelectedRisk}
+                filteredByRisk={filteredByRisk}
+                setFilteredByRisk={setFilteredByRisk}
+              />
+            ) : selectedRow === 'RAAC' ? (
+              <RenovacionAcreditacion
+                counts={counts}
+                riskConfig={riskConfig}
+                programDetails={programDetails}
+                isLoading={isLoading}
+                handleGenerateReport={handleGenerateReport}
+                handleBackClick={handleBackClick}
+                handleNavigateToProgram={handleNavigateToProgram}
+                handleRiskCardClick={handleRiskCardClick}
+                selectedRisk={selectedRisk}
+                setSelectedRisk={setSelectedRisk}
+                filteredByRisk={filteredByRisk}
+                setFilteredByRisk={setFilteredByRisk}
+                raacProgramCounts={raacProgramCounts}
+                handleRaacButtonClick={handleRaacButtonClick}
+                getRaacButtonStyles={getRaacButtonStyles}
+                loading={loading}
+              />
+            ) : selectedRow === 'INT' ? (
+              <AcreditacionInternacional
+                counts={counts}
+                riskConfig={riskConfig}
+                programDetails={programDetails}
+                isLoading={isLoading}
+                handleGenerateReport={handleGenerateReport}
+                handleBackClick={handleBackClick}
+                handleNavigateToProgram={handleNavigateToProgram}
+                handleRiskCardClick={handleRiskCardClick}
+                selectedRisk={selectedRisk}
+                setSelectedRisk={setSelectedRisk}
+                filteredByRisk={filteredByRisk}
+                setFilteredByRisk={setFilteredByRisk}
+                processConfig={processConfig}
+                getTotalByProcess={getTotalByProcess}
+                loading={loading}
+              />
+            ) : selectedRow ? (
+              <DetailedProcessView
+                selectedRow={selectedRow}
+                counts={counts}
+                riskConfig={riskConfig}
+                processConfig={processConfig}
+                programDetails={programDetails}
+                isLoading={isLoading}
+                handleGenerateReport={handleGenerateReport}
+                handleBackClick={handleBackClick}
+                handleNavigateToProgram={handleNavigateToProgram}
+                handleRiskCardClick={handleRiskCardClick}
+                selectedRisk={selectedRisk}
+                setSelectedRisk={setSelectedRisk}
+                filteredByRisk={filteredByRisk}
+                setFilteredByRisk={setFilteredByRisk}
+                raacProgramCounts={raacProgramCounts}
+                handleRaacButtonClick={handleRaacButtonClick}
+                getRaacButtonStyles={getRaacButtonStyles}
+                loading={loading}
+              />
+            ) : (
+              <GeneralProcessTable
+                counts={counts}
+                processConfig={processConfig}
+                riskConfig={riskConfig}
+                getTotalByProcess={getTotalByProcess}
+                getTotalByRisk={getTotalByRisk}
+                getGrandTotal={getGrandTotal}
+                handleRowClick={handleRowClick}
+              />
+            )
           )}
         </Box>
       </Box>
