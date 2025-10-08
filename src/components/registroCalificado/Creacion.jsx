@@ -1,9 +1,10 @@
-import React from 'react';
-import { Box, Card, CardContent, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import React, { useState, useMemo } from 'react';
+import { Box, Card, CardContent, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, TableSortLabel } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { Tooltip } from '@mui/material';
 import ModernRiskChip from '../common/ModernRiskChip';
+import FilterPanel from '../common/FilterPanel';
 
 const Creacion = ({
   programDetails,
@@ -15,6 +16,130 @@ const Creacion = ({
   riskConfig
 }) => {
   const procesoProgramas = programDetails?.CREA || [];
+  
+  // Estados para ordenamiento
+  const [orderBy, setOrderBy] = useState('');
+  const [order, setOrder] = useState('asc');
+  
+  // Estados para filtrado
+  const [filters, setFilters] = useState({
+    'programa académico': [],
+    'escuela': [],
+    'riesgo': []
+  });
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+
+  // Función para manejar el ordenamiento
+  const handleSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  // Función de comparación para ordenamiento
+  const getComparator = (order, orderBy) => {
+    return order === 'desc'
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  };
+
+  const descendingComparator = (a, b, orderBy) => {
+    if (b[orderBy] < a[orderBy]) {
+      return -1;
+    }
+    if (b[orderBy] > a[orderBy]) {
+      return 1;
+    }
+    return 0;
+  };
+
+  // Función para manejar filtros
+  const handleFilterChange = (column, values) => {
+    setFilters(prev => {
+      const newFilters = {
+        ...prev,
+        [column]: values
+      };
+      
+      // Si se cambia la escuela y no hay exactamente una escuela seleccionada,
+      // limpiar el filtro de programa académico
+      if (column === 'escuela' && (!values || values.length !== 1)) {
+        newFilters['programa académico'] = [];
+      }
+      
+      return newFilters;
+    });
+  };
+
+  // Función para limpiar todos los filtros
+  const clearAllFilters = () => {
+    setFilters({
+      'programa académico': [],
+      'escuela': [],
+      'riesgo': []
+    });
+  };
+
+  // Obtener opciones únicas para los filtros
+  const getUniqueOptions = (key, filteredPrograms = procesoProgramas) => {
+    const uniqueValues = [...new Set(filteredPrograms.map(p => p[key]).filter(Boolean))];
+    return uniqueValues.map(value => ({
+      value: value,
+      label: value,
+      count: filteredPrograms.filter(p => p[key] === value).length
+    }));
+  };
+
+  // Obtener programas filtrados por escuela (para el filtro de programa)
+  const getProgramsBySelectedSchools = () => {
+    if (!filters.escuela || filters.escuela.length === 0) {
+      return procesoProgramas;
+    }
+    return procesoProgramas.filter(program => filters.escuela.includes(program.escuela));
+  };
+
+  // Configuración de opciones para el filtro
+  const filterOptions = [
+    {
+      key: 'programa académico',
+      label: 'Programa Académico',
+      options: getUniqueOptions('programa académico', getProgramsBySelectedSchools()),
+      condition: (currentFilters) => {
+        // Solo mostrar el filtro de programa si se ha seleccionado exactamente UNA escuela
+        return currentFilters.escuela && currentFilters.escuela.length === 1;
+      }
+    },
+    {
+      key: 'escuela',
+      label: 'Escuela',
+      options: getUniqueOptions('escuela')
+    },
+    {
+      key: 'riesgo',
+      label: 'Riesgo',
+      options: getUniqueOptions('riesgo')
+    }
+  ];
+
+  // Función para filtrar programas
+  const filterPrograms = (programs) => {
+    return programs.filter(program => {
+      return Object.keys(filters).every(key => {
+        const selectedValues = filters[key];
+        if (!selectedValues || selectedValues.length === 0) return true;
+        
+        return selectedValues.includes(program[key]);
+      });
+    });
+  };
+
+  // Programas filtrados y ordenados
+  const sortedProgramas = useMemo(() => {
+    const filtered = filterPrograms(procesoProgramas);
+    if (!orderBy) return filtered;
+    
+    return [...filtered].sort(getComparator(order, orderBy));
+  }, [procesoProgramas, order, orderBy, filters]);
 
   return (
     <Card sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)', borderRadius: '20px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.02)', width: '100%' }}>
@@ -34,32 +159,41 @@ const Creacion = ({
             </Typography>
             <Typography variant="body2" sx={{ color: '#6C757D', mt: 0.5 }}>
               {filteredByRisk 
-                ? `${procesoProgramas.filter(p => p.riesgo === selectedRisk).length} programa${procesoProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${procesoProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
-                : `${procesoProgramas.length} programa${procesoProgramas.length !== 1 ? 's' : ''} encontrado${procesoProgramas.length !== 1 ? 's' : ''}`
+                ? `${sortedProgramas.filter(p => p.riesgo === selectedRisk).length} programa${sortedProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${sortedProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
+                : `${sortedProgramas.length} programa${sortedProgramas.length !== 1 ? 's' : ''} encontrado${sortedProgramas.length !== 1 ? 's' : ''}`
               }
             </Typography>
           </div>
         </Box>
         {selectedRisk && (
-          <Box>
-            <button
-              onClick={() => { setSelectedRisk(null); setFilteredByRisk(false); }}
-              style={{
-                border: '1px solid #6C757D',
-                color: '#6C757D',
-                background: 'transparent',
-                padding: '6px 12px',
-                borderRadius: 8,
-                cursor: 'pointer'
-              }}
-            >
-              Limpiar filtro
-            </button>
-          </Box>
+          <button
+            onClick={() => { setSelectedRisk(null); setFilteredByRisk(false); }}
+            style={{
+              border: '1px solid #6C757D',
+              color: '#6C757D',
+              background: 'transparent',
+              padding: '6px 12px',
+              borderRadius: 8,
+              cursor: 'pointer'
+            }}
+          >
+            Limpiar filtro riesgo
+          </button>
         )}
       </Box>
 
-      {procesoProgramas.length === 0 ? (
+      {/* Panel de filtros */}
+      <FilterPanel
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearAllFilters}
+        filterOptions={filterOptions}
+        isOpen={filterPanelOpen}
+        onToggle={() => setFilterPanelOpen(!filterPanelOpen)}
+        title="Filtros de Programas Creación"
+      />
+
+      {sortedProgramas.length === 0 ? (
         <Box sx={{ p: 8, textAlign: 'center' }}>
           <SchoolIcon sx={{ fontSize: 64, color: '#E9ECEF', mb: 2 }} />
           <Typography variant="h6" sx={{ color: '#6C757D', fontWeight: 500, mb: 1 }}>
@@ -74,15 +208,42 @@ const Creacion = ({
           <Table aria-label="lista de programas" sx={{ tableLayout: { xs: 'auto', md: 'fixed' }, width: '100%' }}>
             <TableHead>
               <TableRow>
-                {['Programa Académico', 'Escuela', 'Nivel', 'Riesgo', 'Observaciones'].map((header) => (
-                  <TableCell key={header} sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#495057', backgroundColor: '#F8F9FA', borderBottom: '2px solid rgba(0,0,0,0.06)', py: 2.5, px: { xs: 1, sm: 2 }, position: 'sticky', top: 0, zIndex: 10 }}>
-                    {header}
+                {[
+                  { key: 'programa académico', label: 'Programa Académico' },
+                  { key: 'escuela', label: 'Escuela' },
+                  { key: 'nivel de formación', label: 'Nivel' },
+                  { key: 'riesgo', label: 'Riesgo' },
+                  { key: 'mensaje', label: 'Observaciones' }
+                ].map((column) => (
+                  <TableCell 
+                    key={column.key} 
+                    sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#495057', backgroundColor: '#F8F9FA', borderBottom: '2px solid rgba(0,0,0,0.06)', py: 2.5, px: { xs: 1, sm: 2 }, position: 'sticky', top: 0, zIndex: 10 }}
+                    sortDirection={orderBy === column.key ? order : false}
+                  >
+                        <TableSortLabel
+                          active={orderBy === column.key}
+                          direction={orderBy === column.key ? order : 'asc'}
+                          onClick={() => handleSort(column.key)}
+                          sx={{
+                            '& .MuiTableSortLabel-icon': {
+                              color: orderBy === column.key ? '#B22222' : 'inherit',
+                            },
+                            '&.Mui-active': {
+                              color: '#B22222',
+                              '& .MuiTableSortLabel-icon': {
+                                color: '#B22222',
+                              },
+                            },
+                          }}
+                        >
+                          {column.label}
+                        </TableSortLabel>
                   </TableCell>
                 ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {(filteredByRisk ? procesoProgramas.filter(program => program.riesgo === selectedRisk) : procesoProgramas).map((program) => (
+              {(filteredByRisk ? sortedProgramas.filter(program => program.riesgo === selectedRisk) : sortedProgramas).map((program) => (
                 <TableRow key={program.id_programa} hover onClick={() => handleNavigateToProgram(program)} sx={{ cursor: 'pointer' }}>
                   <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
                     <Typography variant="body1" sx={{ fontWeight: 500, color: '#212529', fontSize: '0.9375rem', lineHeight: 1.4 }}>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Fade,
@@ -16,13 +16,15 @@ import {
   TableCell,
   TableBody,
   CircularProgress,
-  alpha
+  alpha,
+  TableSortLabel
 } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import PublicIcon from '@mui/icons-material/Public';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ModernRiskChip from '../common/ModernRiskChip';
+import FilterPanel from '../common/FilterPanel';
 
 // Vista específica del proceso de Acreditación Internacional (INT)
 const AcreditacionInternacional = ({
@@ -44,6 +46,130 @@ const AcreditacionInternacional = ({
 }) => {
   const proceso = 'INT';
   const programas = programDetails[proceso] || [];
+  
+  // Estados para ordenamiento
+  const [orderBy, setOrderBy] = useState('');
+  const [order, setOrder] = useState('asc');
+  
+  // Estados para filtrado
+  const [filters, setFilters] = useState({
+    'programa académico': [],
+    'escuela': [],
+    'riesgo': []
+  });
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+
+  // Función para manejar el ordenamiento
+  const handleSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  // Función de comparación para ordenamiento
+  const getComparator = (order, orderBy) => {
+    return order === 'desc'
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  };
+
+  const descendingComparator = (a, b, orderBy) => {
+    if (b[orderBy] < a[orderBy]) {
+      return -1;
+    }
+    if (b[orderBy] > a[orderBy]) {
+      return 1;
+    }
+    return 0;
+  };
+
+  // Función para manejar filtros
+  const handleFilterChange = (column, values) => {
+    setFilters(prev => {
+      const newFilters = {
+        ...prev,
+        [column]: values
+      };
+      
+      // Si se cambia la escuela y no hay exactamente una escuela seleccionada,
+      // limpiar el filtro de programa académico
+      if (column === 'escuela' && (!values || values.length !== 1)) {
+        newFilters['programa académico'] = [];
+      }
+      
+      return newFilters;
+    });
+  };
+
+  // Función para limpiar todos los filtros
+  const clearAllFilters = () => {
+    setFilters({
+      'programa académico': [],
+      'escuela': [],
+      'riesgo': []
+    });
+  };
+
+  // Obtener opciones únicas para los filtros
+  const getUniqueOptions = (key, filteredPrograms = programas) => {
+    const uniqueValues = [...new Set(filteredPrograms.map(p => p[key]).filter(Boolean))];
+    return uniqueValues.map(value => ({
+      value: value,
+      label: value,
+      count: filteredPrograms.filter(p => p[key] === value).length
+    }));
+  };
+
+  // Obtener programas filtrados por escuela (para el filtro de programa)
+  const getProgramsBySelectedSchools = () => {
+    if (!filters.escuela || filters.escuela.length === 0) {
+      return programas;
+    }
+    return programas.filter(program => filters.escuela.includes(program.escuela));
+  };
+
+  // Configuración de opciones para el filtro
+  const filterOptions = [
+    {
+      key: 'programa académico',
+      label: 'Programa Académico',
+      options: getUniqueOptions('programa académico', getProgramsBySelectedSchools()),
+      condition: (currentFilters) => {
+        // Solo mostrar el filtro de programa si se ha seleccionado exactamente UNA escuela
+        return currentFilters.escuela && currentFilters.escuela.length === 1;
+      }
+    },
+    {
+      key: 'escuela',
+      label: 'Escuela',
+      options: getUniqueOptions('escuela')
+    },
+    {
+      key: 'riesgo',
+      label: 'Riesgo',
+      options: getUniqueOptions('riesgo')
+    }
+  ];
+
+  // Función para filtrar programas
+  const filterPrograms = (programs) => {
+    return programs.filter(program => {
+      return Object.keys(filters).every(key => {
+        const selectedValues = filters[key];
+        if (!selectedValues || selectedValues.length === 0) return true;
+        
+        return selectedValues.includes(program[key]);
+      });
+    });
+  };
+
+  // Programas filtrados y ordenados
+  const sortedProgramas = useMemo(() => {
+    const filtered = filterPrograms(programas);
+    if (!orderBy) return filtered;
+    
+    return [...filtered].sort(getComparator(order, orderBy));
+  }, [programas, order, orderBy, filters]);
 
   return (
     <Box sx={{ width: '100%', mt: 2, display: 'flex', justifyContent: 'center' }}>
@@ -266,8 +392,8 @@ const AcreditacionInternacional = ({
                   mt: 0.5
                 }}>
                   {filteredByRisk
-                    ? `${programas.filter(p => p.riesgo === selectedRisk).length} programa${programas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${programas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
-                    : `${programas.length} programa${programas.length !== 1 ? 's' : ''} encontrado${programas.length !== 1 ? 's' : ''}`
+                    ? `${sortedProgramas.filter(p => p.riesgo === selectedRisk).length} programa${sortedProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${sortedProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
+                    : `${sortedProgramas.length} programa${sortedProgramas.length !== 1 ? 's' : ''} encontrado${sortedProgramas.length !== 1 ? 's' : ''}`
                   }
                 </Typography>
               </div>
@@ -288,10 +414,21 @@ const AcreditacionInternacional = ({
                     }
                   }}
                 >
-                  Limpiar filtro
+                  Limpiar filtro riesgo
                 </Button>
               )}
             </Box>
+
+            {/* Panel de filtros */}
+            <FilterPanel
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={clearAllFilters}
+              filterOptions={filterOptions}
+              isOpen={filterPanelOpen}
+              onToggle={() => setFilterPanelOpen(!filterPanelOpen)}
+              title="Filtros de Programas Acreditación Internacional"
+            />
 
             {programas.length === 0 ? (
               <Box sx={{ p: 8, textAlign: 'center' }}>
@@ -330,14 +467,14 @@ const AcreditacionInternacional = ({
                   <TableHead>
                     <TableRow>
                       {[
-                        'Programa Académico',
-                        'Escuela',
-                        'Nivel',
-                        'Riesgo',
-                        'Observaciones'
-                      ].map((header) => (
+                        { key: 'programa académico', label: 'Programa Académico' },
+                        { key: 'escuela', label: 'Escuela' },
+                        { key: 'nivel de formación', label: 'Nivel' },
+                        { key: 'riesgo', label: 'Riesgo' },
+                        { key: 'mensaje', label: 'Observaciones' }
+                      ].map((column) => (
                         <TableCell
-                          key={header}
+                          key={column.key}
                           sx={{
                             fontWeight: 600,
                             fontSize: '0.875rem',
@@ -351,16 +488,34 @@ const AcreditacionInternacional = ({
                             top: 0,
                             zIndex: 10
                           }}
+                          sortDirection={orderBy === column.key ? order : false}
                         >
-                          {header}
+                            <TableSortLabel
+                              active={orderBy === column.key}
+                              direction={orderBy === column.key ? order : 'asc'}
+                              onClick={() => handleSort(column.key)}
+                              sx={{
+                                '& .MuiTableSortLabel-icon': {
+                                  color: orderBy === column.key ? '#B22222' : 'inherit',
+                                },
+                                '&.Mui-active': {
+                                  color: '#B22222',
+                                  '& .MuiTableSortLabel-icon': {
+                                    color: '#B22222',
+                                  },
+                                },
+                              }}
+                            >
+                              {column.label}
+                            </TableSortLabel>
                         </TableCell>
                       ))}
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {(filteredByRisk
-                      ? programas.filter(program => program.riesgo === selectedRisk)
-                      : programas
+                      ? sortedProgramas.filter(program => program.riesgo === selectedRisk)
+                      : sortedProgramas
                     ).map((program, index) => (
                       <TableRow
                         key={program.id_programa}
