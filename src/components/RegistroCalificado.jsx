@@ -366,6 +366,12 @@ const RegistroCalificado = () => {
           const updatedProgramDetails = { ...programDetails };
           updatedProgramDetails.MOD = allProgramsWithRisk;
           setProgramDetails(updatedProgramDetails);
+          // Update MOD counts to reflect currently displayed programs
+          const newCounts = { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 };
+          allProgramsWithRisk.forEach(p => {
+            if (newCounts[p.riesgo] !== undefined) newCounts[p.riesgo] += 1;
+          });
+          setCounts(prev => ({ ...prev, MOD: newCounts }));
           setLoading(false);
           return newSelectedValues;
         }
@@ -400,9 +406,17 @@ const RegistroCalificado = () => {
             new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
           );
           
+          // Map RRC phase to desired risk bands
+          const fase = program['fase rrc'];
+          let riesgoMap = 'SinRegistro';
+          if (fase === 'Vencido' || fase === 'Fase 5') riesgoMap = 'Alto';
+          else if (fase === 'Fase 4' || fase === 'Fase 3') riesgoMap = 'Medio';
+          else if (fase === 'Fase 2') riesgoMap = 'Bajo';
+          else if (fase === 'Fase 1' || !fase || fase === 'N/A') riesgoMap = 'SinRegistro';
+          
           return {
             ...program,
-            riesgo: latestSeguimiento.riesgo || 'SinRegistro',
+            riesgo: riesgoMap,
             mensaje: latestSeguimiento.mensaje || 'Sin información'
           };
         });
@@ -412,6 +426,12 @@ const RegistroCalificado = () => {
         updatedProgramDetails.MOD = programsWithRisk;
         
         setProgramDetails(updatedProgramDetails);
+        // Update MOD counts to reflect filtered programs
+        const newCounts = { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 };
+        programsWithRisk.forEach(p => {
+          if (newCounts[p.riesgo] !== undefined) newCounts[p.riesgo] += 1;
+        });
+        setCounts(prev => ({ ...prev, MOD: newCounts }));
         setLoading(false);
         return newSelectedValues;
       });
@@ -494,6 +514,14 @@ const RegistroCalificado = () => {
         borderColor: '#ee1809',
         '&:hover': {
           backgroundColor: isSelected ? '#d81508' : '#ffebee',
+        }
+      },
+      gray: { 
+        backgroundColor: isSelected ? '#6C757D' : 'rgba(108, 117, 125, 0.08)', 
+        color: isSelected ? 'white' : '#000', 
+        borderColor: '#6C757D',
+        '&:hover': {
+          backgroundColor: isSelected ? '#5a6268' : '#e9ecef',
         }
       }
     };
@@ -583,12 +611,19 @@ const RegistroCalificado = () => {
           yellow: 'Fase 2',
           orange: 'Fase 3',
           orange2: 'Fase 4',
-          red: 'Fase 5'
+          red: 'Fase 5',
+          gray: 'SinRegistro'
         };
         
         // Filter programs based on selected phases
         const filteredResult = allRrcPrograms.filter(item => {
-          return newSelectedValues.some(buttonType => item['fase rrc'] === phaseMap[buttonType]);
+          return newSelectedValues.some(buttonType => {
+            if (buttonType === 'gray') {
+              // Para SinRegistro, filtrar programas sin fase rrc o con fase rrc vacía/N/A
+              return !item['fase rrc'] || item['fase rrc'] === '' || item['fase rrc'] === 'N/A';
+            }
+            return item['fase rrc'] === phaseMap[buttonType];
+          });
         });
         
         // Assign risk levels to filtered programs
@@ -673,9 +708,16 @@ const RegistroCalificado = () => {
               new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
             );
             
+            const fase = program['fase rrc'];
+            let riesgoMap = 'SinRegistro';
+            if (fase === 'Vencido' || fase === 'Fase 5') riesgoMap = 'Alto';
+            else if (fase === 'Fase 4' || fase === 'Fase 3') riesgoMap = 'Medio';
+            else if (fase === 'Fase 2') riesgoMap = 'Bajo';
+            else if (fase === 'Fase 1' || !fase || fase === 'N/A') riesgoMap = 'SinRegistro';
+            
             return {
               ...program,
-              riesgo: latestSeguimiento.riesgo || 'SinRegistro',
+              riesgo: riesgoMap,
               mensaje: latestSeguimiento.mensaje || 'Sin información'
             };
           });
@@ -685,6 +727,12 @@ const RegistroCalificado = () => {
           updatedProgramDetails.MOD = programsWithRisk;
           
           setProgramDetails(updatedProgramDetails);
+          // Update MOD counts based on initial load
+          const newCounts = { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 };
+          programsWithRisk.forEach(p => {
+            if (newCounts[p.riesgo] !== undefined) newCounts[p.riesgo] += 1;
+          });
+          setCounts(prev => ({ ...prev, MOD: newCounts }));
           setLoading(false);
         } catch (error) {
           console.error('Error al cargar datos de modificación:', error);
@@ -736,21 +784,28 @@ const RegistroCalificado = () => {
               new Date(prev.timestamp.split('/').reverse().join('-')) ? current : prev
             );
             
+            const fase = program['fase rrc'];
+            let riesgoMap = 'SinRegistro';
+            if (fase === 'Vencido' || fase === 'Fase 5') riesgoMap = 'Alto';
+            else if (fase === 'Fase 4' || fase === 'Fase 3') riesgoMap = 'Medio';
+            else if (fase === 'Fase 2') riesgoMap = 'Bajo';
+            else if (fase === 'Fase 1' || !fase || fase === 'N/A') riesgoMap = 'SinRegistro';
+            
             return {
               ...program,
-              riesgo: latestSeguimiento.riesgo || 'SinRegistro',
+              riesgo: riesgoMap,
               mensaje: latestSeguimiento.mensaje || 'Sin información'
             };
           });
           
           // Count programs for each RRC phase
           const rrcCounts = {
-            white: response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            green: response.filter(item => item['fase rrc'] === 'Fase 1' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            yellow: response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            orange: response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            orange2: response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            red: response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length
+            white: response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] === 'SI').length,
+            green: response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] === 'SI').length, // 4 años (Bajo)
+            yellow: response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] === 'SI').length, // 2 años (Medio)
+            orange: 0,
+            orange2: response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] === 'SI').length, // 18 meses (Medio)
+            red: response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] === 'SI').length // Año vencimiento (Alto)
           };
           
           setRrcProgramCounts(rrcCounts);
@@ -760,6 +815,12 @@ const RegistroCalificado = () => {
           updatedProgramDetails.RRC = programsWithRisk;
           
           setProgramDetails(updatedProgramDetails);
+          // Update RRC counts based on initial load
+          const newCounts = { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 };
+          programsWithRisk.forEach(p => {
+            if (newCounts[p.riesgo] !== undefined) newCounts[p.riesgo] += 1;
+          });
+          setCounts(prev => ({ ...prev, RRC: newCounts }));
           setLoading(false);
         } catch (error) {
           console.error('Error al cargar datos de RRC:', error);
@@ -787,12 +848,12 @@ const RegistroCalificado = () => {
           
           // Count programs for each RRC phase
           const rrcCounts = {
-            white: response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            green: response.filter(item => item['fase rrc'] === 'Fase 1' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            yellow: response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            orange: response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            orange2: response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            red: response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] === 'SI' && item['sede'] === 'Cali').length
+            white: response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] === 'SI').length,
+            green: response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] === 'SI').length,
+            yellow: response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] === 'SI').length,
+            orange: 0,
+            orange2: response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] === 'SI').length,
+            red: response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] === 'SI').length
           };
           
           setRrcProgramCounts(rrcCounts);

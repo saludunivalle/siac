@@ -56,6 +56,13 @@ const DetailedProcessView = ({
   handleNavigateToProgram
 }) => {
   const procesoProgramas = programDetails[selectedRow] || [];
+  const riskCounts = React.useMemo(() => {
+    const base = { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 };
+    procesoProgramas.forEach(p => {
+      if (base[p.riesgo] !== undefined) base[p.riesgo] += 1;
+    });
+    return base;
+  }, [procesoProgramas]);
 
   return (
     <Box sx={{ width: '100%', mt: 2, display: 'flex', justifyContent: 'center' }}>
@@ -167,17 +174,39 @@ const DetailedProcessView = ({
               mb: 4,
               mt: 2
             }}>
-              {[
-                { type: 'white', label: 'PROGRAMAS VENCIDOS', count: rrcProgramCounts.white },
-                { type: 'green', label: 'AÑO Y 6 MESES', count: rrcProgramCounts.green },
-                { type: 'yellow', label: '4 AÑOS ANTES DEL VENCIMIENTO', count: rrcProgramCounts.yellow },
-                { type: 'orange', label: '2 AÑOS ANTES DEL VENCIMIENTO', count: rrcProgramCounts.orange },
-                { type: 'orange2', label: '18 MESES ANTES DEL VENCIMIENTO', count: rrcProgramCounts.orange2 },
-                { type: 'red', label: 'AÑO DE VENCIMIENTO', count: rrcProgramCounts.red }
-              ].map(({ type, label, count }) => (
-                <Button key={type} onClick={() => handleRrcButtonClick(type)} sx={getRrcButtonStyles(type)}>
-                  {label}
-                  <Box component="span" sx={{ display: 'block', fontWeight: 700, fontSize: '1.25rem', mt: 0.5 }}>
+              {(() => {
+                const combined18 = (rrcProgramCounts.orange || 0) + (rrcProgramCounts.orange2 || 0);
+                return [
+                  { type: 'white', label: 'PROGRAMAS VENCIDOS', count: rrcProgramCounts.white },
+                  { type: 'green', label: '4 AÑOS ANTES DEL VENCIMIENTO', count: rrcProgramCounts.green },
+                  { type: 'yellow', label: '2 AÑOS ANTES DEL VENCIMIENTO', count: rrcProgramCounts.yellow },
+                  { type: 'orange2', label: '18 MESES ANTES DEL VENCIMIENTO', count: combined18 },
+                  { type: 'red', label: 'AÑO DEL VENCIMIENTO', count: rrcProgramCounts.red },
+                  { type: 'gray', label: 'SIN REGISTRO', count: counts.RRC.SinRegistro }
+                ];
+              })().map(({ type, label, count }) => (
+                <Button 
+                  key={type} 
+                  onClick={() => handleRrcButtonClick(type)} 
+                  sx={{
+                    ...getRrcButtonStyles(type),
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    py: 2,
+                    px: 2
+                  }}
+                >
+                  <Box sx={{ mb: 1 }}>
+                    {label}
+                  </Box>
+                  <Box sx={{ 
+                    fontWeight: 700, 
+                    fontSize: '1.5rem',
+                    lineHeight: 1,
+                    color: 'inherit'
+                  }}>
                     {count !== 0 ? count : loading ? <CircularProgress size={20} /> : '0'}
                   </Box>
                 </Button>
@@ -186,9 +215,9 @@ const DetailedProcessView = ({
           )}
 
           <Grid container spacing={3} sx={{ mb: 4, width: '100%', mx: 0 }}>
-            {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk, index) => {
+            {['Bajo', 'Medio', 'Alto', 'SinRegistro'].map((risk, index) => {
               const config = riskConfig[risk];
-              const count = counts[selectedRow][risk];
+              const count = riskCounts[risk];
               return (
                 <Grid item xs={12} sm={6} md={3} key={risk}>
                   <Grow in timeout={600 + index * 100}>
@@ -231,9 +260,25 @@ const DetailedProcessView = ({
                           {riskConfig[risk]?.icon ? React.cloneElement(riskConfig[risk].icon, { sx: { color: 'white', fontSize: '20px' } }) : null}
                         </Box>
                         </Box>
-                        <Typography variant="h2" sx={{ fontWeight: 800, color: config.color, fontSize: '3rem', lineHeight: 1, mb: 1 }}>
-                          {count}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', mb: 1 }}>
+                          <Typography variant="h2" sx={{ fontWeight: 800, color: config.color, fontSize: '3rem', lineHeight: 1 }}>
+                            {count}
+                          </Typography>
+                          {risk === 'Alto' && count > 0 && (
+                            <Box sx={{ ml: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                              {rrcProgramCounts.white > 0 && (
+                                <Typography variant="caption" sx={{ color: config.color, opacity: 0.6, fontSize: '0.65rem', lineHeight: 1 }}>
+                                  {rrcProgramCounts.white} vencidos
+                                </Typography>
+                              )}
+                              {(rrcProgramCounts.red > 0) && (
+                                <Typography variant="caption" sx={{ color: config.color, opacity: 0.6, fontSize: '0.65rem', lineHeight: 1 }}>
+                                  {rrcProgramCounts.red} próximos
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+                        </Box>
                         <Typography variant="body2" sx={{ color: config.color, opacity: 0.7, fontSize: '0.875rem', fontWeight: 500 }}>
                           {count === 1 ? 'programa' : 'programas'}
                         </Typography>

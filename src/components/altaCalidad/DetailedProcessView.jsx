@@ -45,6 +45,13 @@ const DetailedProcessView = ({
   loading
 }) => {
   const procesoProgramas = programDetails[selectedRow] || [];
+  const riskCounts = React.useMemo(() => {
+    const base = { Alto: 0, Medio: 0, Bajo: 0, SinRegistro: 0 };
+    procesoProgramas.forEach(p => {
+      if (base[p.riesgo] !== undefined) base[p.riesgo] += 1;
+    });
+    return base;
+  }, [procesoProgramas]);
 
   const getTitle = () => {
     switch (selectedRow) {
@@ -155,29 +162,40 @@ const DetailedProcessView = ({
               mb: 4,
               mt: 2
             }}>
-              {[
-                { type: 'white', label: 'PROGRAMAS VENCIDOS', count: raacProgramCounts.white },
-                { type: 'green', label: 'AÑO Y 6 MESES', count: raacProgramCounts.green },
-                { type: 'yellow', label: '4 AÑOS ANTES DEL VENCIMIENTO', count: raacProgramCounts.yellow },
-                { type: 'orange', label: '2 AÑOS ANTES DEL VENCIMIENTO', count: raacProgramCounts.orange },
-                { type: 'orange2', label: '18 MESES ANTES DEL VENCIMIENTO', count: raacProgramCounts.orange2 },
-                { type: 'red', label: 'AÑO DEL VENCIMIENTO', count: raacProgramCounts.red },
-                { type: 'gray', label: 'SIN REGISTRO', count: counts.RAAC.SinRegistro }
-              ].map(({ type, label, count }) => (
+              {(() => {
+                const combined18 = (raacProgramCounts.green || 0) + (raacProgramCounts.orange2 || 0);
+                return [
+                  { type: 'white', label: 'PROGRAMAS VENCIDOS', count: raacProgramCounts.white },
+                  { type: 'yellow', label: '4 AÑOS ANTES DEL VENCIMIENTO', count: raacProgramCounts.yellow },
+                  { type: 'orange', label: '2 AÑOS ANTES DEL VENCIMIENTO', count: raacProgramCounts.orange },
+                  { type: 'orange2', label: '18 MESES ANTES DEL VENCIMIENTO', count: combined18 },
+                  { type: 'red', label: 'AÑO DEL VENCIMIENTO', count: raacProgramCounts.red },
+                  { type: 'gray', label: 'SIN REGISTRO', count: counts.RAAC.SinRegistro }
+                ];
+              })().map(({ type, label, count }) => (
                 <Button
                   key={type}
                   onClick={() => handleRaacButtonClick(type)}
-                  sx={getRaacButtonStyles(type)}
+                  sx={{
+                    ...getRaacButtonStyles(type),
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    py: 2,
+                    px: 2
+                  }}
                 >
-                  {label}
-                  <Box sx={{ mt: 1, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {loading ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-                        {count}
-                      </Typography>
-                    )}
+                  <Box sx={{ mb: 1 }}>
+                    {label}
+                  </Box>
+                  <Box sx={{ 
+                    fontWeight: 700, 
+                    fontSize: '1.5rem',
+                    lineHeight: 1,
+                    color: 'inherit'
+                  }}>
+                    {count !== 0 ? count : loading ? <CircularProgress size={20} /> : '0'}
                   </Box>
                 </Button>
               ))}
@@ -185,9 +203,9 @@ const DetailedProcessView = ({
           )}
 
           <Grid container spacing={3} sx={{ mb: 4, width: '100%', mx: 0 }}>
-            {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk, index) => {
+            {['Bajo', 'Medio', 'Alto', 'SinRegistro'].map((risk, index) => {
               const config = riskConfig[risk];
-              const count = counts[selectedRow][risk];
+              const count = riskCounts[risk];
               const isSelected = selectedRisk === risk;
               return (
                 <Grid item xs={12} sm={6} md={3} key={risk}>

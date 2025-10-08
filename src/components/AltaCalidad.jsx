@@ -96,16 +96,15 @@ const AltaCalidad = () => {
           }
           
           setRaacProgramCounts({
-            white: raacResponse.filter(item => item['fase rac'] === 'Vencido' && item['sede'] === 'Cali').length,
-            green: raacResponse.filter(item => item['fase rac'] === 'Fase 1' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            yellow: raacResponse.filter(item => item['fase rac'] === 'Fase 2' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            orange: raacResponse.filter(item => item['fase rac'] === 'Fase 3' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            orange2: raacResponse.filter(item => item['fase rac'] === 'Fase 4' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
-            red: raacResponse.filter(item => item['fase rac'] === 'Fase 5' && item['ac vigente'] === 'SI' && item['sede'] === 'Cali').length,
+            white: raacResponse.filter(item => item['fase rac'] === 'Vencido').length,
+            green: raacResponse.filter(item => item['fase rac'] === 'Fase 2' && item['ac vigente'] === 'SI').length,
+            yellow: raacResponse.filter(item => item['fase rac'] === 'Fase 3' && item['ac vigente'] === 'SI').length,
+            orange: 0,
+            orange2: raacResponse.filter(item => item['fase rac'] === 'Fase 4' && item['ac vigente'] === 'SI').length,
+            red: raacResponse.filter(item => item['fase rac'] === 'Fase 5' && item['ac vigente'] === 'SI').length,
             gray: raacResponse.filter(item => 
               (!item['fase rac'] || item['fase rac'] === '' || item['fase rac'] === 'N/A') && 
-              item['ac vigente'] === 'SI' && 
-              item['sede'] === 'Cali'
+              item['ac vigente'] === 'SI'
             ).length
           });
         } catch (error) {
@@ -181,9 +180,12 @@ const AltaCalidad = () => {
           } else if (programa['fase rac'] === 'Fase 4' || programa['fase rac'] === 'Fase 3') {
             riesgo = 'Medio';
             mensaje = `Programa en ${programa['fase rac']} - Riesgo medio`;
-          } else if (programa['fase rac'] === 'Fase 2' || programa['fase rac'] === 'Fase 1') {
+          } else if (programa['fase rac'] === 'Fase 2') {
             riesgo = 'Bajo';
             mensaje = `Programa en ${programa['fase rac']} - Bajo riesgo`;
+          } else if (programa['fase rac'] === 'Fase 1') {
+            riesgo = 'SinRegistro';
+            mensaje = 'Fase 1 no clasificada en semaforización';
           } else {
             riesgo = seguimiento ? seguimiento.riesgo : 'SinRegistro';
             mensaje = seguimiento ? seguimiento.mensaje : 'Sin información';
@@ -418,7 +420,7 @@ const AltaCalidad = () => {
         color: isSelected ? 'white' : '#000', 
         borderColor: '#ffe600',
         '&:hover': {
-          backgroundColor: isSelected ? '#d4c000' : '#fffde7',
+          backgroundColor: isSelected ? '#e6cf00' : '#fffde7',
         }
       },
       orange: { 
@@ -426,7 +428,7 @@ const AltaCalidad = () => {
         color: isSelected ? 'white' : '#000', 
         borderColor: '#ff9800',
         '&:hover': {
-          backgroundColor: isSelected ? '#e68900' : '#fff8e1',
+          backgroundColor: isSelected ? '#e68900' : '#fff3e0',
         }
       },
       orange2: { 
@@ -442,7 +444,7 @@ const AltaCalidad = () => {
         color: isSelected ? 'white' : '#000', 
         borderColor: '#ee1809',
         '&:hover': {
-          backgroundColor: isSelected ? '#d81b60' : '#fce4ec',
+          backgroundColor: isSelected ? '#d81508' : '#ffebee',
         }
       },
       gray: { 
@@ -456,23 +458,16 @@ const AltaCalidad = () => {
     };
 
     return {
-      color: styles[buttonType].color,
-      backgroundColor: styles[buttonType].backgroundColor,
-      borderColor: styles[buttonType].borderColor,
-      border: `2px solid ${styles[buttonType].borderColor}`,
-      borderRadius: '12px',
       fontWeight: 600,
-      height: '80px',
-      width: { xs: '100%', sm: '160px', md: '190px' },
-      marginTop: '10px',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      px: 1,
-      textAlign: 'center',
-      '&:hover': styles[buttonType]['&:hover']
+      padding: '12px 20px',
+      borderRadius: '8px',
+      border: '2px solid',
+      margin: '0 5px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      textTransform: 'none',
+      minWidth: '200px',
+      ...styles[buttonType]
     };
   };
 
@@ -678,11 +673,19 @@ const AltaCalidad = () => {
         };
       } 
       
-      if (program['fase rac'] === 'Fase 2' || program['fase rac'] === 'Fase 1') {
+      if (program['fase rac'] === 'Fase 2') {
         return {
           ...program,
           riesgo: 'Bajo',
           mensaje: `Programa en ${program['fase rac']} - Bajo riesgo`
+        };
+      }
+
+      if (program['fase rac'] === 'Fase 1') {
+        return {
+          ...program,
+          riesgo: 'SinRegistro',
+          mensaje: 'Fase 1 no clasificada en semaforización'
         };
       }
       
