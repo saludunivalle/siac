@@ -209,10 +209,10 @@ const RegistroCalificado = () => {
       description: 'Programas en proceso de modificación'
     },
     RRC: {
-      name: 'Renovación RC',
+      name: 'Renovación y Registro calificado',
       icon: <RuleIcon />,
       color: '#B22222',
-      description: 'Renovación de Registro Calificado'
+      description: 'Renovación de registro calificado y registro calificado primera vez'
     }
   }), []);
 

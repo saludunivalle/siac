@@ -313,10 +313,10 @@ const AltaCalidad = () => {
       description: 'Programas en proceso de acreditación'
     },
     RAAC: {
-      name: 'Renovación Acreditación',
+      name: 'Renovación y Acreditación',
       icon: <AutorenewIcon />,
       color: '#B22222',
-      description: 'Renovación de acreditación de alta calidad'
+      description: 'Renovación de acreditación alta calidad y acreditación de alta calidad primera vez'
     },
     INT: {
       name: 'Acreditación Internacional',

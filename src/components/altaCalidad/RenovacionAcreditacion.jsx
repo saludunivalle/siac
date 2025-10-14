@@ -407,6 +407,8 @@ const RenovacionAcreditacion = ({
                       { key: 'programa académico', label: 'Programa Académico' },
                       { key: 'escuela', label: 'Escuela' },
                       { key: 'nivel de formación', label: 'Nivel' },
+                      { key: 'fase rac', label: 'Fase RAAC' },
+                      { key: 'fechavencac', label: 'Fecha de Vencimiento' },
                       { key: 'riesgo', label: 'Riesgo' },
                       { key: 'mensaje', label: 'Observaciones' }
                     ].map((column) => (
@@ -458,6 +460,16 @@ const RenovacionAcreditacion = ({
                       <TableCell>
                         <Typography variant="body2" sx={{ color: '#6C757D', fontSize: '0.875rem' }}>
                           {program['nivel de formación']}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ color: '#495057', fontSize: '0.875rem', fontWeight: 500 }}>
+                          {program['fase rac'] || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ color: '#6C757D', fontSize: '0.875rem' }}>
+                          {program['fechavencac'] || 'N/A'}
                         </Typography>
                       </TableCell>
                       <TableCell>

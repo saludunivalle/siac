@@ -41,7 +41,7 @@ const GeneralProcessTable = ({ counts, processConfig, riskConfig, getTotalByProc
               <Table aria-label="tabla de alta calidad" sx={{ tableLayout: { xs: 'auto', md: 'fixed' }, width: '100%', ml: 0 }}>
                 <TableHead>
                   <TableRow sx={{ background: 'linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%)' }}>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '1rem', color: '#495057', py: 3, px: { xs: 1, sm: 2, md: 3 }, borderBottom: '2px solid rgba(0,0,0,0.06)', width: { xs: '20%', sm: '25%', md: '30%' } }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '1rem', color: '#495057', py: 3, px: { xs: 1, sm: 2, md: 3 }, borderBottom: '2px solid rgba(0,0,0,0.06)', width: { xs: '30%', sm: '35%', md: '40%' } }}>
                       Proceso
                     </TableCell>
                     {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => (
@@ -65,24 +65,29 @@ const GeneralProcessTable = ({ counts, processConfig, riskConfig, getTotalByProc
                       onClick={() => handleRowClick(`option${proceso === 'AAC' ? '3' : proceso === 'RAAC' ? '2' : '6'}`, proceso, proceso)}
                       sx={{ cursor: 'pointer' }}
                     >
-                      <TableCell sx={{ py: 3, px: { xs: 1, sm: 2, md: 3 }, borderBottom: 'none' }}>
+                      <TableCell sx={{ py: 2, px: { xs: 1, sm: 2, md: 3 }, borderBottom: 'none' }}>
                         <Box display="flex" alignItems="center" gap={2}>
-                          <Box sx={{ 
-                            width: 100, 
-                            height: 48, 
-                            borderRadius: '14px', 
-                            background: processConfig[proceso].color, 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                          <Box sx={{
+                            width: { xs: 50, sm: 60, md: 76 },
+                            height: { xs: 34, sm: 42, md: 51 },
+                            borderRadius: '12px',
+                            background: processConfig[proceso].color,
+                            display: 'flex',
+                            alignItems: 'center',
                             justifyContent: 'center',
-                            boxShadow: `0 4px 16px ${alpha(processConfig[proceso].color, 0.3)}`,
+                            boxShadow: `0 2px 8px ${alpha(processConfig[proceso].color, 0.25)}`,
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             '&:hover': {
                               transform: 'translateY(-2px)',
-                              boxShadow: `0 6px 20px ${alpha(processConfig[proceso].color, 0.4)}`
+                              boxShadow: `0 4px 12px ${alpha(processConfig[proceso].color, 0.35)}`
                             }
                           }}>
-                            {processConfig[proceso]?.icon && React.cloneElement(processConfig[proceso].icon, { sx: { color: 'white', fontSize: '20px' } })}
+                            {processConfig[proceso]?.icon && React.cloneElement(processConfig[proceso].icon, {
+                              sx: {
+                                color: 'white',
+                                fontSize: proceso === 'RAAC' ? '32px' : '28px'
+                              }
+                            })}
                           </Box>
                           <Box>
                             <Typography variant="h6" sx={{ fontWeight: 600, color: '#212529', fontSize: '1.125rem' }}>
@@ -120,7 +125,7 @@ const GeneralProcessTable = ({ counts, processConfig, riskConfig, getTotalByProc
                   <TableRow sx={{ background: 'linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%)', borderTop: '2px solid rgba(0,0,0,0.06)' }}>
                     <TableCell sx={{ py: 3, px: 4, borderBottom: 'none' }}>
                       <Box display="flex" alignItems="center" gap={2}>
-                        <EmojiEventsIcon sx={{ color: '#B22222' }} />
+                        <EmojiEventsIcon sx={{ color: '#B22222', fontSize: '22px' }} />
                         <Typography variant="h6" sx={{ fontWeight: 700, color: '#212529', fontSize: '1.25rem' }}>
                           TOTAL GENERAL
                         </Typography>

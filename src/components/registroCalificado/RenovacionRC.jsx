@@ -214,6 +214,8 @@ const RenovacionRC = ({
                   { key: 'programa académico', label: 'Programa Académico' },
                   { key: 'escuela', label: 'Escuela' },
                   { key: 'nivel de formación', label: 'Nivel' },
+                  { key: 'fase rrc', label: 'Fase RRC' },
+                  { key: 'fechavencrc', label: 'Fecha Vencimiento' },
                   { key: 'riesgo', label: 'Riesgo' },
                   { key: 'mensaje', label: 'Observaciones' }
                 ].map((column) => (
@@ -260,6 +262,16 @@ const RenovacionRC = ({
                   <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
                     <Typography variant="body2" sx={{ color: '#6C757D', fontSize: '0.875rem' }}>
                       {program['nivel de formación']}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
+                    <Typography variant="body2" sx={{ color: '#495057', fontSize: '0.875rem', fontWeight: 500 }}>
+                      {program['fase rrc'] || 'N/A'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
+                    <Typography variant="body2" sx={{ color: '#6C757D', fontSize: '0.875rem' }}>
+                      {program['fechavencrc'] || 'N/A'}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
