@@ -3,6 +3,121 @@ methodPut = 'PUT',
 methodPost = 'POST',
 methodGet = 'GET';
 
+// Sistema de caché para reducir solicitudes a la API
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
+const CACHE_DURATION_LONG = 10 * 60 * 1000; // 10 minutos para datos que cambian menos frecuentemente
+
+// Endpoints que deben usar caché de larga duración
+const LONG_CACHE_ENDPOINTS = [
+    'https://siac-server.vercel.app/',
+    'https://siac-server.vercel.app/seguimiento'
+];
+
+// Endpoints que NO deben usar caché (escritura de datos)
+const NO_CACHE_ENDPOINTS = [
+    'https://siac-server.vercel.app/sendData',
+    'https://siac-server.vercel.app/updateData',
+    'https://siac-server.vercel.app/sendSeguimiento',
+    'https://siac-server.vercel.app/updateSeguimiento',
+    'https://siac-server.vercel.app/sendDocServ',
+    'https://siac-server.vercel.app/sendReport',
+    'https://siac-server.vercel.app/clearSheet'
+];
+
+/**
+ * Genera una clave única para el caché basada en la solicitud
+ */
+const generateCacheKey = (urlEndPoint, type, requestBody) => {
+    const bodyStr = JSON.stringify(requestBody);
+    return `${type}:${urlEndPoint}:${bodyStr}`;
+};
+
+/**
+ * Verifica si una solicitud debe usar caché
+ */
+const shouldUseCache = (urlEndPoint, type, requestBody) => {
+    // No usar caché para operaciones PUT
+    if (type === methodPut) {
+        return false;
+    }
+    
+    // Para POST, verificar si es un endpoint de escritura
+    if (type === methodPost) {
+        // Verificar si es un endpoint de escritura (tiene insertData o updateData)
+        const hasWriteOperation = requestBody && (
+            requestBody.insertData !== undefined || 
+            requestBody.updateData !== undefined
+        );
+        
+        // Si tiene operación de escritura O está en la lista de no caché, no usar caché
+        if (hasWriteOperation || NO_CACHE_ENDPOINTS.some(endpoint => urlEndPoint.includes(endpoint))) {
+            return false;
+        }
+    }
+    
+    // Para GET y POST de lectura, usar caché
+    return true;
+};
+
+/**
+ * Obtiene datos del caché si están disponibles y no han expirado
+ */
+const getFromCache = (cacheKey) => {
+    const cached = cache.get(cacheKey);
+    if (!cached) return null;
+    
+    const now = Date.now();
+    if (now > cached.expiresAt) {
+        cache.delete(cacheKey);
+        return null;
+    }
+    
+    console.log('fetchGeneral: Datos obtenidos del caché');
+    return cached.data;
+};
+
+/**
+ * Almacena datos en el caché
+ */
+const setCache = (cacheKey, data, urlEndPoint) => {
+    const isLongCache = LONG_CACHE_ENDPOINTS.some(endpoint => urlEndPoint.includes(endpoint));
+    const duration = isLongCache ? CACHE_DURATION_LONG : CACHE_DURATION;
+    
+    cache.set(cacheKey, {
+        data: data,
+        expiresAt: Date.now() + duration
+    });
+    
+    // Limpiar entradas expiradas periódicamente
+    if (cache.size > 100) {
+        const now = Date.now();
+        for (const [key, value] of cache.entries()) {
+            if (now > value.expiresAt) {
+                cache.delete(key);
+            }
+        }
+    }
+};
+
+/**
+ * Limpia el caché (útil para invalidar después de operaciones de escritura)
+ */
+export const clearCache = (pattern = null) => {
+    if (pattern) {
+        // Limpiar solo entradas que coincidan con el patrón
+        for (const key of cache.keys()) {
+            if (key.includes(pattern)) {
+                cache.delete(key);
+            }
+        }
+        console.log(`Caché limpiado para patrón: ${pattern}`);
+    } else {
+        cache.clear();
+        console.log('Caché completamente limpiado');
+    }
+};
+
 /**
  *  General Estruture HTTP REQUEST POST
  * 
@@ -76,6 +191,17 @@ const fetchGeneral = async ({
         const { sheetName, ...requestData } = dataSend;
         const requestBody = sheetName ? { ...requestData, sheetName } : requestData;
 
+        // Verificar caché antes de hacer la solicitud
+        const useCache = shouldUseCache(urlEndPoint, type, requestBody);
+        const cacheKey = useCache ? generateCacheKey(urlEndPoint, type, requestBody) : null;
+        
+        if (useCache && cacheKey) {
+            const cachedData = getFromCache(cacheKey);
+            if (cachedData !== null) {
+                return cachedData;
+            }
+        }
+
         console.log(`fetchGeneral: Enviando solicitud ${type} a ${urlEndPoint}`, {
             sheetName,
             requestBody: JSON.stringify(requestBody)
@@ -106,6 +232,11 @@ const fetchGeneral = async ({
 
         const responseData = await response.json();
         console.log('fetchGeneral: Datos de respuesta procesados:', responseData);
+        
+        // Almacenar en caché si es una solicitud de lectura exitosa
+        if (useCache && cacheKey && response.ok) {
+            setCache(cacheKey, responseData, urlEndPoint);
+        }
         
         return responseData;
     } catch (error) {

@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
-import { Button, ButtonGroup, Tooltip, CircularProgress, Checkbox } from "@mui/material"; // Añadir Checkbox
+import { Button, ButtonGroup, Tooltip, CircularProgress, Checkbox, Box, Backdrop } from "@mui/material"; // Añadir Checkbox y Box
 import { useEffect, useState } from "react";
 import { styled } from '@mui/material/styles';
 import { Filtro4, Filtro5, Filtro7 } from "../service/data";
@@ -53,6 +53,7 @@ const Programas = () => {
     const [user, setUser] = useState('');
     const [isCargo, setCargo] = useState([' ']);
     const [showInactiveButtons, setShowInactiveButtons] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true); // Estado para carga inicial
 
     useEffect(() => {
         const loggedUser = sessionStorage.getItem('logged');
@@ -67,10 +68,13 @@ const Programas = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setInitialLoading(true);
                 const seguimientos = await Filtro7();
                 setFilteredDataSeg(seguimientos);
             } catch (error) {
                 console.error('Error al filtrar datos:', error);
+            } finally {
+                setInitialLoading(false);
             }
         };
         fetchData();
@@ -79,6 +83,7 @@ const Programas = () => {
     useEffect(() => {
         const fetchDataAndFilter = async () => {
             setLoading(true);
+            setInitialLoading(true);
             try {
                 const allProgramsGlobal = await Filtro5(); // Fetch all programs
 
@@ -242,6 +247,17 @@ const Programas = () => {
                     espUni: false,        // Nuevo
                     maestria: false       // Nuevo
                 });
+                // Si hay error de cuota, esperar un poco antes de ocultar el spinner
+                const isQuotaError = error?.message?.includes('Quota exceeded') || 
+                                     error?.response?.data?.error?.includes('Quota exceeded');
+                if (isQuotaError) {
+                    // Mantener el spinner un poco más para que el usuario vea que hay un problema
+                    setTimeout(() => {
+                        setInitialLoading(false);
+                    }, 2000);
+                } else {
+                    setInitialLoading(false);
+                }
             } finally {
                 setLoading(false);
             }
@@ -572,6 +588,23 @@ const Programas = () => {
 
     return (
         <>
+            {/* Overlay de carga que cubre toda la pantalla */}
+            <Backdrop
+                sx={{
+                    color: '#fff',
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2
+                }}
+                open={initialLoading || (loading && filteredData.length === 0)}
+            >
+                <CircularProgress color="inherit" size={60} />
+                <Box sx={{ fontSize: '18px', fontWeight: 'bold' }}>
+                    Cargando programas...
+                </Box>
+            </Backdrop>
             <Header />
             <div className='table-buttons'>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center', textAlign: 'center' }}>

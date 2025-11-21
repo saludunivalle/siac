@@ -1,4 +1,4 @@
-import { fetchPostGeneral } from './fetch';
+import { fetchPostGeneral, clearCache } from './fetch';
 
 const hojaProgramas = 'Programas';
 const hojaSeguimientos = 'Seguimientos';
@@ -152,6 +152,8 @@ export const sendDataToServer = async (data) => {
     });
     if (response.status) {
       console.log('Datos enviados correctamente al servidor.');
+      // Limpiar caché relacionado con Seguimientos
+      clearCache(hojaSeguimientos);
     } else {
       console.error('Error al enviar datos al servidor.');
     }
@@ -172,6 +174,8 @@ export const sendDataToServerPrograms = async (data) => {
     });
     if (response.status) {
       console.log('Datos enviados correctamente al servidor.');
+      // Limpiar caché relacionado con Programas
+      clearCache(hojaProgramas);
     } else {
       console.error('Error al enviar datos al servidor.');
     }
@@ -192,6 +196,8 @@ export const sendDataToServerHistorico = async (data) => {
     });
     if (response.status) {
       console.log('Datos enviados correctamente al servidor.');
+      // Limpiar caché relacionado con Histórico
+      clearCache(hojaHistorico);
     } else {
       console.error('Error al enviar datos al servidor.');
     }
@@ -213,6 +219,8 @@ export const sendDataToServerCrea = async (data) => {
     });
     if (response.status) {
       console.log('Datos enviados correctamente al servidor.');
+      // Limpiar caché relacionado con Proc_X_Prog
+      clearCache(hojaProc_X_Prog);
     } else {
       console.error('Error al enviar datos al servidor.');
     }
@@ -233,6 +241,8 @@ export const sendDataToServerDoc = async (data) => {
     });
     if (response.status) {
       console.log('Datos enviados correctamente al servidor.');
+      // Limpiar caché relacionado con PROC_X_PROG_DOCS
+      clearCache('PROC_X_PROG_DOCS');
     } else {
       console.error('Error al enviar datos al servidor.');
     }
@@ -606,6 +616,9 @@ export const sendDataSegui = async (data) => {
     });
     if (response.status) {
       console.log('Datos enviados correctamente al servidor.');
+      // Limpiar caché relacionado con Programas PM
+      clearCache('PROGRAMAS_PM');
+      clearCache('Programas_pm');
     } else {
       console.error('Error al enviar datos al servidor.');
     }
@@ -680,6 +693,8 @@ export const sendDataEscula = async (data) => {
     });
     if (response.status) {
       console.log('Datos enviados correctamente al servidor.');
+      // Limpiar caché relacionado con Escuelas
+      clearCache('ESCUELAS');
     } else {
       console.error('Error al enviar datos al servidor.');
     }
@@ -701,6 +716,8 @@ export const updateDataEscuela = async (data, id) => {
     });
     if (response.status) {
       console.log('Datos actualizados correctamente en el servidor.');
+      // Limpiar caché relacionado con Escuelas
+      clearCache('ESCUELAS');
     } else {
       console.error('Error al actualizar datos en el servidor.');
     }
@@ -796,6 +813,9 @@ export const updateDataSegui = async (data, id) => {
     });
     if (response.status) {
       console.log('Datos actualizados correctamente en el servidor.');
+      // Limpiar caché relacionado con Programas PM y seguimiento
+      clearCache('PROGRAMAS_PM');
+      clearCache('Programas_pm');
     } else {
       console.error('Error al actualizar datos en el servidor.');
     }
