@@ -7,8 +7,9 @@ import Seguimiento from './Seguimiento';
 import EstadisticasPrograma from './EstadisticasPrograma';
 import TimelineComponent from './Timeline';
 import { Filtro5, Filtro7, FiltroHistorico, FiltroHistoricoTimeline, getSeguimientoPMByPrograma } from "../service/data";
+import { clearCache } from "../service/fetch";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'; 
-import { Tabs, Tab, Box, Button, TextField, Grid, Typography } from '@mui/material';
+import { Tabs, Tab, Box, Button, TextField, Grid, Typography, Backdrop, CircularProgress } from '@mui/material';
 import { Timeline as TimelineIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -37,6 +38,8 @@ const ProgramDetails = () => {
     const [isEditing, setIsEditing] = useState(false);    
     const [seguimientoPMData, setSeguimientoPMData] = useState(null);
     const [timelineData, setTimelineData] = useState([]);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(false);
 
     const [options, setOptions] = useState({
         Sede: [],
@@ -347,12 +350,90 @@ const ProgramDetails = () => {
     // Función para enviar los datos actualizados al servidor
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsUpdating(true);
         try {
             const response = await axios.post('https://siac-server.vercel.app/updateData', {
                 id: rowData.id_programa,
                 ...formData,
             });
             if (response.data.status) {
+                // Limpiar caché para que se vean los cambios inmediatamente
+                clearCache('Programas');
+                
+                // Recargar los datos del programa
+                setIsLoadingData(true);
+                try {
+                    // Recargar datos del programa actualizado
+                    const updatedPrograms = await Filtro5();
+                    const updatedProgram = updatedPrograms.find(p => p.id_programa === rowData.id_programa);
+                    
+                    if (updatedProgram) {
+                        // Actualizar formData con los nuevos datos
+                        setFormData({
+                            Sede: normalizeValue(updatedProgram.sede),
+                            Facultad: normalizeValue(updatedProgram.facultad),
+                            Escuela: normalizeValue(updatedProgram.escuela),
+                            Departamento: normalizeValue(updatedProgram.departamento),
+                            Sección: normalizeValue(updatedProgram.sección),
+                            'Nivel Académico': normalizeValue(updatedProgram['pregrado/posgrado']),
+                            'Nivel de Formación': normalizeValue(updatedProgram['nivel de formación']),
+                            'Titulo a Conceder': normalizeValue(updatedProgram['titulo a conceder']),
+                            Jornada: normalizeValue(updatedProgram.jornada),
+                            Modalidad: normalizeValue(updatedProgram.modalidad),
+                            Créditos: normalizeValue(updatedProgram['créditos']),
+                            Periodicidad: normalizeValue(updatedProgram.periodicidad),
+                            Duración: normalizeValue(updatedProgram['duración']),
+                            'FechaExp RRC': normalizeValue(updatedProgram.fechaexpedrc),
+                            'Fecha RRC': normalizeValue(updatedProgram.fechavencrc),
+                            'FechaExp RAAC': normalizeValue(updatedProgram.fechaexpedac),
+                            'Fecha RAAC': normalizeValue(updatedProgram.fechavencac),
+                            Acreditable: normalizeValue(updatedProgram.acreditable),
+                            Contingencia: normalizeValue(updatedProgram.contingencia),
+                            'Número renovaciones RRC': normalizeValue(updatedProgram['número renovaciones RRC']) || 1,
+                        });
+                    }
+                    
+                    // Recargar seguimientos
+                    const seguimientos = await Filtro7();
+                    setFilteredDataSeg(seguimientos);
+                    localStorage.setItem('filteredDataSeg', JSON.stringify(seguimientos));
+                    
+                    // Recargar seguimiento PM
+                    const seguimientoPM = await getSeguimientoPMByPrograma(rowData.id_programa);
+                    setSeguimientoPMData(seguimientoPM);
+                    
+                    // Recargar timeline
+                    const historicoData = await FiltroHistoricoTimeline();
+                    const filteredTimelineData = historicoData.filter(item => 
+                        item.id_programa === rowData.id_programa
+                    );
+                    setTimelineData(filteredTimelineData);
+                    
+                    // Recargar histórico para links
+                    const historial = await FiltroHistorico();
+                    const filteredHistorial = historial.filter(item => item.id_programa === rowData.id_programa);
+                    filteredHistorial.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                    
+                    let rrcLinks = [];
+                    let raacLinks = [];
+                    filteredHistorial.forEach((item, index) => {
+                        const link = `<a href="${item.url_doc}" target="_blank" style="color: blue;">Enlace${index + 1}</a>`;
+                        if (item.proceso === 'crea' || item.proceso === 'rrc') {
+                            rrcLinks.push(link);
+                        } else if (item.proceso === 'aac' || item.proceso === 'raac') {
+                            raacLinks.push(link);
+                        }
+                    });
+                    setDocumentLinks({
+                        rrc: rrcLinks.join(' '),
+                        raac: raacLinks.join(' '),
+                    });
+                } catch (reloadError) {
+                    console.error('Error al recargar datos:', reloadError);
+                } finally {
+                    setIsLoadingData(false);
+                }
+                
                 alert('Datos actualizados correctamente');
                 setReloadSeguimiento(!reloadSeguimiento);
                 setIsEditing(false);
@@ -362,6 +443,8 @@ const ProgramDetails = () => {
         } catch (error) {
             console.error('Error al actualizar datos:', error);
             alert('Error al actualizar datos');
+        } finally {
+            setIsUpdating(false);
         }
     };
     
@@ -384,6 +467,23 @@ const ProgramDetails = () => {
 
     return (
         <>
+            {/* Overlay de carga que cubre toda la pantalla durante actualización */}
+            <Backdrop
+                sx={{
+                    color: '#fff',
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2
+                }}
+                open={isUpdating || isLoadingData}
+            >
+                <CircularProgress color="inherit" size={60} />
+                <Box sx={{ fontSize: '18px', fontWeight: 'bold' }}>
+                    {isUpdating ? 'Guardando cambios...' : 'Actualizando información...'}
+                </Box>
+            </Backdrop>
             <Header />
             <div className='containerTotal'>
                 <div className='title-program'>
