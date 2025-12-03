@@ -5,8 +5,10 @@ import { Container, Grid, IconButton, Box, Paper } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico } from '../service/data';
+import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico, updateSeguimiento, deleteSeguimiento } from '../service/data';
+import { clearCache } from '../service/fetch';
 import dayjs from 'dayjs';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -124,7 +126,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
     const fileInputRef = useRef(null);
     const [fileLink, setFileLink] = useState('');
     const [loading, setLoading] = useState(false);
-    const [updateTrigger, setUpdateTrigger] = useState(false);
+    const [updateTrigger, setUpdateTrigger] = useState(0);
     const [errorMessage, setErrorMessage] = useState('');
     const [formSubmitted, setFormSubmitted] = useState(false);
     const [fileType, setFileType] = useState('');
@@ -142,6 +144,16 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
     const [sentDocId, setSentDocId] = useState(null);
     const [fasesTabla, setFasesTabla] = useState([]);
     const isMobile = useMediaQuery('(max-width:600px)');
+    
+    // Estados para edición de seguimientos
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingSeguimiento, setEditingSeguimiento] = useState(null);
+    const [editComment, setEditComment] = useState('');
+    const [editRiesgo, setEditRiesgo] = useState('');
+    const [editAdjunto, setEditAdjunto] = useState('');
+    const [editLoading, setEditLoading] = useState(false);
+    const [hoveredRowIndex, setHoveredRowIndex] = useState(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
     // Obtener datos de Filtro21 al montar el componente
     useEffect(() => {
@@ -164,6 +176,75 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
     const handleClose = () => {
         setSelectedDoc(null);
         setOpen(false);
+    };
+
+    // Funciones para edición de seguimientos
+    const handleOpenEditModal = (seguimiento) => {
+        setEditingSeguimiento(seguimiento);
+        setEditComment(seguimiento.mensaje || '');
+        setEditRiesgo(seguimiento.riesgo || '');
+        setEditAdjunto(seguimiento.url_adjunto || '');
+        setEditModalOpen(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setEditModalOpen(false);
+        setEditingSeguimiento(null);
+        setEditComment('');
+        setEditRiesgo('');
+        setEditAdjunto('');
+        setDeleteConfirmOpen(false);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingSeguimiento) return;
+        
+        setEditLoading(true);
+        try {
+            const updatedData = {
+                id_programa: editingSeguimiento.id_programa,
+                timestamp: editingSeguimiento.timestamp,
+                mensaje: editComment,
+                riesgo: editRiesgo,
+                usuario: editingSeguimiento.usuario,
+                topic: editingSeguimiento.topic,
+                url_adjunto: editAdjunto,
+                fase: editingSeguimiento.fase
+            };
+            
+            await updateSeguimiento(updatedData);
+            
+            // Recargar datos
+            clearCache('Seguimientos');
+            setUpdateTrigger(prev => prev + 1);
+            
+            handleCloseEditModal();
+        } catch (error) {
+            console.error('Error al actualizar seguimiento:', error);
+            setErrorMessage('Error al actualizar el seguimiento');
+        } finally {
+            setEditLoading(false);
+        }
+    };
+
+    const handleDeleteSeguimiento = async () => {
+        if (!editingSeguimiento) return;
+        
+        setEditLoading(true);
+        try {
+            await deleteSeguimiento(editingSeguimiento);
+            
+            // Recargar datos
+            clearCache('Seguimientos');
+            setUpdateTrigger(prev => prev + 1);
+            
+            handleCloseEditModal();
+        } catch (error) {
+            console.error('Error al eliminar seguimiento:', error);
+            setErrorMessage('Error al eliminar el seguimiento');
+        } finally {
+            setEditLoading(false);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -198,6 +279,8 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
         }
     };
 
+    // Este useEffect ya no es necesario con el sistema de contador
+    // pero lo mantenemos por si hay dependencias en otros lugares
     useEffect(() => {
         if (dataUpdated) {
             setDataUpdated(false);
@@ -494,18 +577,43 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             try {
                 // Validar que idPrograma sea válido antes de hacer la llamada
                 if (!idProgramaFinal || idProgramaFinal === 'N/A' || idProgramaFinal === 'undefined') {
-                    console.warn('Seguimiento: idPrograma no válido:', idProgramaFinal, 'no se pueden cargar datos filtrados');
                     setFilteredData([]);
                     return;
                 }
 
+                // Si updateTrigger > 0, significa que se acaba de guardar algo, limpiar caché
+                if (updateTrigger > 0) {
+                    clearCache('Seguimientos');
+                }
+                
                 const response = await Filtro7();
-                const response2 = await Filtro9(response.filter(item => item['id_programa'] === idProgramaFinal), idProgramaFinal);
-                console.log('Datos cargados:', response2);
-                setFilteredData(response2);
+                
+                // Debug: mostrar datos recibidos
+                console.log('📊 Filtro7 - Total seguimientos:', response?.length);
+                console.log('📊 idProgramaFinal:', idProgramaFinal, 'tipo:', typeof idProgramaFinal);
+                
+                if (response && response.length > 0) {
+                    console.log('📊 Ejemplo de seguimiento:', response[0]);
+                    console.log('📊 id_programa del primer item:', response[0]?.id_programa, 'tipo:', typeof response[0]?.id_programa);
+                }
+                
+                // Filtrar por id_programa usando comparación flexible (convertir a string)
+                const idProgramaStr = String(idProgramaFinal).trim();
+                const filteredByProgram = response.filter(item => {
+                    const itemIdStr = String(item['id_programa'] || '').trim();
+                    return itemIdStr === idProgramaStr;
+                });
+                
+                console.log('📊 Seguimientos filtrados por programa:', filteredByProgram.length);
+                
+                if (filteredByProgram.length > 0) {
+                    console.log('📊 Topics encontrados:', [...new Set(filteredByProgram.map(s => s.topic))]);
+                }
+                
+                setFilteredData(filteredByProgram);
             } catch (error) {
-                console.error('Error al filtrar datos:', error);
-                setFilteredData([]); // Establecer array vacío en caso de error
+                console.error('Error al cargar seguimientos:', error);
+                setFilteredData([]);
             }
         };
         fetchData();
@@ -639,53 +747,107 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
         if (!Array.isArray(filters)) {
             filters = [filters];
         }
-        console.log('Renderizando tabla con filtros:', filters);
-        const filteredData = Filtro8(data, filters);
-        if (filteredData.length === 0) {
+        console.log('📋 renderFilteredTable - data recibida:', data?.length, 'filtros:', filters);
+        
+        const tableData = Filtro8(data, filters);
+        console.log('📋 renderFilteredTable - Filtrados por topic:', tableData?.length);
+        
+        if (tableData.length === 0) {
             return <p>Ningún seguimiento por mostrar</p>;
         }
 
-        filteredData.sort((a, b) => {
+        tableData.sort((a, b) => {
             const dateA = new Date(a.timestamp.split('/').reverse().join('-'));
             const dateB = new Date(b.timestamp.split('/').reverse().join('-'));
             return dateB - dateA;
         });
 
         return (
-            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px' }}>
-                <thead>
-                    <tr>
-                        <th style={{ width: '3%', border: '1px solid grey' }}>Fecha</th>
-                        <th style={{ width: '15%', border: '1px solid grey' }}>Comentario</th>
-                        <th style={{ width: '2%', border: '1px solid grey' }}>Riesgo</th>
-                        <th style={{ width: '4%', border: '1px solid grey' }}>Usuario</th>
-                        <th style={{ width: '2%', border: '1px solid grey' }}>Adjunto</th>
-                        <th style={{ width: '2%', border: '1px solid grey' }}>Fase</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item, index) => (
-                        <tr key={index} style={{ backgroundColor: getBackgroundColor(item['riesgo']) }}>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['timestamp']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', paddingLeft: '6px', paddingRight: '6px' }}>{item['mensaje']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['riesgo']}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>{item['usuario'].split('@')[0]}</td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
-                                {item['url_adjunto'] ? (
-                                    <a href={item['url_adjunto']} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>
-                                        Enlace
-                                    </a>
-                                ) : (
-                                    <strong>-</strong>
-                                )}
-                            </td>
-                            <td style={{ border: '1px solid grey', verticalAlign: 'middle' }}>
-                                {useTopicAsFase ? item['topic'] : getFaseName(item['fase'])}
-                            </td>
+            <div style={{ position: 'relative', width: '100%', paddingRight: '45px', display: 'flex', justifyContent: 'center' }}>
+                <table style={{ width: '90%', maxWidth: '90%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px', tableLayout: 'fixed', margin: '10px auto' }}>
+                    <thead>
+                        <tr>
+                            <th style={{ width: '8%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Fecha</th>
+                            <th style={{ width: '35%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Comentario</th>
+                            <th style={{ width: '8%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Riesgo</th>
+                            <th style={{ width: '12%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Usuario</th>
+                            <th style={{ width: '10%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Adjunto</th>
+                            <th style={{ width: '27%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Fase</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {tableData.map((item, index) => {
+                            const rowKey = `${filters[0]}-${index}`;
+                            return (
+                                <tr 
+                                    key={index} 
+                                    style={{ 
+                                        backgroundColor: getBackgroundColor(item['riesgo']),
+                                        position: 'relative',
+                                        cursor: 'pointer'
+                                    }}
+                                    onMouseEnter={() => setHoveredRowIndex(rowKey)}
+                                    onMouseLeave={() => setHoveredRowIndex(null)}
+                                    onClick={() => handleOpenEditModal(item)}
+                                >
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['timestamp']}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', padding: '3px 4px', fontSize: '0.8rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{item['mensaje']}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['riesgo']}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['usuario']?.split('@')[0] || '-'}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>
+                                        {item['url_adjunto'] ? (
+                                            <a 
+                                                href={item['url_adjunto']} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                style={{ color: 'blue', textDecoration: 'underline', fontSize: '0.75rem' }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                Enlace
+                                            </a>
+                                        ) : (
+                                            <strong>-</strong>
+                                        )}
+                                    </td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem', wordWrap: 'break-word' }}>
+                                        {useTopicAsFase ? item['topic'] : getFaseName(item['fase'])}
+                                    </td>
+                                    {/* Icono de edición flotante - aparece fuera de la tabla */}
+                                    {hoveredRowIndex === rowKey && (
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                right: '-40px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                zIndex: 10
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenEditModal(item);
+                                                }}
+                                                style={{
+                                                    backgroundColor: '#1976d2',
+                                                    color: 'white',
+                                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                                    padding: '4px'
+                                                }}
+                                                title="Editar seguimiento"
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        </div>
+                                    )}
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
         );
     };
 
@@ -750,16 +912,19 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                 ];
 
                 await sendDataToServer(dataSend);
-                if (selectedOption.id === undefined) {
-                    console.log("Opción seleccionada -> Ninguna");
-                } else {
+                
+                // Esperar un momento para asegurar que los datos se guarden en Sheets
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                if (selectedOption.id !== undefined) {
                     await sendDataToServerCrea(dataSendCrea);
                 }
-
+                
                 clearFileLink();
                 setLoading(false);
                 setOpenModal(true);
-                setUpdateTrigger(true);
+                // Usar contador para asegurar que el useEffect siempre se dispare
+                setUpdateTrigger(prev => prev + 1);
                 setComment('');
                 setValue('');
                 setSelectedPhase('');
@@ -927,13 +1092,17 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             ];
 
             await sendDataToServerHistorico(historicalData);
+            
+            // Esperar un momento para asegurar que los datos se guarden en Sheets
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             setOpenSecondModal(false);
             setResolutionDate(null);
             setDuration('');
             setResolutionURL('');
             setDecision(''); // Reseteamos la decisión
-            setUpdateTrigger(true);
+            // Usar contador para asegurar que el useEffect siempre se dispare
+            setUpdateTrigger(prev => prev + 1);
         } catch (error) {
             console.error('Error al enviar datos históricos:', error);
         }
@@ -1015,16 +1184,19 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                 ];
 
                 await sendDataToServer(dataSend);
-                if (selectedOption.id === undefined) {
-                    console.log("Opción seleccionada -> Ninguna");
-                } else {
+                
+                // Esperar un momento para asegurar que los datos se guarden en Sheets
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                if (selectedOption.id !== undefined) {
                     await sendDataToServerCrea(dataSendCrea);
                 }
 
                 clearFileLink();
                 setLoading(false);
                 setOpenModal(true);
-                setUpdateTrigger(true);
+                // Usar contador para asegurar que el useEffect siempre se dispare
+                setUpdateTrigger(prev => prev + 1);
                 setComment('');
                 setValue('');
                 setSelectedPhase('');
@@ -1577,6 +1749,121 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                     )}
                 </div>
             </div>
+
+            {/* Modal de edición de seguimiento */}
+            <Modal
+                open={editModalOpen}
+                onClose={handleCloseEditModal}
+                aria-labelledby="edit-modal-title"
+            >
+                <Box sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: isMobile ? '90%' : 500,
+                    bgcolor: 'background.paper',
+                    borderRadius: '10px',
+                    boxShadow: 24,
+                    p: 4,
+                }}>
+                    {!deleteConfirmOpen ? (
+                        <>
+                            <Typography id="edit-modal-title" variant="h6" component="h2" sx={{ mb: 2, fontWeight: 'bold' }}>
+                                Editar Seguimiento
+                            </Typography>
+                            
+                            <TextField
+                                label="Comentario"
+                                multiline
+                                rows={4}
+                                value={editComment}
+                                onChange={(e) => setEditComment(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                variant="outlined"
+                            />
+                            
+                            <FormControl component="fieldset" sx={{ mt: 2, mb: 2 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Riesgo</Typography>
+                                <RadioGroup
+                                    value={editRiesgo}
+                                    onChange={(e) => setEditRiesgo(e.target.value)}
+                                    row
+                                >
+                                    <FormControlLabel value="Alto" control={<Radio />} label="Alto" />
+                                    <FormControlLabel value="Medio" control={<Radio />} label="Medio" />
+                                    <FormControlLabel value="Bajo" control={<Radio />} label="Bajo" />
+                                </RadioGroup>
+                            </FormControl>
+                            
+                            <TextField
+                                label="Enlace adjunto"
+                                value={editAdjunto}
+                                onChange={(e) => setEditAdjunto(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                variant="outlined"
+                                placeholder="https://..."
+                            />
+                            
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+                                <Button 
+                                    variant="outlined" 
+                                    color="error" 
+                                    startIcon={<DeleteIcon />}
+                                    onClick={() => setDeleteConfirmOpen(true)}
+                                >
+                                    Eliminar
+                                </Button>
+                                <Box>
+                                    <Button 
+                                        variant="outlined" 
+                                        onClick={handleCloseEditModal}
+                                        sx={{ mr: 1 }}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button 
+                                        variant="contained" 
+                                        color="primary"
+                                        startIcon={<SaveIcon />}
+                                        onClick={handleSaveEdit}
+                                        disabled={editLoading}
+                                    >
+                                        {editLoading ? 'Guardando...' : 'Guardar'}
+                                    </Button>
+                                </Box>
+                            </Box>
+                        </>
+                    ) : (
+                        <>
+                            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#d32f2f' }}>
+                                ¿Eliminar seguimiento?
+                            </Typography>
+                            <Typography sx={{ mb: 3 }}>
+                                Esta acción no se puede deshacer. El seguimiento será eliminado permanentemente.
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                <Button 
+                                    variant="outlined" 
+                                    onClick={() => setDeleteConfirmOpen(false)}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button 
+                                    variant="contained" 
+                                    color="error"
+                                    onClick={handleDeleteSeguimiento}
+                                    disabled={editLoading}
+                                >
+                                    {editLoading ? 'Eliminando...' : 'Sí, eliminar'}
+                                </Button>
+                            </Box>
+                        </>
+                    )}
+                </Box>
+            </Modal>
         </>
     );
 };

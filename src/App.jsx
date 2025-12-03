@@ -21,23 +21,43 @@ import RegistroCalificado from './components/RegistroCalificado';
 import AcreditacionAltaCalidad from './components/AltaCalidad';
 import DashboardEstadisticas from './components/DashboardEstadisticas';
 import ConsolidadoHistoricoPage from './components/ConsolidadoHistoricoPage';
+import GlobalLoading from './components/GlobalLoading';
+import { preloadCommonData } from './service/fetch';
 
 function App() {
   const [isLogged, setLogged] = useState(false);
+  const [isPreloading, setIsPreloading] = useState(false);
 
-  useEffect(
-    () =>{
-      const token = Cookies.get('token');
-      if (token) {
-        setLogged(true);
-      }
+  useEffect(() => {
+    const token = Cookies.get('token');
+    if (token) {
+      setLogged(true);
     }
-  )  
+  }, []);
+
+  // Pre-cargar datos comunes cuando el usuario está logueado
+  useEffect(() => {
+    if (isLogged && !isPreloading) {
+      setIsPreloading(true);
+      preloadCommonData()
+        .then(() => {
+          console.log('✅ Datos pre-cargados correctamente');
+        })
+        .catch((error) => {
+          console.error('⚠️ Error en pre-carga:', error);
+        })
+        .finally(() => {
+          setIsPreloading(false);
+        });
+    }
+  }, [isLogged]);
+
   return (
     <>
-    
-    {
-      isLogged ? (
+      {/* Componente de carga global */}
+      <GlobalLoading />
+      
+      {isLogged ? (
         <Router>
             <Routes>
               <Route path="/" element={<Home /> } />

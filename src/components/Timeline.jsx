@@ -206,9 +206,12 @@ const TimelineComponent = ({ data, programaAcademico, showTitle = true }) => {
         const startPosition = getTimelinePosition(item.startDate, new Date(2000, 0, 1), new Date(2035, 11, 31));
         const segmentWidth = getSegmentWidth(item.startDate, item.endDate, new Date(2000, 0, 1), new Date(2035, 11, 31));
         
+        // Crear key única combinando id, proceso, resolucion e index
+        const uniqueKey = `${item.id || 'item'}-${item.proceso || ''}-${item.resolucion || ''}-${index}`;
+        
         return (
           <div
-            key={item.id || index}
+            key={uniqueKey}
             className="historico-timeline-segment"
             style={{ 
               left: `${startPosition}%`,

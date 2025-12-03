@@ -92,22 +92,38 @@ export const Filtro7 = () => filterByProperty(hojaSeguimientos, {}, '');
 
 export const Filtro8 = (datos, terminos_a_filtrar) => {
   try {
+    console.log('🔍 Filtro8 - Datos recibidos:', datos?.length);
+    console.log('🔍 Filtro8 - Términos a filtrar:', terminos_a_filtrar);
+    
     if (!Array.isArray(datos)) {
-      throw new Error('Los datos proporcionados no son un array');
+      console.log('🔍 Filtro8 - datos no es array');
+      return [];
     }
 
     if (!Array.isArray(terminos_a_filtrar) || terminos_a_filtrar.some(term => typeof term !== 'string')) {
-      throw new Error('El término de filtrado proporcionado no es válido');
+      console.log('🔍 Filtro8 - términos no válidos');
+      return [];
     }
+
+    // Normalizar términos a lowercase
+    const terminosNormalizados = terminos_a_filtrar.map(t => t.toLowerCase().trim());
+
+    // Mostrar topics únicos en los datos
+    const topicsExistentes = [...new Set(datos.map(d => d.topic).filter(Boolean))];
+    console.log('🔍 Filtro8 - Topics existentes en datos:', topicsExistentes);
 
     const filteredData = datos.filter(item => {
       const propiedadValue = item['topic'];
-      return propiedadValue && terminos_a_filtrar.includes(propiedadValue.toLowerCase());
+      if (!propiedadValue) return false;
+      const topicNormalizado = propiedadValue.toLowerCase().trim();
+      return terminosNormalizados.includes(topicNormalizado);
     });
+
+    console.log('🔍 Filtro8 - Datos filtrados:', filteredData.length);
 
     return filteredData;
   } catch (error) {
-    console.error('Error en el filtro:', error);
+    console.error('Error en Filtro8:', error);
     return [];
   }
 };
@@ -151,14 +167,86 @@ export const sendDataToServer = async (data) => {
       urlEndPoint: 'https://siac-server.vercel.app/sendData',
     });
     if (response.status) {
-      console.log('Datos enviados correctamente al servidor.');
-      // Limpiar caché relacionado con Seguimientos
-      clearCache(hojaSeguimientos);
+      console.log('✅ Seguimiento guardado correctamente');
+      // Limpiar solo el caché de seguimientos
+      clearCache('Seguimientos');
     } else {
-      console.error('Error al enviar datos al servidor.');
+      console.error('❌ Error al enviar datos:', response);
     }
+    return response;
   } catch (error) {
-    console.error('Error al procesar la solicitud:', error);
+    console.error('❌ Error en sendDataToServer:', error);
+    throw error;
+  }
+};
+
+export const updateSeguimiento = async (data) => {
+  try {
+    const response = await fetch('https://siac-server.vercel.app/updateSeguimientoRow', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchData: {
+          id_programa: data.id_programa,
+          timestamp: data.timestamp,
+          usuario: data.usuario,
+          topic: data.topic
+        },
+        updateData: [
+          data.id_programa,
+          data.timestamp,
+          data.mensaje,
+          data.riesgo,
+          data.usuario,
+          data.topic,
+          data.url_adjunto || '',
+          data.fase || ''
+        ]
+      }),
+    });
+    const result = await response.json();
+    if (result.status) {
+      console.log('✅ Seguimiento actualizado correctamente');
+      clearCache('Seguimientos');
+    } else {
+      console.error('❌ Error al actualizar seguimiento:', result);
+    }
+    return result;
+  } catch (error) {
+    console.error('❌ Error en updateSeguimiento:', error);
+    throw error;
+  }
+};
+
+export const deleteSeguimiento = async (data) => {
+  try {
+    const response = await fetch('https://siac-server.vercel.app/deleteSeguimientoRow', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        searchData: {
+          id_programa: data.id_programa,
+          timestamp: data.timestamp,
+          usuario: data.usuario,
+          topic: data.topic
+        }
+      }),
+    });
+    const result = await response.json();
+    if (result.status) {
+      console.log('✅ Seguimiento eliminado correctamente');
+      clearCache('Seguimientos');
+    } else {
+      console.error('❌ Error al eliminar seguimiento:', result);
+    }
+    return result;
+  } catch (error) {
+    console.error('❌ Error en deleteSeguimiento:', error);
+    throw error;
   }
 };
 
