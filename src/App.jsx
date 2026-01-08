@@ -35,6 +35,7 @@ function App() {
     }
   }, []);
 
+  // Pre-cargar datos comunes cuando el usuario está logueado
   useEffect(() => {
     if (isLogged && !isPreloading) {
       setIsPreloading(true);
@@ -53,6 +54,7 @@ function App() {
 
   return (
     <>
+      {/* Componente de carga global */}
       <GlobalLoading />
       
       <Router>
