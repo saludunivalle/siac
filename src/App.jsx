@@ -58,10 +58,10 @@ function App() {
       <Router>
         <Routes>
           {/* Rutas públicas - accesibles sin login */}
-          <Route path="/" element={isLogged ? <Home /> : <GoogleLogin setIsLogin={setLogged} />} />
+          <Route path="/" element={ <Home /> } />
           <Route path="/estadisticas" element={<DashboardEstadisticas />} />
           <Route path="/consolidado-historico" element={<ConsolidadoHistoricoPage />} />
-          
+          <Route path="/login" element={<GoogleLogin setIsLogin={setLogged} />} />
           {/* Rutas protegidas - solo si está logueado */}
           {isLogged ? (
             <>
@@ -80,10 +80,10 @@ function App() {
               <Route path="/mod" element={<Mod />} />
               <Route path="/registro-calificado" element={<RegistroCalificado />} />
               <Route path="/acreditacion-alta-calidad" element={<AcreditacionAltaCalidad />} />
-              <Route path="*" element={<h1>Página no encontrada</h1>} />
+              
             </>
           ) : (
-            <Route path="*" element={<h1>No loggin</h1>} />
+            <Route path="*" element={<GoogleLogin setIsLogin={setLogged} />} />
           )}
         </Routes>
       </Router>
