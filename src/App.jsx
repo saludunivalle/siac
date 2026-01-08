@@ -57,10 +57,16 @@ function App() {
       {/* Componente de carga global */}
       <GlobalLoading />
       
-      {isLogged ? (
-        <Router>
-            <Routes>
-              <Route path="/" element={<Home /> } />
+      <Router>
+        <Routes>
+          {/* Rutas públicas - accesibles sin login */}
+          <Route path="/" element={ <Home /> } />
+          <Route path="/estadisticas" element={<DashboardEstadisticas />} />
+          <Route path="/consolidado-historico" element={<ConsolidadoHistoricoPage />} />
+          <Route path="/login" element={<GoogleLogin setIsLogin={setLogged} />} />
+          {/* Rutas protegidas - solo si está logueado */}
+          {isLogged ? (
+            <>
               <Route path="/program_details" element={<ProgramDetails />} />
               <Route path="/seguimiento" element={<Seguimiento />} />
               <Route path="/seguimientorac" element={<Seguimientorac />} />
@@ -76,35 +82,13 @@ function App() {
               <Route path="/mod" element={<Mod />} />
               <Route path="/registro-calificado" element={<RegistroCalificado />} />
               <Route path="/acreditacion-alta-calidad" element={<AcreditacionAltaCalidad />} />
-              <Route path="/estadisticas" element={<DashboardEstadisticas />} />
-              <Route path="/consolidado-historico" element={<ConsolidadoHistoricoPage />} />
-              <Route
-                        path="*"
-                        element={
-                            <>
-                                <h1>No Found Route</h1>
-                            </>
-                        }
-                    />
-          </Routes>
+              
+            </>
+          ) : (
+            <Route path="*" element={<GoogleLogin setIsLogin={setLogged} />} />
+          )}
+        </Routes>
       </Router>
-      ):(
-        <Router>
-            <Routes>
-              <Route path="/" element={<GoogleLogin setIsLogin={setLogged} /> } />
-              <Route
-                        path="*"
-                        element={
-                            <>
-                                <h1>No login</h1>
-                            </>
-                        }
-                    />
-              </Routes>
-        </Router>
-      )
-    }
-      
     </>
   )
 }
