@@ -35,6 +35,7 @@ function App() {
     }
   }, []);
 
+  // Pre-cargar datos comunes cuando el usuario está logueado
   useEffect(() => {
     if (isLogged && !isPreloading) {
       setIsPreloading(true);
@@ -53,18 +54,13 @@ function App() {
 
   return (
     <>
+      {/* Componente de carga global */}
       <GlobalLoading />
       
-      <Router>
-        <Routes>
-          {/* Rutas públicas - accesibles sin login */}
-          <Route path="/" element={<Home />} />
-          <Route path="/estadisticas" element={<DashboardEstadisticas />} />
-          <Route path="/consolidado-historico" element={<ConsolidadoHistoricoPage />} />
-          
-          {/* Rutas protegidas - solo si está logueado */}
-          {isLogged ? (
-            <>
+      {isLogged ? (
+        <Router>
+            <Routes>
+              <Route path="/" element={<Home /> } />
               <Route path="/program_details" element={<ProgramDetails />} />
               <Route path="/seguimiento" element={<Seguimiento />} />
               <Route path="/seguimientorac" element={<Seguimientorac />} />
@@ -80,26 +76,35 @@ function App() {
               <Route path="/mod" element={<Mod />} />
               <Route path="/registro-calificado" element={<RegistroCalificado />} />
               <Route path="/acreditacion-alta-calidad" element={<AcreditacionAltaCalidad />} />
-            </>
-          ) : (
-             <Router>
+              <Route path="/estadisticas" element={<DashboardEstadisticas />} />
+              <Route path="/consolidado-historico" element={<ConsolidadoHistoricoPage />} />
+              <Route
+                        path="*"
+                        element={
+                            <>
+                                <h1>No Found Route</h1>
+                            </>
+                        }
+                    />
+          </Routes>
+      </Router>
+      ):(
+        <Router>
             <Routes>
               <Route path="/" element={<GoogleLogin setIsLogin={setLogged} /> } />
               <Route
                         path="*"
                         element={
                             <>
-                                <h1>No loggin</h1>
+                                <h1>No login</h1>
                             </>
                         }
                     />
               </Routes>
         </Router>
-          )}
-          
-          <Route path="*" element={<h1>Página no encontrada</h1>} />
-        </Routes>
-      </Router>
+      )
+    }
+      
     </>
   )
 }
