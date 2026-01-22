@@ -182,7 +182,7 @@ const Home = () => {
     const fetchData = async () => {
       try {
         const response = await Filtro5();
-        console.log('Datos obtenidos de Filtro5:', response);
+        //console.log('Datos obtenidos de Filtro5:', response);
         // Validar que response sea un array antes de usar filter
         if (!response || !Array.isArray(response)) {
           console.error('Error: La respuesta de Filtro5 no es un array válido:', response);
@@ -234,17 +234,17 @@ const Home = () => {
         });
 
         const datosUnicos = Array.from(programMap.values());
-        console.log(`Programas totales: ${response.length}, Programas únicos después de deduplicar: ${datosUnicos.length}`);
+        //console.log(`Programas totales: ${response.length}, Programas únicos después de deduplicar: ${datosUnicos.length}`);
         
         // Log detallado para debugging
-        console.log('=== ANÁLISIS DE CONTEO ===');
-        console.log('Programas activos por nivel de formación:');
+        //console.log('=== ANÁLISIS DE CONTEO ===');
+        //console.log('Programas activos por nivel de formación:');
         const activosPorNivel = {};
         datosUnicos.filter(item => item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede').forEach(item => {
           const nivel = item['nivel de formación'];
           activosPorNivel[nivel] = (activosPorNivel[nivel] || 0) + 1;
         });
-        console.table(activosPorNivel);
+        //console.table(activosPorNivel);
         
         const activosPregradoUniversitario = datosUnicos.filter(
           (item) =>
