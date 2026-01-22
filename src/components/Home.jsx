@@ -182,7 +182,7 @@ const Home = () => {
     const fetchData = async () => {
       try {
         const response = await Filtro5();
-        
+        //console.log('Datos obtenidos de Filtro5:', response);
         // Validar que response sea un array antes de usar filter
         if (!response || !Array.isArray(response)) {
           console.error('Error: La respuesta de Filtro5 no es un array válido:', response);
@@ -193,12 +193,12 @@ const Home = () => {
           (item) =>
             item['pregrado/posgrado'] === 'Pregrado' &&
             item['nivel de formación'] === 'Universitario' &&
-            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede' || item['programa académico'] === 'Fonoaudiología ')
         ).length;
 
         const activosPregradoTecnologico = response.filter(
           (item) =>
-            item['pregrado/posgrado'] === 'Pregrado' &&
+            item['pregrado/posgrado'] === 'Tecnológico' &&
             item['nivel de formación'] === 'Tecnológico' &&
             (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
         ).length;
@@ -256,7 +256,7 @@ const Home = () => {
           activosPosgrado.especializacionUniversitaria +
           activosPosgrado.especializacionMedicoQuirurgica +
           activosPosgrado.doctorado;
-
+//console.log('Total Activos Calculado:', totalActivos);
         setProgramData({
           activos: {
             pregrado: {
