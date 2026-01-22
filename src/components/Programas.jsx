@@ -91,7 +91,7 @@ const Programas = () => {
                 let programsForCounting = [...allProgramsGlobal];
                 // 1. Primero filtrar por Pregrado/Posgrado
                 if (selectedValues.includes('option1')) { // Pregrado selected for counts
-                    programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec');
+                    programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec' || item['pregrado/posgrado'] == 'Universitario');
                 } else if (selectedValues.includes('option2')) { // Posgrado selected for counts
                     programsForCounting = allProgramsGlobal.filter(item => item['pregrado/posgrado'] === 'Posgrado');
                     
@@ -178,7 +178,7 @@ const Programas = () => {
                 // 2. Filter by Pregrado/Posgrado based on selectedValues ('option1', 'option2')
                 // This overrides the general isCargo filter if option1 or option2 is selected.
                 if (selectedValues.includes('option1')) { // Pregrado
-                    result = result.filter(item => item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec');
+                    result = result.filter(item => item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec' || item['pregrado/posgrado'] === 'Universitario');
                 } else if (selectedValues.includes('option2')) { // Posgrado
                     result = result.filter(item => item['pregrado/posgrado'] === 'Posgrado');
                     
@@ -438,7 +438,7 @@ const Programas = () => {
             let filteredResult = rowData.filter(item => {
                 // Filtra por "Pregrado" o "Posgrado" primero, si se seleccionó alguno
                 const pregradoOrPosgradoFilter = newSelectedValues.includes('option1') 
-                    ? item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec'
+                    ? item['pregrado/posgrado'] === 'Pregrado' || item['pregrado/posgrado'] === 'Pregrado-Tec' || item['pregrado/posgrado'] === 'Universitario'
                     : newSelectedValues.includes('option2')
                         ? item['pregrado/posgrado'] === 'Posgrado'
                         : true;
