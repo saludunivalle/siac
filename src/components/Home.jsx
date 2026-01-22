@@ -182,21 +182,80 @@ const Home = () => {
     const fetchData = async () => {
       try {
         const response = await Filtro5();
-        //console.log('Datos obtenidos de Filtro5:', response);
+        console.log('Datos obtenidos de Filtro5:', response);
         // Validar que response sea un array antes de usar filter
         if (!response || !Array.isArray(response)) {
           console.error('Error: La respuesta de Filtro5 no es un array válido:', response);
           return;
         }
         
-        const activosPregradoUniversitario = response.filter(
+        // Deduplicar programas SOLO cuando hay conflicto activo/inactivo:
+        // - Si dos sedes están activas → Contar AMBAS
+        // - Si una activa y otra inactiva → Contar solo la activa
+        // - Si ambas inactivas → Contar solo una (preferir Cali)
+        const programMap = new Map();
+        
+        response.forEach(item => {
+          // Usar una clave única más robusta: combinar código SNIES válido + programa académico
+          const sniesValido = item['codigo snies'] && 
+                             !['En creación', 'En Creación', 'Negación RC', 'Desistido MEN', 'Desistido Interno', '??'].includes(item['codigo snies']);
+          
+          // Si tiene SNIES válido, usar eso + sede; si no, usar programa académico + sede
+          // IMPORTANTE: Ahora incluimos la sede en la clave para que sedes activas cuenten por separado
+          const key = sniesValido 
+            ? `${item['codigo snies']}_${item['sede']}` 
+            : `${item['programa académico']}_${item['sede']}`;
+          
+          if (!key) return;
+
+          const existing = programMap.get(key);
+          const esActivo = item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede';
+
+          // Si no existe, agregarlo siempre
+          if (!existing) {
+            programMap.set(key, item);
+            return;
+          }
+
+          const existingEsActivo = existing['estado'] === 'Activo' || existing['estado'] === 'Activo - Sede';
+
+          // Si el actual está activo, siempre reemplazar (para tener la info más actualizada)
+          if (esActivo) {
+            programMap.set(key, item);
+            return;
+          }
+
+          // Si el existente está activo y el actual no, mantener el existente
+          if (existingEsActivo && !esActivo) {
+            return;
+          }
+
+          // Si ambos están inactivos, mantener el primero que se encontró
+        });
+
+        const datosUnicos = Array.from(programMap.values());
+        console.log(`Programas totales: ${response.length}, Programas únicos después de deduplicar: ${datosUnicos.length}`);
+        
+        // Log detallado para debugging
+        console.log('=== ANÁLISIS DE CONTEO ===');
+        console.log('Programas activos por nivel de formación:');
+        const activosPorNivel = {};
+        datosUnicos.filter(item => item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede').forEach(item => {
+          const nivel = item['nivel de formación'];
+          activosPorNivel[nivel] = (activosPorNivel[nivel] || 0) + 1;
+        });
+        console.table(activosPorNivel);
+        
+        const activosPregradoUniversitario = datosUnicos.filter(
           (item) =>
-            item['pregrado/posgrado'] === 'Pregrado' &&
+            // Incluir tanto 'Pregrado' como 'Universitario' en pregrado/posgrado
+            (['Pregrado', 'Universitario'].includes(item['pregrado/posgrado']) ||
+             item['pregrado/posgrado']?.toLowerCase().includes('pregrado')) &&
             item['nivel de formación'] === 'Universitario' &&
-            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede' || item['programa académico'] === 'Fonoaudiología ')
+            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
         ).length;
 
-        const activosPregradoTecnologico = response.filter(
+        const activosPregradoTecnologico = datosUnicos.filter(
           (item) =>
             item['pregrado/posgrado'] === 'Tecnológico' &&
             item['nivel de formación'] === 'Tecnológico' &&
@@ -204,41 +263,41 @@ const Home = () => {
         ).length;
 
         const activosPosgrado = {
-          maestria: response.filter(
+          maestria: datosUnicos.filter(
             (item) =>
               item['nivel de formación'] === 'Maestría' &&
               (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
           ).length,
-          especializacionUniversitaria: response.filter(
+          especializacionUniversitaria: datosUnicos.filter(
             (item) =>
               item['nivel de formación'] === 'Especialización Universitaria' &&
               (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
           ).length,
-          especializacionMedicoQuirurgica: response.filter(
+          especializacionMedicoQuirurgica: datosUnicos.filter(
             (item) =>
               item['nivel de formación'] === 'Especialización Médico Quirúrgica' &&
               (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
           ).length,
-          doctorado: response.filter(
+          doctorado: datosUnicos.filter(
             (item) =>
               item['nivel de formación'] === 'Doctorado' &&
               (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
           ).length,
         };
 
-        const enCreacion = response.filter(
+        const enCreacion = datosUnicos.filter(
           (item) =>
             item['estado'] === 'En Creación' ||
             item['estado'] === 'En Creación - Sede'
         ).length;
 
-        const inactivosDesistidoInterno = response.filter(item => item['estado'] === 'Desistido Interno').length;
-        const inactivosDesistidoMEN = response.filter(item => item['estado'] === 'Desistido MEN').length;
-        const inactivosDesistidoMENSede = response.filter(item => item['estado'] === 'Desistido MEN - Sede').length;
-        const inactivosInactivo = response.filter(item => item['estado'] === 'Inactivo').length;
-        const inactivosInactivoSede = response.filter(item => item['estado'] === 'Inactivo - Sede').length;
-        const inactivosInactivoVencidoRC = response.filter(item => item['estado'] === 'Inactivo - Vencido RC').length;
-        const inactivosNegacionRC = response.filter(item => item['estado'] === 'Negación RC').length;
+        const inactivosDesistidoInterno = datosUnicos.filter(item => item['estado'] === 'Desistido Interno').length;
+        const inactivosDesistidoMEN = datosUnicos.filter(item => item['estado'] === 'Desistido MEN').length;
+        const inactivosDesistidoMENSede = datosUnicos.filter(item => item['estado'] === 'Desistido MEN - Sede').length;
+        const inactivosInactivo = datosUnicos.filter(item => item['estado'] === 'Inactivo').length;
+        const inactivosInactivoSede = datosUnicos.filter(item => item['estado'] === 'Inactivo - Sede').length;
+        const inactivosInactivoVencidoRC = datosUnicos.filter(item => item['estado'] === 'Inactivo - Vencido RC').length;
+        const inactivosNegacionRC = datosUnicos.filter(item => item['estado'] === 'Negación RC').length;
 
         const totalInactivos =
           inactivosDesistidoInterno +
@@ -280,9 +339,9 @@ const Home = () => {
           totalGeneral: totalActivos + enCreacion + totalInactivos,
         });
 
-        // Obtener los programas vencidos utilizando las funciones
-        const expiredRRCPrograms = getExpiredRRCPrograms(response);
-        const expiredRACPrograms = getExpiredRACPrograms(response);
+        // Obtener los programas vencidos utilizando las funciones (con datos únicos)
+        const expiredRRCPrograms = getExpiredRRCPrograms(datosUnicos);
+        const expiredRACPrograms = getExpiredRACPrograms(datosUnicos);
 
         console.log('Programas RRC vencidos:', expiredRRCPrograms);
         console.log('Programas RAC vencidos:', expiredRACPrograms);
@@ -291,11 +350,11 @@ const Home = () => {
         setExpiredRRCCount(expiredRRCPrograms.length);
         setExpiredRACCount(expiredRACPrograms.length);
 
-        // Procesar conteo de programas próximos a vencer
-        countExpiringPrograms(response);
+        // Procesar conteo de programas próximos a vencer (con datos únicos)
+        countExpiringPrograms(datosUnicos);
 
-        setFilteredData2(response);
-        updateCharts(response);
+        setFilteredData2(datosUnicos);
+        updateCharts(datosUnicos);
       } catch (error) {
         console.error('Error al filtrar datos:', error);
       }
