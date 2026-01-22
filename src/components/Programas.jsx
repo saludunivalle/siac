@@ -260,6 +260,7 @@ const Programas = () => {
                 }
             } finally {
                 setLoading(false);
+                setInitialLoading(false);
             }
         };
 
