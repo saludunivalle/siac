@@ -9,7 +9,13 @@ const CollapsibleButton = ({ buttonText, content, nestedButton, defaultClosed, b
   };
 
   return (
-    <div >
+    <div style={{
+      marginBottom: '12px',
+      isolation: 'isolate',
+      position: 'relative',
+      backgroundColor: 'white',
+      zIndex: 1
+    }}>
       <button 
         className='collapsible-button' 
         onClick={toggleCollapsible}
@@ -18,7 +24,14 @@ const CollapsibleButton = ({ buttonText, content, nestedButton, defaultClosed, b
         {buttonText} {isOpen ? '▲' : '▼'} 
       </button>
       {isOpen && (
-        <div>
+        <div style={{
+          width: '100%',
+          background: 'white',
+          marginBottom: '10px',
+          padding: '10px 0',
+          position: 'relative',
+          zIndex: 2
+        }}>
           {content}
           {nestedButton}
         </div>
