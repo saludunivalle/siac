@@ -11,6 +11,9 @@
     background-color: #e2dddd;
     cursor: pointer;
     color: black;
+    margin-bottom: 10px;
+    position: static;
+    z-index: auto;
 }
 
 .collapsible-button:hover {

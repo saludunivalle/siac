@@ -7,6 +7,16 @@
   width: 100%;
   border-collapse: collapse;
   overflow: visible;
+  position: static;
+  height: auto;
+  z-index: auto;
+}
+
+.row-container {
+  position: static;       /* Añade esto */
+  overflow: visible;      /* Añade esto */
+  height: auto;           /* Añade esto */
+  z-index: auto;          /* Añade esto */
 }
 
 .row-container th {
@@ -42,9 +52,10 @@
   font-weight: 600;
   background: linear-gradient(135deg, #B22222 0%, #8B0000 100%);
   color: white;
-  position: sticky;
+  /* Eliminado position sticky para evitar superposición con otros colapsables */
+  /* position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 1; */
 }
 
 .bold {

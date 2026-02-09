@@ -710,8 +710,10 @@ const Programas = () => {
                 </div>
             </div>
             {filteredData && filteredData.length > 0 ? (
-                <div className='row-container'>
+                
+                <div className='row-container' >
                     <table style={{ width: '100%', textAlign: 'center', marginTop: '10px' }}>
+                        
                         <thead>
                             <tr>
                                 <th className="bold" style={{ width: '25%', backgroundColor: headerBackgroundColor }}>Programa Académico</th>
@@ -733,6 +735,13 @@ const Programas = () => {
                             </tr>
                         </thead>
                     </table>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        position: 'relative',
+                        isolation: 'isolate'
+                    }}>
                     {filteredData.some(data => data['escuela'] === 'Bacteriología y Lab. Clínico') &&
                         <CollapsibleButton buttonText={`Bacteriología y Lab. Clínico (${Filtro4(filteredData, 'Bacteriología y Lab. Clínico').length})`} content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
                     }
@@ -742,9 +751,7 @@ const Programas = () => {
                     {filteredData.some(data => data['escuela'] === 'Enfermería') &&
                         <CollapsibleButton buttonText={`Enfermería (${Filtro4(filteredData, 'Enfermería').length})`} content={renderFilteredTable(filteredData, 'Enfermería')} />
                     }
-                    {filteredData.some(data => data['escuela'] === 'Medicina') &&
-                        <CollapsibleButton buttonText={`Medicina (${Filtro4(filteredData, 'Medicina').length})`} content={renderFilteredTable(filteredData, 'Medicina')} />
-                    }
+                    
                     {filteredData.some(data => data['escuela'] === 'Odontología') &&
                         <CollapsibleButton buttonText={`Odontología (${Filtro4(filteredData, 'Odontología').length})`} content={renderFilteredTable(filteredData, 'Odontología')} />
                     }
@@ -757,14 +764,19 @@ const Programas = () => {
                     {filteredData.some(data => data['escuela'] === 'Dirección de Posgrados') &&
                         <CollapsibleButton buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
                     }
+                    {filteredData.some(data => data['escuela'] === 'Medicina') &&
+                        <CollapsibleButton buttonText={`Medicina (${Filtro4(filteredData, 'Medicina').length})`} content={renderFilteredTable(filteredData, 'Medicina')} />
+                    }
                     {filteredData.some(item => item['escuela'] === ' ' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ') &&
                         <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
                     }
+                    </div>
                 </div>
             ) : (
                 <p>Ningún programa por mostrar</p>
+                
             )}
-            <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
+           
         </>
     );
 };
