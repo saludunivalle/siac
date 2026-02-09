@@ -710,8 +710,10 @@ const Programas = () => {
                 </div>
             </div>
             {filteredData && filteredData.length > 0 ? (
+                
                 <div className='row-container' >
                     <table style={{ width: '100%', textAlign: 'center', marginTop: '10px' }}>
+                        
                         <thead>
                             <tr>
                                 <th className="bold" style={{ width: '25%', backgroundColor: headerBackgroundColor }}>Programa Académico</th>
@@ -772,8 +774,9 @@ const Programas = () => {
                 </div>
             ) : (
                 <p>Ningún programa por mostrar</p>
+                
             )}
-            <button onClick={handleBackClick} style={{ fontSize: '16px', backgroundColor: '#f0f0f0', color: 'black', borderRadius: '5px', border: '1px solid #666', padding: '10px 20px', cursor: 'pointer', margin: '10px 0px -15px' }}>Atrás</button>
+           
         </>
     );
 };
