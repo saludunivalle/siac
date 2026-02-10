@@ -743,32 +743,32 @@ const Programas = () => {
                         isolation: 'isolate'
                     }}>
                     {filteredData.some(data => data['escuela'] === 'Bacteriología y Lab. Clínico') &&
-                        <CollapsibleButton buttonText={`Bacteriología y Lab. Clínico (${Filtro4(filteredData, 'Bacteriología y Lab. Clínico').length})`} content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`Bacteriología y Lab. Clínico (${Filtro4(filteredData, 'Bacteriología y Lab. Clínico').length})`} content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Ciencias Básicas') &&
-                        <CollapsibleButton buttonText={`Ciencias Básicas (${Filtro4(filteredData, 'Ciencias Básicas').length})`} content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`Ciencias Básicas (${Filtro4(filteredData, 'Ciencias Básicas').length})`} content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Enfermería') &&
-                        <CollapsibleButton buttonText={`Enfermería (${Filtro4(filteredData, 'Enfermería').length})`} content={renderFilteredTable(filteredData, 'Enfermería')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`Enfermería (${Filtro4(filteredData, 'Enfermería').length})`} content={renderFilteredTable(filteredData, 'Enfermería')} />
                     }
                     
                     {filteredData.some(data => data['escuela'] === 'Odontología') &&
-                        <CollapsibleButton buttonText={`Odontología (${Filtro4(filteredData, 'Odontología').length})`} content={renderFilteredTable(filteredData, 'Odontología')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`Odontología (${Filtro4(filteredData, 'Odontología').length})`} content={renderFilteredTable(filteredData, 'Odontología')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Rehabilitación Humana') &&
-                        <CollapsibleButton buttonText={`Rehabilitación Humana (${Filtro4(filteredData, 'Rehabilitación Humana').length})`} content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`Rehabilitación Humana (${Filtro4(filteredData, 'Rehabilitación Humana').length})`} content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Salud Pública') &&
-                        <CollapsibleButton buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Dirección de Posgrados') &&
-                        <CollapsibleButton buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Medicina') &&
-                        <CollapsibleButton buttonText={`Medicina (${Filtro4(filteredData, 'Medicina').length})`} content={renderFilteredTable(filteredData, 'Medicina')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`Medicina (${Filtro4(filteredData, 'Medicina').length})`} content={renderFilteredTable(filteredData, 'Medicina')} />
                     }
                     {filteredData.some(item => item['escuela'] === ' ' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ') &&
-                        <CollapsibleButton buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
+                        <CollapsibleButton defaultClosed={true} buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />
                     }
                     </div>
                 </div>
