@@ -24,6 +24,7 @@ const normalizeValue = (value) => {
 const ProgramDetails = () => {
     const location = useLocation();
     const rowData = location.state;
+    // console.log('Datos recibidos en ProgramDetails:', rowData);
     const { globalVariable, userEmail } = location.state || {};
     const [clickedButton, setClickedButton] = useState('crea'); 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
