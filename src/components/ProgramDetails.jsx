@@ -6,7 +6,7 @@ import Header from './Header';
 import Seguimiento from './Seguimiento';
 import EstadisticasPrograma from './EstadisticasPrograma';
 import TimelineComponent from './Timeline';
-import { Filtro5, Filtro7, FiltroHistorico, FiltroHistoricoTimeline, getSeguimientoPMByPrograma } from "../service/data";
+import { Filtro5,Filtro11, Filtro7, FiltroHistorico, FiltroHistoricoTimeline, getSeguimientoPMByPrograma } from "../service/data";
 import { clearCache } from "../service/fetch";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'; 
 import { Tabs, Tab, Box, Button, TextField, Grid, Typography, Backdrop, CircularProgress } from '@mui/material';
@@ -22,9 +22,10 @@ const normalizeValue = (value) => {
   };
 
 const ProgramDetails = () => {
+          
     const location = useLocation();
     const rowData = location.state;
-    // console.log('Datos recibidos en ProgramDetails:', rowData);
+    console.log('Datos recibidos en ProgramDetails:', rowData);
     const { globalVariable, userEmail } = location.state || {};
     const [clickedButton, setClickedButton] = useState('crea'); 
     const [reloadSeguimiento, setReloadSeguimiento] = useState(false);
@@ -54,6 +55,45 @@ const ProgramDetails = () => {
         Periodicidad: [],
         Acreditable: [],
     });
+
+    // Filtrar seguimientos de creación para este programa
+    const seguimientosCreacion = Array.isArray(filteredDataSeg)
+        ? filteredDataSeg.filter(
+            seg =>
+                seg.id_programa === (rowData.id_programa || rowData.id || rowData.ID) &&
+                seg.topic === 'Creación'
+        )
+        : [];
+
+    // Estado para fases de programa (Filtro11)
+    const [fasesProgramas, setFasesProgramas] = useState([]);
+    const [fase28Data, setFase28Data] = useState(null);
+
+    useEffect(() => {
+        // Obtener fases del programa (Filtro11)
+        const fetchFases = async () => {
+            try {
+                const data = await Filtro11();
+                setFasesProgramas(data);
+            } catch (error) {
+                setFasesProgramas([]);
+            }
+        };
+        fetchFases();
+    }, [rowData]);
+
+    useEffect(() => {
+        // Buscar si el programa está en fase 28
+        if (!Array.isArray(fasesProgramas)) {
+            setFase28Data(null);
+            return;
+        }
+        const idProg = rowData.id_programa || rowData.id || rowData.ID;
+        const found = fasesProgramas.find(
+            f => String(f.id_programa) === String(idProg) && String(f.id_fase) === '28'
+        );
+        setFase28Data(found || null);
+    }, [fasesProgramas, rowData]);
 
     useEffect(() => {
         const fetchOptions = async () => {
@@ -109,6 +149,8 @@ const ProgramDetails = () => {
         accesos: isemail, 
         acreditable, 
         contingencia,
+        'fecha registro snies': fecharegistrosnies,
+        'enlace resolución': enlaceResolucion,
     } = rowData || {};
 
     const [formData, setFormData] = useState({
@@ -132,6 +174,8 @@ const ProgramDetails = () => {
         Acreditable: normalizeValue(acreditable),
         Contingencia: normalizeValue(contingencia),
         'Número renovaciones RRC': normalizeValue(rowData['número renovaciones RRC']) || 1,
+        'Fecha registro SNIES': normalizeValue(fecharegistrosnies),
+        'Enlace resolución': normalizeValue(enlaceResolucion),
     });
 
     useEffect(() => {
@@ -448,6 +492,30 @@ const ProgramDetails = () => {
             setIsUpdating(false);
         }
     };
+
+    
+    // Función para verificar si la fecha de registro SNIES es mayor a 2 años
+const isFechaRegistroSniesMayor2Anios = () => {
+    if (!formData['Fecha registro SNIES']) return false;
+    const [day, month, year] = formData['Fecha registro SNIES'].split('/');
+    const fechaRegistro = new Date(`${year}-${month}-${day}`);
+    const fechaLimite = new Date();
+    fechaLimite.setFullYear(fechaLimite.getFullYear() - 2);
+    return fechaRegistro < fechaLimite;
+};
+
+
+const getShortUrl = (url) => {
+  try {
+    const u = new URL(url);
+    // Solo dominio:
+    // return u.hostname;
+    // O primeros 30 caracteres:
+    return url.length > 35 ? url.slice(0, 32) + '...' : url;
+  } catch {
+    return url;
+  }
+};
     
     // Estilos de los botones de seguimiento
     const tabSx = (process) => ({
@@ -712,32 +780,101 @@ const ProgramDetails = () => {
                         <Tab label="Estadísticas" value="estadisticas" sx={tabSx('estadisticas')} />
                     </Tabs>
                 </Box>
-                {clickedButton === 'estadisticas' ? (
-                    <Box sx={{ 
-                        width: '95%', 
-                        maxWidth: 'none', 
-                        margin: '0 auto',
-                        marginLeft: 'auto',
-                        marginRight: 'auto',
-                        position: 'relative',
-                        display: 'flex',
-                        justifyContent: 'center'
-                    }}>
-                        <EstadisticasPrograma 
-                            programaAcademico={programaAcademico}
-                        />
-                    </Box>
-                ) : (
-                    <Seguimiento 
-                        handleButtonClick={clickedButton} 
-                        key={reloadSeguimiento} 
-                        fechavencrc={rowData.fechavencrc}
-                        rowData={{
-                            ...rowData,
-                            id_programa: rowData.id_programa || rowData.id || rowData.ID || 'N/A'
-                        }}
-                    />
-                )}
+                    {/* Mostrar el mensaje 'Creado el...' arriba del collapse button SOLO si hay seguimientos de creación Y el programa está en fase 28 */}
+                    {clickedButton === 'crea' && seguimientosCreacion.length > 0 && fase28Data && (
+                        <div className='about-program-section' style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginTop: '30px',
+                            textAlign: 'center',
+                            flexDirection: 'column'
+                        }}>
+                            <div className='about-program'>
+                                Creado el {fase28Data.fecha || 'N/A'} con la resolución&nbsp;
+                                <span>
+                                    {formData['Enlace resolución'] 
+                                        ? (
+                                            <a
+                                                href={formData['Enlace resolución']}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ color: '#1976d2', textDecoration: 'underline', fontWeight: 500 }}
+                                            >
+                                                Ver resolución
+                                            </a>
+                                        ) : 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {clickedButton === 'crea' ? (
+                        seguimientosCreacion.length === 0 ? (
+                            <div className='about-program-section' style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginTop: '60px',
+                                textAlign: 'center',
+                                flexDirection: 'column'
+                            }}>
+                                <div className='about-program'>
+                                    Creado el {formData['Fecha registro SNIES'] || 'N/A'} con la resolución&nbsp;
+                                    <span>
+                                        {formData['Enlace resolución'] 
+                                            ? (
+                                                <a
+                                                    href={formData['Enlace resolución']}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ color: '#1976d2', textDecoration: 'underline', fontWeight: 500 }}
+                                                >
+                                                    Ver resolución
+                                                </a>
+                                            ) : 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                        ) : (
+                            <Seguimiento 
+                                handleButtonClick={clickedButton} 
+                                key={reloadSeguimiento} 
+                                fechavencrc={rowData.fechavencrc}
+                                rowData={{
+                                    ...rowData,
+                                    id_programa: rowData.id_programa || rowData.id || rowData.ID || 'N/A'
+                                }}
+                            />
+                        )
+                    ) : (
+                        clickedButton === 'estadisticas' ? (
+                            <Box sx={{ 
+                                width: '95%', 
+                                maxWidth: 'none', 
+                                margin: '0 auto',
+                                marginLeft: 'auto',
+                                marginRight: 'auto',
+                                position: 'relative',
+                                display: 'flex',
+                                justifyContent: 'center'
+                            }}>
+                                <EstadisticasPrograma 
+                                    programaAcademico={programaAcademico}
+                                />
+                            </Box>
+                        ) : (
+                            <Seguimiento 
+                                handleButtonClick={clickedButton} 
+                                key={reloadSeguimiento} 
+                                fechavencrc={rowData.fechavencrc}
+                                rowData={{
+                                    ...rowData,
+                                    id_programa: rowData.id_programa || rowData.id || rowData.ID || 'N/A'
+                                }}
+                            />
+                        )
+                    )}
             </div>
         </>
     );

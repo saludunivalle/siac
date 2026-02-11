@@ -295,6 +295,7 @@ export const sendDataToServerHistorico = async (data) => {
 };
 
 export const Filtro10 = () => filterByProperty(hojaProc_Fases, {}, '');
+
 export const sendDataToServerCrea = async (data) => {
   try {
     const dataSend = {
@@ -833,7 +834,7 @@ export const dataProgramas = async () => {
       console.error('Error: La respuesta no contiene un array válido en data:', response);
       return [];
     }
-
+    console.log('Datos de programas obtenidos exitosamente:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error en dataProgramas:', error);

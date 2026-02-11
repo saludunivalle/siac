@@ -7,7 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico, updateSeguimiento, deleteSeguimiento } from '../service/data';
+import { Filtro10,Filtro11, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico, updateSeguimiento, deleteSeguimiento } from '../service/data';
 import { clearCache } from '../service/fetch';
 import dayjs from 'dayjs';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
@@ -161,6 +161,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             try {
                 const filtroData = await Filtro21();
                 setFiltro21Data(filtroData);
+                console.log('Datos obtenidos de Filtro21:', filtroData);
             } catch (error) {
                 console.error('Error al obtener los datos del filtro:', error);
             }
@@ -450,17 +451,22 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             setDocs([]);
     
             const general = await Filtro10();
+            console.log('Filtro10 response:', general);
             if (!general || !Array.isArray(general)) {
                 console.error('Error: Filtro10 no devolvió un array', general);
                 setLoading(false);
                 return;
             }
+
+            const fasesProgramas = await Filtro11();
+            console.log('Filtro11 response:', fasesProgramas);
     
             const general2 = general
                 .filter(item => item['proceso'] === procesoActual)
                 .sort((a, b) => a.orden - b.orden);
     
             const response = await obtenerFasesProceso();
+            console.log('obtenerFasesProceso response:', response);
             if (!response || !Array.isArray(response)) {
                 console.error('Error: obtenerFasesProceso no devolvió un array', response);
                 setLoading(false);

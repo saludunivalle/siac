@@ -514,6 +514,7 @@ const Home = () => {
         const seguimientos = await Filtro7();
         const programas = await Filtro5();
         const fases = await Filtro10();
+        //console.log('Datos de las fases de filtro10:', fases);
 
         const filteredSeguimientos = seguimientos.filter(seg => seg.usuario === user);
 
