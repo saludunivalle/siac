@@ -7,7 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico, updateSeguimiento, deleteSeguimiento } from '../service/data';
+import { Filtro10,Filtro11, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico, updateSeguimiento, deleteSeguimiento } from '../service/data';
 import { clearCache } from '../service/fetch';
 import dayjs from 'dayjs';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
@@ -160,7 +160,9 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
         const obtenerDatosFiltro = async () => {
             try {
                 const filtroData = await Filtro21();
+                console.log('Datos obtenidos de Filtro21 (raw):', filtroData);
                 setFiltro21Data(filtroData);
+                console.log('Datos obtenidos de Filtro21:', filtroData);
             } catch (error) {
                 console.error('Error al obtener los datos del filtro:', error);
             }
@@ -450,17 +452,22 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             setDocs([]);
     
             const general = await Filtro10();
+            console.log('Filtro10 response:', general);
             if (!general || !Array.isArray(general)) {
                 console.error('Error: Filtro10 no devolvió un array', general);
                 setLoading(false);
                 return;
             }
+
+            const fasesProgramas = await Filtro11();
+            console.log('Filtro11 response:', fasesProgramas);
     
             const general2 = general
                 .filter(item => item['proceso'] === procesoActual)
                 .sort((a, b) => a.orden - b.orden);
     
             const response = await obtenerFasesProceso();
+            console.log('obtenerFasesProceso response:', response);
             if (!response || !Array.isArray(response)) {
                 console.error('Error: obtenerFasesProceso no devolvió un array', response);
                 setLoading(false);
@@ -494,6 +501,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
             }
             
             const proceso = await Filtro12();
+            console.log('Filtro12 response:', proceso);
             if (!proceso || !Array.isArray(proceso)) {
                 console.error('Error: Filtro12 no devolvió un array', proceso);
                 setLoading(false);
@@ -659,23 +667,60 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                         </div>
                     ) : (
                         <>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexDirection: 'row' }}>
-                                <div>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexDirection: 'row', width: '100%' }}>
+                                <div style={{ flex: 1 }}>
                                     {Object.keys(groupedFases).length > 0 && (
                                         <div>
                                             <h2>Fases del Programa</h2>
-                                            {Object.entries(groupedFases).map(([grupo, fases]) => (
-                                                <div key={grupo}>
-                                                    {grupo !== 'Sin Agrupar' && <h4>{grupo}</h4>} {/* Subtítulo basado en fase_sup */}
+                                            {Object.entries(groupedFases).map(([grupo, fasesGrupo]) => (
+                                                <div key={grupo} style={{ marginBottom: '24px' }}>
+                                                    {grupo !== 'Sin Agrupar' && <h4>{grupo}</h4>}
                                                     <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                                                        <thead>
+                                                            <tr>
+                                                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Fase</th>
+                                                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Responsable</th>
+                                                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Documentos requeridos</th>
+                                                            </tr>
+                                                        </thead>
                                                         <tbody>
-                                                            {fases.map((fase, index) => {
+                                                            {fasesGrupo.map((fase, index) => {
                                                                 const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
                                                                 const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
                                                                 const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#ffffff');
+                                                                // Mostrar responsable o N/A
+                                                                const responsable = fase.responsable && fase.responsable.trim() !== '' ? fase.responsable : 'N/A';
+                                                                // Filtrar documentos de la fase actual
+                                                                const documentosFase = docs.filter(doc => doc.id_fase === fase.id);
                                                                 return (
                                                                     <tr key={index} style={{ backgroundColor }}>
                                                                         <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>{fase.fase}</td>
+                                                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>{responsable}</td>
+                                                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
+                                                                            {documentosFase.length > 0 ? (
+                                                                                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                                                                                    {documentosFase.map((doc, docIdx) => {
+                                                                                        const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
+                                                                                        const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'pointer' } : { cursor: 'pointer' };
+                                                                                        const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
+                                                                                        const filtroUrl = filtro ? filtro.url : null;
+                                                                                        const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
+                                                                                        const handleLinkClick = (event) => { event.stopPropagation(); };
+                                                                                        return (
+                                                                                            <li key={docIdx} style={fondoVerde} onClick={handleClick}>
+                                                                                                {filtroUrl ? (
+                                                                                                    <a href={filtroUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }} onClick={handleLinkClick}>{doc.nombre_doc}</a>
+                                                                                                ) : (
+                                                                                                    doc.nombre_doc
+                                                                                                )}
+                                                                                            </li>
+                                                                                        );
+                                                                                    })}
+                                                                                </ul>
+                                                                            ) : (
+                                                                                <span style={{ color: '#888' }}>Sin documentos</span>
+                                                                            )}
+                                                                        </td>
                                                                     </tr>
                                                                 );
                                                             })}
@@ -686,54 +731,25 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    {docs.length > 0 && (
-                                        <div>
-                                            <h2>Documentos requeridos</h2>
-                                            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                                                <tbody>
-                                                    {docs.map((doc, index) => {
-                                                        const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
-                                                        const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'pointer' } : { cursor: 'pointer' };
-                                                        const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
-                                                        const filtroUrl = filtro ? filtro.url : null;
-                                                        const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
-                                                        const handleLinkClick = (event) => {
-                                                            event.stopPropagation();
-                                                        };
-
-                                                        return (
-                                                            <tr key={index} style={fondoVerde} onClick={handleClick}>
-                                                                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
-                                                                    {filtroUrl ? <a href={filtroUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }} onClick={handleLinkClick}>{doc.nombre_doc}</a> : doc.nombre_doc}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                    <Modal open={open} onClose={handleClose}>
-                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
-                                            <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
-                                            <TextField
-                                                label="Link del documento"
-                                                value={inputValue}
-                                                onChange={handleInputChange}
-                                                fullWidth
-                                                margin="normal"
-                                            />
-                                            <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
-                                                {loading ? 'Enviando...' : 'Enviar'}
-                                            </Button>
-                                            <Button variant="contained" onClick={handleClose} style={{ marginLeft: '10px' }}>
-                                                Cancelar
-                                            </Button>
-                                            {successMessage && <p>{successMessage}</p>}
-                                        </div>
-                                    </Modal>
-                                </div>
+                                <Modal open={open} onClose={handleClose}>
+                                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
+                                        <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
+                                        <TextField
+                                            label="Link del documento"
+                                            value={inputValue}
+                                            onChange={handleInputChange}
+                                            fullWidth
+                                            margin="normal"
+                                        />
+                                        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
+                                            {loading ? 'Enviando...' : 'Enviar'}
+                                        </Button>
+                                        <Button variant="contained" onClick={handleClose} style={{ marginLeft: '10px' }}>
+                                            Cancelar
+                                        </Button>
+                                        {successMessage && <p>{successMessage}</p>}
+                                    </div>
+                                </Modal>
                             </div>
                         </>
                     )}
