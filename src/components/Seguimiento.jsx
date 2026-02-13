@@ -21,6 +21,7 @@ import { LocalizationProvider, MobileDatePicker, DesktopDatePicker, DatePicker }
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
+
 const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) => {
     const [selectedDate, setSelectedDate] = useState(null);
     const [menuItems, setMenuItems] = useState([]);
@@ -130,6 +131,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
     const [errorMessage, setErrorMessage] = useState('');
     const [formSubmitted, setFormSubmitted] = useState(false);
     const [fileType, setFileType] = useState('');
+    const [selectedDocReq, setSelectedDocReq] = useState('');
     const [fases, setFases] = useState([]);
     const [fasesName, setFasesName] = useState([]);
     const [itemActual, setItemActual] = useState([]);
@@ -458,6 +460,9 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                 setLoading(false);
                 return;
             }
+            
+            const creaData = filteredData.filter(item => (item.topic || '').toLowerCase().includes('creación'))
+            console.log('Seguimiento component - Datos filtrados para creación:', creaData);
 
             const fasesProgramas = await Filtro11();
             console.log('Filtro11 response:', fasesProgramas);
@@ -701,7 +706,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                                                                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                                                                                     {documentosFase.map((doc, docIdx) => {
                                                                                         const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
-                                                                                        const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'pointer' } : { cursor: 'pointer' };
+                                                                                        const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'default' } : { cursor: 'default' };
                                                                                         const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
                                                                                         const filtroUrl = filtro ? filtro.url : null;
                                                                                         const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
@@ -731,7 +736,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                         </div>
                                     )}
                                 </div>
-                                <Modal open={open} onClose={handleClose}>
+                                <Modal open={openModal} onClose={handleClose}>
                                     <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
                                         <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
                                         <TextField
@@ -1148,6 +1153,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
 
                 setLoading(true);
                 let enlace;
+                let docReqId = null;
                 if (fileType === 'upload' && fileInputRef.current) {
                     const files = fileInputRef.current.files;
                     const formData = new FormData();
@@ -1163,6 +1169,9 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                     });
                     const data = await response.json();
                     enlace = data.enlace;
+                } else if (fileType === 'link') {
+                    enlace = fileLink;
+                    docReqId = selectedDocReq;
                 } else {
                     enlace = fileLink;
                 }
@@ -1191,6 +1200,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                     collapsible,
                     enlace,
                     selectedOption.id,
+                    docReqId,
                 ];
 
                 const dataSendCrea = [
@@ -1325,16 +1335,8 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                             flexDirection: "row",
                                         }}
                                     >
-                                        <FormControlLabel
-                                            value="upload"
-                                            control={<Radio />}
-                                            label="Subir"
-                                        />
-                                        <FormControlLabel
-                                            value="link"
-                                            control={<Radio />}
-                                            label="Enlace"
-                                        />
+                                        <FormControlLabel value="upload" control={<Radio />} label="Subir" />
+                                        <FormControlLabel value="link" control={<Radio />} label="Enlace" />
                                     </RadioGroup>
                                 </FormControl>
                                 <div style={{ marginTop: "0px", height: "30px" }}>
@@ -1347,20 +1349,35 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                             style={{ height: "30px" }}
                                         />
                                     ) : fileType === "link" ? (
-                                        <input
-                                            value={fileLink}
-                                            onChange={(e) => setFileLink(e.target.value)}
-                                            placeholder="Link del archivo"
-                                            type="text"
-                                            style={{
-                                                width: "200px",
-                                                height: "25px",
-                                                backgroundColor: "white",
-                                                color: "grey",
-                                                border: "1px solid grey",
-                                                borderRadius: "5px",
-                                            }}
-                                        />
+                                        <>
+                                            <div style={{ marginBottom: 8 }}>
+                                                <label>Documento requerido:</label>
+                                                <select style={{backgroundColor:'#fff', color:'#222'}}
+                                                    value={selectedDocReq}
+                                                    onChange={e => setSelectedDocReq(e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">Seleccione documento</option>
+                                                    {docs.map(doc => (
+                                                        <option key={doc.id} value={doc.id}>{doc.nombre_doc}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <input
+                                                value={fileLink}
+                                                onChange={e => setFileLink(e.target.value)}
+                                                placeholder="Link del archivo"
+                                                type="text"
+                                                style={{
+                                                    width: "200px",
+                                                    height: "25px",
+                                                    backgroundColor: "white",
+                                                    color: "grey",
+                                                    border: "1px solid grey",
+                                                    borderRadius: "5px",
+                                                }}
+                                            />
+                                        </>
                                     ) : null}
                                 </div>
                             </div>
