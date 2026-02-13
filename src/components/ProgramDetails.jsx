@@ -14,6 +14,7 @@ import { Timeline as TimelineIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'; 
+import * as XLSX from 'xlsx';
 
 const normalizeValue = (value) => {
     return typeof value === 'string' && value.trim().toUpperCase() === '#N/A'
@@ -324,6 +325,7 @@ const ProgramDetails = () => {
         };
     
         const seguimientosPorProceso = seguimientos.filter(seg => seg.topic === topicMap[process]);
+        console.log(`Seguimientos para proceso ${process}:`, seguimientosPorProceso);
         
         if (seguimientosPorProceso.length === 0) {
             return isSelected ? darkenColor(defaultColor) : defaultColor;
@@ -533,6 +535,38 @@ const getShortUrl = (url) => {
             borderBottom: 'none',
         },
     });
+
+    // --- Función para exportar seguimiento a Excel (una hoja por tab) mejorada ---
+    const exportSeguimientoTabsToExcel = () => {
+        if (!Array.isArray(filteredDataSeg) || filteredDataSeg.length === 0) {
+            alert('No hay información de seguimiento para descargar.');
+            return;
+        }
+        const idPrograma = rowData.id_programa || rowData.id || rowData.ID;
+        // Definir los tabs y sus topics
+        const tabs = [
+            { name: 'CREA', topic: 'Creación' },
+            { name: 'MOD', topic: 'Modificación' },
+            { name: 'RRC', topic: 'Renovación Registro Calificado' },
+            { name: 'AAC', topic: 'Acreditación' },
+            { name: 'RAAC', topic: 'Renovación Acreditación' },
+        ];
+        const workbook = XLSX.utils.book_new();
+        let hasData = false;
+        tabs.forEach(tab => {
+            const data = filteredDataSeg.filter(seg => seg.id_programa === idPrograma && seg.topic === tab.topic);
+            if (Array.isArray(data) && data.length > 0) {
+                const sheet = XLSX.utils.json_to_sheet(data);
+                XLSX.utils.book_append_sheet(workbook, sheet, tab.name);
+                hasData = true;
+            }
+        });
+        if (!hasData) {
+            alert('No hay información de seguimiento para descargar.');
+            return;
+        }
+        XLSX.writeFile(workbook, `seguimiento_${programaAcademico}.xlsx`);
+    };
 
     return (
         <>
@@ -752,9 +786,24 @@ const getShortUrl = (url) => {
                     </LocalizationProvider>
                 )}
                 {!isEditing && (
-                        <Button variant="contained" color="primary" onClick={() => setIsEditing(true)} style={{ marginBottom: '20px' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, marginBottom: '20px' }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => setIsEditing(true)}
+                            style={{ minWidth: 150 }}
+                        >
                             Actualizar Datos
                         </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={exportSeguimientoTabsToExcel}
+                            style={{ minWidth: 180 }}
+                        >
+                            Descargar Seguimiento Excel
+                        </Button>
+                    </Box>
                 )}
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', marginLeft:'5px', marginRight:'20px'}}>
                     <Tabs
@@ -801,7 +850,7 @@ const getShortUrl = (url) => {
                                                 rel="noopener noreferrer"
                                                 style={{ color: '#1976d2', textDecoration: 'underline', fontWeight: 500 }}
                                             >
-                                                Ver resolución
+                                                Enlace
                                             </a>
                                         ) : 'N/A'}
                                 </span>
@@ -830,7 +879,7 @@ const getShortUrl = (url) => {
                                                     rel="noopener noreferrer"
                                                     style={{ color: '#1976d2', textDecoration: 'underline', fontWeight: 500 }}
                                                 >
-                                                    Ver resolución
+                                                    Enlace
                                                 </a>
                                             ) : 'N/A'}
                                     </span>
@@ -876,7 +925,55 @@ const getShortUrl = (url) => {
                         )
                     )}
             </div>
-        </>
+
+            {/* Cuadro informativo de documentos requeridos, solo si la tab tiene info de seguimiento */}
+            {(() => {
+                // Mapear tab a topic
+                const topicMap = {
+                    crea: 'Creación',
+                    mod: 'Modificación',
+                    rrc: 'Renovación Registro Calificado',
+                    aac: 'Acreditación',
+                    raac: 'Renovación Acreditación',
+                };
+                const idPrograma = rowData.id_programa || rowData.id || rowData.ID;
+                // Solo mostrar si la tab es una de seguimiento y hay info de seguimiento para esa tab
+                if (topicMap[clickedButton] && Array.isArray(filteredDataSeg)) {
+                    const tieneSeguimiento = filteredDataSeg.some(seg => seg.id_programa === idPrograma && seg.topic === topicMap[clickedButton]);
+                    if (tieneSeguimiento) {
+                        return (
+                            <Box sx={{
+                                backgroundColor: '#E3F2FD',
+                                borderRadius: '8px',
+                                padding: '16px',
+                                marginTop: '32px',
+                                marginBottom: '24px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                                maxWidth: 600,
+                                marginLeft: 'auto',
+                                marginRight: 'auto',
+                            }}>
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '8px', color: '#1976d2' }}>
+                                    Documentos requeridos para el programa
+                                </Typography>
+                                <ul style={{ paddingLeft: 20, marginBottom: 0 }}>
+                                    <li>Resolución de Creación</li>
+                                    <li>Resolución de Modificación</li>
+                                    <li>Resolución de Renovación Registro Calificado</li>
+                                    <li>Resolución de Acreditación</li>
+                                    <li>Resolución de Renovación Acreditación</li>
+                                </ul>
+                                <Typography variant="body2" sx={{ color: '#555', marginTop: '8px' }}>
+                                    Estos documentos deben ser subidos con el enlace correspondiente en el formulario de seguimiento.
+                                </Typography>
+                            </Box>
+                        );
+                    }
+                }
+                return null;
+            })()}
+
+</>
     );
 };
 
