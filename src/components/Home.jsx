@@ -269,7 +269,7 @@ const Home = () => {
 
         const activosPregradoTecnologico = datosUnicos.filter(
           (item) =>
-            item['pregrado/posgrado'] === 'Tecnológico' &&
+            item['pregrado/posgrado'] === 'Pregrado' &&
             item['nivel de formación'] === 'Tecnológico' &&
             (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
         ).length;
