@@ -389,6 +389,12 @@ const ProgramDetails = () => {
         return adjustColor(color, amount);
     };
 
+    const isValidValue = (val) => {
+    if (!val) return false;
+    const v = String(val).trim().toUpperCase();
+    return v !== 'N/A' && v !== '#N/A' && v !== '';
+};
+
     // Función para ajustar el color de fondo de los botones de seguimiento
     const adjustColor = (color, amount) => {
         let usePound = false;
@@ -865,7 +871,10 @@ const getShortUrl = (url) => {
                     {/* Mostrar el mensaje 'Creado el...' arriba del collapse button SOLO si hay seguimientos de creación Y el programa está en fase 28 */}
                     {!puedesVerSoloBasico && (
                     <>
-                    {clickedButton === 'crea' && seguimientosCreacion.length > 0 && fase28Data && (
+                    {clickedButton === 'crea' && seguimientosCreacion.length > 0 && fase28Data && 
+                        isValidValue(formData['Fecha registro SNIES']) &&
+ isValidValue(formData['Enlace resolución']) &&
+ isValidValue(fase28Data.fecha)? (
                         <div className='about-program-section' style={{
                             display: 'flex',
                             justifyContent: 'center',
@@ -875,10 +884,9 @@ const getShortUrl = (url) => {
                             flexDirection: 'column'
                         }}>
                             <div className='about-program'>
-                                Creado el {fase28Data.fecha || 'N/A'} con la resolución&nbsp;
+                                Creado el {fase28Data.fecha} con la resolución&nbsp;
                                 <span>
-                                    {formData['Enlace resolución'] 
-                                        ? (
+                                    
                                             <a
                                                 href={formData['Enlace resolución']}
                                                 target="_blank"
@@ -887,14 +895,17 @@ const getShortUrl = (url) => {
                                             >
                                                 Enlace
                                             </a>
-                                        ) : 'N/A'}
+                                        
                                 </span>
                             </div>
                         </div>
-                    )}
+                        ):null
+                    }
 
                     {clickedButton === 'crea' ? (
                         seguimientosCreacion.length === 0 ? (
+                            (formData['Fecha registro SNIES'] && formData['Fecha registro SNIES'] !== 'N/A' &&
+         formData['Enlace resolución'] && formData['Enlace resolución'] !== 'N/A') ? (
                             <div className='about-program-section' style={{
                                 display: 'flex',
                                 justifyContent: 'center',
@@ -920,6 +931,7 @@ const getShortUrl = (url) => {
                                     </span>
                                 </div>
                             </div>
+         ):null
                         ) : (
                             <Seguimiento 
                                 handleButtonClick={clickedButton} 
