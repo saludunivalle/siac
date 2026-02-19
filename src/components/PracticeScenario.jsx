@@ -15,7 +15,7 @@ const axiosInstance = axios.create({
 
 
 
-const PracticeScenario = ({ data }) => {
+const PracticeScenario = ({ data, soloLectura = false }) => {
     const [filteredData, setFilteredData] = useState([]);
     const [showForm, setShowForm] = useState(null);
     const [relationID, setRelationId] = useState(null);
@@ -1441,6 +1441,7 @@ const PracticeScenario = ({ data }) => {
                                                 </Button>
                                             </Box>
                                         ) : (
+                                            !soloLectura && (
                                             <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
                                                 <Button 
                                                     variant="outlined" 
@@ -1461,6 +1462,7 @@ const PracticeScenario = ({ data }) => {
                                                     Eliminar
                                                 </Button>
                                             </Box>
+                                            )
                                         )}
                                     </TableCell>
                                 </TableRow>
@@ -1735,7 +1737,7 @@ const PracticeScenario = ({ data }) => {
                                                         </FormGroup>
                                                         
                                                         {/* Botón para añadir documento de escenario */}
-                                                        {(tienePermisoConvenio()) && (
+                                                        {(tienePermisoConvenio()) && !soloLectura && (
                                                             <Box sx={{ 
                                                                 display: 'flex', 
                                                                 justifyContent: 'center', 
@@ -1767,7 +1769,7 @@ const PracticeScenario = ({ data }) => {
                                                         )}
 
                                                         {/* Formulario para documentos de escenario - Aparece aquí cerca del botón */}
-                                                        {(tienePermisoConvenio()) && showDocEscenarioForm === f15.id_escenario && (
+                                                        {(tienePermisoConvenio()) && !soloLectura && showDocEscenarioForm === f15.id_escenario && (
                                                             <Box component="form" onSubmit={handleDocEscenarioFormSubmit} sx={{ 
                                                                 marginTop: 2, 
                                                                 marginBottom: 3,
@@ -2027,9 +2029,11 @@ const PracticeScenario = ({ data }) => {
                                                 </Box>
                                             </>
                                         )}
+                                        {!soloLectura && (
                                         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', marginBottom:'30px' }}>
                                             <Button variant="contained" onClick={toggleForm}>Añadir escenario de práctica</Button>
                                         </div>
+                                        )}
                                     </>
                                 }
                                 defaultClosed
@@ -2039,6 +2043,7 @@ const PracticeScenario = ({ data }) => {
                 </div>
             </div>
 
+            {!soloLectura && (
             <div style={{ marginTop: "20px", marginBottom: "40px" }}>
                 <Button variant="contained" onClick={toggleAnexoForm}>
                 Añadir Anexo
@@ -2250,6 +2255,7 @@ const PracticeScenario = ({ data }) => {
                 )}
                 <AnexosTable reloadTrigger={reloadAnexos} />
             </div>
+            )}
 
 
 

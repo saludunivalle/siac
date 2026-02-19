@@ -27,6 +27,7 @@ const GoogleLogin = ({ setIsLogin }) => {
                 // Inline have_permision to avoid extra dependencies
                 const resultPermisos = (() => {
                     const result = permisosResponse.data?.filter(item => item['user'] === data_decode.email);
+                    //console.log('Permisos encontrados para el usuario:', result);
                     return {
                         result: result.length > 0,
                         data: result

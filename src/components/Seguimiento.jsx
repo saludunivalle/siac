@@ -22,7 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
 
-const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) => {
+const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, soloLectura = false }) => {
     const [selectedDate, setSelectedDate] = useState(null);
     const [menuItems, setMenuItems] = useState([]);
     const [selectedOption, setSelectedOption] = useState(0);
@@ -805,11 +805,13 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                     style={{ 
                                         backgroundColor: getBackgroundColor(item['riesgo']),
                                         position: 'relative',
-                                        cursor: 'pointer'
+                                        cursor: soloLectura ? 'default' : 'pointer'
                                     }}
                                     onMouseEnter={() => setHoveredRowIndex(rowKey)}
                                     onMouseLeave={() => setHoveredRowIndex(null)}
-                                    onClick={() => handleOpenEditModal(item)}
+                                    onClick={() =>{ 
+                                       if(!soloLectura) handleOpenEditModal(item);
+                                    }}
                                 >
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['timestamp']}</td>
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', padding: '3px 4px', fontSize: '0.8rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{item['mensaje']}</td>
@@ -834,7 +836,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                         {useTopicAsFase ? item['topic'] : getFaseName(item['fase'])}
                                     </td>
                                     {/* Icono de edición flotante - aparece fuera de la tabla */}
-                                    {hoveredRowIndex === rowKey && (
+                                    {hoveredRowIndex === rowKey && !soloLectura && (
                                         <div
                                             style={{
                                                 position: 'absolute',
@@ -1631,7 +1633,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['plan de mejoramiento rrc', 'plan de mejoramiento raac', 'plan de mejoramiento aac'], fasesTabla, true)}
-                                        {avaibleRange(isPlan) &&
+                                        {avaibleRange(isPlan) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Plan de Mejoramiento')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1659,7 +1661,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['renovación registro calificado'])}
-                                        {avaibleRange(isReg) &&
+                                        {avaibleRange(isReg) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', marginBottom: '25px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1682,7 +1684,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['acreditación'])}
-                                        {avaibleRange(isAcred) &&
+                                        {avaibleRange(isAcred) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1711,7 +1713,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['renovación acreditación'])}
-                                        {avaibleRange(isRenAcred) &&
+                                        {avaibleRange(isRenAcred) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Renovación Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1734,7 +1736,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['creación'])}
-                                        {avaibleRange(isCrea) &&
+                                        {avaibleRange(isCrea) && !soloLectura &&
                                             (
                                                 <>
                                                     <Button onClick={() => handleNewTrackingClick('Creación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
@@ -1759,7 +1761,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['modificación'])}
-                                        {avaibleRange(isMod) &&
+                                        {avaibleRange(isMod) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Modificación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1777,7 +1779,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc }) =
                     )}
                     {handleButtonClick === 'conv' && (
                         <>
-                            <PracticeScenario data={rowData || {}} />
+                            <PracticeScenario data={rowData || {}} soloLectura={soloLectura} />
                         </>
                     )}
                 </div>
