@@ -53,15 +53,22 @@ const Programas = () => {
     const [user, setUser] = useState('');
     const [isCargo, setCargo] = useState([' ']);
     const [showInactiveButtons, setShowInactiveButtons] = useState(false);
+    const [escuelaDirector, setescuelaDirector] = useState('');
     const [initialLoading, setInitialLoading] = useState(true); // Estado para carga inicial
 
     useEffect(() => {
         const loggedUser = sessionStorage.getItem('logged');
+        //console.log('Valor de sessionStorage "logged":', loggedUser);
         if (loggedUser) {
             const res = JSON.parse(loggedUser);
+           // console.log('Datos del usuario logueado:', res);
             const permisos = res.map(item => item.permiso).flat();
+            //console.log('Permisos del usuario:', permisos);
             setCargo(permisos);
             setUser(res[0].user);
+            if(permisos.includes('Director Escuela') && res[0].escuela){
+                setescuelaDirector(res[0].escuela);
+            }
         }
     }, []);
 
@@ -743,29 +750,29 @@ const Programas = () => {
                         isolation: 'isolate'
                     }}>
                     {filteredData.some(data => data['escuela'] === 'Bacteriología y Lab. Clínico') &&
-                        <CollapsibleButton defaultClosed={true} buttonText={`Bacteriología y Lab. Clínico (${Filtro4(filteredData, 'Bacteriología y Lab. Clínico').length})`} content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
+                        <CollapsibleButton defaultClosed={escuelaDirector !== 'Bacteriología y Lab. Clínico'} buttonText={`Bacteriología y Lab. Clínico (${Filtro4(filteredData, 'Bacteriología y Lab. Clínico').length})`} content={renderFilteredTable(filteredData, 'Bacteriología y Lab. Clínico')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Ciencias Básicas') &&
-                        <CollapsibleButton defaultClosed={true} buttonText={`Ciencias Básicas (${Filtro4(filteredData, 'Ciencias Básicas').length})`} content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
+                        <CollapsibleButton defaultClosed={escuelaDirector !== 'Ciencias Básicas'} buttonText={`Ciencias Básicas (${Filtro4(filteredData, 'Ciencias Básicas').length})`} content={renderFilteredTable(filteredData, 'Ciencias Básicas')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Enfermería') &&
-                        <CollapsibleButton defaultClosed={true} buttonText={`Enfermería (${Filtro4(filteredData, 'Enfermería').length})`} content={renderFilteredTable(filteredData, 'Enfermería')} />
+                        <CollapsibleButton defaultClosed={escuelaDirector !== 'Enfermería'} buttonText={`Enfermería (${Filtro4(filteredData, 'Enfermería').length})`} content={renderFilteredTable(filteredData, 'Enfermería')} />
                     }
                     
                     {filteredData.some(data => data['escuela'] === 'Odontología') &&
-                        <CollapsibleButton defaultClosed={true} buttonText={`Odontología (${Filtro4(filteredData, 'Odontología').length})`} content={renderFilteredTable(filteredData, 'Odontología')} />
+                        <CollapsibleButton defaultClosed={escuelaDirector !== 'Odontología'} buttonText={`Odontología (${Filtro4(filteredData, 'Odontología').length})`} content={renderFilteredTable(filteredData, 'Odontología')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Rehabilitación Humana') &&
-                        <CollapsibleButton defaultClosed={true} buttonText={`Rehabilitación Humana (${Filtro4(filteredData, 'Rehabilitación Humana').length})`} content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
+                        <CollapsibleButton defaultClosed={escuelaDirector !== 'Rehabilitación Humana'} buttonText={`Rehabilitación Humana (${Filtro4(filteredData, 'Rehabilitación Humana').length})`} content={renderFilteredTable(filteredData, 'Rehabilitación Humana')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Salud Pública') &&
-                        <CollapsibleButton defaultClosed={true} buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
+                        <CollapsibleButton defaultClosed={escuelaDirector !== 'Salud Pública'} buttonText={`Salud Pública (${Filtro4(filteredData, 'Salud Pública').length})`} content={renderFilteredTable(filteredData, 'Salud Pública')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Dirección de Posgrados') &&
-                        <CollapsibleButton defaultClosed={true} buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
+                        <CollapsibleButton defaultClosed={escuelaDirector !== 'Dirección de Posgrados'} buttonText={`Dirección de Posgrados (${Filtro4(filteredData, 'Dirección de Posgrados').length})`} content={renderFilteredTable(filteredData, 'Dirección de Posgrados')} />
                     }
                     {filteredData.some(data => data['escuela'] === 'Medicina') &&
-                        <CollapsibleButton defaultClosed={true} buttonText={`Medicina (${Filtro4(filteredData, 'Medicina').length})`} content={renderFilteredTable(filteredData, 'Medicina')} />
+                        <CollapsibleButton defaultClosed={escuelaDirector !== 'Medicina'} buttonText={`Medicina (${Filtro4(filteredData, 'Medicina').length})`} content={renderFilteredTable(filteredData, 'Medicina')} />
                     }
                     {filteredData.some(item => item['escuela'] === ' ' || item['escuela'] === '???' || item['escuela'] === 'SALE PARA TULIÁ') &&
                         <CollapsibleButton defaultClosed={true} buttonText={`No Aplica`} content={renderFilteredTable(filteredData, 'No Aplica')} />

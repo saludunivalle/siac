@@ -234,18 +234,30 @@ const Home = () => {
         });
 
         const datosUnicos = Array.from(programMap.values());
-        //console.log(`Programas totales: ${response.length}, Programas únicos después de deduplicar: ${datosUnicos.length}`);
+        console.log(`Programas totales: ${response.length}, Programas únicos después de deduplicar: ${datosUnicos.length}`);
         
         // Log detallado para debugging
         //console.log('=== ANÁLISIS DE CONTEO ===');
-        //console.log('Programas activos por nivel de formación:');
+        console.log('Programas activos por nivel de formación:');
         const activosPorNivel = {};
         datosUnicos.filter(item => item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede').forEach(item => {
           const nivel = item['nivel de formación'];
           activosPorNivel[nivel] = (activosPorNivel[nivel] || 0) + 1;
         });
-        //console.table(activosPorNivel);
+        console.log("activos v2 ", activosPorNivel);
+
+
+
+
+
         
+        const totalActivosV2 = datosUnicos.filter(item => item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede').length;
+        console.log('Total activos calculado:', totalActivosV2);
+
+
+
+
+
         const activosPregradoUniversitario = datosUnicos.filter(
           (item) =>
             // Incluir tanto 'Pregrado' como 'Universitario' en pregrado/posgrado
@@ -315,7 +327,9 @@ const Home = () => {
           activosPosgrado.especializacionUniversitaria +
           activosPosgrado.especializacionMedicoQuirurgica +
           activosPosgrado.doctorado;
-//console.log('Total Activos Calculado:', totalActivos);
+
+          
+console.log('Total Activos Calculado:', totalActivos);
         setProgramData({
           activos: {
             pregrado: {
@@ -654,7 +668,7 @@ const Home = () => {
       easing: 'easeOutQuart'
     }
   }), [isMobile]);
-
+console.log("total datos:", programData)
   // Componente de tabla modernizada y responsive
   const ModernTable = () => {
     return (

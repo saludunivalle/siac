@@ -155,6 +155,8 @@ const Header = () => {
   const [isLabelVisible, setIsLabelVisible] = useState(false);
   const [user, setUser] = useState('');
   const [isCargo, setCargo] = useState(['']);
+  const [escuela, setEscuela] = useState(['']);
+  const [programa, setPrograma] = useState(['']);
   const navigate = useNavigate();
   const labelRef = useRef(null);
 
@@ -221,6 +223,21 @@ const Header = () => {
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutsideLabel);
 
+     const fetchPrograma = async (idPrograma) => {
+    try {
+      const programas = await Filtro5();
+      const found = programas.find(p => p.id_programa === idPrograma);
+      if (found && found["programa académico"]) {
+        setPrograma(found["programa académico"]);
+      } else {
+        setPrograma('');
+      }
+    } catch {
+      setPrograma('');
+    }
+  };
+
+
     if (sessionStorage.getItem('logged')) {
       const res = JSON.parse(sessionStorage.getItem('logged'));
       const permisos = res.map(item => item.permiso).flat();
@@ -229,6 +246,22 @@ const Header = () => {
       const userName = extractNameFromEmail(email);
       setUser(userName);
       //console.log("Permisos del usuario:", permisos);
+      const director = res.find(item => item.permiso.includes("Director Escuela"));
+      if (director && director.escuela) {
+      setEscuela(director.escuela);
+      } else {
+      setEscuela('');
+      }
+
+
+        // Director Programa
+    const directorPrograma = res.find(item => item.permiso.includes("Director Programa"));
+    if (directorPrograma && directorPrograma.id_programa) {
+      fetchPrograma(directorPrograma.id_programa);
+    } else {
+      setPrograma('');
+    }
+
     }
 
     return () => {
@@ -256,7 +289,17 @@ const Header = () => {
       <TitleContainer>
         <Title>Sistema SIAC Facultad de Salud</Title>
         <Username>
-          {user ? `${user} - ${isCargo.join(', ')}` : "Cargando..."}
+          {user
+    ? `${user} - ${isCargo.join(', ')}${
+        isCargo.includes("Director Escuela") && escuela
+          ? ` - ${escuela}`
+          : ""
+      }${
+        isCargo.includes("Director Programa") && programa
+          ? ` - ${programa}`
+          : ""
+      }`
+    : "Cargando..."}
         </Username>
       </TitleContainer>
       <SearchBar>

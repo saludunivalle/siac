@@ -43,6 +43,36 @@ const ProgramDetails = () => {
     const [timelineData, setTimelineData] = useState([]);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(false);
+    let userPermiso = '';
+    let userEscuela = '';
+    let userPrograma = '';
+    try{
+        const logged = JSON.parse(sessionStorage.getItem('logged'));
+        if(Array.isArray(logged) && logged.length > 0) {
+            userPermiso = logged[0].permiso || '';
+            userEscuela = logged[0].escuela || '';
+            userPrograma = logged[0].id_programa || '';
+        }
+    } catch (error) {
+        console.error("Error al parsear el sessionStorage:", error);
+    }
+
+    const esDirectorEscuela = userPermiso === 'Director Escuela';
+    const esDirectorPrograma = userPermiso === 'Director Programa';
+    const escuelaPrograma = rowData?.escuela || rowData?.Escuela || '';
+    const nombrePrograma =  rowData?.id_programa || '';
+    
+    // Director Escuela
+    const puedesVerTodoEscuela = esDirectorEscuela && escuelaPrograma === userEscuela;
+    const puedesVerSoloBasicoEscuela = esDirectorEscuela && escuelaPrograma !== userEscuela;
+    
+    // Director Programa
+    const puedesVerTodoPrograma = esDirectorPrograma && nombrePrograma === userPrograma;
+    const puedesVerSoloBasicoPrograma = esDirectorPrograma && nombrePrograma !== userPrograma;
+    
+    // Variables finales
+    const puedesVerSoloBasico = puedesVerSoloBasicoEscuela || puedesVerSoloBasicoPrograma;
+    const soloLectura = puedesVerTodoEscuela || puedesVerTodoPrograma; // True si es director y ve su escuela/programa
 
     const [options, setOptions] = useState({
         Sede: [],
@@ -646,7 +676,7 @@ const getShortUrl = (url) => {
                         {timelineData.length > 0 && (
                             <>
                                 <div className='about-program' style={{ marginTop: '20px' }}>
-                                    <strong>Histórico: </strong>
+                                    <strong>Histórico AAC: </strong>
                                 </div>
                                 <div className="program-details-timeline">
                                     <TimelineComponent 
@@ -785,7 +815,7 @@ const getShortUrl = (url) => {
                         </form>
                     </LocalizationProvider>
                 )}
-                {!isEditing && (
+                {!isEditing && !esDirectorEscuela && !esDirectorPrograma && (
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, marginBottom: '20px' }}>
                         <Button
                             variant="contained"
@@ -805,7 +835,9 @@ const getShortUrl = (url) => {
                         </Button>
                     </Box>
                 )}
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', marginLeft:'5px', marginRight:'20px'}}>
+                
+                {!puedesVerSoloBasico && (
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', marginLeft:'5px', marginRight:'20px'}}>
                     <Tabs
                         value={clickedButton}
                         onChange={handleTabChange}
@@ -829,7 +861,10 @@ const getShortUrl = (url) => {
                         <Tab label="Estadísticas" value="estadisticas" sx={tabSx('estadisticas')} />
                     </Tabs>
                 </Box>
+                )}
                     {/* Mostrar el mensaje 'Creado el...' arriba del collapse button SOLO si hay seguimientos de creación Y el programa está en fase 28 */}
+                    {!puedesVerSoloBasico && (
+                    <>
                     {clickedButton === 'crea' && seguimientosCreacion.length > 0 && fase28Data && (
                         <div className='about-program-section' style={{
                             display: 'flex',
@@ -890,6 +925,7 @@ const getShortUrl = (url) => {
                                 handleButtonClick={clickedButton} 
                                 key={reloadSeguimiento} 
                                 fechavencrc={rowData.fechavencrc}
+                                soloLectura={soloLectura}
                                 rowData={{
                                     ...rowData,
                                     id_programa: rowData.id_programa || rowData.id || rowData.ID || 'N/A'
@@ -917,6 +953,7 @@ const getShortUrl = (url) => {
                                 handleButtonClick={clickedButton} 
                                 key={reloadSeguimiento} 
                                 fechavencrc={rowData.fechavencrc}
+                                soloLectura={soloLectura}
                                 rowData={{
                                     ...rowData,
                                     id_programa: rowData.id_programa || rowData.id || rowData.ID || 'N/A'
@@ -924,9 +961,13 @@ const getShortUrl = (url) => {
                             />
                         )
                     )}
+                    </>
+                    )}
             </div>
 
             {/* Cuadro informativo de documentos requeridos, solo si la tab tiene info de seguimiento */}
+            {!puedesVerSoloBasico && (
+            <>
             {(() => {
                 // Mapear tab a topic
                 const topicMap = {
@@ -972,6 +1013,8 @@ const getShortUrl = (url) => {
                 }
                 return null;
             })()}
+            </>
+            )}
 
 </>
     );
