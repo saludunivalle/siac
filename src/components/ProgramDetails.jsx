@@ -649,7 +649,7 @@ const getShortUrl = (url) => {
                              
                         {/* Sección 3: Título a conceder hasta Proceso de Contingencia */}
                         <div className='about-program-section'>
-                            <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {formData['Titulo a Conceder'] || 'N/A'}</div>
+                          {/*  <div className='about-program'><strong>Título a Conceder: </strong>&nbsp; {formData['Titulo a Conceder'] || 'N/A'}</div> */}
                             <div className='about-program'><strong>Créditos: </strong>&nbsp; {formData['Créditos'] || 'N/A'}</div>
                             <div className='about-program'><strong>Periodicidad: </strong>&nbsp; {formData['Periodicidad'] || 'N/A'}</div>
                             <div className='about-program'><strong>Duración: </strong>&nbsp; {formData['Duración'] || 'N/A'}</div>
