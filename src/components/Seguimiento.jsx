@@ -153,6 +153,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
     const [editComment, setEditComment] = useState('');
     const [editRiesgo, setEditRiesgo] = useState('');
     const [editAdjunto, setEditAdjunto] = useState('');
+    const [editFase, setEditFase] = useState('');
     const [editLoading, setEditLoading] = useState(false);
     const [hoveredRowIndex, setHoveredRowIndex] = useState(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -188,6 +189,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         setEditComment(seguimiento.mensaje || '');
         setEditRiesgo(seguimiento.riesgo || '');
         setEditAdjunto(seguimiento.url_adjunto || '');
+        setEditFase(seguimiento.fase || '');
         setEditModalOpen(true);
     };
 
@@ -197,6 +199,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         setEditComment('');
         setEditRiesgo('');
         setEditAdjunto('');
+        setEditFase('');
         setDeleteConfirmOpen(false);
     };
 
@@ -213,7 +216,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                 usuario: editingSeguimiento.usuario,
                 topic: editingSeguimiento.topic,
                 url_adjunto: editAdjunto,
-                fase: editingSeguimiento.fase
+                fase: editFase
             };
             
             await updateSeguimiento(updatedData);
@@ -652,6 +655,120 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         return fase ? fase.fase : ' - ';
     };
 
+    // Obtener el ID de fase por nombre
+    const getFaseIdByName = (faseName) => {
+        const fase = fasesName.find(f => f.fase === faseName);
+        return fase ? fase.id : null;
+    };
+
+    // Renderizar seguimientos de una fase específica
+    const renderSeguimientosPorFase = (fase) => {
+        // Obtener el ID de la fase
+        const faseId = fase.id;
+        
+        // Filtrar seguimientos que pertenecen a esta fase
+        const seguimientosFase = filteredData.filter(seg => {
+            // Comparar el nombre de fase del seguimiento con el nombre de la fase actual
+            return seg.fase && getFaseName(seg.fase) === fase.fase;
+        });
+
+        if (seguimientosFase.length === 0) {
+            return <p style={{ textAlign: 'center', color: '#888', padding: '10px' }}>Sin seguimientos registrados en esta fase</p>;
+        }
+
+        // Ordenar por fecha
+        seguimientosFase.sort((a, b) => {
+            const dateA = new Date(a.timestamp.split('/').reverse().join('-'));
+            const dateB = new Date(b.timestamp.split('/').reverse().join('-'));
+            return dateB - dateA;
+        });
+
+        return (
+            <div style={{ position: 'relative', width: '100%', paddingRight: '45px', display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+                <table style={{ width: '90%', maxWidth: '90%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px', tableLayout: 'fixed', margin: '10px auto' }}>
+                    <thead>
+                        <tr>
+                            <th style={{ width: '10%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Fecha</th>
+                            <th style={{ width: '50%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Comentario</th>
+                            <th style={{ width: '10%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Riesgo</th>
+                            <th style={{ width: '15%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Usuario</th>
+                            <th style={{ width: '15%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Adjunto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {seguimientosFase.map((item, index) => {
+                            const rowKey = `fase-${faseId}-${index}`;
+                            return (
+                                <tr 
+                                    key={index} 
+                                    style={{ 
+                                        backgroundColor: getBackgroundColor(item['riesgo']),
+                                        position: 'relative',
+                                        cursor: soloLectura ? 'default' : 'pointer'
+                                    }}
+                                    onMouseEnter={() => setHoveredRowIndex(rowKey)}
+                                    onMouseLeave={() => setHoveredRowIndex(null)}
+                                    onClick={() =>{ 
+                                       if(!soloLectura) handleOpenEditModal(item);
+                                    }}
+                                >
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['timestamp']}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', padding: '3px 4px', fontSize: '0.8rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{item['mensaje']}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['riesgo']}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['usuario']?.split('@')[0] || '-'}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>
+                                        {item['url_adjunto'] ? (
+                                            <a 
+                                                href={item['url_adjunto']} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                style={{ color: 'blue', textDecoration: 'underline', fontSize: '0.75rem' }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                Enlace
+                                            </a>
+                                        ) : (
+                                            <strong>-</strong>
+                                        )}
+                                    </td>
+                                    {hoveredRowIndex === rowKey && !soloLectura && (
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                right: '-40px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                zIndex: 10
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenEditModal(item);
+                                                }}
+                                                style={{
+                                                    backgroundColor: '#1976d2',
+                                                    color: 'white',
+                                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                                    padding: '4px'
+                                                }}
+                                                title="Editar seguimiento"
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        </div>
+                                    )}
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
+
     // Renderizar la tabla de fases
     const contenido_tablaFases = () => {
         const groupedFases = fases.reduce((acc, fase) => {
@@ -673,64 +790,89 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                     ) : (
                         <>
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexDirection: 'row', width: '100%' }}>
-                                <div style={{ flex: 1 }}>
+                                <div style={{ flex: 1, marginRight: '20px' }}>
                                     {Object.keys(groupedFases).length > 0 && (
                                         <div>
                                             <h2>Fases del Programa</h2>
                                             {Object.entries(groupedFases).map(([grupo, fasesGrupo]) => (
                                                 <div key={grupo} style={{ marginBottom: '24px' }}>
                                                     {grupo !== 'Sin Agrupar' && <h4>{grupo}</h4>}
-                                                    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                                                        <thead>
-                                                            <tr>
-                                                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Fase</th>
-                                                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Responsable</th>
-                                                                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Documentos requeridos</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {fasesGrupo.map((fase, index) => {
-                                                                const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
-                                                                const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
-                                                                const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#ffffff');
-                                                                // Mostrar responsable o N/A
-                                                                const responsable = fase.responsable && fase.responsable.trim() !== '' ? fase.responsable : 'N/A';
-                                                                // Filtrar documentos de la fase actual
-                                                                const documentosFase = docs.filter(doc => doc.id_fase === fase.id);
-                                                                return (
-                                                                    <tr key={index} style={{ backgroundColor }}>
-                                                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>{fase.fase}</td>
-                                                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>{responsable}</td>
-                                                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
-                                                                            {documentosFase.length > 0 ? (
-                                                                                <ul style={{ margin: 0, paddingLeft: 18 }}>
-                                                                                    {documentosFase.map((doc, docIdx) => {
-                                                                                        const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
-                                                                                        const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', cursor: 'default' } : { cursor: 'default' };
-                                                                                        const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
-                                                                                        const filtroUrl = filtro ? filtro.url : null;
-                                                                                        const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
-                                                                                        const handleLinkClick = (event) => { event.stopPropagation(); };
-                                                                                        return (
-                                                                                            <li key={docIdx} style={fondoVerde} onClick={handleClick}>
-                                                                                                {filtroUrl ? (
-                                                                                                    <a href={filtroUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }} onClick={handleLinkClick}>{doc.nombre_doc}</a>
-                                                                                                ) : (
-                                                                                                    doc.nombre_doc
-                                                                                                )}
-                                                                                            </li>
-                                                                                        );
-                                                                                    })}
-                                                                                </ul>
-                                                                            ) : (
-                                                                                <span style={{ color: '#888' }}>Sin documentos</span>
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
-                                                    </table>
+                                                    {fasesGrupo.map((fase, index) => {
+                                                        const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
+                                                        const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
+                                                        const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#f5f5f5');
+                                                        const responsable = fase.responsable && fase.responsable.trim() !== '' ? fase.responsable : 'N/A';
+                                                        const documentosFase = docs.filter(doc => doc.id_fase === fase.id);
+                                                        
+                                                        return (
+                                                            <CollapsibleButton 
+                                                                key={index}
+                                                                buttonText={fase.fase + (responsable !== 'N/A' ? ` - Responsable: ${responsable}` : ' - Responsable no asignado')}
+                                                                defaultClosed={true}
+                                                                buttonStyle={{
+                                                                    backgroundColor: backgroundColor,
+                                                                    width: '100%',
+                                                                    marginBottom: '8px',
+                                                                    padding: '12px',
+                                                                    textAlign: 'left',
+                                                                    fontWeight: 'bold',
+                                                                    fontSize: '0.95rem',
+                                                                    border: '1px solid #ddd',
+                                                                    borderRadius: '6px'
+                                                                }}
+                                                                content={
+                                                                    <div style={{ padding: '10px', backgroundColor: 'white' }}>
+                                                                        {/* Seguimientos de la fase */}
+                                                                        {renderSeguimientosPorFase(fase)}
+                                                                        
+                                                                        {/* Información de la fase */}
+                                                                        <div style={{ 
+                                                                            padding: '15px', 
+                                                                            backgroundColor: '#f9f9f9', 
+                                                                            borderRadius: '6px',
+                                                                            marginTop: '10px',
+                                                                            border: '1px solid #e0e0e0'
+                                                                        }}>
+                                                                            {/*
+                                                                            <div style={{ marginBottom: '12px' }}>
+                                                                                <strong style={{ fontSize: '0.9rem', color: '#333' }}>Responsable:</strong>
+                                                                                <span style={{ marginLeft: '8px', fontSize: '0.9rem' }}>{responsable}</span>
+                                                                            </div>
+                                                                */}
+                                                                            <div>
+                                                                                <strong style={{ fontSize: '0.9rem', color: '#333' }}>Documentos Requeridos:</strong>
+                                                                                {documentosFase.length > 0 ? (
+                                                                                    <ul style={{ margin: '8px 0 0 0', paddingLeft: 24 }}>
+                                                                                        {documentosFase.map((doc, docIdx) => {
+                                                                                            const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
+                                                                                            const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', padding: '4px 8px', borderRadius: '4px', display: 'inline-block', cursor: 'pointer' } : { cursor: 'pointer' };
+                                                                                            const filtro = Filtro21Data.find(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
+                                                                                            const filtroUrl = filtro ? filtro.url : null;
+                                                                                            const handleClick = filtroUrl ? () => window.open(filtroUrl, '_blank') : () => handleOpen(doc);
+                                                                                            const handleLinkClick = (event) => { event.stopPropagation(); };
+                                                                                            return (
+                                                                                                <li key={docIdx} style={{ marginBottom: '6px' }}>
+                                                                                                    <span style={fondoVerde} onClick={handleClick}>
+                                                                                                        {filtroUrl ? (
+                                                                                                            <a href={filtroUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', fontSize: '0.85rem' }} onClick={handleLinkClick}>{doc.nombre_doc}</a>
+                                                                                                        ) : (
+                                                                                                            <span style={{ fontSize: '0.85rem' }}>{doc.nombre_doc}</span>
+                                                                                                        )}
+                                                                                                    </span>
+                                                                                                </li>
+                                                                                            );
+                                                                                        })}
+                                                                                    </ul>
+                                                                                ) : (
+                                                                                    <span style={{ color: '#888', marginLeft: '8px', fontSize: '0.85rem' }}>Sin documentos</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            />
+                                                        );
+                                                    })}
                                                 </div>
                                             ))}
                                         </div>
@@ -764,14 +906,20 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
     };
 
     // Renderizar tabla filtrada
-    const renderFilteredTable = (data, filters, fasesTabla, useTopicAsFase = false) => {
+    const renderFilteredTable = (data, filters, fasesTabla, useTopicAsFase = false, soloSinFase = false) => {
         if (!Array.isArray(filters)) {
             filters = [filters];
         }
-        console.log('📋 renderFilteredTable - data recibida:', data?.length, 'filtros:', filters);
+        console.log('📋 renderFilteredTable - data recibida:', data?.length, 'filtros:', filters, 'soloSinFase:', soloSinFase);
         
-        const tableData = Filtro8(data, filters);
+        let tableData = Filtro8(data, filters);
         console.log('📋 renderFilteredTable - Filtrados por topic:', tableData?.length);
+        
+        // Si soloSinFase es true, filtrar solo los seguimientos sin fase asignada
+        if (soloSinFase) {
+            tableData = tableData.filter(item => !item.fase || item.fase === '' || getFaseName(item.fase) === ' - ');
+            console.log('📋 renderFilteredTable - Después de filtrar sin fase:', tableData?.length);
+        }
         
         if (tableData.length === 0) {
             return <p>Ningún seguimiento por mostrar</p>;
@@ -1660,7 +1808,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                             <CollapsibleButton buttonText="Renovación Registro Calificado" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        {renderFilteredTable(filteredData, ['renovación registro calificado'])}
+                                        {renderFilteredTable(filteredData, ['renovación registro calificado'], fasesTabla, false, true)}
                                         {avaibleRange(isReg) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', marginBottom: '25px' }} >Nuevo Seguimiento</Button>
@@ -1683,7 +1831,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                             <CollapsibleButton buttonText="Acreditación" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        {renderFilteredTable(filteredData, ['acreditación'])}
+                                        {renderFilteredTable(filteredData, ['acreditación'], fasesTabla, false, true)}
                                         {avaibleRange(isAcred) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
@@ -1712,7 +1860,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                             <CollapsibleButton buttonText="Renovación Acreditación" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        {renderFilteredTable(filteredData, ['renovación acreditación'])}
+                                        {renderFilteredTable(filteredData, ['renovación acreditación'], fasesTabla, false, true)}
                                         {avaibleRange(isRenAcred) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Renovación Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
@@ -1735,7 +1883,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                             <CollapsibleButton buttonText="Creación" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        {renderFilteredTable(filteredData, ['creación'])}
+                                        {renderFilteredTable(filteredData, ['creación'], fasesTabla, false, true)}
                                         {avaibleRange(isCrea) && !soloLectura &&
                                             (
                                                 <>
@@ -1760,7 +1908,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                             <CollapsibleButton buttonText="Modificación" content={
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        {renderFilteredTable(filteredData, ['modificación'])}
+                                        {renderFilteredTable(filteredData, ['modificación'], fasesTabla, false, true)}
                                         {avaibleRange(isMod) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Modificación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
@@ -1841,6 +1989,55 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 variant="outlined"
                                 placeholder="https://..."
                             />
+                            
+                            <FormControl fullWidth margin="normal" variant="outlined">
+                                <InputLabel id="edit-fase-label">Fase </InputLabel>
+                                <Select
+                                    labelId="edit-fase-label"
+                                    value={editFase}
+                                    onChange={(e) => setEditFase(e.target.value)}
+                                    label="Fase *"
+                                    MenuProps={{
+                                        disableScrollLock: true,
+                                        PaperProps: {
+                                            style: {
+                                                maxHeight: '300px',
+                                                overflowY: 'auto',
+                                            },
+                                        },
+                                    }}
+                                >
+                                    {(() => {
+                                        const groupedFases = menuItems.reduce((acc, item) => {
+                                            const grupo = item.fase_sup || 'Sin Agrupar';
+                                            if (!acc[grupo]) {
+                                                acc[grupo] = [];
+                                            }
+                                            acc[grupo].push(item);
+                                            return acc;
+                                        }, {});
+                                        
+                                        return Object.entries(groupedFases).map(([grupo, fases]) => [
+                                            <ListSubheader key={grupo} sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                {grupo.toUpperCase()}
+                                            </ListSubheader>,
+                                            ...fases.map((fase, index) => (
+                                                <MenuItem
+                                                    key={`${grupo}-${index}`}
+                                                    value={fase.fase}
+                                                    sx={{
+                                                        paddingLeft: '20px',
+                                                        whiteSpace: 'normal',
+                                                        overflow: 'visible',
+                                                    }}
+                                                >
+                                                    {fase.fase}
+                                                </MenuItem>
+                                            ))
+                                        ]);
+                                    })()}
+                                </Select>
+                            </FormControl>
                             
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                                 <Button 
