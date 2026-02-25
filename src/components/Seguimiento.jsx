@@ -189,7 +189,9 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         setEditComment(seguimiento.mensaje || '');
         setEditRiesgo(seguimiento.riesgo || '');
         setEditAdjunto(seguimiento.url_adjunto || '');
-        setEditFase(seguimiento.fase || '');
+        // Convertir ID de fase a nombre para el Select
+        const faseNombre = seguimiento.fase ? getFaseName(seguimiento.fase) : '';
+        setEditFase(faseNombre);
         setEditModalOpen(true);
     };
 
@@ -208,6 +210,9 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         
         setEditLoading(true);
         try {
+            // Convertir nombre de fase a ID antes de guardar
+            const faseId = editFase ? getFaseIdByName(editFase) : null;
+            
             const updatedData = {
                 id_programa: editingSeguimiento.id_programa,
                 timestamp: editingSeguimiento.timestamp,
@@ -216,13 +221,15 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                 usuario: editingSeguimiento.usuario,
                 topic: editingSeguimiento.topic,
                 url_adjunto: editAdjunto,
-                fase: editFase
+                fase: faseId !== null ? faseId : ''
             };
             
+            console.log('💾 Guardando seguimiento editado:', updatedData);
             await updateSeguimiento(updatedData);
             
-            // Recargar datos
+            // Recargar datos con un pequeño delay para asegurar que se actualicen
             clearCache('Seguimientos');
+            await new Promise(resolve => setTimeout(resolve, 300));
             setUpdateTrigger(prev => prev + 1);
             
             handleCloseEditModal();
@@ -1991,12 +1998,12 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                             />
                             
                             <FormControl fullWidth margin="normal" variant="outlined">
-                                <InputLabel id="edit-fase-label">Fase </InputLabel>
+                                <InputLabel id="edit-fase-label">Fase</InputLabel>
                                 <Select
                                     labelId="edit-fase-label"
                                     value={editFase}
                                     onChange={(e) => setEditFase(e.target.value)}
-                                    label="Fase *"
+                                    label="Fase"
                                     MenuProps={{
                                         disableScrollLock: true,
                                         PaperProps: {
@@ -2007,6 +2014,9 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                         },
                                     }}
                                 >
+                                    <MenuItem value="">
+                                        <em>Sin fase asignada</em>
+                                    </MenuItem>
                                     {(() => {
                                         const groupedFases = menuItems.reduce((acc, item) => {
                                             const grupo = item.fase_sup || 'Sin Agrupar';
