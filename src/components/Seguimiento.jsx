@@ -800,10 +800,14 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <div style={{ flex: 1, marginRight: '20px' }}>
                                     {Object.keys(groupedFases).length > 0 && (
                                         <div>
-                                            <h2>Fases del Programa</h2>
+                                            <h2>Fases del Proceso</h2>
                                             {Object.entries(groupedFases).map(([grupo, fasesGrupo]) => (
-                                                <div key={grupo} style={{ marginBottom: '24px' }}>
-                                                    {grupo !== 'Sin Agrupar' && <h4>{grupo}</h4>}
+                                                <div key={grupo} style={{ marginBottom: '10px' }}>
+                                                    {grupo !== 'Sin Agrupar' && <> <h4>{grupo.toUpperCase()}</h4>
+                                                    <div style={{ borderBottom: '1px solid #bbb', margin: '2px 0 35px 0' }} />
+                                                    </>
+                                                    }
+                                                    
                                                     {fasesGrupo.map((fase, index) => {
                                                         const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
                                                         const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
@@ -814,7 +818,13 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                         return (
                                                             <CollapsibleButton 
                                                                 key={index}
-                                                                buttonText={fase.fase + (responsable !== 'N/A' ? ` - Responsable: ${responsable}` : ' - Responsable no asignado')}
+                                                                buttonText={ <span>
+                                                                <span style={{ fontWeight: 'bold' }}>{fase.fase}</span>
+                                                                                            {responsable !== 'N/A' 
+                                                                        ? <span> - Responsable: <span style={{ fontWeight: 'normal', color: 'gray' }}>{responsable}</span></span>
+                                                                                : <span> - Responsable no asignado</span>
+                                                                                            }
+                                                                                                        </span>}
                                                                 defaultClosed={true}
                                                                 buttonStyle={{
                                                                     backgroundColor: backgroundColor,
@@ -822,7 +832,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                                     marginBottom: '8px',
                                                                     padding: '12px',
                                                                     textAlign: 'left',
-                                                                    fontWeight: 'bold',
+                                                                    //fontWeight: 'bold',
                                                                     fontSize: '0.95rem',
                                                                     border: '1px solid #ddd',
                                                                     borderRadius: '6px'
@@ -880,6 +890,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                             />
                                                         );
                                                     })}
+                                                    
                                                 </div>
                                             ))}
                                         </div>
@@ -1839,7 +1850,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['acreditación'], fasesTabla, false, true)}
-                                        {avaibleRange(isAcred) && !soloLectura &&
+                                        {avaibleRange(isAcred) || avaibleRange(isPlan) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1891,7 +1902,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['creación'], fasesTabla, false, true)}
-                                        {avaibleRange(isCrea) && !soloLectura &&
+                                        {avaibleRange(isCrea) || avaibleRange(isPlan) && !soloLectura &&
                                             (
                                                 <>
                                                     <Button onClick={() => handleNewTrackingClick('Creación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
