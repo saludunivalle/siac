@@ -1827,7 +1827,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['renovación registro calificado'], fasesTabla, false, true)}
-                                        {avaibleRange(isReg) && !soloLectura &&
+                                        {avaibleRange(isReg) || avaibleRange(isPlan) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', marginBottom: '25px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1879,7 +1879,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['renovación acreditación'], fasesTabla, false, true)}
-                                        {avaibleRange(isRenAcred) && !soloLectura &&
+                                        {avaibleRange(isRenAcred) || avaibleRange(isPlan) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Renovación Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1927,7 +1927,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['modificación'], fasesTabla, false, true)}
-                                        {avaibleRange(isMod) && !soloLectura &&
+                                        {avaibleRange(isMod) || avaibleRange(isPlan) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Modificación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )

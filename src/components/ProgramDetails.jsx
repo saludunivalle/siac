@@ -680,14 +680,22 @@ const getShortUrl = (url) => {
                         <div className='about-program-section'>
                             <div className='about-program'><strong>Fecha Otorgamiento RAAC: </strong>&nbsp; {formData['FechaExp RAAC'] || 'N/A'}</div>
                             <div className='about-program'><strong>Fecha Vencimiento RAAC: </strong>&nbsp; {formData['Fecha RAAC'] || 'N/A'}</div>
-                            <div className='about-program'><strong>Resolución RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>
+                           {/**  <div className='about-program'><strong>Resolución RAAC: </strong>&nbsp; <span dangerouslySetInnerHTML={{ __html: documentLinks.raac || 'N/A' }} /></div>*/}
                             <div className='about-program'><strong>Acreditable: </strong>&nbsp; {formData['Acreditable'] || 'N/A'}</div>
                         </div>
 
                         {/* Sección 6: Estados de Seguimiento PM */}
                         <div className='about-program-section'>
-                            <div className='about-program'><strong>Estado del programa en Registro Calificado: </strong>&nbsp; {seguimientoPMData?.estado_rc || 'N/A'}</div>
-                            <div className='about-program'><strong>Estado del programa en Acreditación: </strong>&nbsp; {seguimientoPMData?.estado_ac || 'N/A'}</div>
+                            <div className='about-program'><strong>Estado del plan de mejoramiento en Registro Calificado: </strong>&nbsp; {seguimientoPMData?.estado_rc || 'N/A'}</div>
+                            <div className='about-program'><strong>Estado del plan de mejoramiento en Acreditación: </strong>&nbsp; {seguimientoPMData?.estado_ac || 'N/A'}</div>
+                            <div className='about-program'><strong>Documentos del programa: </strong>&nbsp; { <a
+                                                    href={formData['Enlace resolución']}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ color: '#1976d2', textDecoration: 'underline', fontWeight: 500 }}
+                                                >
+                                                    Enlace
+                                                </a> || 'N/A'}</div>
                         </div>
 
                         {/* Sección 7: Línea del Tiempo */}
