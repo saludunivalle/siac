@@ -161,6 +161,7 @@ const ProgramDetails = () => {
     const {
         'programa académico': programaAcademico,
         departamento,
+        snies,
         escuela,
         facultad,
         sede,
@@ -189,6 +190,7 @@ const ProgramDetails = () => {
         Facultad: normalizeValue(facultad),
         Escuela: normalizeValue(escuela),
         Departamento: normalizeValue(departamento),
+        SNIES: normalizeValue(snies),
         Sección: normalizeValue(seccion),
         'Nivel Académico': normalizeValue(academico),
         'Nivel de Formación': normalizeValue(formacion),
@@ -257,39 +259,47 @@ const ProgramDetails = () => {
         return () => clearTimeout(timeout); 
     }, [rowData]);
 
-    useEffect(() => {
-        const fetchFiltroHistorico = async () => {
-            try {
-                const historial = await FiltroHistorico();
-                console.log('Datos de FiltroHistorico:', historial); 
-                const filteredHistorial = historial.filter(item => item.id_programa === rowData.id_programa);
+   useEffect(() => {
+    const fetchFiltroHistorico = async () => {
+        try {
+            const historial = await FiltroHistorico();
+            console.log('Datos de FiltroHistorico:', historial); 
+            const filteredHistorial = historial.filter(item => item.id_programa === rowData.id_programa);
+            
+            filteredHistorial.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+            let rrcLinks = [];
+            let raacLinks = [];
+            let rrcIndex = 1;
+            let raacIndex = 1;
+
+            filteredHistorial.forEach((item) => {
+                const isValidUrl = item.url_doc && item.url_doc.trim() !== '' && item.url_doc !== 'N/A';
                 
-                filteredHistorial.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-                let rrcLinks = [];
-                let raacLinks = [];
-
-                filteredHistorial.forEach((item, index) => {
-                    const link = `<a href="${item.url_doc}" target="_blank" style="color: blue;">Enlace${index + 1}</a>`;
+                if (isValidUrl) {
                     if (item.proceso === 'crea' || item.proceso === 'rrc') {
+                        const link = `<a href="${item.url_doc}" target="_blank" style="color: blue;">Enlace${rrcIndex}</a>`;
                         rrcLinks.push(link);
+                        rrcIndex++;
                     } else if (item.proceso === 'aac' || item.proceso === 'raac') {
+                        const link = `<a href="${item.url_doc}" target="_blank" style="color: blue;">Enlace${raacIndex}</a>`;
                         raacLinks.push(link);
+                        raacIndex++;
                     }
-                });
+                }
+            });
 
-                setDocumentLinks({
-                    rrc: rrcLinks.join(' '),
-                    raac: raacLinks.join(' '),
-                });
-            } catch (error) {
-                console.error('Error al obtener el historial:', error);
-            }
-        };
+            setDocumentLinks({
+                rrc: rrcLinks.length > 0 ? rrcLinks.join(' ') : 'N/A',
+                raac: raacLinks.length > 0 ? raacLinks.join(' ') : 'N/A',
+            });
+        } catch (error) {
+            console.error('Error al obtener el historial:', error);
+        }
+    };
 
-        fetchFiltroHistorico();
-    }, [rowData]);
-
+    fetchFiltroHistorico();
+}, [rowData]);
     useEffect(() => {
         const fetchSeguimientoPM = async () => {
             try {
@@ -457,6 +467,7 @@ const ProgramDetails = () => {
                             Facultad: normalizeValue(updatedProgram.facultad),
                             Escuela: normalizeValue(updatedProgram.escuela),
                             Departamento: normalizeValue(updatedProgram.departamento),
+                            SNIES: normalizeValue(updatedProgram.snies),
                             Sección: normalizeValue(updatedProgram.sección),
                             'Nivel Académico': normalizeValue(updatedProgram['pregrado/posgrado']),
                             'Nivel de Formación': normalizeValue(updatedProgram['nivel de formación']),
@@ -635,6 +646,7 @@ const getShortUrl = (url) => {
                             <div className='about-program'><strong>Facultad: </strong>&nbsp; {formData['Facultad'] || 'N/A'}</div>
                             <div className='about-program'><strong>Escuela: </strong>&nbsp; {formData['Escuela'] || 'N/A'}</div>
                             <div className='about-program'><strong>Departamento: </strong>&nbsp; {formData['Departamento'] || 'N/A'}</div>
+                            <div className='about-program'><strong>SNIES: </strong>&nbsp; {formData['SNIES'] || 'N/A'}</div>
                             <div className='about-program'><strong>Sección: </strong>&nbsp; {formData['Sección'] || 'N/A'}</div>
                             <div className='about-program'><strong>Sede: </strong>&nbsp; {formData['Sede'] || 'N/A'}</div>
                         </div>
