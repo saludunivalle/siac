@@ -818,13 +818,15 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                         return (
                                                             <CollapsibleButton 
                                                                 key={index}
-                                                                buttonText={ <span>
-                                                                <span style={{ fontWeight: 'bold' }}>{fase.fase}</span>
-                                                                                            {responsable !== 'N/A' 
-                                                                        ? <span> - Responsable: <span style={{ fontWeight: 'normal', color: 'gray' }}>{responsable}</span></span>
-                                                                                : <span> - Responsable no asignado</span>
-                                                                                            }
-                                                                                                        </span>}
+                                                                buttonText={ 
+                                                                    <span style={{ display: 'inline-block', width: '100%' }}>
+                                                                        <span style={{ fontWeight: 'bold' }}>{fase.fase}</span>
+                                                                        {responsable !== 'N/A' 
+                                                                            ? <span> - Responsable: <span style={{ fontWeight: 'normal', color: 'black' }}>{responsable}</span></span>
+                                                                            : <span style={{ color: 'black' }}> - Responsable no asignado</span>
+                                                                        }
+                                                                    </span>
+                                                                }
                                                                 defaultClosed={true}
                                                                 buttonStyle={{
                                                                     backgroundColor: backgroundColor,
@@ -832,10 +834,15 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                                     marginBottom: '8px',
                                                                     padding: '12px',
                                                                     textAlign: 'left',
-                                                                    //fontWeight: 'bold',
-                                                                    fontSize: '0.95rem',
+                                                                    fontSize: '0.9rem',
                                                                     border: '1px solid #ddd',
-                                                                    borderRadius: '6px'
+                                                                    borderRadius: '6px',
+                                                                    whiteSpace: 'normal',
+                                                                    wordBreak: 'break-word',
+                                                                    lineHeight: '1.5',
+                                                                    minHeight: '44px',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center'
                                                                 }}
                                                                 content={
                                                                     <div style={{ padding: '10px', backgroundColor: 'white' }}>
