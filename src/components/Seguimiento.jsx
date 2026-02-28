@@ -1827,7 +1827,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['renovación registro calificado'], fasesTabla, false, true)}
-                                        {avaibleRange(isReg) || avaibleRange(isPlan) && !soloLectura &&
+                                        {(avaibleRange(isReg) || avaibleRange(isPlan)) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', marginBottom: '25px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1837,10 +1837,10 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
+                                        {contenido_tablaFases()}
                                     </div>
                                 </>
                             } />
-                            {contenido_tablaFases()}
                         </>
                     )}
                     {(handleButtonClick === 'aac') && (
@@ -1850,7 +1850,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['acreditación'], fasesTabla, false, true)}
-                                        {avaibleRange(isAcred) || avaibleRange(isPlan) && !soloLectura &&
+                                        {(avaibleRange(isAcred) || avaibleRange(isPlan)) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1860,10 +1860,10 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
+                                        {contenido_tablaFases()}
                                     </div>
                                 </>
                             } />
-                            {contenido_tablaFases()}
                         </>
                     )}
                     {(handleButtonClick === 'raac') && (
@@ -1879,7 +1879,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['renovación acreditación'], fasesTabla, false, true)}
-                                        {avaibleRange(isRenAcred) || avaibleRange(isPlan) && !soloLectura &&
+                                        {(avaibleRange(isRenAcred) || avaibleRange(isPlan)) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Renovación Acreditación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1889,10 +1889,10 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
+                                        {contenido_tablaFases()}
                                     </div>
                                 </>
                             } />
-                            {contenido_tablaFases()}
                         </>
                     )}
                     {(handleButtonClick === 'crea') && (
@@ -1902,7 +1902,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['creación'], fasesTabla, false, true)}
-                                        {avaibleRange(isCrea) || avaibleRange(isPlan) && !soloLectura &&
+                                        {(avaibleRange(isCrea) || avaibleRange(isPlan)) && !soloLectura &&
                                             (
                                                 <>
                                                     <Button onClick={() => handleNewTrackingClick('Creación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
@@ -1914,10 +1914,10 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
+                                        {contenido_tablaFases()}
                                     </div>
                                 </>
                             } />
-                            {contenido_tablaFases()}
                         </>
                     )}
                     {(handleButtonClick === 'mod') && (
@@ -1927,7 +1927,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 <>
                                     <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
                                         {renderFilteredTable(filteredData, ['modificación'], fasesTabla, false, true)}
-                                        {avaibleRange(isMod) || avaibleRange(isPlan) && !soloLectura &&
+                                        {(avaibleRange(isMod) || avaibleRange(isPlan)) && !soloLectura &&
                                             (
                                                 <Button onClick={() => handleNewTrackingClick('Modificación')} variant="contained" color="primary" style={{ textAlign: 'center', margin: '8px' }} >Nuevo Seguimiento</Button>
                                             )
@@ -1937,10 +1937,10 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
+                                        {contenido_tablaFases()}
                                     </div>
                                 </>
                             } />
-                            {contenido_tablaFases()}
                         </>
                     )}
                     {handleButtonClick === 'conv' && (
