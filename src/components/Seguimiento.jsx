@@ -813,7 +813,11 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                         const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
                                                         const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#f5f5f5');
                                                         const responsable = fase.responsable && fase.responsable.trim() !== '' ? fase.responsable : 'N/A';
-                                                        const documentosFase = docs.filter(doc => doc.id_fase === fase.id);
+                                                        const documentosFase = docs.filter(doc => {
+                                                            if (!doc.id_fase) return false;
+                                                            const ids = doc.id_fase.split(',').map(id => id.trim());
+                                                            return ids.includes(fase.id);
+                                                        });
                                                         
                                                         return (
                                                             <CollapsibleButton 
