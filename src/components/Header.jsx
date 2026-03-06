@@ -1,15 +1,21 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { styled } from "@mui/material/styles";
-import { InputBase } from "@mui/material";
+import { InputBase, Button, Box, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import LoginIcon from "@mui/icons-material/Login";
+import LogoutIcon from "@mui/icons-material/Logout";
+import CloseIcon from "@mui/icons-material/Close";
 import { Link, useNavigate } from "react-router-dom";
 import { Filtro5 } from "../service/data";
+import Cookies from "js-cookie";
+import GoogleLogin from "./GoogleLogin";
 import logo from "/src/assets/logounivalle.svg";
 
 const HeaderContainer = styled("div")(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
+  gap: "10px",
   width: "100%",
   height: "80px",
   position: "sticky",
@@ -18,35 +24,48 @@ const HeaderContainer = styled("div")(({ theme }) => ({
   zIndex: 2,
   backgroundColor: "#F2F2F2",
   boxShadow: "0px 14px 20px -17px rgba(66, 68, 90, 1)",
+  padding: "0 15px",
+  [theme.breakpoints.down("md")]: {
+    flexWrap: "wrap",
+    height: "auto",
+    padding: "10px",
+  },
   [theme.breakpoints.down("sm")]: {
     flexDirection: "column",
     alignItems: "center",
-    height: "auto",
+    gap: "10px",
   },
 }));
 
 const TitleContainer = styled("div")(({ theme }) => ({
-  position: "absolute",
-  left: "50%",
-  transform: "translateX(-50%)",
-  whiteSpace: "nowrap",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
+  flex: "1",
+  minWidth: "200px",
+  [theme.breakpoints.down("md")]: {
+    minWidth: "150px",
+  },
   [theme.breakpoints.down("sm")]: {
-    position: "static",
-    transform: "none",
+    alignItems: "center",
+    width: "100%",
+    minWidth: "auto",
   },
 }));
 
 const Title = styled("div")(({ theme }) => ({
   fontWeight: 600,
-  fontSize: "30px",
+  fontSize: "22px",
   color: "#423b3b",
   fontFamily: "Helvetica, sans-serif",
+  lineHeight: "1.2",
+  [theme.breakpoints.down("md")]: {
+    fontSize: "18px",
+  },
   [theme.breakpoints.down("sm")]: {
     textAlign: "center",
-    margin: "10px 0",
+    fontSize: "16px",
+    margin: "5px 0",
   },
 }));
 
@@ -54,9 +73,8 @@ const SearchBar = styled("div")(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   position: "relative",
-  paddingRight: "20px",
+  flex: "0 0 auto",
   [theme.breakpoints.down("sm")]: {
-    paddingRight: 0,
     width: "100%",
     justifyContent: "center",
   },
@@ -64,46 +82,53 @@ const SearchBar = styled("div")(({ theme }) => ({
 
 const SearchInputContainer = styled("div")(({ theme }) => ({
   position: "relative",
-  width: "300px",
+  width: "200px",
+  [theme.breakpoints.down("md")]: {
+    width: "180px",
+  },
   [theme.breakpoints.down("sm")]: {
     width: "100%",
-    maxWidth: "300px",
+    maxWidth: "250px",
   },
 }));
 
 const SearchInput = styled(InputBase)(({ theme }) => ({
   width: "100%",
-  paddingRight: "20px",
+  height: "36px",
+  paddingRight: "35px",
+  paddingLeft: "12px",
   border: "1px solid #ccc",
   borderRadius: "20px",
-  paddingLeft: "12px",
-  boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+  fontSize: "14px",
+  boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.08)",
   "&:focus": {
     borderColor: "#007BFF",
-    boxShadow: "0px 4px 8px rgba(0, 123, 255, 0.2)",
+    boxShadow: "0px 2px 6px rgba(0, 123, 255, 0.2)",
   },
 }));
 
 const StyledSearchIcon = styled(SearchIcon)(({ theme }) => ({
   position: "absolute",
-  right: "4px",
+  right: "8px",
   top: "50%",
   transform: "translateY(-50%)",
   pointerEvents: "none",
   color: "#808181",
-  borderRadius: "100px",
-  fontSize: "27px",
+  fontSize: "20px",
 }));
 
 const Username = styled("div")(({ theme }) => ({
-  textAlign: "center",
+  fontSize: "13px",
   fontWeight: 500,
-  paddingRight: "10px",
-  paddingLeft: "10px",
+  color: "#666",
   fontFamily: "Helvetica, sans-serif",
+  marginTop: "4px",
+  [theme.breakpoints.down("md")]: {
+    fontSize: "12px",
+  },
   [theme.breakpoints.down("sm")]: {
-    marginTop: "10px",
-    flexDirection: "column-reverse",
+    textAlign: "center",
+    fontSize: "11px",
   },
 }));
 
@@ -145,8 +170,48 @@ const SearchResultItem = styled("div")(({ theme }) => ({
 }));
 
 const Logo = styled("div")(({ theme }) => ({
-  paddingLeft: "10px",
   display: "flex",
+  alignItems: "center",
+  flex: "0 0 auto",
+  "& img": {
+    height: "50px",
+    [theme.breakpoints.down("md")]: {
+      height: "40px",
+    },
+  },
+}));
+
+const AuthContainer = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  flex: "0 0 auto",
+  [theme.breakpoints.down("sm")]: {
+    width: "100%",
+    justifyContent: "center",
+  },
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  borderRadius: "20px",
+  textTransform: "none",
+  fontWeight: 600,
+  fontSize: "14px",
+  padding: "6px 16px",
+  boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+  transition: "all 0.3s ease",
+  whiteSpace: "nowrap",
+  "&:hover": {
+    transform: "translateY(-2px)",
+    boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.15)",
+  },
+  [theme.breakpoints.down("md")]: {
+    fontSize: "13px",
+    padding: "5px 14px",
+  },
+  [theme.breakpoints.down("sm")]: {
+    fontSize: "12px",
+    padding: "6px 12px",
+  },
 }));
 
 const Header = () => {
@@ -157,6 +222,8 @@ const Header = () => {
   const [isCargo, setCargo] = useState(['']);
   const [escuela, setEscuela] = useState(['']);
   const [programa, setPrograma] = useState(['']);
+  const [isLogged, setIsLogged] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const navigate = useNavigate();
   const labelRef = useRef(null);
 
@@ -220,8 +287,32 @@ const Header = () => {
     return capitalizeFirstLetter(firstName);
   };
 
+  // Función para manejar el logout
+  const handleLogout = useCallback(() => {
+    Cookies.remove('token');
+    sessionStorage.removeItem('logged');
+    setIsLogged(false);
+    setUser('');
+    setCargo(['']);
+    setEscuela('');
+    setPrograma('');
+    navigate('/');
+  }, [navigate]);
+
+  // Función para manejar el login exitoso
+  const handleLoginSuccess = useCallback(() => {
+    setShowLoginDialog(false);
+    setIsLogged(true);
+    // Recargar para actualizar los permisos
+    window.location.reload();
+  }, []);
+
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutsideLabel);
+
+    // Verificar si hay token de autenticación
+    const token = Cookies.get('token');
+    setIsLogged(!!token);
 
      const fetchPrograma = async (idPrograma) => {
     try {
@@ -327,6 +418,89 @@ const Header = () => {
           ))}
         </SearchResultLabel>
       </SearchBar>
+      
+      {/* Área de autenticación */}
+      <AuthContainer>
+        {isLogged ? (
+          <StyledButton
+            variant="contained"
+            color="error"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            aria-label="Cerrar sesión"
+          >
+            Salir
+          </StyledButton>
+        ) : (
+          <StyledButton
+            variant="contained"
+            color="primary"
+            startIcon={<LoginIcon />}
+            onClick={() => setShowLoginDialog(true)}
+            aria-label="Iniciar sesión"
+          >
+            Iniciar Sesión
+          </StyledButton>
+        )}
+      </AuthContainer>
+
+      {/* Diálogo de login con Google */}
+      <Dialog
+        open={showLoginDialog}
+        onClose={() => setShowLoginDialog(false)}
+        maxWidth="xs"
+        PaperProps={{
+          style: {
+            borderRadius: '16px',
+            padding: '20px',
+            minWidth: '320px',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0 0 16px 0',
+          }}
+        >
+          <span style={{ fontWeight: 600, fontSize: '1.125rem', color: '#333' }}>
+            Iniciar Sesión
+          </span>
+          <IconButton
+            onClick={() => setShowLoginDialog(false)}
+            size="small"
+            aria-label="Cerrar diálogo"
+            sx={{ 
+              color: '#666',
+              '&:hover': { backgroundColor: '#f5f5f5' }
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px 0',
+            gap: '16px',
+          }}
+        >
+          <Box sx={{ 
+            textAlign: 'center', 
+            color: '#666', 
+            fontSize: '0.875rem',
+            marginBottom: '8px'
+          }}>
+            Selecciona tu cuenta de Google institucional
+          </Box>
+          <GoogleLogin setIsLogin={handleLoginSuccess} />
+        </DialogContent>
+      </Dialog>
     </HeaderContainer>
   );
 };
