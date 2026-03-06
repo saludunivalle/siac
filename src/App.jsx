@@ -64,13 +64,14 @@ function App() {
           <Route path="/estadisticas" element={<DashboardEstadisticas />} />
           <Route path="/consolidado-historico" element={<ConsolidadoHistoricoPage />} />
           <Route path="/login" element={<GoogleLogin setIsLogin={setLogged} />} />
+          <Route path="/programas" element={<Programas />} />
+          <Route path="/program_details" element={<ProgramDetails />} />
           {/* Rutas protegidas - solo si está logueado */}
           {isLogged ? (
             <>
-              <Route path="/program_details" element={<ProgramDetails />} />
+
               <Route path="/seguimiento" element={<Seguimiento />} />
               <Route path="/seguimientorac" element={<Seguimientorac />} />
-              <Route path="/programas" element={<Programas />} />
               <Route path="/seguimiento-inicio" element={<SeguimientoInicio />} />
               <Route path="/docencia-servicio" element={<DocenciaServicio />} />
               <Route path="/creacion-programa" element={<CreacionPrograms />} />

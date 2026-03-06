@@ -8,6 +8,7 @@ const hojaProc_X_Prog = 'Proc_X_Prog';
 const hojaProc_X_Prog_Doc = 'Proc_X_Doc';
 const hojaProc_Fases_Doc = 'Proc_Fases_Doc';
 const hojaHistorico = 'HISTORICO';
+const hojaActProgEstd = 'Act_x_Prog_Est'
 
 /**
  * Generic filter function
@@ -89,6 +90,7 @@ export const Filtro4 = (datos, termino_a_filtrar) => {
 export const Filtro5 = () => filterByProperty(hojaProgramas, {}, '');
 export const Filtro6 = (data) => filterByProperty(hojaProgramas, data, 'fase rac');
 export const Filtro7 = () => filterByProperty(hojaSeguimientos, {}, '');
+export const dataActEst = () => filterByProperty(hojaActProgEstd, {}, '');
 
 export const Filtro8 = (datos, terminos_a_filtrar) => {
   try {

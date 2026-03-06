@@ -130,7 +130,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
     const [updateTrigger, setUpdateTrigger] = useState(0);
     const [errorMessage, setErrorMessage] = useState('');
     const [formSubmitted, setFormSubmitted] = useState(false);
-    const [fileType, setFileType] = useState('');
+    const [fileType, setFileType] = useState('link');
     const [selectedDocReq, setSelectedDocReq] = useState('');
     const [fases, setFases] = useState([]);
     const [fasesName, setFasesName] = useState([]);
@@ -421,6 +421,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
 
     const clearFileLink = () => {
         setFileLink('');
+        setSelectedDocReq('');
     };
 
     // Función para cargar las fases del programa y los documentos según la opción seleccionada
@@ -810,8 +811,26 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                     
                                                     {fasesGrupo.map((fase, index) => {
                                                         const isFaseName = fasesName.find(fn => fn.proceso === fase.proceso && fn.fase === fase.fase);
-                                                        const isBlackOutline = isFaseName && !(itemActual && fase.fase === itemActual.fase);
-                                                        const backgroundColor = isBlackOutline ? '#aae3ae' : ((itemActual && fase.fase === itemActual.fase) ? '#64b06a' : '#f5f5f5');
+                                                        
+                                                        // Verificar si la fase tiene seguimientos asociados
+                                                        const tieneSeguimientos = filteredData.some(seg => 
+                                                            seg.fase && getFaseName(seg.fase) === fase.fase
+                                                        );
+                                                        
+                                                        // Determinar el color de fondo
+                                                        // Verde oscuro (#64b06a): Fase actual con seguimientos
+                                                        // Verde claro (#aae3ae): Fase con seguimientos pero no es la actual
+                                                        // Gris (#f5f5f5): Fase sin seguimientos
+                                                        let backgroundColor = '#f5f5f5'; // Por defecto gris
+                                                        
+                                                        if (tieneSeguimientos) {
+                                                            // Si tiene seguimientos, verificar si es la fase actual
+                                                            if (itemActual && fase.fase === itemActual.fase) {
+                                                                backgroundColor = '#64b06a'; // Verde oscuro para fase actual con seguimientos
+                                                            } else if (isFaseName) {
+                                                                backgroundColor = '#aae3ae'; // Verde claro para otras fases con seguimientos
+                                                            }
+                                                        }
                                                         const responsable = fase.responsable && fase.responsable.trim() !== '' ? fase.responsable : 'N/A';
                                                         const documentosFase = docs.filter(doc => {
                                                             if (!doc.id_fase) return false;
@@ -867,10 +886,10 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                                                 <span style={{ marginLeft: '8px', fontSize: '0.9rem' }}>{responsable}</span>
                                                                             </div>
                                                                 */}
-                                                                            <div>
+                                                                            <div style={{ textAlign: 'left' }}>
                                                                                 <strong style={{ fontSize: '0.9rem', color: '#333' }}>Documentos Requeridos:</strong>
                                                                                 {documentosFase.length > 0 ? (
-                                                                                    <ul style={{ margin: '8px 0 0 0', paddingLeft: 24 }}>
+                                                                                    <ul style={{ margin: '8px 0 0 0', paddingLeft: 20, textAlign: 'left', listStylePosition: 'outside' }}>
                                                                                         {documentosFase.map((doc, docIdx) => {
                                                                                             const filtroVerde = Filtro21Data.some(filtro => filtro.id_doc === doc.id && filtro.id_programa === idProgramaFinal);
                                                                                             const fondoVerde = filtroVerde ? { backgroundColor: '#E6FFE6', padding: '4px 8px', borderRadius: '4px', display: 'inline-block', cursor: 'pointer' } : { cursor: 'pointer' };
@@ -907,7 +926,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                         </div>
                                     )}
                                 </div>
-                                <Modal open={openModal} onClose={handleClose}>
+                                <Modal open={open} onClose={handleClose}>
                                     <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', borderRadius: '8px' }}>
                                         <h2>Agregar {selectedDoc && selectedDoc.nombre_doc}</h2>
                                         <TextField
@@ -1105,30 +1124,40 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                     selectedOption.id,
                 ];
 
-                const dataSendCrea = [
-                    idProgramaFinal,
-                    selectedOption.id,
-                    formattedDate,
-                ];
+                // DESHABILITADO: Funcionalidad de actividad_terminada comentada temporalmente
+                // const dataSendCrea = [
+                //     idProgramaFinal,
+                //     selectedOption.id,
+                //     formattedDate,
+                // ];
 
                 await sendDataToServer(dataSend);
                 
                 // Esperar un momento para asegurar que los datos se guarden en Sheets
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
-                if (selectedOption.id !== undefined) {
-                    await sendDataToServerCrea(dataSendCrea);
-                }
+                // DESHABILITADO: No guardar en actividad_terminada por ahora
+                // if (selectedOption.id !== undefined) {
+                //     await sendDataToServerCrea(dataSendCrea);
+                // }
                 
                 clearFileLink();
-                setLoading(false);
-                setOpenModal(true);
-                // Usar contador para asegurar que el useEffect siempre se dispare
-                setUpdateTrigger(prev => prev + 1);
                 setComment('');
                 setValue('');
                 setSelectedPhase('');
                 setErrorMessage(null);
+                
+                // Desactivar loading ANTES de abrir el modal
+                setLoading(false);
+                
+                // Esperar un momento para que React actualice el estado
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Abrir modal de éxito
+                setOpenModal(true);
+                
+                // Recargar datos en segundo plano
+                setUpdateTrigger(prev => prev + 1);
             } catch (error) {
                 setLoading(false);
                 console.error('Error al enviar datos:', error);
@@ -1272,8 +1301,16 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
 
     const handleCloseFirstModal = () => {
         setOpenModal(false);
-        if (selectedOption.fase === "Proceso Finalizado") {
-            setOpenSecondModal(true);
+        // Asegurarse de que loading esté en false al cerrar el modal
+        setLoading(false);
+        // Solo abrir el segundo modal si la fase seleccionada es "Proceso Finalizado" y el usuario lo confirma
+        // Este segundo modal es para registrar el cierre del proceso, no para el archivo adjunto
+        if (selectedOption && selectedOption.fase === "Proceso Finalizado") {
+            // Preguntar al usuario si desea registrar el cierre del proceso
+            const confirmar = window.confirm('¿Desea registrar los datos de cierre del proceso (fecha de resolución, duración, etc.)?');
+            if (confirmar) {
+                setOpenSecondModal(true);
+            }
         }
     };
 
@@ -1382,32 +1419,43 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                     docReqId,
                 ];
 
-                const dataSendCrea = [
-                    idProgramaFinal,
-                    selectedOption.id,
-                    formattedDate,
-                ];
+                // DESHABILITADO: Funcionalidad de actividad_terminada comentada temporalmente
+                // const dataSendCrea = [
+                //     idProgramaFinal,
+                //     selectedOption.id,
+                //     formattedDate,
+                // ];
 
                 await sendDataToServer(dataSend);
                 
                 // Esperar un momento para asegurar que los datos se guarden en Sheets
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
-                if (selectedOption.id !== undefined) {
-                    await sendDataToServerCrea(dataSendCrea);
-                }
+                // DESHABILITADO: No guardar en actividad_terminada por ahora
+                // if (selectedOption.id !== undefined) {
+                //     await sendDataToServerCrea(dataSendCrea);
+                // }
 
                 clearFileLink();
-                setLoading(false);
-                setOpenModal(true);
-                // Usar contador para asegurar que el useEffect siempre se dispare
-                setUpdateTrigger(prev => prev + 1);
                 setComment('');
                 setValue('');
                 setSelectedPhase('');
                 setErrorMessage(null);
+                
+                // Desactivar loading ANTES de abrir el modal
+                setLoading(false);
+                
+                // Esperar un momento para que React actualice el estado
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Abrir modal de éxito
+                setOpenModal(true);
+                
+                // Recargar datos en segundo plano
+                setUpdateTrigger(prev => prev + 1);
             } catch (error) {
                 setLoading(false);
+                setErrorMessage('Error al enviar los datos. Por favor, intente de nuevo.');
                 console.error('Error al enviar datos:', error);
             }
         };
@@ -1504,61 +1552,36 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 </FormControl>
                             </div>
                             <div className="attachment">
-                                Archivo Adjunto <br />
-                                <FormControl component="fieldset">
-                                    <RadioGroup
-                                        value={fileType}
-                                        onChange={(e) => setFileType(e.target.value)}
-                                        style={{
-                                            display: "flex",
-                                            flexDirection: "row",
-                                        }}
+                                <Typography variant="h6" style={{ marginBottom: '8px' }}>Archivo Adjunto</Typography>
+                                <FormControl fullWidth size="small" sx={{ marginBottom: 2 }}>
+                                    <InputLabel id="doc-req-label">Documento requerido</InputLabel>
+                                    <Select
+                                        labelId="doc-req-label"
+                                        id="doc-req-select"
+                                        value={selectedDocReq}
+                                        label="Documento requerido"
+                                        onChange={e => setSelectedDocReq(e.target.value)}
+                                        displayEmpty
+                                        required
                                     >
-                                        <FormControlLabel value="upload" control={<Radio />} label="Subir" />
-                                        <FormControlLabel value="link" control={<Radio />} label="Enlace" />
-                                    </RadioGroup>
+                                        <MenuItem value="">
+                                            
+                                        </MenuItem>
+                                        {docs.map(doc => (
+                                            <MenuItem key={doc.id} value={doc.id}>{doc.nombre_doc}</MenuItem>
+                                        ))}
+                                    </Select>
                                 </FormControl>
-                                <div style={{ marginTop: "0px", height: "30px" }}>
-                                    {fileType === "upload" ? (
-                                        <input
-                                            type="file"
-                                            multiple
-                                            ref={fileInputRef}
-                                            placeholder="Seleccionar archivo..."
-                                            style={{ height: "30px" }}
-                                        />
-                                    ) : fileType === "link" ? (
-                                        <>
-                                            <div style={{ marginBottom: 8 }}>
-                                                <label>Documento requerido:</label>
-                                                <select style={{backgroundColor:'#fff', color:'#222'}}
-                                                    value={selectedDocReq}
-                                                    onChange={e => setSelectedDocReq(e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="">Seleccione documento</option>
-                                                    {docs.map(doc => (
-                                                        <option key={doc.id} value={doc.id}>{doc.nombre_doc}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <input
-                                                value={fileLink}
-                                                onChange={e => setFileLink(e.target.value)}
-                                                placeholder="Link del archivo"
-                                                type="text"
-                                                style={{
-                                                    width: "200px",
-                                                    height: "25px",
-                                                    backgroundColor: "white",
-                                                    color: "grey",
-                                                    border: "1px solid grey",
-                                                    borderRadius: "5px",
-                                                }}
-                                            />
-                                        </>
-                                    ) : null}
-                                </div>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Link del archivo"
+                                    value={fileLink}
+                                    onChange={e => setFileLink(e.target.value)}
+                                    placeholder="https://..."
+                                    variant="outlined"
+                                    sx={{ backgroundColor: 'white' }}
+                                />
                             </div>
                             <div className="select-container">
                                 <FormControl style={{ width: "100%", maxWidth: "100%" }}>
@@ -1570,13 +1593,13 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                             width: "100%",
                                         }}
                                     >
-                                        Pasar a...
+                                        Actividad
                                     </InputLabel>
                                     <Select
                                         labelId="select-label"
                                         id="select-label"
                                         value={selectedOption}
-                                        label="Pasar a..."
+                                        label="Actividad"
                                         onChange={(e) => setSelectedOption(e.target.value)}
                                         displayEmpty
                                         style={{ width: "100%" }}
@@ -1607,7 +1630,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                             Ninguna
                                         </MenuItem>
                                         {Object.entries(groupedFases).map(([grupo, fases]) => [
-                                            <ListSubheader key={grupo} sx={{fontWeight: 'bold'}}>{grupo.toUpperCase()}</ListSubheader>,
+                                            <ListSubheader key={grupo} sx={{fontWeight: 'bold', color:'black'}}>{grupo.toUpperCase()}</ListSubheader>,
                                             ...fases.map((fase, index) => (
                                                 <MenuItem
                                                     key={index}
@@ -2050,7 +2073,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                         }, {});
                                         
                                         return Object.entries(groupedFases).map(([grupo, fases]) => [
-                                            <ListSubheader key={grupo} sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                            <ListSubheader key={grupo} sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'black' }}>
                                                 {grupo.toUpperCase()}
                                             </ListSubheader>,
                                             ...fases.map((fase, index) => (
