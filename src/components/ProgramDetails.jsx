@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'; 
 import * as XLSX from 'xlsx';
+import Cookies from 'js-cookie';
 
 const normalizeValue = (value) => {
     return typeof value === 'string' && value.trim().toUpperCase() === '#N/A'
@@ -43,6 +44,10 @@ const ProgramDetails = () => {
     const [timelineData, setTimelineData] = useState([]);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(false);
+    
+    // Verificar si el usuario está logueado
+    const isUserLoggedIn = Boolean(Cookies.get('token'));
+    
     let userPermiso = '';
     let userEscuela = '';
     let userPrograma = '';
@@ -640,7 +645,8 @@ const getShortUrl = (url) => {
                     <h2>{programaAcademico || 'N/A'}</h2>
                 </div>
                 {!isEditing ? (
-                    <div className='about-program-general'>
+                    <>
+                        <div className='about-program-general'>
                         {/* Sección 1: Facultad hasta Sede */}
                         <div className='about-program-section'>
                             <div className='about-program'><strong>Facultad: </strong>&nbsp; {formData['Facultad'] || 'N/A'}</div>
@@ -715,6 +721,25 @@ const getShortUrl = (url) => {
                         )}
                     </div>
                     
+                    {/* Mensaje informativo para usuarios no logueados */}
+                    {!isUserLoggedIn && (
+                        <Box sx={{ 
+                            marginTop: '30px', 
+                            padding: '20px', 
+                            backgroundColor: '#f5f5f5', 
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            textAlign: 'center'
+                        }}>
+                            <Typography variant="h6" sx={{ color: '#555', marginBottom: '10px' }}>
+                                Vista de Solo Lectura
+                            </Typography>
+                            <Typography variant="body1" sx={{ color: '#666' }}>
+                                Para ver seguimientos, editar información o realizar otras acciones, por favor inicia sesión.
+                            </Typography>
+                        </Box>
+                    )}
+                    </>
                 ) : (
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
                         <form onSubmit={handleSubmit} style={{ margin: '20px 0' }}>
@@ -841,7 +866,7 @@ const getShortUrl = (url) => {
                         </form>
                     </LocalizationProvider>
                 )}
-                {!isEditing && !esDirectorEscuela && !esDirectorPrograma && (
+                {!isEditing && !esDirectorEscuela && !esDirectorPrograma && isUserLoggedIn && (
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, marginBottom: '20px' }}>
                         <Button
                             variant="contained"
@@ -862,7 +887,8 @@ const getShortUrl = (url) => {
                     </Box>
                 )}
                 
-                {!puedesVerSoloBasico && (
+                {/* Solo mostrar tabs si el usuario está logueado y no está en modo solo lectura */}
+                {!puedesVerSoloBasico && isUserLoggedIn && (
                     <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', marginLeft:'5px', marginRight:'20px'}}>
                     <Tabs
                         value={clickedButton}
@@ -952,7 +978,7 @@ const getShortUrl = (url) => {
                                 </div>
                             </div>
          ):null
-                        ) : (
+                        ) : isUserLoggedIn && (
                             <Seguimiento 
                                 handleButtonClick={clickedButton} 
                                 key={reloadSeguimiento} 
@@ -980,7 +1006,7 @@ const getShortUrl = (url) => {
                                     programaAcademico={programaAcademico}
                                 />
                             </Box>
-                        ) : (
+                        ) : isUserLoggedIn && (
                             <Seguimiento 
                                 handleButtonClick={clickedButton} 
                                 key={reloadSeguimiento} 
@@ -998,55 +1024,7 @@ const getShortUrl = (url) => {
             </div>
 
             {/* Cuadro informativo de documentos requeridos, solo si la tab tiene info de seguimiento */}
-            {!puedesVerSoloBasico && (
-            <>
-            {(() => {
-                // Mapear tab a topic
-                const topicMap = {
-                    crea: 'Creación',
-                    mod: 'Modificación',
-                    rrc: 'Renovación Registro Calificado',
-                    aac: 'Acreditación',
-                    raac: 'Renovación Acreditación',
-                };
-                const idPrograma = rowData.id_programa || rowData.id || rowData.ID;
-                // Solo mostrar si la tab es una de seguimiento y hay info de seguimiento para esa tab
-                if (topicMap[clickedButton] && Array.isArray(filteredDataSeg)) {
-                    const tieneSeguimiento = filteredDataSeg.some(seg => seg.id_programa === idPrograma && seg.topic === topicMap[clickedButton]);
-                    if (tieneSeguimiento) {
-                        return (
-                            <Box sx={{
-                                backgroundColor: '#E3F2FD',
-                                borderRadius: '8px',
-                                padding: '16px',
-                                marginTop: '32px',
-                                marginBottom: '24px',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-                                maxWidth: 600,
-                                marginLeft: 'auto',
-                                marginRight: 'auto',
-                            }}>
-                                <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '8px', color: '#1976d2' }}>
-                                    Documentos requeridos para el programa
-                                </Typography>
-                                <ul style={{ paddingLeft: 20, marginBottom: 0 }}>
-                                    <li>Resolución de Creación</li>
-                                    <li>Resolución de Modificación</li>
-                                    <li>Resolución de Renovación Registro Calificado</li>
-                                    <li>Resolución de Acreditación</li>
-                                    <li>Resolución de Renovación Acreditación</li>
-                                </ul>
-                                <Typography variant="body2" sx={{ color: '#555', marginTop: '8px' }}>
-                                    Estos documentos deben ser subidos con el enlace correspondiente en el formulario de seguimiento.
-                                </Typography>
-                            </Box>
-                        );
-                    }
-                }
-                return null;
-            })()}
-            </>
-            )}
+           
 
 </>
     );
