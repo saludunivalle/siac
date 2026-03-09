@@ -7,7 +7,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import CollapsibleButton from './CollapsibleButton';
-import { Filtro10,Filtro11, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico, updateSeguimiento, deleteSeguimiento } from '../service/data';
+import { Filtro10,Filtro11, Filtro12, Filtro7, Filtro8, Filtro9, obtenerFasesProceso, sendDataToServer, sendDataToServerCrea, sendDataToServerDoc, Filtro21, sendDataFirma, FiltroFirmas, sendDataToServerHistorico, updateSeguimiento, deleteSeguimiento, FiltroHistorico } from '../service/data';
 import { clearCache } from '../service/fetch';
 import dayjs from 'dayjs';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
@@ -157,6 +157,28 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
     const [editLoading, setEditLoading] = useState(false);
     const [hoveredRowIndex, setHoveredRowIndex] = useState(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    
+    // Estado para datos históricos
+    const [datosHistoricos, setDatosHistoricos] = useState([]);
+    const [idProcHistoricoActual, setIdProcHistoricoActual] = useState(null);
+    
+    // Estado para trackear el estado de cada fase
+    const [fasesEstados, setFasesEstados] = useState({});
+
+    // Cargar datos históricos al montar el componente
+    useEffect(() => {
+        const cargarDatosHistoricos = async () => {
+            try {
+                const historicos = await FiltroHistorico();
+                console.log('📊 Datos históricos cargados:', historicos);
+                setDatosHistoricos(historicos || []);
+            } catch (error) {
+                console.error('Error al cargar datos históricos:', error);
+                setDatosHistoricos([]);
+            }
+        };
+        cargarDatosHistoricos();
+    }, []);
 
     // Obtener datos de Filtro21 al montar el componente
     useEffect(() => {
@@ -412,7 +434,12 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         dosAñosAntesVencimiento: 'N/A',
         dieciochoMesesAntes: 'N/A'
     };
-
+useEffect(() => {
+  // Cada vez que cambie el proceso, limpiar el idProcHistoricoActual si no corresponde
+  if (!['rrc', 'aac', 'raac', 'crea','mod'].includes(handleButtonClick)) {
+    setIdProcHistoricoActual('');
+  }
+}, [handleButtonClick]);
     useEffect(() => {
         if (handleButtonClick != null) {
             cargarFases();
@@ -669,6 +696,64 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         return fase ? fase.id : null;
     };
 
+    // Función para agrupar seguimientos por periodo histórico
+    const agruparSeguimientosPorPeriodo = (seguimientos, procesoFiltro = 'rrc') => {
+        // Filtrar seguimientos que tienen id_proc_historico
+        const seguimientosConHistorico = seguimientos.filter(seg => 
+            seg.id_proc_historico && seg.id_proc_historico !== ''
+        );
+        
+        // Seguimientos sin id_proc_historico
+        const seguimientosSinHistorico = seguimientos.filter(seg => 
+            !seg.id_proc_historico || seg.id_proc_historico === ''
+        );
+        
+        // Agrupar por id_proc_historico
+        const grupos = {};
+        seguimientosConHistorico.forEach(seg => {
+            const idHistorico = seg.id_proc_historico;
+            if (!grupos[idHistorico]) {
+                grupos[idHistorico] = [];
+            }
+            grupos[idHistorico].push(seg);
+        });
+        
+        // Crear array con información de cada grupo
+        const gruposConInfo = Object.entries(grupos).map(([idHistorico, seguimientos]) => {
+            // Buscar el dato histórico correspondiente
+            const datoHistorico = datosHistoricos.find(h => 
+                String(h.id).trim() === String(idHistorico).trim() && 
+                h.proceso && h.proceso.toLowerCase() === procesoFiltro.toLowerCase()
+            );
+            
+            if (datoHistorico) {
+                return {
+                    idHistorico,
+                    periodo: `${datoHistorico.fecha_ini || '?'} - ${datoHistorico.fecha_fin || '?'}`,
+                    fechaIni: datoHistorico.fecha_ini,
+                    fechaFin: datoHistorico.fecha_fin,
+                    proceso: datoHistorico.proceso,
+                    seguimientos: seguimientos,
+                    tienePeriodo: true
+                };
+            } else {
+                // Si no se encuentra el dato histórico, agrupar sin periodo
+                return {
+                    idHistorico,
+                    periodo: null,
+                    seguimientos: seguimientos,
+                    tienePeriodo: false
+                };
+            }
+        });
+        
+        return {
+            gruposConPeriodo: gruposConInfo.filter(g => g.tienePeriodo),
+            gruposSinPeriodo: gruposConInfo.filter(g => !g.tienePeriodo),
+            seguimientosSinHistorico
+        };
+    };
+
     // Renderizar seguimientos de una fase específica
     const renderSeguimientosPorFase = (fase) => {
         // Obtener el ID de la fase
@@ -676,9 +761,14 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         
         // Filtrar seguimientos que pertenecen a esta fase
         const seguimientosFase = filteredData.filter(seg => {
-            // Comparar el nombre de fase del seguimiento con el nombre de la fase actual
-            return seg.fase && getFaseName(seg.fase) === fase.fase;
+            // Comparar el ID de fase del seguimiento con el ID de la fase actual
+            return seg.fase && seg.fase === fase.id;
         });
+        
+        // Debug: ver qué seguimientos coinciden con esta fase
+        if (seguimientosFase.length > 0) {
+            console.log(`✅ Fase ${fase.fase} (ID: ${fase.id}) tiene ${seguimientosFase.length} seguimientos`);
+        }
 
         if (seguimientosFase.length === 0) {
             return <p style={{ textAlign: 'center', color: '#888', padding: '10px' }}>Sin seguimientos registrados en esta fase</p>;
@@ -692,7 +782,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         });
 
         return (
-            <div style={{ position: 'relative', width: '100%', paddingRight: '45px', display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
                 <table style={{ width: '90%', maxWidth: '90%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px', tableLayout: 'fixed', margin: '10px auto' }}>
                     <thead>
                         <tr>
@@ -721,7 +811,30 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                     }}
                                 >
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['timestamp']}</td>
-                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', padding: '3px 4px', fontSize: '0.8rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{item['mensaje']}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', padding: '3px 4px', fontSize: '0.8rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+                                        {item['mensaje']}
+                                        {/* Botón de edición dentro de la celda de comentario */}
+                                        {hoveredRowIndex === rowKey && !soloLectura && (
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenEditModal(item);
+                                                }}
+                                                style={{
+                                                    backgroundColor: '#1976d2',
+                                                    color: 'white',
+                                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                                    padding: '4px',
+                                                    marginLeft: '8px',
+                                                    float: 'right'
+                                                }}
+                                                title="Editar seguimiento"
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        )}
+                                    </td>
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['riesgo']}</td>
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['usuario']?.split('@')[0] || '-'}</td>
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>
@@ -739,35 +852,6 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                             <strong>-</strong>
                                         )}
                                     </td>
-                                    {hoveredRowIndex === rowKey && !soloLectura && (
-                                        <div
-                                            style={{
-                                                position: 'absolute',
-                                                right: '-40px',
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                                zIndex: 10
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <IconButton
-                                                size="small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleOpenEditModal(item);
-                                                }}
-                                                style={{
-                                                    backgroundColor: '#1976d2',
-                                                    color: 'white',
-                                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                                                    padding: '4px'
-                                                }}
-                                                title="Editar seguimiento"
-                                            >
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                        </div>
-                                    )}
                                 </tr>
                             );
                         })}
@@ -777,8 +861,45 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         );
     };
 
+    // Manejar cambio de estado de fase y crear seguimiento automático
+    const handleEstadoFaseChange = async (fase, nuevoEstado, procesoTopic) => {
+        try {
+            // Actualizar el estado local
+            setFasesEstados(prev => ({
+                ...prev,
+                [fase.id]: nuevoEstado
+            }));
+            
+            // Crear seguimiento automático
+            const formattedDate = dayjs().format('DD/MM/YYYY');
+            const mensaje = `El estado del programa ${programaAcademico} es: ${nuevoEstado}`;
+            
+            // Construir dataSend con el orden correcto según el Sheet
+            const dataSend = [
+                idProgramaFinal,                              // 1. id_programa
+                formattedDate,                                // 2. fecha (timestamp)
+                mensaje,                                      // 3. mensaje
+                'Bajo',                                       // 4. riesgo
+                user,                                         // 5. usuario
+                procesoTopic,                                 // 6. topic (proceso actual)
+                '',                                           // 7. url_adjunto (vacío)
+                fase.id,                                      // 8. fase
+                nuevoEstado,                                  // 9. estado_act
+                '',                                           // 10. fase_grande_ok (vacío)
+                idProcHistoricoActual || '',                  // 11. id_proc_historico
+            ];
+            console.log('📤 Enviando seguimiento automático por cambio de estado:', dataSend);
+            await sendDataToServer(dataSend);
+            
+            console.log('✅ Seguimiento de estado creado:', { fase: fase.fase, estado: nuevoEstado });
+            
+        } catch (error) {
+            console.error('❌ Error al crear seguimiento de estado:', error);
+        }
+    };
+    
     // Renderizar la tabla de fases
-    const contenido_tablaFases = () => {
+    const contenido_tablaFases = (procesoTopic = '') => {
         const groupedFases = fases.reduce((acc, fase) => {
             const grupo = fase.fase_sup || 'Sin Agrupar';
             if (!acc[grupo]) {
@@ -814,16 +935,20 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                         
                                                         // Verificar si la fase tiene seguimientos asociados
                                                         const tieneSeguimientos = filteredData.some(seg => 
-                                                            seg.fase && getFaseName(seg.fase) === fase.fase
+                                                            seg.fase && seg.fase === fase.id
                                                         );
                                                         
                                                         // Determinar el color de fondo
+                                                        // Verde muy claro (#c8e6c9): Estado "Completado"
                                                         // Verde oscuro (#64b06a): Fase actual con seguimientos
                                                         // Verde claro (#aae3ae): Fase con seguimientos pero no es la actual
                                                         // Gris (#f5f5f5): Fase sin seguimientos
                                                         let backgroundColor = '#f5f5f5'; // Por defecto gris
                                                         
-                                                        if (tieneSeguimientos) {
+                                                        // Prioridad 1: Si el estado es "Completado", usar verde claro
+                                                        if (fasesEstados[fase.id] === 'Completado') {
+                                                            backgroundColor = '#c8e6c9'; // Verde claro para completado
+                                                        } else if (tieneSeguimientos) {
                                                             // Si tiene seguimientos, verificar si es la fase actual
                                                             if (itemActual && fase.fase === itemActual.fase) {
                                                                 backgroundColor = '#64b06a'; // Verde oscuro para fase actual con seguimientos
@@ -869,6 +994,34 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                                 }}
                                                                 content={
                                                                     <div style={{ padding: '10px', backgroundColor: 'white' }}>
+                                                                        {/* Selector de estado */}
+                                                                        {!soloLectura && (
+                                                                            <div style={{ 
+                                                                                marginBottom: '15px', 
+                                                                                padding: '15px', 
+                                                                                backgroundColor: '#f0f7ff', 
+                                                                                borderRadius: '6px',
+                                                                                border: '1px solid #b3d9ff'
+                                                                            }}>
+                                                                                <FormControl fullWidth variant="outlined" size="small">
+                                                                                    <InputLabel id={`estado-fase-label-${fase.id}`}>Estado de la fase</InputLabel>
+                                                                                    <Select
+                                                                                        labelId={`estado-fase-label-${fase.id}`}
+                                                                                        value={fasesEstados[fase.id] || ''}
+                                                                                        onChange={(e) => handleEstadoFaseChange(fase, e.target.value, procesoTopic)}
+                                                                                        label="Estado de la fase"
+                                                                                    >
+                                                                                        <MenuItem value="Pendiente">Pendiente</MenuItem>
+                                                                                        <MenuItem value="En revisión">En revisión</MenuItem>
+                                                                                        <MenuItem value="Por ajustar">Por ajustar</MenuItem>
+                                                                                        <MenuItem value="Por actualizar">Por actualizar</MenuItem>
+                                                                                        <MenuItem value="Completado">Completado</MenuItem>
+                                                                                        <MenuItem value="No aplica">No aplica</MenuItem>
+                                                                                    </Select>
+                                                                                </FormControl>
+                                                                            </div>
+                                                                        )}
+                                                                        
                                                                         {/* Seguimientos de la fase */}
                                                                         {renderSeguimientosPorFase(fase)}
                                                                         
@@ -965,7 +1118,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
         
         // Si soloSinFase es true, filtrar solo los seguimientos sin fase asignada
         if (soloSinFase) {
-            tableData = tableData.filter(item => !item.fase || item.fase === '' || getFaseName(item.fase) === ' - ');
+            tableData = tableData.filter(item => !item.fase || item.fase === '');
             console.log('📋 renderFilteredTable - Después de filtrar sin fase:', tableData?.length);
         }
         
@@ -1010,7 +1163,30 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                     }}
                                 >
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['timestamp']}</td>
-                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', padding: '3px 4px', fontSize: '0.8rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{item['mensaje']}</td>
+                                    <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', padding: '3px 4px', fontSize: '0.8rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+                                        {item['mensaje']}
+                                        {/* Botón de edición dentro de la celda de comentario */}
+                                        {hoveredRowIndex === rowKey && !soloLectura && (
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenEditModal(item);
+                                                }}
+                                                style={{
+                                                    backgroundColor: '#1976d2',
+                                                    color: 'white',
+                                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                                    padding: '4px',
+                                                    marginLeft: '8px',
+                                                    float: 'right'
+                                                }}
+                                                title="Editar seguimiento"
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        )}
+                                    </td>
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['riesgo']}</td>
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['usuario']?.split('@')[0] || '-'}</td>
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>
@@ -1031,41 +1207,245 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                     <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem', wordWrap: 'break-word' }}>
                                         {useTopicAsFase ? item['topic'] : getFaseName(item['fase'])}
                                     </td>
-                                    {/* Icono de edición flotante - aparece fuera de la tabla */}
-                                    {hoveredRowIndex === rowKey && !soloLectura && (
-                                        <div
-                                            style={{
-                                                position: 'absolute',
-                                                right: '-40px',
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                                zIndex: 10
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <IconButton
-                                                size="small"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleOpenEditModal(item);
-                                                }}
-                                                style={{
-                                                    backgroundColor: '#1976d2',
-                                                    color: 'white',
-                                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                                                    padding: '4px'
-                                                }}
-                                                title="Editar seguimiento"
-                                            >
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                        </div>
-                                    )}
                                 </tr>
                             );
                         })}
                     </tbody>
                 </table>
+            </div>
+        );
+    };
+
+    // Renderizar seguimientos agrupados por periodos históricos
+    const renderSeguimientosPorPeriodos = (data, filters, procesoFiltro = 'rrc') => {
+        if (!Array.isArray(filters)) {
+            filters = [filters];
+        }
+        
+        let tableData = Filtro8(data, filters);
+        console.log('📋 renderSeguimientosPorPeriodos - filtrados:', tableData?.length);
+        
+        // Filtrar solo seguimientos sin fase asignada
+        tableData = tableData.filter(item => !item.fase || item.fase === '');
+        
+        if (tableData.length === 0) {
+            return <p>Ningún seguimiento por mostrar</p>;
+        }
+        
+        // Agrupar por periodos
+        const { gruposConPeriodo, gruposSinPeriodo, seguimientosSinHistorico } = agruparSeguimientosPorPeriodo(tableData, procesoFiltro);
+        
+        console.log('📋 Grupos con periodo:', gruposConPeriodo.length);
+        console.log('📋 Grupos sin periodo:', gruposSinPeriodo.length);
+        console.log('📋 Seguimientos sin histórico:', seguimientosSinHistorico.length);
+        
+        // Año actual
+        const añoActual = new Date().getFullYear();
+        
+        // Separar periodo actual de periodos viejos
+        const periodoActual = gruposConPeriodo.find(grupo => {
+            const fechaFin = parseInt(grupo.fechaFin);
+            return !isNaN(fechaFin) && fechaFin >= añoActual;
+        });
+        
+        const periodosViejos = gruposConPeriodo.filter(grupo => {
+            const fechaFin = parseInt(grupo.fechaFin);
+            return isNaN(fechaFin) || fechaFin < añoActual;
+        });
+        
+        // Ordenar periodos viejos por fecha_fin (más reciente primero)
+        periodosViejos.sort((a, b) => {
+            const getFechaNum = (fecha) => {
+                const num = parseInt(fecha);
+                return isNaN(num) ? 0 : num;
+            };
+            return getFechaNum(b.fechaFin) - getFechaNum(a.fechaFin);
+        });
+        
+        // Guardar el id_proc_historico del periodo actual
+        if (periodoActual && periodoActual.idHistorico !== idProcHistoricoActual) {
+            setIdProcHistoricoActual(periodoActual.idHistorico);
+        }
+        
+        // Función auxiliar para renderizar una tabla de seguimientos
+        const renderTablaSeguimientos = (seguimientos) => {
+            // Ordenar por fecha
+            const seguimientosOrdenados = [...seguimientos].sort((a, b) => {
+                const dateA = new Date(a.timestamp.split('/').reverse().join('-'));
+                const dateB = new Date(b.timestamp.split('/').reverse().join('-'));
+                return dateB - dateA;
+            });
+            
+            return (
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+                    <table style={{ width: '90%', maxWidth: '90%', borderCollapse: 'collapse', border: '1px solid grey', textAlign: 'center', marginTop: '10px', tableLayout: 'fixed', margin: '10px auto' }}>
+                        <thead>
+                            <tr>
+                                <th style={{ width: '10%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Fecha</th>
+                                <th style={{ width: '50%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Comentario</th>
+                                <th style={{ width: '10%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Riesgo</th>
+                                <th style={{ width: '15%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Usuario</th>
+                                <th style={{ width: '15%', border: '1px solid grey', padding: '3px', fontSize: '0.8rem' }}>Adjunto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {seguimientosOrdenados.map((item, index) => {
+                                const rowKey = `periodo-${item.id_proc_historico || 'none'}-${index}`;
+                                return (
+                                    <tr 
+                                        key={index} 
+                                        style={{ 
+                                            backgroundColor: getBackgroundColor(item['riesgo']),
+                                            position: 'relative',
+                                            cursor: soloLectura ? 'default' : 'pointer'
+                                        }}
+                                        onMouseEnter={() => setHoveredRowIndex(rowKey)}
+                                        onMouseLeave={() => setHoveredRowIndex(null)}
+                                        onClick={() =>{ 
+                                           if(!soloLectura) handleOpenEditModal(item);
+                                        }}
+                                    >
+                                        <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['timestamp']}</td>
+                                        <td style={{ border: '1px solid grey', verticalAlign: 'middle', textAlign: 'left', padding: '3px 4px', fontSize: '0.8rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+                                            {item['mensaje']}
+                                            {/* Contenedor del botón de edición dentro de la celda */}
+                                            {hoveredRowIndex === rowKey && !soloLectura && (
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenEditModal(item);
+                                                    }}
+                                                    style={{
+                                                        backgroundColor: '#1976d2',
+                                                        color: 'white',
+                                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                                        padding: '4px',
+                                                        marginLeft: '8px',
+                                                        float: 'right'
+                                                    }}
+                                                    title="Editar seguimiento"
+                                                >
+                                                    <EditIcon fontSize="small" />
+                                                </IconButton>
+                                            )}
+                                        </td>
+                                        <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['riesgo']}</td>
+                                        <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>{item['usuario']?.split('@')[0] || '-'}</td>
+                                        <td style={{ border: '1px solid grey', verticalAlign: 'middle', padding: '3px', fontSize: '0.8rem' }}>
+                                            {item['url_adjunto'] ? (
+                                                <a 
+                                                    href={item['url_adjunto']} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    style={{ color: 'blue', textDecoration: 'underline', fontSize: '0.75rem' }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    Enlace
+                                                </a>
+                                            ) : (
+                                                <strong>-</strong>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        };
+        
+        // Obtener el nombre del proceso formateado
+        const getNombreProceso = () => {
+            switch(procesoFiltro.toLowerCase()) {
+                case 'rrc': return 'Renovación Registro Calificado';
+                case 'crea': return 'Creación';
+                case 'mod': return 'Modificación';
+                case 'aac': return 'Acreditación';
+                case 'raac': return 'Renovación Acreditación';
+                default: return 'Proceso';
+            }
+        };
+        
+        // Renderizar contenido de un periodo (seguimientos sin fase + botón + tabla de fases)
+        const renderContenidoPeriodo = (seguimientos, esActual = false) => {
+            // Determinar el nombre del collapsible basado en el proceso
+            const collapsibleName = getNombreProceso();
+            
+            return (
+                <>
+                    {renderTablaSeguimientos(seguimientos)}
+                    {esActual && (avaibleRange(isReg) || avaibleRange(isPlan)) && !soloLectura && (
+                        <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
+                            <Button 
+                                onClick={() => {
+                                    setCollapsible(collapsibleName);
+                                    handleNewTrackingClick(collapsibleName);
+                                }} 
+                                variant="contained" 
+                                color="primary" 
+                                style={{ textAlign: 'center', marginBottom: '25px' }}
+                            >
+                                Nuevo Seguimiento
+                            </Button>
+                            {showCollapsible[collapsibleName] && (
+                                <>
+                                    {contenido_seguimiento_default(periodoActual?.idHistorico)}
+                                </>
+                            )}
+                        </div>
+                    )}
+                    {contenido_tablaFases(collapsibleName)}
+                </>
+            );
+        };
+        
+        return (
+            <div>
+                {/* Periodo actual (abierto por defecto) */}
+                {periodoActual && (
+                    <div style={{ marginBottom: '20px' }}>
+                        <CollapsibleButton 
+                            buttonText={`${getNombreProceso()} - periodo: ${periodoActual.periodo}`}
+                            content={renderContenidoPeriodo(periodoActual.seguimientos, true)}
+                            defaultClosed={false}
+                        />
+                    </div>
+                )}
+                
+                {/* Periodos viejos (cerrados por defecto) */}
+                {periodosViejos.map((grupo, idx) => (
+                    <div key={`grupo-${idx}`} style={{ marginBottom: '20px' }}>
+                        <CollapsibleButton 
+                            buttonText={`${getNombreProceso()} - periodo: ${grupo.periodo}`}
+                            content={renderContenidoPeriodo(grupo.seguimientos, false)}
+                            defaultClosed={true}
+                        />
+                    </div>
+                ))}
+                
+                {/* Seguimientos sin id_proc_historico */}
+                {seguimientosSinHistorico.length > 0 && (
+                    <div style={{ marginBottom: '20px' }}>
+                        <CollapsibleButton 
+                            buttonText={`${getNombreProceso()} (sin periodo)`}
+                            content={renderTablaSeguimientos(seguimientosSinHistorico)}
+                            defaultClosed={true}
+                        />
+                    </div>
+                )}
+                
+                {/* Grupos sin periodo pero con id_proc_historico */}
+                {gruposSinPeriodo.map((grupo, idx) => (
+                    <div key={`grupo-sin-periodo-${idx}`} style={{ marginBottom: '20px' }}>
+                        <CollapsibleButton 
+                            buttonText={`${getNombreProceso()} (ID: ${grupo.idHistorico})`}
+                            content={renderTablaSeguimientos(grupo.seguimientos)}
+                            defaultClosed={true}
+                        />
+                    </div>
+                ))}
             </div>
         );
     };
@@ -1115,13 +1495,17 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                     : (selectedPhase === 'RAAC' ? 'Plan de Mejoramiento RAAC' : 'Plan de Mejoramiento AAC');
 
                 const dataSend = [
-                    idProgramaFinal,
-                    formattedDate,
-                    comment,
-                    value,
-                    user,
-                    collapsibleType,
-                    selectedOption.id,
+                    idProgramaFinal,                // 1. id_programa
+                    formattedDate,                  // 2. fecha (timestamp)
+                    comment,                        // 3. mensaje
+                    value,                          // 4. riesgo
+                    user,                           // 5. usuario
+                    collapsibleType,                // 6. topic
+                    '',                             // 7. url_adjunto
+                    selectedOption.id,              // 8. fase
+                    '',                             // 9. estado_act (vacío)
+                    '',                             // 10. fase_grande_ok (vacío)
+                    idProcHistoricoActual || '',    // 11. id_proc_historico
                 ];
 
                 // DESHABILITADO: Funcionalidad de actividad_terminada comentada temporalmente
@@ -1134,7 +1518,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                 await sendDataToServer(dataSend);
                 
                 // Esperar un momento para asegurar que los datos se guarden en Sheets
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 // DESHABILITADO: No guardar en actividad_terminada por ahora
                 // if (selectedOption.id !== undefined) {
@@ -1145,6 +1529,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                 setComment('');
                 setValue('');
                 setSelectedPhase('');
+                setSelectedOption('');
                 setErrorMessage(null);
                 
                 // Desactivar loading ANTES de abrir el modal
@@ -1346,7 +1731,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
     };
 
     // Contenido del seguimiento por defecto de los demás botones
-    const contenido_seguimiento_default = () => {
+    const contenido_seguimiento_default = (idProcHistorico = null) => {
         const groupedFases = menuItems.reduce((acc, item) => {
             const grupo = item.fase_sup || 'Sin Agrupar';
             if (!acc[grupo]) {
@@ -1408,15 +1793,17 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                 }
 
                 const dataSend = [
-                    idProgramaFinal,
-                    formattedDate,
-                    comment,
-                    value,
-                    user,
-                    collapsible,
-                    enlace,
-                    selectedOption.id,
-                    docReqId,
+                    idProgramaFinal,                              // 1. id_programa
+                    formattedDate,                                // 2. fecha (timestamp)
+                    comment,                                      // 3. mensaje
+                    value,                                        // 4. riesgo
+                    user,                                         // 5. usuario
+                    collapsible,                                  // 6. topic
+                    enlace,                                       // 7. url_adjunto
+                    selectedOption.id,                            // 8. fase
+                    '',                                           // 9. estado_act (vacío)
+                    '',                                           // 10. fase_grande_ok (vacío)
+                    idProcHistorico || idProcHistoricoActual || '', // 11. id_proc_historico
                 ];
 
                 // DESHABILITADO: Funcionalidad de actividad_terminada comentada temporalmente
@@ -1440,6 +1827,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                 setComment('');
                 setValue('');
                 setSelectedPhase('');
+                setSelectedOption('');
                 setErrorMessage(null);
                 
                 // Desactivar loading ANTES de abrir el modal
@@ -1857,24 +2245,11 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                 fechasCalculadas={fechasCalculadas}
                                 tipo='RRC'
                             />
-                            <CollapsibleButton buttonText="Renovación Registro Calificado" content={
-                                <>
-                                    <div className='contenido' style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        {renderFilteredTable(filteredData, ['renovación registro calificado'], fasesTabla, false, true)}
-                                        {(avaibleRange(isReg) || avaibleRange(isPlan)) && !soloLectura &&
-                                            (
-                                                <Button onClick={() => handleNewTrackingClick('Renovación Registro Calificado')} variant="contained" color="primary" style={{ textAlign: 'center', marginBottom: '25px' }} >Nuevo Seguimiento</Button>
-                                            )
-                                        }
-                                        {showCollapsible['Renovación Registro Calificado'] && (
-                                            <>
-                                                {contenido_seguimiento_default()}
-                                            </>
-                                        )}
-                                        {contenido_tablaFases()}
-                                    </div>
-                                </>
-                            } />
+                            
+                            {/* Renderizar seguimientos agrupados por periodos de forma independiente */}
+                            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                {renderSeguimientosPorPeriodos(filteredData, ['renovación registro calificado'], 'rrc')}
+                            </div>
                         </>
                     )}
                     {(handleButtonClick === 'aac') && (
@@ -1894,7 +2269,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
-                                        {contenido_tablaFases()}
+                                        {contenido_tablaFases('Acreditación')}
                                     </div>
                                 </>
                             } />
@@ -1923,7 +2298,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
-                                        {contenido_tablaFases()}
+                                        {contenido_tablaFases('Renovación Acreditación')}
                                     </div>
                                 </>
                             } />
@@ -1948,7 +2323,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
-                                        {contenido_tablaFases()}
+                                        {contenido_tablaFases('Creación')}
                                     </div>
                                 </>
                             } />
@@ -1971,7 +2346,7 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                                                 {contenido_seguimiento_default()}
                                             </>
                                         )}
-                                        {contenido_tablaFases()}
+                                        {contenido_tablaFases('Modificación')}
                                     </div>
                                 </>
                             } />
