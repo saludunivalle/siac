@@ -243,11 +243,18 @@ const Seguimiento = ({ handleButtonClick, rowData: propRowData, fechavencrc, sol
                 usuario: editingSeguimiento.usuario,
                 topic: editingSeguimiento.topic,
                 url_adjunto: editAdjunto,
-                fase: faseId !== null ? faseId : ''
+                fase: faseId !== null ? faseId : '',
+                estado_act: editingSeguimiento.estado_act || '',
+                fase_grande_ok: editingSeguimiento.fase_grande_ok || '',
+                id_proc_historico: editingSeguimiento.id_proc_historico || ''
             };
             
             console.log('💾 Guardando seguimiento editado:', updatedData);
-            await updateSeguimiento(updatedData);
+            const result = await updateSeguimiento(updatedData);
+            if (!result?.status) {
+                setErrorMessage('No se pudo guardar la edicion del seguimiento');
+                return;
+            }
             
             // Recargar datos con un pequeño delay para asegurar que se actualicen
             clearCache('Seguimientos');
@@ -670,6 +677,32 @@ useEffect(() => {
         fetchData();
     }, [updateTrigger, idProgramaFinal]);
 
+    useEffect(() => {
+        if (!Array.isArray(filteredData) || filteredData.length === 0) {
+            return;
+        }
+
+        const estadoPorFase = {};
+        filteredData.forEach(seg => {
+            if (!seg.fase || !seg.estado_act) return;
+
+            const fechaSeg = dayjs(seg.timestamp, 'DD/MM/YYYY');
+            if (!estadoPorFase[seg.fase] || fechaSeg.isAfter(estadoPorFase[seg.fase].fecha)) {
+                estadoPorFase[seg.fase] = { estado: seg.estado_act, fecha: fechaSeg };
+            }
+        });
+
+        if (Object.keys(estadoPorFase).length > 0) {
+            const nuevosEstados = Object.fromEntries(
+                Object.entries(estadoPorFase).map(([faseId, data]) => [faseId, data.estado])
+            );
+            setFasesEstados(prev => ({
+                ...prev,
+                ...nuevosEstados
+            }));
+        }
+    }, [filteredData]);
+
     // Obtener color de fondo basado en el riesgo
     const getBackgroundColor = (riesgo) => {
         switch (riesgo) {
@@ -686,13 +719,15 @@ useEffect(() => {
 
     // Obtener el nombre de la fase basado en su ID
     const getFaseName = (faseId) => {
-        const fase = fasesName.find(f => f.id === faseId);
+        const fase = fasesName.find(f => f.id === faseId)
+            || menuItems.find(f => f.id === faseId);
         return fase ? fase.fase : ' - ';
     };
 
     // Obtener el ID de fase por nombre
     const getFaseIdByName = (faseName) => {
-        const fase = fasesName.find(f => f.fase === faseName);
+        const fase = fasesName.find(f => f.fase === faseName)
+            || menuItems.find(f => f.fase === faseName);
         return fase ? fase.id : null;
     };
 
@@ -872,7 +907,7 @@ useEffect(() => {
             
             // Crear seguimiento automático
             const formattedDate = dayjs().format('DD/MM/YYYY');
-            const mensaje = `El estado del programa ${programaAcademico} es: ${nuevoEstado}`;
+            const mensaje = `El estado de la fase ${fase.fase} del programa ${programaAcademico} es: ${nuevoEstado}`;
             
             // Construir dataSend con el orden correcto según el Sheet
             const dataSend = [
@@ -1221,6 +1256,18 @@ useEffect(() => {
         if (!Array.isArray(filters)) {
             filters = [filters];
         }
+
+        // Obtener el nombre del proceso formateado
+        const getNombreProceso = () => {
+            switch(procesoFiltro.toLowerCase()) {
+                case 'rrc': return 'Renovación Registro Calificado';
+                case 'crea': return 'Creación';
+                case 'mod': return 'Modificación';
+                case 'aac': return 'Acreditación';
+                case 'raac': return 'Renovación Acreditación';
+                default: return 'Proceso';
+            }
+        };
         
         let tableData = Filtro8(data, filters);
         console.log('📋 renderSeguimientosPorPeriodos - filtrados:', tableData?.length);
@@ -1229,7 +1276,33 @@ useEffect(() => {
         tableData = tableData.filter(item => !item.fase || item.fase === '');
         
         if (tableData.length === 0) {
-            return <p>Ningún seguimiento por mostrar</p>;
+            const collapsibleName = getNombreProceso();
+            return (
+                <div>
+                    <p>Ningún seguimiento por mostrar</p>
+                    {(avaibleRange(isReg) || avaibleRange(isPlan)) && !soloLectura && (
+                        <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
+                            <Button
+                                onClick={() => {
+                                    setCollapsible(collapsibleName);
+                                    handleNewTrackingClick(collapsibleName);
+                                }}
+                                variant="contained"
+                                color="primary"
+                                style={{ textAlign: 'center', marginBottom: '25px' }}
+                            >
+                                Nuevo Seguimiento
+                            </Button>
+                            {showCollapsible[collapsibleName] && (
+                                <>
+                                    {contenido_seguimiento_default(null)}
+                                </>
+                            )}
+                        </div>
+                    )}
+                    {contenido_tablaFases(collapsibleName)}
+                </div>
+            );
         }
         
         // Agrupar por periodos
@@ -1266,6 +1339,8 @@ useEffect(() => {
         if (periodoActual && periodoActual.idHistorico !== idProcHistoricoActual) {
             setIdProcHistoricoActual(periodoActual.idHistorico);
         }
+
+        const esActualSinPeriodo = !periodoActual;
         
         // Función auxiliar para renderizar una tabla de seguimientos
         const renderTablaSeguimientos = (seguimientos) => {
@@ -1356,18 +1431,6 @@ useEffect(() => {
             );
         };
         
-        // Obtener el nombre del proceso formateado
-        const getNombreProceso = () => {
-            switch(procesoFiltro.toLowerCase()) {
-                case 'rrc': return 'Renovación Registro Calificado';
-                case 'crea': return 'Creación';
-                case 'mod': return 'Modificación';
-                case 'aac': return 'Acreditación';
-                case 'raac': return 'Renovación Acreditación';
-                default: return 'Proceso';
-            }
-        };
-        
         // Renderizar contenido de un periodo (seguimientos sin fase + botón + tabla de fases)
         const renderContenidoPeriodo = (seguimientos, esActual = false) => {
             // Determinar el nombre del collapsible basado en el proceso
@@ -1430,7 +1493,7 @@ useEffect(() => {
                     <div style={{ marginBottom: '20px' }}>
                         <CollapsibleButton 
                             buttonText={`${getNombreProceso()} (sin periodo)`}
-                            content={renderTablaSeguimientos(seguimientosSinHistorico)}
+                            content={renderContenidoPeriodo(seguimientosSinHistorico, esActualSinPeriodo)}
                             defaultClosed={true}
                         />
                     </div>
@@ -1441,7 +1504,7 @@ useEffect(() => {
                     <div key={`grupo-sin-periodo-${idx}`} style={{ marginBottom: '20px' }}>
                         <CollapsibleButton 
                             buttonText={`${getNombreProceso()} (ID: ${grupo.idHistorico})`}
-                            content={renderTablaSeguimientos(grupo.seguimientos)}
+                            content={renderContenidoPeriodo(grupo.seguimientos, esActualSinPeriodo)}
                             defaultClosed={true}
                         />
                     </div>
@@ -1503,7 +1566,7 @@ useEffect(() => {
                     collapsibleType,                // 6. topic
                     '',                             // 7. url_adjunto
                     selectedOption.id,              // 8. fase
-                    '',                             // 9. estado_act (vacío)
+                    fasesEstados[selectedOption.id] || '', // 9. estado_act
                     '',                             // 10. fase_grande_ok (vacío)
                     idProcHistoricoActual || '',    // 11. id_proc_historico
                 ];
@@ -1801,7 +1864,7 @@ useEffect(() => {
                     collapsible,                                  // 6. topic
                     enlace,                                       // 7. url_adjunto
                     selectedOption.id,                            // 8. fase
-                    '',                                           // 9. estado_act (vacío)
+                    fasesEstados[selectedOption.id] || '',        // 9. estado_act
                     '',                                           // 10. fase_grande_ok (vacío)
                     idProcHistorico || idProcHistoricoActual || '', // 11. id_proc_historico
                 ];
