@@ -1256,6 +1256,18 @@ useEffect(() => {
         if (!Array.isArray(filters)) {
             filters = [filters];
         }
+
+        // Obtener el nombre del proceso formateado
+        const getNombreProceso = () => {
+            switch(procesoFiltro.toLowerCase()) {
+                case 'rrc': return 'Renovación Registro Calificado';
+                case 'crea': return 'Creación';
+                case 'mod': return 'Modificación';
+                case 'aac': return 'Acreditación';
+                case 'raac': return 'Renovación Acreditación';
+                default: return 'Proceso';
+            }
+        };
         
         let tableData = Filtro8(data, filters);
         console.log('📋 renderSeguimientosPorPeriodos - filtrados:', tableData?.length);
@@ -1417,18 +1429,6 @@ useEffect(() => {
                     </table>
                 </div>
             );
-        };
-        
-        // Obtener el nombre del proceso formateado
-        const getNombreProceso = () => {
-            switch(procesoFiltro.toLowerCase()) {
-                case 'rrc': return 'Renovación Registro Calificado';
-                case 'crea': return 'Creación';
-                case 'mod': return 'Modificación';
-                case 'aac': return 'Acreditación';
-                case 'raac': return 'Renovación Acreditación';
-                default: return 'Proceso';
-            }
         };
         
         // Renderizar contenido de un periodo (seguimientos sin fase + botón + tabla de fases)
