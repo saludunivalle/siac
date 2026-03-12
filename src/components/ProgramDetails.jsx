@@ -217,6 +217,48 @@ const ProgramDetails = () => {
     });
 
     useEffect(() => {
+        if (!rowData) return;
+        setFormData({
+            Sede: normalizeValue(rowData.sede),
+            Facultad: normalizeValue(rowData.facultad),
+            Escuela: normalizeValue(rowData.escuela),
+            Departamento: normalizeValue(rowData.departamento),
+            SNIES: normalizeValue(rowData.snies),
+            Sección: normalizeValue(rowData.sección),
+            'Nivel Académico': normalizeValue(rowData['pregrado/posgrado']),
+            'Nivel de Formación': normalizeValue(rowData['nivel de formación']),
+            'Titulo a Conceder': normalizeValue(rowData['titulo a conceder']),
+            Jornada: normalizeValue(rowData.jornada),
+            Modalidad: normalizeValue(rowData.modalidad),
+            Créditos: normalizeValue(rowData['créditos']),
+            Periodicidad: normalizeValue(rowData.periodicidad),
+            Duración: normalizeValue(rowData['duración']),
+            'FechaExp RRC': normalizeValue(rowData.fechaexpedrc),
+            'Fecha RRC': normalizeValue(rowData.fechavencrc),
+            'FechaExp RAAC': normalizeValue(rowData.fechaexpedac),
+            'Fecha RAAC': normalizeValue(rowData.fechavencac),
+            Acreditable: normalizeValue(rowData.acreditable),
+            Contingencia: normalizeValue(rowData.contingencia),
+            'Número renovaciones RRC': normalizeValue(rowData['número renovaciones RRC']) || 1,
+            'Fecha registro SNIES': normalizeValue(rowData['fecha registro snies']),
+            'Enlace resolución': normalizeValue(rowData['enlace resolución']),
+        });
+    }, [rowData]);
+
+    const isSniesEnCreacion = (value) => {
+        if (!value || typeof value !== 'string') return false;
+        const normalized = value
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+        return normalized === 'en creacion';
+    };
+
+    const sniesEnCreacion = isSniesEnCreacion(formData?.SNIES);
+    const showSeguimientoCreacion = isUserLoggedIn && (seguimientosCreacion.length > 0 || sniesEnCreacion);
+
+    useEffect(() => {
         const fetchData = async () => {
             try {
                 const seguimientos = await Filtro7();
@@ -949,36 +991,36 @@ const getShortUrl = (url) => {
                     }
 
                     {clickedButton === 'crea' ? (
-                        seguimientosCreacion.length === 0 ? (
+                        !showSeguimientoCreacion ? (
                             (formData['Fecha registro SNIES'] && formData['Fecha registro SNIES'] !== 'N/A' &&
-         formData['Enlace resolución'] && formData['Enlace resolución'] !== 'N/A') ? (
-                            <div className='about-program-section' style={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                marginTop: '60px',
-                                textAlign: 'center',
-                                flexDirection: 'column'
-                            }}>
-                                <div className='about-program'>
-                                    Creado el {formData['Fecha registro SNIES'] || 'N/A'} con la resolución&nbsp;
-                                    <span>
-                                        {formData['Enlace resolución'] 
-                                            ? (
-                                                <a
-                                                    href={formData['Enlace resolución']}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    style={{ color: '#1976d2', textDecoration: 'underline', fontWeight: 500 }}
-                                                >
-                                                    Enlace
-                                                </a>
-                                            ) : 'N/A'}
-                                    </span>
+                                formData['Enlace resolución'] && formData['Enlace resolución'] !== 'N/A') ? (
+                                <div className='about-program-section' style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginTop: '60px',
+                                    textAlign: 'center',
+                                    flexDirection: 'column'
+                                }}>
+                                    <div className='about-program'>
+                                        Creado el {formData['Fecha registro SNIES'] || 'N/A'} con la resolución&nbsp;
+                                        <span>
+                                            {formData['Enlace resolución'] 
+                                                ? (
+                                                    <a
+                                                        href={formData['Enlace resolución']}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{ color: '#1976d2', textDecoration: 'underline', fontWeight: 500 }}
+                                                    >
+                                                        Enlace
+                                                    </a>
+                                                ) : 'N/A'}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-         ):null
-                        ) : isUserLoggedIn && (
+                            ) : null
+                        ) : (
                             <Seguimiento 
                                 handleButtonClick={clickedButton} 
                                 key={reloadSeguimiento} 

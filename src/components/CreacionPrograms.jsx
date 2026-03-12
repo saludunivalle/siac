@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TextField, Button, MenuItem, Select, InputLabel, FormControl, Container, Grid, Typography, CircularProgress, Modal, Box, Radio, RadioGroup, FormControlLabel, FormLabel } from '@mui/material';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import { sendDataToServerPrograms } from '../service/data'; 
+import { sendDataToServerPrograms, Filtro5 } from '../service/data'; 
 import '/src/styles/home.css';
 
 const CreacionPrograma = () => {
@@ -30,6 +30,20 @@ const CreacionPrograma = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [isCargo, setCargo] = useState([' ']);
+
+  const getNextProgramId = async () => {
+    const programas = await Filtro5();
+    if (!Array.isArray(programas) || programas.length === 0) return 1;
+
+    const maxId = programas.reduce((max, item) => {
+      const raw = item?.id_programa ?? item?.id ?? item?.ID;
+      const num = Number(raw);
+      if (!Number.isFinite(num)) return max;
+      return Math.max(max, num);
+    }, 0);
+
+    return maxId + 1;
+  };
 
   // Obtener los permisos del usuario
   useEffect(() => {
@@ -59,6 +73,7 @@ const CreacionPrograma = () => {
         return;
       }
 
+      const nextId = await getNextProgramId();
       const dataenviar = [
         form.programaAcademico,
         "En Creación",
@@ -78,7 +93,9 @@ const CreacionPrograma = () => {
         "N/A",
         "N/A",
         "En Creación",
-        form.tipoCreacion 
+        form.tipoCreacion,
+        ...Array(10).fill(''),
+        String(nextId)
       ];
 
       console.log("Datos a enviar:", dataenviar); 
