@@ -222,6 +222,10 @@ const Seguimiento = ({
   const [editLoading, setEditLoading] = useState(false);
   const [hoveredRowIndex, setHoveredRowIndex] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [newTrackingModalOpen, setNewTrackingModalOpen] = useState(false);
+  const [newTrackingTopic, setNewTrackingTopic] = useState("");
+  const [newTrackingIdProc, setNewTrackingIdProc] = useState("");
+  const [isPhaseLocked, setIsPhaseLocked] = useState(false);
 
   // Estado para datos históricos
   const [datosHistoricos, setDatosHistoricos] = useState([]);
@@ -229,6 +233,22 @@ const Seguimiento = ({
 
   // Estado para trackear el estado de cada fase
   const [fasesEstados, setFasesEstados] = useState({});
+
+  const documentosDisponibles = useMemo(() => {
+    if (!Array.isArray(docs)) return [];
+
+    if (!selectedOption || !selectedOption.id) {
+      return docs;
+    }
+
+    return docs.filter((doc) => {
+      if (!doc.id_fase) return false;
+      const ids = String(doc.id_fase)
+        .split(",")
+        .map((id) => id.trim());
+      return ids.includes(String(selectedOption.id));
+    });
+  }, [docs, selectedOption]);
 
   // Cargar datos históricos al montar el componente
   useEffect(() => {
@@ -1272,7 +1292,7 @@ const Seguimiento = ({
                       <h2>Fases del Proceso</h2>
                       {Object.entries(groupedFases).map(
                         ([grupo, fasesGrupo]) => (
-                          <div key={grupo} style={{ marginBottom: "10px" }}>
+                          <div key={grupo} style={{ marginBottom: "5px" }}>
                             {grupo !== "Sin Agrupar" && (
                               <>
                                 {" "}
@@ -1280,8 +1300,10 @@ const Seguimiento = ({
                                   style={{
                                     fontWeight: "bold",
                                     fontSize: "1.2rem",
-                                    textAlign: "right",
+                                    textAlign: "left",
                                     color: "#c52929",
+                                    marginBottom: "4px",
+                                    marginTop: "50px",
                                   }}
                                 >
                                   {grupo.toUpperCase()}
@@ -1289,7 +1311,7 @@ const Seguimiento = ({
                                 <div
                                   style={{
                                     borderBottom: "1px solid #0c0c0c",
-                                    margin: "2px 0 35px 0",
+                                    margin: "0px 0 25px 0",
                                   }}
                                 />
                               </>
@@ -1380,40 +1402,37 @@ const Seguimiento = ({
                                         backgroundColor: "white",
                                       }}
                                     >
-                                      {/* Selector de estado */}
-
-                                      {/* Seguimientos de la fase */}
-                                      {renderSeguimientosPorFase(fase)}
                                       {(avaibleRange(isReg) ||
                                         avaibleRange(isPlan)) &&
                                         !soloLectura && (
                                           <div
                                             style={{
-                                              marginTop: "10px",
+                                              marginTop: "4px",
                                               marginBottom: "10px",
+                                              display: "flex",
+                                              justifyContent: "flex-end",
                                             }}
                                           >
                                             <Button
                                               variant="contained"
                                               color="primary"
+                                              style={{ textTransform: "none" }}
                                               onClick={() => {
-                                                setCollapsible(procesoTopic);
-                                                handleNewTrackingClick(
+                                                handleOpenNewTrackingModal(
                                                   procesoTopic,
-                                                ); // asegúrate de que maneje la fase correctamente
+                                                  fase,
+                                                  idProcHistoricoActual || "",
+                                                );
                                               }}
                                             >
                                               Nuevo Seguimiento
                                             </Button>
-                                            {showCollapsible[procesoTopic] && (
-                                              <>
-                                                {contenido_seguimiento_default(
-                                                  null,
-                                                )}
-                                              </>
-                                            )}
                                           </div>
                                         )}
+
+                                      {/* Seguimientos de la fase */}
+                                      {renderSeguimientosPorFase(fase)}
+
                                       {/* Información de la fase */}
                                       <div
                                         style={{
@@ -1422,6 +1441,9 @@ const Seguimiento = ({
                                           borderRadius: "6px",
                                           marginTop: "10px",
                                           border: "1px solid #e0e0e0",
+                                          display: "grid",
+                                          gridTemplateColumns: "1fr 1fr 1fr",
+                                          gap: "16px",
                                         }}
                                       >
                                         {/*
@@ -1430,62 +1452,7 @@ const Seguimiento = ({
                                                                                 <span style={{ marginLeft: '8px', fontSize: '0.9rem' }}>{responsable}</span>
                                                                             </div>
                                                                 */}
-                                        {!soloLectura && (
-                                          <div
-                                            style={{
-                                              marginBottom: "15px",
-                                              padding: "15px",
-                                              backgroundColor: "#f0f7ff",
-                                              borderRadius: "6px",
-                                              border: "1px solid #b3d9ff",
-                                            }}
-                                          >
-                                            <FormControl
-                                              fullWidth
-                                              variant="outlined"
-                                              size="small"
-                                            >
-                                              <InputLabel
-                                                id={`estado-fase-label-${fase.id}`}
-                                              >
-                                                Estado de la fase
-                                              </InputLabel>
-                                              <Select
-                                                labelId={`estado-fase-label-${fase.id}`}
-                                                value={
-                                                  fasesEstados[fase.id] || ""
-                                                }
-                                                onChange={(e) =>
-                                                  handleEstadoFaseChange(
-                                                    fase,
-                                                    e.target.value,
-                                                    procesoTopic,
-                                                  )
-                                                }
-                                                label="Estado de la fase"
-                                              >
-                                                <MenuItem value="Pendiente">
-                                                  Pendiente
-                                                </MenuItem>
-                                                <MenuItem value="En revisión">
-                                                  En revisión
-                                                </MenuItem>
-                                                <MenuItem value="Por ajustar">
-                                                  Por ajustar
-                                                </MenuItem>
-                                                <MenuItem value="Por actualizar">
-                                                  Por actualizar
-                                                </MenuItem>
-                                                <MenuItem value="Completado">
-                                                  Completado
-                                                </MenuItem>
-                                                <MenuItem value="No aplica">
-                                                  No aplica
-                                                </MenuItem>
-                                              </Select>
-                                            </FormControl>
-                                          </div>
-                                        )}
+
                                         <div style={{ textAlign: "left" }}>
                                           <strong
                                             style={{
@@ -1509,28 +1476,33 @@ const Seguimiento = ({
                                                   const filtroVerde =
                                                     Filtro21Data.some(
                                                       (filtro) =>
-                                                        filtro.id_doc ===
-                                                          doc.id &&
-                                                        filtro.id_programa ===
-                                                          idProgramaFinal,
+                                                        String(
+                                                          filtro.id_doc,
+                                                        ) === String(doc.id) &&
+                                                        String(
+                                                          filtro.id_programa,
+                                                        ) ===
+                                                          String(
+                                                            idProgramaFinal,
+                                                          ),
                                                     );
                                                   const fondoVerde = filtroVerde
                                                     ? {
-                                                        backgroundColor:
-                                                          "#E6FFE6",
-                                                        padding: "4px 8px",
-                                                        borderRadius: "4px",
-                                                        display: "inline-block",
                                                         cursor: "pointer",
                                                       }
                                                     : { cursor: "pointer" };
                                                   const filtro =
                                                     Filtro21Data.find(
                                                       (filtro) =>
-                                                        filtro.id_doc ===
-                                                          doc.id &&
-                                                        filtro.id_programa ===
-                                                          idProgramaFinal,
+                                                        String(
+                                                          filtro.id_doc,
+                                                        ) === String(doc.id) &&
+                                                        String(
+                                                          filtro.id_programa,
+                                                        ) ===
+                                                          String(
+                                                            idProgramaFinal,
+                                                          ),
                                                     );
                                                   const filtroUrl = filtro
                                                     ? filtro.url
@@ -1564,6 +1536,7 @@ const Seguimiento = ({
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             style={{
+                                                              color: "#1976d2",
                                                               textDecoration:
                                                                 "underline",
                                                               fontSize:
@@ -1602,43 +1575,100 @@ const Seguimiento = ({
                                               Sin documentos
                                             </span>
                                           )}
-                                          <div
+                                        </div>
+                                        <div
+                                          style={{
+                                            textAlign: "left",
+                                            marginTop: "10px",
+                                            marginLeft: "50px",
+                                          }}
+                                        >
+                                          <strong
                                             style={{
-                                              textAlign: "left",
-                                              marginTop: "10px",
+                                              fontSize: "0.9rem",
+                                              color: "#333",
                                             }}
                                           >
-                                            <strong
+                                            Responsable de la actividad:
+                                          </strong>
+                                          {responsable !== "N/A" ? (
+                                            <span
                                               style={{
+                                                marginLeft: "8px",
                                                 fontSize: "0.9rem",
-                                                color: "#333",
+                                                color: "black",
                                               }}
                                             >
-                                              Responsable de la actividad:
-                                            </strong>
-                                            {responsable !== "N/A" ? (
-                                              <span
-                                                style={{
-                                                  marginLeft: "8px",
-                                                  fontSize: "0.9rem",
-                                                  color: "black",
-                                                }}
-                                              >
-                                                {responsable}
-                                              </span>
-                                            ) : (
-                                              <span
-                                                style={{
-                                                  marginLeft: "8px",
-                                                  fontSize: "0.9rem",
-                                                  color: "black",
-                                                }}
-                                              >
-                                                Responsable no asignado
-                                              </span>
-                                            )}
-                                          </div>
+                                              {responsable}
+                                            </span>
+                                          ) : (
+                                            <span
+                                              style={{
+                                                marginLeft: "8px",
+                                                fontSize: "0.9rem",
+                                                color: "black",
+                                              }}
+                                            >
+                                              Responsable no asignado
+                                            </span>
+                                          )}
                                         </div>
+                                        {!soloLectura && (
+                                          <div
+                                            style={{
+                                              marginBottom: "15px",
+                                              padding: "10px",
+                                              backgroundColor: "#f0f7ff",
+                                              borderRadius: "6px",
+                                              border: "1px solid #b3d9ff",
+                                            }}
+                                          >
+                                            <FormControl
+                                              fullWidth
+                                              variant="outlined"
+                                              size="small"
+                                            >
+                                              <InputLabel
+                                                id={`estado-fase-label-${fase.id}`}
+                                              >
+                                                Estado de la actividad
+                                              </InputLabel>
+                                              <Select
+                                                labelId={`estado-fase-label-${fase.id}`}
+                                                value={
+                                                  fasesEstados[fase.id] || ""
+                                                }
+                                                onChange={(e) =>
+                                                  handleEstadoFaseChange(
+                                                    fase,
+                                                    e.target.value,
+                                                    procesoTopic,
+                                                  )
+                                                }
+                                                label="Estado de la actividad"
+                                              >
+                                                <MenuItem value="Pendiente">
+                                                  Pendiente
+                                                </MenuItem>
+                                                <MenuItem value="En revisión">
+                                                  En revisión
+                                                </MenuItem>
+                                                <MenuItem value="Por ajustar">
+                                                  Por ajustar
+                                                </MenuItem>
+                                                <MenuItem value="Por actualizar">
+                                                  Por actualizar
+                                                </MenuItem>
+                                                <MenuItem value="Completado">
+                                                  Completado
+                                                </MenuItem>
+                                                <MenuItem value="No aplica">
+                                                  No aplica
+                                                </MenuItem>
+                                              </Select>
+                                            </FormControl>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   }
@@ -2007,8 +2037,7 @@ const Seguimiento = ({
             >
               <Button
                 onClick={() => {
-                  setCollapsible(collapsibleName);
-                  handleNewTrackingClick(collapsibleName);
+                  handleOpenNewTrackingModal(collapsibleName, null, "");
                 }}
                 variant="contained"
                 color="primary"
@@ -2016,9 +2045,6 @@ const Seguimiento = ({
               >
                 Nuevo Seguimiento
               </Button>
-              {showCollapsible[collapsibleName] && (
-                <>{contenido_seguimiento_default(null)}</>
-              )}
             </div>
           )}
           {contenido_tablaFases(collapsibleName)}
@@ -2268,7 +2294,11 @@ const Seguimiento = ({
     };
 
     // Renderizar contenido de un periodo (seguimientos sin fase + botón + tabla de fases)
-    const renderContenidoPeriodo = (seguimientos, esActual = false) => {
+    const renderContenidoPeriodo = (
+      seguimientos,
+      esActual = false,
+      idHistoricoPeriodo = "",
+    ) => {
       // Determinar el nombre del collapsible basado en el proceso
       const collapsibleName = getNombreProceso();
 
@@ -2287,8 +2317,11 @@ const Seguimiento = ({
               >
                 <Button
                   onClick={() => {
-                    setCollapsible(collapsibleName);
-                    handleNewTrackingClick(collapsibleName);
+                    handleOpenNewTrackingModal(
+                      collapsibleName,
+                      null,
+                      idHistoricoPeriodo,
+                    );
                   }}
                   variant="contained"
                   color="primary"
@@ -2296,11 +2329,6 @@ const Seguimiento = ({
                 >
                   Nuevo Seguimiento
                 </Button>
-                {showCollapsible[collapsibleName] && (
-                  <>
-                    {contenido_seguimiento_default(periodoActual?.idHistorico)}
-                  </>
-                )}
               </div>
             )}
           {contenido_tablaFases(collapsibleName)}
@@ -2315,7 +2343,11 @@ const Seguimiento = ({
           <div style={{ marginBottom: "20px" }}>
             <CollapsibleButton
               buttonText={`${getNombreProceso()} - periodo: ${periodoActual.periodo}`}
-              content={renderContenidoPeriodo(periodoActual.seguimientos, true)}
+              content={renderContenidoPeriodo(
+                periodoActual.seguimientos,
+                true,
+                periodoActual.idHistorico,
+              )}
               defaultClosed={false}
             />
           </div>
@@ -2326,7 +2358,11 @@ const Seguimiento = ({
           <div key={`grupo-${idx}`} style={{ marginBottom: "20px" }}>
             <CollapsibleButton
               buttonText={`${getNombreProceso()} - periodo: ${grupo.periodo}`}
-              content={renderContenidoPeriodo(grupo.seguimientos, false)}
+              content={renderContenidoPeriodo(
+                grupo.seguimientos,
+                false,
+                grupo.idHistorico,
+              )}
               defaultClosed={true}
             />
           </div>
@@ -2340,6 +2376,7 @@ const Seguimiento = ({
               content={renderContenidoPeriodo(
                 seguimientosSinHistorico,
                 esActualSinPeriodo,
+                "",
               )}
               defaultClosed={true}
             />
@@ -2357,6 +2394,7 @@ const Seguimiento = ({
               content={renderContenidoPeriodo(
                 grupo.seguimientos,
                 esActualSinPeriodo,
+                grupo.idHistorico,
               )}
               defaultClosed={true}
             />
@@ -2373,6 +2411,41 @@ const Seguimiento = ({
       [collapsibleType]: !prevState[collapsibleType],
     }));
     setCollapsible(collapsibleType);
+  };
+
+  const handleOpenNewTrackingModal = (
+    topic,
+    fasePreseleccionada = null,
+    idProcHistorico = "",
+  ) => {
+    setComment("");
+    setValue("");
+    setFileLink("");
+    setSelectedDocReq("");
+    setSelectedDate(null);
+    setErrorMessage("");
+    setFormSubmitted(false);
+
+    const faseSeleccionada = fasePreseleccionada
+      ? menuItems.find(
+          (item) => String(item.id) === String(fasePreseleccionada.id),
+        ) || fasePreseleccionada
+      : 0;
+
+    setSelectedOption(faseSeleccionada);
+    setIsPhaseLocked(Boolean(fasePreseleccionada));
+
+    setCollapsible(topic || "");
+    setNewTrackingTopic(topic || "");
+    setNewTrackingIdProc(idProcHistorico || idProcHistoricoActual || "");
+    setNewTrackingModalOpen(true);
+  };
+
+  const handleCloseNewTrackingModal = () => {
+    setNewTrackingModalOpen(false);
+    setIsPhaseLocked(false);
+    setNewTrackingTopic("");
+    setNewTrackingIdProc("");
   };
 
   // Contenido del seguimiento pm
@@ -2751,6 +2824,113 @@ const Seguimiento = ({
       setUpdateTrigger((prev) => prev + 1);
     } catch (error) {
       console.error("Error al enviar datos históricos:", error);
+    }
+  };
+
+  const handleGuardarNuevoSeguimiento = async () => {
+    try {
+      if (
+        !idProgramaFinal ||
+        idProgramaFinal === "N/A" ||
+        idProgramaFinal === "undefined" ||
+        idProgramaFinal === "null"
+      ) {
+        setErrorMessage(
+          "Error: ID del programa no valido. Verifique el programa seleccionado.",
+        );
+        setFormSubmitted(true);
+        return;
+      }
+
+      if (comment.trim() === "" || value.trim() === "") {
+        setErrorMessage("Por favor, complete los campos obligatorios.");
+        setFormSubmitted(true);
+        return;
+      }
+
+      setLoading(true);
+
+      const formattedDate = selectedDate
+        ? dayjs(selectedDate).format("DD/MM/YYYY")
+        : dayjs().format("DD/MM/YYYY");
+
+      const faseId =
+        selectedOption && selectedOption.id ? selectedOption.id : "";
+
+      const dataSend = [
+        idProgramaFinal,
+        formattedDate,
+        comment,
+        value,
+        user,
+        newTrackingTopic || collapsible,
+        fileLink,
+        faseId,
+        faseId ? fasesEstados[faseId] || "" : "",
+        "",
+        newTrackingIdProc || idProcHistoricoActual || "",
+      ];
+
+      await sendDataToServer(dataSend);
+
+      // Si el usuario eligio un documento requerido y puso enlace,
+      // tambien guardar ese enlace asociado al documento.
+      if (selectedDocReq && fileLink && fileLink.trim() !== "") {
+        const dataSendDoc = [
+          idProgramaFinal,
+          selectedDocReq,
+          fileLink.trim(),
+          formattedDate,
+        ];
+        await sendDataToServerDoc(dataSendDoc);
+
+        // Reflejar el enlace de inmediato en el listado de documentos requeridos.
+        setFiltro21Data((prev) => {
+          const prevList = Array.isArray(prev) ? prev : [];
+          const index = prevList.findIndex(
+            (item) =>
+              String(item.id_doc) === String(selectedDocReq) &&
+              String(item.id_programa) === String(idProgramaFinal),
+          );
+
+          if (index >= 0) {
+            const updated = [...prevList];
+            updated[index] = {
+              ...updated[index],
+              url: fileLink.trim(),
+            };
+            return updated;
+          }
+
+          return [
+            ...prevList,
+            {
+              id_doc: selectedDocReq,
+              id_programa: idProgramaFinal,
+              url: fileLink.trim(),
+            },
+          ];
+        });
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      clearFileLink();
+      setComment("");
+      setValue("");
+      setSelectedOption(0);
+      setSelectedDate(null);
+      setErrorMessage("");
+      setFormSubmitted(false);
+      setLoading(false);
+
+      handleCloseNewTrackingModal();
+      setOpenModal(true);
+      setUpdateTrigger((prev) => prev + 1);
+    } catch (error) {
+      setLoading(false);
+      setErrorMessage("Error al enviar los datos. Intente de nuevo.");
+      console.error("Error al guardar nuevo seguimiento:", error);
     }
   };
 
@@ -3433,7 +3613,7 @@ const Seguimiento = ({
                         !soloLectura && (
                           <Button
                             onClick={() =>
-                              handleNewTrackingClick("Acreditación")
+                              handleOpenNewTrackingModal("Acreditación")
                             }
                             variant="contained"
                             color="primary"
@@ -3442,9 +3622,6 @@ const Seguimiento = ({
                             Nuevo Seguimiento
                           </Button>
                         )}
-                      {showCollapsible["Acreditación"] && (
-                        <>{contenido_seguimiento_default()}</>
-                      )}
                       {contenido_tablaFases("Acreditación")}
                     </div>
                   </>
@@ -3480,7 +3657,9 @@ const Seguimiento = ({
                         !soloLectura && (
                           <Button
                             onClick={() =>
-                              handleNewTrackingClick("Renovación Acreditación")
+                              handleOpenNewTrackingModal(
+                                "Renovación Acreditación",
+                              )
                             }
                             variant="contained"
                             color="primary"
@@ -3489,9 +3668,6 @@ const Seguimiento = ({
                             Nuevo Seguimiento
                           </Button>
                         )}
-                      {showCollapsible["Renovación Acreditación"] && (
-                        <>{contenido_seguimiento_default()}</>
-                      )}
                       {contenido_tablaFases("Renovación Acreditación")}
                     </div>
                   </>
@@ -3521,7 +3697,9 @@ const Seguimiento = ({
                         !soloLectura && (
                           <>
                             <Button
-                              onClick={() => handleNewTrackingClick("Creación")}
+                              onClick={() =>
+                                handleOpenNewTrackingModal("Creación")
+                              }
                               variant="contained"
                               color="primary"
                               style={{ textAlign: "center", margin: "8px" }}
@@ -3530,9 +3708,6 @@ const Seguimiento = ({
                             </Button>
                           </>
                         )}
-                      {showCollapsible["Creación"] && (
-                        <>{contenido_seguimiento_default()}</>
-                      )}
                       {contenido_tablaFases("Creación")}
                     </div>
                   </>
@@ -3562,7 +3737,7 @@ const Seguimiento = ({
                         !soloLectura && (
                           <Button
                             onClick={() =>
-                              handleNewTrackingClick("Modificación")
+                              handleOpenNewTrackingModal("Modificación")
                             }
                             variant="contained"
                             color="primary"
@@ -3571,9 +3746,6 @@ const Seguimiento = ({
                             Nuevo Seguimiento
                           </Button>
                         )}
-                      {showCollapsible["Modificación"] && (
-                        <>{contenido_seguimiento_default()}</>
-                      )}
                       {contenido_tablaFases("Modificación")}
                     </div>
                   </>
@@ -3591,6 +3763,220 @@ const Seguimiento = ({
           )}
         </div>
       </div>
+
+      <Modal
+        open={newTrackingModalOpen}
+        onClose={handleCloseNewTrackingModal}
+        aria-labelledby="new-tracking-modal-title"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: isMobile ? "95%" : 760,
+            maxHeight: "90vh",
+            overflowY: "auto",
+            bgcolor: "background.paper",
+            borderRadius: "10px",
+            boxShadow: 24,
+            p: 3,
+          }}
+        >
+          <Typography
+            id="new-tracking-modal-title"
+            variant="h6"
+            component="h2"
+            sx={{ mb: 2, fontWeight: "bold" }}
+          >
+            Nuevo Seguimiento
+          </Typography>
+
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+              gap: 2,
+            }}
+          >
+            <LocalizationProvider
+              dateAdapter={AdapterDayjs}
+              adapterLocale={esLocale}
+            >
+              {isMobile ? (
+                <MobileDatePicker
+                  label="Fecha"
+                  value={selectedDate}
+                  onChange={(date) => setSelectedDate(date)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      fullWidth
+                      inputProps={{ ...params.inputProps, readOnly: true }}
+                    />
+                  )}
+                />
+              ) : (
+                <DesktopDatePicker
+                  label="Fecha"
+                  value={selectedDate}
+                  onChange={(date) => setSelectedDate(date)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      fullWidth
+                      inputProps={{ ...params.inputProps, readOnly: true }}
+                    />
+                  )}
+                />
+              )}
+            </LocalizationProvider>
+
+            <FormControl fullWidth>
+              <InputLabel id="new-tracking-fase-label">Actividad</InputLabel>
+              <Select
+                labelId="new-tracking-fase-label"
+                value={selectedOption}
+                label="Actividad"
+                onChange={(e) => setSelectedOption(e.target.value)}
+                disabled={isPhaseLocked}
+                MenuProps={{
+                  disableScrollLock: true,
+                  PaperProps: {
+                    style: {
+                      maxHeight: "300px",
+                      overflowY: "auto",
+                    },
+                  },
+                }}
+              >
+                <MenuItem value={0}>Ninguna</MenuItem>
+                {(() => {
+                  const groupedFases = menuItems.reduce((acc, item) => {
+                    const grupo = item.fase_sup || "Sin Agrupar";
+                    if (!acc[grupo]) acc[grupo] = [];
+                    acc[grupo].push(item);
+                    return acc;
+                  }, {});
+
+                  return Object.entries(groupedFases).map(([grupo, fases]) => [
+                    <ListSubheader
+                      key={`new-track-subheader-${grupo}`}
+                      sx={{ fontWeight: "bold", color: "black" }}
+                    >
+                      {grupo.toUpperCase()}
+                    </ListSubheader>,
+                    ...fases.map((fase, index) => (
+                      <MenuItem
+                        key={`new-track-fase-${grupo}-${index}`}
+                        value={fase}
+                      >
+                        {fase.fase}
+                      </MenuItem>
+                    )),
+                  ]);
+                })()}
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Comentario *"
+              multiline
+              rows={4}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              fullWidth
+              error={formSubmitted && comment.trim() === ""}
+              helperText={
+                formSubmitted && comment.trim() === ""
+                  ? "Este campo es obligatorio"
+                  : ""
+              }
+              sx={{ gridColumn: isMobile ? "auto" : "1 / span 2" }}
+            />
+
+            <FormControl
+              component="fieldset"
+              required
+              error={formSubmitted && value.trim() === ""}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 1 }}
+              >
+                Riesgo *
+              </Typography>
+              <RadioGroup
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                row
+              >
+                <FormControlLabel
+                  value="Alto"
+                  control={<Radio />}
+                  label="Alto"
+                />
+                <FormControlLabel
+                  value="Medio"
+                  control={<Radio />}
+                  label="Medio"
+                />
+                <FormControlLabel
+                  value="Bajo"
+                  control={<Radio />}
+                  label="Bajo"
+                />
+              </RadioGroup>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel id="new-tracking-doc-label">
+                Documento requerido
+              </InputLabel>
+              <Select
+                labelId="new-tracking-doc-label"
+                value={selectedDocReq}
+                label="Documento requerido"
+                onChange={(e) => setSelectedDocReq(e.target.value)}
+              >
+                <MenuItem value="">Ninguno</MenuItem>
+                {documentosDisponibles.map((doc) => (
+                  <MenuItem key={`new-doc-${doc.id}`} value={doc.id}>
+                    {doc.nombre_doc}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Link del archivo"
+              value={fileLink}
+              onChange={(e) => setFileLink(e.target.value)}
+              placeholder="https://..."
+              fullWidth
+              sx={{ gridColumn: isMobile ? "auto" : "1 / span 2" }}
+            />
+          </Box>
+
+          <Box
+            sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}
+          >
+            <Button variant="outlined" onClick={handleCloseNewTrackingModal}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<SaveIcon />}
+              onClick={handleGuardarNuevoSeguimiento}
+              disabled={loading}
+            >
+              {loading ? "Guardando..." : "Guardar"}
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
       {/* Modal de edición de seguimiento */}
       <Modal
@@ -3674,12 +4060,12 @@ const Seguimiento = ({
               />
 
               <FormControl fullWidth margin="normal" variant="outlined">
-                <InputLabel id="edit-fase-label">Fase</InputLabel>
+                <InputLabel id="edit-fase-label">Actividad</InputLabel>
                 <Select
                   labelId="edit-fase-label"
                   value={editFase}
                   onChange={(e) => setEditFase(e.target.value)}
-                  label="Fase"
+                  label="Actividad"
                   MenuProps={{
                     disableScrollLock: true,
                     PaperProps: {
@@ -3691,7 +4077,7 @@ const Seguimiento = ({
                   }}
                 >
                   <MenuItem value="">
-                    <em>Sin fase asignada</em>
+                    <em>Sin actividad asignada</em>
                   </MenuItem>
                   {(() => {
                     const groupedFases = menuItems.reduce((acc, item) => {
