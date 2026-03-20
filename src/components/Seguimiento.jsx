@@ -17,6 +17,7 @@ import {
   TableBody,
   Select,
   MenuItem,
+  Checkbox,
   Button,
   Typography,
   Modal,
@@ -332,6 +333,9 @@ const Seguimiento = ({
         estado_act: editingSeguimiento.estado_act || "",
         fase_grande_ok: editingSeguimiento.fase_grande_ok || "",
         id_proc_historico: editingSeguimiento.id_proc_historico || "",
+        verificado: editingSeguimiento.verificado ?? "",
+        verificado_por: editingSeguimiento.verificado_por || "",
+        fecha_verificado: editingSeguimiento.fecha_verificado || "",
       };
 
       console.log("💾 Guardando seguimiento editado:", updatedData);
@@ -779,15 +783,191 @@ const Seguimiento = ({
     // También asegurar que buscar sea un valor válido
     if (!buscar) return false;
 
+    const normalizar = (valor) =>
+      String(valor || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    const permisosBuscados = (Array.isArray(buscar) ? buscar : [buscar])
+      .map(normalizar)
+      .filter(Boolean);
+
+    if (permisosBuscados.length === 0) return false;
+
     return isCargo.some((cargo) => {
-      // Verificar el tipo de buscar antes de usar includes
-      if (typeof buscar === "string") {
-        return buscar.includes(cargo);
-      } else if (Array.isArray(buscar)) {
-        return buscar.includes(cargo);
-      }
-      return false;
+      const cargoNormalizado = normalizar(cargo);
+      return permisosBuscados.some(
+        (permiso) =>
+          permiso === cargoNormalizado ||
+          permiso.includes(cargoNormalizado) ||
+          cargoNormalizado.includes(permiso),
+      );
     });
+  };
+
+  const isMonitorUser = avaibleRange("Monitor");
+  const canCreatePlanTracking = isMonitorUser || avaibleRange(isPlan);
+  const canCreateAcredTracking =
+    isMonitorUser || avaibleRange(isAcred) || avaibleRange(isPlan);
+  const canCreateRenAcredTracking =
+    isMonitorUser || avaibleRange(isRenAcred) || avaibleRange(isPlan);
+  const canCreateCreaTracking =
+    isMonitorUser || avaibleRange(isCrea) || avaibleRange(isPlan);
+  const canCreateModTracking =
+    isMonitorUser || avaibleRange(isMod) || avaibleRange(isPlan);
+
+  const getVerificationFieldsForNewSeguimiento = () => {
+    if (isMonitorUser) {
+      return ["false", "", ""];
+    }
+    return ["", "", ""];
+  };
+
+  const getVerificationStatus = (seguimiento) =>
+    String(seguimiento?.verificado ?? "")
+      .trim()
+      .toLowerCase();
+
+  const isPendingMonitorVerification = (seguimiento) =>
+    getVerificationStatus(seguimiento) === "false";
+
+  const isSeguimientoVerified = (seguimiento) => {
+    const status = getVerificationStatus(seguimiento);
+    return (
+      status === "true" ||
+      Boolean(seguimiento?.verificado_por) ||
+      Boolean(seguimiento?.fecha_verificado)
+    );
+  };
+
+  const isMonitorTrackedSeguimiento = (seguimiento) => {
+    const status = getVerificationStatus(seguimiento);
+    return (
+      status === "false" ||
+      status === "true" ||
+      Boolean(seguimiento?.verificado_por) ||
+      Boolean(seguimiento?.fecha_verificado)
+    );
+  };
+
+  const normalizarTexto = (valor) =>
+    String(valor || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+  const getPermissionByTopic = (topic) => {
+    const topicNormalizado = normalizarTexto(topic);
+
+    if (topicNormalizado.includes("plan de mejoramiento")) {
+      return isPlan;
+    }
+    if (
+      topicNormalizado.includes("renovacion registro calificado") ||
+      topicNormalizado.includes("rrc")
+    ) {
+      return isReg;
+    }
+    if (
+      topicNormalizado.includes("renovacion acreditacion") ||
+      topicNormalizado.includes("raac")
+    ) {
+      return isRenAcred;
+    }
+    if (
+      topicNormalizado.includes("acreditacion") ||
+      topicNormalizado.includes("aac")
+    ) {
+      return isAcred;
+    }
+    if (topicNormalizado.includes("creacion")) {
+      return isCrea;
+    }
+    if (topicNormalizado.includes("modificacion")) {
+      return isMod;
+    }
+
+    return null;
+  };
+
+  const canVerifySeguimiento = (seguimiento) => {
+    if (!seguimiento || !isMonitorTrackedSeguimiento(seguimiento)) {
+      return false;
+    }
+
+    const usuarioCreador = String(seguimiento.usuario || "")
+      .trim()
+      .toLowerCase();
+    const usuarioActual = String(user || "")
+      .trim()
+      .toLowerCase();
+
+    if (!usuarioActual || usuarioCreador === usuarioActual) {
+      return false;
+    }
+
+    const permisoRequerido = getPermissionByTopic(seguimiento.topic || "");
+    if (!permisoRequerido) {
+      return false;
+    }
+
+    return avaibleRange(permisoRequerido);
+  };
+
+  const canCreateForTopic = (topic) => {
+    if (isMonitorUser) {
+      return true;
+    }
+
+    const permisoRequerido = getPermissionByTopic(topic);
+    if (!permisoRequerido) {
+      return false;
+    }
+
+    return avaibleRange(permisoRequerido);
+  };
+
+  const handleVerifySeguimiento = async (seguimiento, checkedValue = true) => {
+    if (!canVerifySeguimiento(seguimiento)) return;
+
+    try {
+      setLoading(true);
+
+      const verificadoValor = checkedValue ? "true" : "false";
+
+      const updatedData = {
+        id_programa: seguimiento.id_programa,
+        timestamp: seguimiento.timestamp,
+        mensaje: seguimiento.mensaje,
+        riesgo: seguimiento.riesgo,
+        usuario: seguimiento.usuario,
+        topic: seguimiento.topic,
+        url_adjunto: seguimiento.url_adjunto || "",
+        fase: seguimiento.fase || "",
+        estado_act: seguimiento.estado_act || "",
+        fase_grande_ok: seguimiento.fase_grande_ok || "",
+        id_proc_historico: seguimiento.id_proc_historico || "",
+        verificado: verificadoValor,
+        verificado_por: checkedValue ? user || "" : "",
+        fecha_verificado: checkedValue ? dayjs().format("DD/MM/YYYY") : "",
+      };
+
+      const result = await updateSeguimiento(updatedData);
+      if (!result?.status) {
+        setErrorMessage("No se pudo verificar el seguimiento");
+        return;
+      }
+
+      clearCache("Seguimientos");
+      setUpdateTrigger((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error al verificar seguimiento:", error);
+      setErrorMessage("Error al verificar seguimiento");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Efecto para cargar datos filtrados
@@ -901,6 +1081,46 @@ const Seguimiento = ({
       default:
         return "white";
     }
+  };
+
+  const getSeguimientoBackgroundColor = (seguimiento) => {
+    if (isPendingMonitorVerification(seguimiento)) {
+      return "white";
+    }
+    return getBackgroundColor(seguimiento?.riesgo);
+  };
+
+  const renderVerificationCheckControl = (item, rowKey) => {
+    if (!isMonitorTrackedSeguimiento(item)) {
+      return null;
+    }
+
+    const checked = isSeguimientoVerified(item);
+    const canCheck = canVerifySeguimiento(item) && !soloLectura;
+
+    return (
+      <Checkbox
+        key={rowKey}
+        size="small"
+        checked={checked}
+        disabled={!canCheck}
+        title={
+          checked
+            ? `${item.verificado_por || ""} ${item.fecha_verificado || ""}`.trim()
+            : "Pendiente de verificacion"
+        }
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
+        onChange={(e) => {
+          e.stopPropagation();
+          handleVerifySeguimiento(item, e.target.checked);
+        }}
+      />
+    );
   };
 
   // Obtener el nombre de la fase basado en su ID
@@ -1017,12 +1237,17 @@ const Seguimiento = ({
       return dateB - dateA;
     });
 
+    const showVerificationSideColumn = seguimientosFase.some(
+      isMonitorTrackedSeguimiento,
+    );
+
     return (
       <div
         style={{
           width: "100%",
           display: "flex",
           justifyContent: "center",
+          alignItems: "flex-start",
           marginBottom: "15px",
         }}
       >
@@ -1090,6 +1315,20 @@ const Seguimiento = ({
               >
                 Adjunto
               </th>
+              {showVerificationSideColumn && (
+                <th
+                  style={{
+                    width: "52px",
+                    border: "none",
+                    padding: "3px 0 3px 4px",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    backgroundColor: "transparent",
+                  }}
+                >
+                  Check
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -1099,7 +1338,7 @@ const Seguimiento = ({
                 <tr
                   key={index}
                   style={{
-                    backgroundColor: getBackgroundColor(item["riesgo"]),
+                    backgroundColor: getSeguimientoBackgroundColor(item),
                     position: "relative",
                     cursor: soloLectura ? "default" : "pointer",
                   }}
@@ -1199,6 +1438,20 @@ const Seguimiento = ({
                       <strong>-</strong>
                     )}
                   </td>
+                  {showVerificationSideColumn && (
+                    <td
+                      style={{
+                        width: "52px",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                        padding: "0 0 0 4px",
+                      }}
+                    >
+                      {renderVerificationCheckControl(item, rowKey)}
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -1234,6 +1487,7 @@ const Seguimiento = ({
         nuevoEstado, // 9. estado_act
         "", // 10. fase_grande_ok (vacío)
         idProcHistoricoActual || "", // 11. id_proc_historico
+        ...getVerificationFieldsForNewSeguimiento(), // 12-14. verificado, verificado_por, fecha_verificado
       ];
       console.log(
         "📤 Enviando seguimiento automático por cambio de estado:",
@@ -1252,6 +1506,8 @@ const Seguimiento = ({
 
   // Renderizar la tabla de fases
   const contenido_tablaFases = (procesoTopic = "") => {
+    const canCreateForCurrentProcess = canCreateForTopic(procesoTopic);
+
     const groupedFases = fases.reduce((acc, fase) => {
       const grupo = fase.fase_sup || "Sin Agrupar";
       if (!acc[grupo]) {
@@ -1402,8 +1658,7 @@ const Seguimiento = ({
                                         backgroundColor: "white",
                                       }}
                                     >
-                                      {(avaibleRange(isReg) ||
-                                        avaibleRange(isPlan)) &&
+                                      {canCreateForCurrentProcess &&
                                         !soloLectura && (
                                           <div
                                             style={{
@@ -1772,6 +2027,10 @@ const Seguimiento = ({
       return dateB - dateA;
     });
 
+    const showVerificationSideColumn = tableData.some(
+      isMonitorTrackedSeguimiento,
+    );
+
     return (
       <div
         style={{
@@ -1780,6 +2039,7 @@ const Seguimiento = ({
           paddingRight: "45px",
           display: "flex",
           justifyContent: "center",
+          alignItems: "flex-start",
         }}
       >
         <table
@@ -1856,6 +2116,20 @@ const Seguimiento = ({
               >
                 Fase
               </th>
+              {showVerificationSideColumn && (
+                <th
+                  style={{
+                    width: "52px",
+                    border: "none",
+                    padding: "3px 0 3px 4px",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    backgroundColor: "transparent",
+                  }}
+                >
+                  Check
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -1865,7 +2139,7 @@ const Seguimiento = ({
                 <tr
                   key={index}
                   style={{
-                    backgroundColor: getBackgroundColor(item["riesgo"]),
+                    backgroundColor: getSeguimientoBackgroundColor(item),
                     position: "relative",
                     cursor: soloLectura ? "default" : "pointer",
                   }}
@@ -1976,6 +2250,20 @@ const Seguimiento = ({
                   >
                     {useTopicAsFase ? item["topic"] : getFaseName(item["fase"])}
                   </td>
+                  {showVerificationSideColumn && (
+                    <td
+                      style={{
+                        width: "52px",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                        padding: "0 0 0 4px",
+                      }}
+                    >
+                      {renderVerificationCheckControl(item, rowKey)}
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -2019,6 +2307,9 @@ const Seguimiento = ({
       tableData?.length,
     );
 
+    const nombreProceso = getNombreProceso();
+    const canCreateForThisProcess = canCreateForTopic(nombreProceso);
+
     // Filtrar solo seguimientos sin fase asignada
     tableData = tableData.filter((item) => !item.fase || item.fase === "");
 
@@ -2027,7 +2318,7 @@ const Seguimiento = ({
       return (
         <div>
           <p>Ningún seguimiento por mostrar</p>
-          {(avaibleRange(isReg) || avaibleRange(isPlan)) && !soloLectura && (
+          {canCreateForThisProcess && !soloLectura && (
             <div
               style={{
                 textAlign: "center",
@@ -2102,12 +2393,17 @@ const Seguimiento = ({
         return dateB - dateA;
       });
 
+      const showVerificationSideColumn = seguimientosOrdenados.some(
+        isMonitorTrackedSeguimiento,
+      );
+
       return (
         <div
           style={{
             width: "100%",
             display: "flex",
             justifyContent: "center",
+            alignItems: "flex-start",
             marginBottom: "15px",
           }}
         >
@@ -2175,6 +2471,20 @@ const Seguimiento = ({
                 >
                   Adjunto
                 </th>
+                {showVerificationSideColumn && (
+                  <th
+                    style={{
+                      width: "52px",
+                      border: "none",
+                      padding: "3px 0 3px 4px",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      backgroundColor: "transparent",
+                    }}
+                  >
+                    Check
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -2184,7 +2494,7 @@ const Seguimiento = ({
                   <tr
                     key={index}
                     style={{
-                      backgroundColor: getBackgroundColor(item["riesgo"]),
+                      backgroundColor: getSeguimientoBackgroundColor(item),
                       position: "relative",
                       cursor: soloLectura ? "default" : "pointer",
                     }}
@@ -2284,6 +2594,20 @@ const Seguimiento = ({
                         <strong>-</strong>
                       )}
                     </td>
+                    {showVerificationSideColumn && (
+                      <td
+                        style={{
+                          width: "52px",
+                          border: "none",
+                          backgroundColor: "transparent",
+                          textAlign: "center",
+                          verticalAlign: "middle",
+                          padding: "0 0 0 4px",
+                        }}
+                      >
+                        {renderVerificationCheckControl(item, rowKey)}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -2305,32 +2629,30 @@ const Seguimiento = ({
       return (
         <>
           {renderTablaSeguimientos(seguimientos)}
-          {esActual &&
-            (avaibleRange(isReg) || avaibleRange(isPlan)) &&
-            !soloLectura && (
-              <div
-                style={{
-                  textAlign: "center",
-                  marginTop: "20px",
-                  marginBottom: "20px",
+          {esActual && canCreateForThisProcess && !soloLectura && (
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: "20px",
+                marginBottom: "20px",
+              }}
+            >
+              <Button
+                onClick={() => {
+                  handleOpenNewTrackingModal(
+                    collapsibleName,
+                    null,
+                    idHistoricoPeriodo,
+                  );
                 }}
+                variant="contained"
+                color="primary"
+                style={{ textAlign: "center", marginBottom: "25px" }}
               >
-                <Button
-                  onClick={() => {
-                    handleOpenNewTrackingModal(
-                      collapsibleName,
-                      null,
-                      idHistoricoPeriodo,
-                    );
-                  }}
-                  variant="contained"
-                  color="primary"
-                  style={{ textAlign: "center", marginBottom: "25px" }}
-                >
-                  Nuevo Seguimiento
-                </Button>
-              </div>
-            )}
+                Nuevo Seguimiento
+              </Button>
+            </div>
+          )}
           {contenido_tablaFases(collapsibleName)}
         </>
       );
@@ -2510,6 +2832,7 @@ const Seguimiento = ({
           fasesEstados[selectedOption.id] || "", // 9. estado_act
           "", // 10. fase_grande_ok (vacío)
           idProcHistoricoActual || "", // 11. id_proc_historico
+          ...getVerificationFieldsForNewSeguimiento(), // 12-14. verificado, verificado_por, fecha_verificado
         ];
 
         // DESHABILITADO: Funcionalidad de actividad_terminada comentada temporalmente
@@ -2869,6 +3192,7 @@ const Seguimiento = ({
         faseId ? fasesEstados[faseId] || "" : "",
         "",
         newTrackingIdProc || idProcHistoricoActual || "",
+        ...getVerificationFieldsForNewSeguimiento(),
       ];
 
       await sendDataToServer(dataSend);
@@ -3022,6 +3346,7 @@ const Seguimiento = ({
           fasesEstados[selectedOption.id] || "", // 9. estado_act
           "", // 10. fase_grande_ok (vacío)
           idProcHistorico || idProcHistoricoActual || "", // 11. id_proc_historico
+          ...getVerificationFieldsForNewSeguimiento(), // 12-14. verificado, verificado_por, fecha_verificado
         ];
 
         // DESHABILITADO: Funcionalidad de actividad_terminada comentada temporalmente
@@ -3528,7 +3853,7 @@ const Seguimiento = ({
                 idPrograma={idProgramaFinal}
                 escuela={escuela}
                 formacion={formacion}
-                isPlan={avaibleRange(isPlan)}
+                isPlan={canCreatePlanTracking}
                 fechaVencimientoRRC={rowData ? rowData["fechavencrc"] : null}
                 fechaVencAC={rowData ? rowData["fechavencac"] : null}
               />
@@ -3550,7 +3875,7 @@ const Seguimiento = ({
                         fasesTabla,
                         true,
                       )}
-                      {avaibleRange(isPlan) && !soloLectura && (
+                      {canCreatePlanTracking && !soloLectura && (
                         <Button
                           onClick={() =>
                             handleNewTrackingClick("Plan de Mejoramiento")
@@ -3609,19 +3934,18 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {(avaibleRange(isAcred) || avaibleRange(isPlan)) &&
-                        !soloLectura && (
-                          <Button
-                            onClick={() =>
-                              handleOpenNewTrackingModal("Acreditación")
-                            }
-                            variant="contained"
-                            color="primary"
-                            style={{ textAlign: "center", margin: "8px" }}
-                          >
-                            Nuevo Seguimiento
-                          </Button>
-                        )}
+                      {canCreateAcredTracking && !soloLectura && (
+                        <Button
+                          onClick={() =>
+                            handleOpenNewTrackingModal("Acreditación")
+                          }
+                          variant="contained"
+                          color="primary"
+                          style={{ textAlign: "center", margin: "8px" }}
+                        >
+                          Nuevo Seguimiento
+                        </Button>
+                      )}
                       {contenido_tablaFases("Acreditación")}
                     </div>
                   </>
@@ -3653,21 +3977,20 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {(avaibleRange(isRenAcred) || avaibleRange(isPlan)) &&
-                        !soloLectura && (
-                          <Button
-                            onClick={() =>
-                              handleOpenNewTrackingModal(
-                                "Renovación Acreditación",
-                              )
-                            }
-                            variant="contained"
-                            color="primary"
-                            style={{ textAlign: "center", margin: "8px" }}
-                          >
-                            Nuevo Seguimiento
-                          </Button>
-                        )}
+                      {canCreateRenAcredTracking && !soloLectura && (
+                        <Button
+                          onClick={() =>
+                            handleOpenNewTrackingModal(
+                              "Renovación Acreditación",
+                            )
+                          }
+                          variant="contained"
+                          color="primary"
+                          style={{ textAlign: "center", margin: "8px" }}
+                        >
+                          Nuevo Seguimiento
+                        </Button>
+                      )}
                       {contenido_tablaFases("Renovación Acreditación")}
                     </div>
                   </>
@@ -3693,21 +4016,20 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {(avaibleRange(isCrea) || avaibleRange(isPlan)) &&
-                        !soloLectura && (
-                          <>
-                            <Button
-                              onClick={() =>
-                                handleOpenNewTrackingModal("Creación")
-                              }
-                              variant="contained"
-                              color="primary"
-                              style={{ textAlign: "center", margin: "8px" }}
-                            >
-                              Nuevo Seguimiento
-                            </Button>
-                          </>
-                        )}
+                      {canCreateCreaTracking && !soloLectura && (
+                        <>
+                          <Button
+                            onClick={() =>
+                              handleOpenNewTrackingModal("Creación")
+                            }
+                            variant="contained"
+                            color="primary"
+                            style={{ textAlign: "center", margin: "8px" }}
+                          >
+                            Nuevo Seguimiento
+                          </Button>
+                        </>
+                      )}
                       {contenido_tablaFases("Creación")}
                     </div>
                   </>
@@ -3733,19 +4055,18 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {(avaibleRange(isMod) || avaibleRange(isPlan)) &&
-                        !soloLectura && (
-                          <Button
-                            onClick={() =>
-                              handleOpenNewTrackingModal("Modificación")
-                            }
-                            variant="contained"
-                            color="primary"
-                            style={{ textAlign: "center", margin: "8px" }}
-                          >
-                            Nuevo Seguimiento
-                          </Button>
-                        )}
+                      {canCreateModTracking && !soloLectura && (
+                        <Button
+                          onClick={() =>
+                            handleOpenNewTrackingModal("Modificación")
+                          }
+                          variant="contained"
+                          color="primary"
+                          style={{ textAlign: "center", margin: "8px" }}
+                        >
+                          Nuevo Seguimiento
+                        </Button>
+                      )}
                       {contenido_tablaFases("Modificación")}
                     </div>
                   </>
