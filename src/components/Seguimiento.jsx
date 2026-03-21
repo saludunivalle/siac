@@ -1827,7 +1827,7 @@ const Seguimiento = ({
                                                 fontSize: "0.85rem",
                                               }}
                                             >
-                                              Sin documentos
+                                              No requiere
                                             </span>
                                           )}
                                         </div>
@@ -2326,16 +2326,7 @@ const Seguimiento = ({
                 marginBottom: "20px",
               }}
             >
-              <Button
-                onClick={() => {
-                  handleOpenNewTrackingModal(collapsibleName, null, "");
-                }}
-                variant="contained"
-                color="primary"
-                style={{ textAlign: "center", marginBottom: "25px" }}
-              >
-                Nuevo Seguimiento
-              </Button>
+            
             </div>
           )}
           {contenido_tablaFases(collapsibleName)}
@@ -3934,18 +3925,7 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {canCreateAcredTracking && !soloLectura && (
-                        <Button
-                          onClick={() =>
-                            handleOpenNewTrackingModal("Acreditación")
-                          }
-                          variant="contained"
-                          color="primary"
-                          style={{ textAlign: "center", margin: "8px" }}
-                        >
-                          Nuevo Seguimiento
-                        </Button>
-                      )}
+                     
                       {contenido_tablaFases("Acreditación")}
                     </div>
                   </>
@@ -3977,20 +3957,7 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {canCreateRenAcredTracking && !soloLectura && (
-                        <Button
-                          onClick={() =>
-                            handleOpenNewTrackingModal(
-                              "Renovación Acreditación",
-                            )
-                          }
-                          variant="contained"
-                          color="primary"
-                          style={{ textAlign: "center", margin: "8px" }}
-                        >
-                          Nuevo Seguimiento
-                        </Button>
-                      )}
+                      
                       {contenido_tablaFases("Renovación Acreditación")}
                     </div>
                   </>
@@ -4018,16 +3985,7 @@ const Seguimiento = ({
                       )}
                       {canCreateCreaTracking && !soloLectura && (
                         <>
-                          <Button
-                            onClick={() =>
-                              handleOpenNewTrackingModal("Creación")
-                            }
-                            variant="contained"
-                            color="primary"
-                            style={{ textAlign: "center", margin: "8px" }}
-                          >
-                            Nuevo Seguimiento
-                          </Button>
+                          
                         </>
                       )}
                       {contenido_tablaFases("Creación")}
@@ -4055,18 +4013,7 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {canCreateModTracking && !soloLectura && (
-                        <Button
-                          onClick={() =>
-                            handleOpenNewTrackingModal("Modificación")
-                          }
-                          variant="contained"
-                          color="primary"
-                          style={{ textAlign: "center", margin: "8px" }}
-                        >
-                          Nuevo Seguimiento
-                        </Button>
-                      )}
+                      
                       {contenido_tablaFases("Modificación")}
                     </div>
                   </>
