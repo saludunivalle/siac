@@ -317,6 +317,13 @@ const Seguimiento = ({
     if (!editingSeguimiento) return;
 
     setEditLoading(true);
+    if(!editingSeguimiento.usuario || editingSeguimiento.usuario == "" || editingSeguimiento.usuario == null || editingSeguimiento.usuario == undefined){
+      console.error("No hay usuario, innicie sesion para enviar el seguimiento");
+      setErrorMessage("Error: No hay usuario. Inicie sesión para enviar el seguimiento.");
+      setFormSubmitted(true);
+      return;
+    }
+
     try {
       // Convertir nombre de fase a ID antes de guardar
       const faseId = editFase ? getFaseIdByName(editFase) : null;
@@ -3161,6 +3168,17 @@ const Seguimiento = ({
         setFormSubmitted(true);
         return;
       }
+      if(user == "" || user == null || user == undefined){
+        console.error("No hay usuario, innicie sesion para enviar el seguimiento");
+        setErrorMessage("Error: No hay usuario. Inicie sesión para enviar el seguimiento.");
+        {errorMessage && (
+  <div style={{ color: "red", fontSize: "17px", paddingBottom: "10px" }}>
+    {errorMessage}
+  </div>
+)}
+        setFormSubmitted(true);
+        return;
+      }
 
       setLoading(true);
 
@@ -3280,6 +3298,13 @@ const Seguimiento = ({
           setFormSubmitted(true);
           return;
         }
+        if(user == "" || user == null || user == undefined){
+          console.error("No hay usuario, innicie sesion para enviar el seguimiento");
+          setErrorMessage("Error: No hay usuario. Inicie sesión para enviar el seguimiento.");
+          setFormSubmitted(true);
+          return;
+        }
+
 
         setLoading(true);
         let enlace;
@@ -4060,6 +4085,13 @@ const Seguimiento = ({
           >
             Nuevo Seguimiento
           </Typography>
+          {errorMessage && (
+  <Box sx={{ mb: 2 }}>
+    <Typography color="error" variant="body1" align="center">
+      {errorMessage}
+    </Typography>
+  </Box>
+)}
 
           <Box
             sx={{
@@ -4275,6 +4307,13 @@ const Seguimiento = ({
               >
                 Editar Seguimiento
               </Typography>
+              {errorMessage && (
+  <Box sx={{ mb: 2 }}>
+    <Typography color="error" variant="body1" align="center">
+      {errorMessage}
+    </Typography>
+  </Box>
+)}
 
               <TextField
                 label="Comentario"
