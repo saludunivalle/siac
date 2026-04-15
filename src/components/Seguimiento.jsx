@@ -228,6 +228,8 @@ const Seguimiento = ({
   const [newTrackingIdProc, setNewTrackingIdProc] = useState("");
   const [isPhaseLocked, setIsPhaseLocked] = useState(false);
 
+  const SIN_FASE_LABEL = "Sin actividad asignada por ahora";
+
   // Estado para datos históricos
   const [datosHistoricos, setDatosHistoricos] = useState([]);
   const [idProcHistoricoActual, setIdProcHistoricoActual] = useState(null);
@@ -1132,6 +1134,10 @@ const Seguimiento = ({
 
   // Obtener el nombre de la fase basado en su ID
   const getFaseName = (faseId) => {
+    if (String(faseId ?? "").trim() === "0") {
+      return SIN_FASE_LABEL;
+    }
+
     const fase =
       fasesName.find((f) => f.id === faseId) ||
       menuItems.find((f) => f.id === faseId);
@@ -1140,10 +1146,19 @@ const Seguimiento = ({
 
   // Obtener el ID de fase por nombre
   const getFaseIdByName = (faseName) => {
+    if (String(faseName || "").trim().toLowerCase() === SIN_FASE_LABEL.toLowerCase()) {
+      return 0;
+    }
+
     const fase =
       fasesName.find((f) => f.fase === faseName) ||
       menuItems.find((f) => f.fase === faseName);
     return fase ? fase.id : null;
+  };
+
+  const esSeguimientoSinFase = (item) => {
+    const faseValor = String(item?.fase ?? "").trim();
+    return faseValor === "" || faseValor === "0";
   };
 
   // Función para agrupar seguimientos por periodo histórico
@@ -2017,7 +2032,7 @@ const Seguimiento = ({
 
     // Si soloSinFase es true, filtrar solo los seguimientos sin fase asignada
     if (soloSinFase) {
-      tableData = tableData.filter((item) => !item.fase || item.fase === "");
+      tableData = tableData.filter((item) => esSeguimientoSinFase(item));
       console.log(
         "📋 renderFilteredTable - Después de filtrar sin fase:",
         tableData?.length,
@@ -2318,7 +2333,7 @@ const Seguimiento = ({
     const canCreateForThisProcess = canCreateForTopic(nombreProceso);
 
     // Filtrar solo seguimientos sin fase asignada
-    tableData = tableData.filter((item) => !item.fase || item.fase === "");
+    tableData = tableData.filter((item) => esSeguimientoSinFase(item));
 
     if (tableData.length === 0) {
       const collapsibleName = getNombreProceso();
@@ -2333,7 +2348,21 @@ const Seguimiento = ({
                 marginBottom: "20px",
               }}
             >
-            
+              <Button
+                onClick={() => {
+                  handleOpenNewTrackingModal(
+                    collapsibleName,
+                    null,
+                    idProcHistoricoActual || "",
+                    true,
+                  );
+                }}
+                variant="contained"
+                color="primary"
+                style={{ textAlign: "center", marginBottom: "25px" }}
+              >
+                Agregar seguimiento sin fase
+              </Button>
             </div>
           )}
           {contenido_tablaFases(collapsibleName)}
@@ -2641,13 +2670,14 @@ const Seguimiento = ({
                     collapsibleName,
                     null,
                     idHistoricoPeriodo,
+                    true,
                   );
                 }}
                 variant="contained"
                 color="primary"
                 style={{ textAlign: "center", marginBottom: "25px" }}
               >
-                Nuevo Seguimiento
+                Agregar seguimiento sin fase
               </Button>
             </div>
           )}
@@ -2737,6 +2767,7 @@ const Seguimiento = ({
     topic,
     fasePreseleccionada = null,
     idProcHistorico = "",
+    bloquearSinFase = false,
   ) => {
     setComment("");
     setValue("");
@@ -2746,14 +2777,24 @@ const Seguimiento = ({
     setErrorMessage("");
     setFormSubmitted(false);
 
-    const faseSeleccionada = fasePreseleccionada
-      ? menuItems.find(
+    let faseSeleccionada = 0;
+    let bloquearFase = false;
+
+    if (fasePreseleccionada) {
+      faseSeleccionada =
+        menuItems.find(
           (item) => String(item.id) === String(fasePreseleccionada.id),
-        ) || fasePreseleccionada
-      : 0;
+        ) || fasePreseleccionada;
+      bloquearFase = true;
+    }
+
+    if (bloquearSinFase) {
+      faseSeleccionada = 0;
+      bloquearFase = true;
+    }
 
     setSelectedOption(faseSeleccionada);
-    setIsPhaseLocked(Boolean(fasePreseleccionada));
+    setIsPhaseLocked(bloquearFase);
 
     setCollapsible(topic || "");
     setNewTrackingTopic(topic || "");
@@ -3187,7 +3228,11 @@ const Seguimiento = ({
         : dayjs().format("DD/MM/YYYY");
 
       const faseId =
-        selectedOption && selectedOption.id ? selectedOption.id : "";
+        selectedOption === 0 || selectedOption === "0"
+          ? 0
+          : selectedOption && selectedOption.id !== undefined
+            ? selectedOption.id
+            : "";
 
       const dataSend = [
         idProgramaFinal,
@@ -3950,7 +3995,33 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                     
+
+                      {canCreateAcredTracking && !soloLectura && (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            marginTop: "20px",
+                            marginBottom: "20px",
+                          }}
+                        >
+                          <Button
+                            onClick={() =>
+                              handleOpenNewTrackingModal(
+                                "Acreditación",
+                                null,
+                                "",
+                                true,
+                              )
+                            }
+                            variant="contained"
+                            color="primary"
+                            style={{ textAlign: "center", marginBottom: "25px" }}
+                          >
+                            Agregar seguimiento sin fase
+                          </Button>
+                        </div>
+                      )}
+
                       {contenido_tablaFases("Acreditación")}
                     </div>
                   </>
@@ -3982,7 +4053,33 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      
+
+                      {canCreateRenAcredTracking && !soloLectura && (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            marginTop: "20px",
+                            marginBottom: "20px",
+                          }}
+                        >
+                          <Button
+                            onClick={() =>
+                              handleOpenNewTrackingModal(
+                                "Renovación Acreditación",
+                                null,
+                                "",
+                                true,
+                              )
+                            }
+                            variant="contained"
+                            color="primary"
+                            style={{ textAlign: "center", marginBottom: "25px" }}
+                          >
+                            Agregar seguimiento sin fase
+                          </Button>
+                        </div>
+                      )}
+
                       {contenido_tablaFases("Renovación Acreditación")}
                     </div>
                   </>
@@ -4009,9 +4106,29 @@ const Seguimiento = ({
                         true,
                       )}
                       {canCreateCreaTracking && !soloLectura && (
-                        <>
-                          
-                        </>
+                        <div
+                          style={{
+                            textAlign: "center",
+                            marginTop: "20px",
+                            marginBottom: "20px",
+                          }}
+                        >
+                          <Button
+                            onClick={() =>
+                              handleOpenNewTrackingModal(
+                                "Creación",
+                                null,
+                                "",
+                                true,
+                              )
+                            }
+                            variant="contained"
+                            color="primary"
+                            style={{ textAlign: "center", marginBottom: "25px" }}
+                          >
+                            Agregar seguimiento sin fase
+                          </Button>
+                        </div>
                       )}
                       {contenido_tablaFases("Creación")}
                     </div>
@@ -4038,7 +4155,33 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      
+
+                      {canCreateModTracking && !soloLectura && (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            marginTop: "20px",
+                            marginBottom: "20px",
+                          }}
+                        >
+                          <Button
+                            onClick={() =>
+                              handleOpenNewTrackingModal(
+                                "Modificación",
+                                null,
+                                "",
+                                true,
+                              )
+                            }
+                            variant="contained"
+                            color="primary"
+                            style={{ textAlign: "center", marginBottom: "25px" }}
+                          >
+                            Agregar seguimiento sin fase
+                          </Button>
+                        </div>
+                      )}
+
                       {contenido_tablaFases("Modificación")}
                     </div>
                   </>
@@ -4151,7 +4294,7 @@ const Seguimiento = ({
                   },
                 }}
               >
-                <MenuItem value={0}>Ninguna</MenuItem>
+                <MenuItem value={0}>{SIN_FASE_LABEL}</MenuItem>
                 {(() => {
                   const groupedFases = menuItems.reduce((acc, item) => {
                     const grupo = item.fase_sup || "Sin Agrupar";
