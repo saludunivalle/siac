@@ -40,6 +40,9 @@ const Acreditacion = ({
 }) => {
   const proceso = 'AAC';
   const programas = programDetails[proceso] || [];
+  console.log('Programas AAC:', programas);
+  const [selectedEstado, setSelectedEstado] = useState(null);
+  const [filteredByEstado, setFilteredByEstado] = useState(false);
   
   // Estados para ordenamiento
   const [orderBy, setOrderBy] = useState('');
@@ -49,9 +52,12 @@ const Acreditacion = ({
   const [filters, setFilters] = useState({
     'programa académico': [],
     'escuela': [],
-    'riesgo': []
+    'riesgo': [],
+    'estadoaac': [],
+    'tiempo':[],
+    'pregrado/posgrado': []
   });
-  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(true);
 
   // Función para manejar el ordenamiento
   const handleSort = (property) => {
@@ -100,7 +106,10 @@ const Acreditacion = ({
     setFilters({
       'programa académico': [],
       'escuela': [],
-      'riesgo': []
+      'riesgo': [],
+      'estadoaac': [],
+      'tiempo':[],
+      'pregrado/posgrado': []
     });
   };
 
@@ -142,7 +151,37 @@ const Acreditacion = ({
       key: 'riesgo',
       label: 'Riesgo',
       options: getUniqueOptions('riesgo')
-    }
+    },
+     {
+          key: 'tiempo',
+          label: 'Tiempo',
+          options: [
+            {value: '4Años', label: '4 Años antes del vencimiento', count: programas.filter(p => p['fase rrc'] === 'Fase 2' && (p.estadoaac === 'Vigente' || p.estadoaac === 'Vigente (En trámite)' || p.estadoaac === 'En trámite')).length },
+            {value: '2Años', label: '2 Años antes del vencimiento', count: programas.filter(p => p['fase rrc'] === 'Fase 3' && (p.estadoaac === 'Vigente' || p.estadoaac === 'Vigente (En trámite)' || p.estadoaac === 'En trámite')).length },
+            {value: '18Meses', label: '18 Meses antes del vencimiento', count: programas.filter(p => p['fase rrc'] === 'Fase 4' && (p.estadoaac === 'Vigente' || p.estadoaac === 'Vigente (En trámite)' || p.estadoaac === 'En trámite')).length },
+            {value: '1Año', label: 'Año del vencimiento', count: programas.filter(p => p['fase rrc'] === 'Fase 5' && (p.estadoaac === 'Vigente' || p.estadoaac === 'Vigente (En trámite)' || p.estadoaac === 'En trámite')).length }
+          ]
+        },
+        {
+          key:'pregrado/posgrado',
+          label:'Pregrado',
+          options:[
+            { value: 'Pregrado', label: 'Universitario', count: programas.filter(p => p['nivel de formación'] === 'Universitario' ).length },
+            { value: 'Pregrado', label: 'Tecnológico', count: programas.filter(p => p['nivel de formación'] === 'Tecnológico').length }
+              
+            ]
+          },
+         {
+          key:'pregrado/posgrado',
+          label:'Posgrado',
+          options:[
+            { value: 'PosgradoM', label: 'Maestría', count: programas.filter(p => p['nivel de formación'] === 'Maestría' ).length },
+            { value: 'PosgradoD', label: 'Doctorado', count: programas.filter(p => p['nivel de formación'] === 'Doctorado').length },
+            { value: 'PosgradoE', label: 'Especialización Universitaria', count: programas.filter(p => p['nivel de formación'] === 'Especialización Universitaria').length },
+            { value: 'PosgradoEspM', label: 'Especialización Médico Quirúrgica', count: programas.filter(p => p['nivel de formación'] === 'Especialización Médico Quirúrgica').length }
+              
+            ]
+          }
   ];
 
   // Función para filtrar programas
@@ -164,6 +203,74 @@ const Acreditacion = ({
     
     return [...filtered].sort(getComparator(order, orderBy));
   }, [programas, order, orderBy, filters]);
+
+  const estadoCounts = useMemo(() => {
+    const base = {
+      vigentes: 0,
+      noVigentes: 0,
+      vigentesPregrado: 0,
+      vigentesPosgrado: 0
+    };
+    programas.forEach(program => {
+      const estado = program?.estadoaac;
+      const isVigente =
+        estado === 'Vigente' ||
+        estado === 'Vigente (En trámite)' ||
+        estado === 'En trámite';
+
+      if (isVigente) {
+        base.vigentes += 1;
+        const nivel = program['pregrado/posgrado'];
+        if (nivel === 'Pregrado') base.vigentesPregrado += 1;
+        if (nivel === 'Posgrado') base.vigentesPosgrado += 1;
+      } else {
+        base.noVigentes += 1;
+      }
+    });
+    return base;
+  }, [programas]);
+
+  const estadoLabelMap = {
+    vigentes: 'Vigente / En trámite',
+    noVigentes: 'No vigente / Sin registro',
+    vigentesPregrado: 'Vigentes Pregrado',
+    vigentesPosgrado: 'Vigentes Posgrado'
+  };
+
+  const handleEstadoCardClick = (estadoKey) => {
+    if (selectedEstado === estadoKey) {
+      setSelectedEstado(null);
+      setFilteredByEstado(false);
+      return;
+    }
+
+    setSelectedEstado(estadoKey);
+    setFilteredByEstado(true);
+  };
+
+  const isVigenteEstado = (estado) => (
+    estado === 'Vigente' ||
+    estado === 'Vigente (En trámite)' ||
+    estado === 'En trámite'
+  );
+
+  const statusFilteredProgramas = filteredByEstado
+    ? sortedProgramas.filter(program => {
+        const vigente = isVigenteEstado(program?.estadoaac);
+        if (selectedEstado === 'vigentes') return vigente;
+        if (selectedEstado === 'noVigentes') return !vigente;
+        if (selectedEstado === 'vigentesPregrado') {
+          return vigente && program['pregrado/posgrado'] === 'Pregrado';
+        }
+        if (selectedEstado === 'vigentesPosgrado') {
+          return vigente && program['pregrado/posgrado'] === 'Posgrado';
+        }
+        return true;
+      })
+    : sortedProgramas;
+  const visibleProgramas = filteredByRisk
+    ? statusFilteredProgramas.filter(p => p.riesgo === selectedRisk)
+    : statusFilteredProgramas;
 
   return (
     <Box sx={{ width: '100%', mt: 2, display: 'flex', justifyContent: 'center' }}>
@@ -219,8 +326,78 @@ const Acreditacion = ({
             </Box>
           </Box>
 
-          {/* Cards de métricas por riesgo */}
+          {/* Cards de métricas por estado */}
           <Grid container spacing={3} sx={{ mb: 4, width: '100%', mx: 0 }}>
+            {[
+              {
+                key: 'vigentes',
+                label: 'Vigentes / En trámite',
+                value: estadoCounts.vigentes,
+                color: '#2E7D32',
+                backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                borderColor: 'rgba(46, 125, 50, 0.2)'
+              },
+              {
+                key: 'noVigentes',
+                label: 'No vigentes / Sin registro',
+                value: estadoCounts.noVigentes,
+                color: '#C62828',
+                backgroundColor: 'rgba(198, 40, 40, 0.08)',
+                borderColor: 'rgba(198, 40, 40, 0.2)'
+              },
+              {
+                key: 'vigentesPregrado',
+                label: 'Vigentes Pregrado',
+                value: estadoCounts.vigentesPregrado,
+                color: '#1565C0',
+                backgroundColor: 'rgba(21, 101, 192, 0.08)',
+                borderColor: 'rgba(21, 101, 192, 0.2)'
+              },
+              {
+                key: 'vigentesPosgrado',
+                label: 'Vigentes Posgrado',
+                value: estadoCounts.vigentesPosgrado,
+                color: '#00838F',
+                backgroundColor: 'rgba(0, 131, 143, 0.08)',
+                borderColor: 'rgba(0, 131, 143, 0.2)'
+              }
+            ].map((card) => {
+              const isSelected = selectedEstado === card.key;
+              return (
+                <Grid item xs={12} sm={6} md={3} key={card.key}>
+                  <Card
+                    elevation={0}
+                    onClick={() => handleEstadoCardClick(card.key)}
+                    sx={{
+                      borderRadius: '20px',
+                      border: `2px solid ${isSelected ? card.color : card.borderColor}`,
+                      backgroundColor: card.backgroundColor,
+                      position: 'relative',
+                      overflow: 'hidden',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                        <Typography variant="h6" sx={{ color: card.color, fontWeight: 600, fontSize: '1.125rem' }}>
+                          {card.label}
+                        </Typography>
+                      </Box>
+                      <Typography variant="h2" sx={{ fontWeight: 800, color: card.color, fontSize: '3rem', lineHeight: 1, mb: 1 }}>
+                        {card.value}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: card.color, fontSize: '0.875rem', fontWeight: 500 }}>
+                        {card.value === 1 ? 'programa' : 'programas'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+
+          {/* Cards de métricas por riesgo */}
+          {/* <Grid container spacing={3} sx={{ mb: 4, width: '100%', mx: 0 }}>
             {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => {
               const config = riskConfig[risk];
               const count = counts[proceso][risk];
@@ -259,7 +436,7 @@ const Acreditacion = ({
                 </Grid>
               );
             })}
-          </Grid>
+          </Grid> */}
 
           {/* Tabla de programas */}
           <Card sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)', borderRadius: '20px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.02)' }}>
@@ -267,17 +444,19 @@ const Acreditacion = ({
               <div>
                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#212529', fontSize: '1.25rem' }}>
                   Listado de Programas (AAC)
-                  {selectedRisk && (
+                  {filteredByRisk && selectedRisk && (
                     <span style={{ color: riskConfig[selectedRisk].color, marginLeft: '10px' }}>
-                      • Filtrado por: {selectedRisk === 'SinRegistro' ? 'Sin Registro' : `${selectedRisk} Riesgo`}
+                      • Filtrado por riesgo: {selectedRisk === 'SinRegistro' ? 'Sin Registro' : `${selectedRisk} Riesgo`}
+                    </span>
+                  )}
+                  {filteredByEstado && selectedEstado && (
+                    <span style={{ color: '#6C757D', marginLeft: '10px' }}>
+                      • Estado: {estadoLabelMap[selectedEstado]}
                     </span>
                   )}
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#6C757D', mt: 0.5 }}>
-                  {filteredByRisk 
-                    ? `${sortedProgramas.filter(p => p.riesgo === selectedRisk).length} programa${sortedProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${sortedProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
-                    : `${sortedProgramas.length} programa${sortedProgramas.length !== 1 ? 's' : ''} encontrado${sortedProgramas.length !== 1 ? 's' : ''}`
-                  }
+                  {`${visibleProgramas.length} programa${visibleProgramas.length !== 1 ? 's' : ''} encontrado${visibleProgramas.length !== 1 ? 's' : ''}`}
                 </Typography>
               </div>
               {selectedRisk && (
@@ -342,7 +521,7 @@ const Acreditacion = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(filteredByRisk ? sortedProgramas.filter(program => program.riesgo === selectedRisk) : sortedProgramas).map((program) => (
+                  {visibleProgramas.map((program) => (
                     <TableRow 
                       key={program.id_programa}
                       hover 

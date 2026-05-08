@@ -97,14 +97,14 @@ const AltaCalidad = () => {
           
           setRaacProgramCounts({
             white: raacResponse.filter(item => item['fase rac'] === 'Vencido').length,
-            green: raacResponse.filter(item => item['fase rac'] === 'Fase 2' && item['ac vigente'] === 'SI').length,
-            yellow: raacResponse.filter(item => item['fase rac'] === 'Fase 3' && item['ac vigente'] === 'SI').length,
+            green: raacResponse.filter(item => item['fase rac'] === 'Fase 2' && (item['estadoaac'] === 'Vigente' || item['estadoaac'] === 'Vigente (En trámite)' || item['estadoaac'] === 'En trámite')).length,
+            yellow: raacResponse.filter(item => item['fase rac'] === 'Fase 3' && (item['estadoaac'] === 'Vigente' || item['estadoaac'] === 'Vigente (En trámite)' || item['estadoaac'] === 'En trámite')).length,
             orange: 0,
-            orange2: raacResponse.filter(item => item['fase rac'] === 'Fase 4' && item['ac vigente'] === 'SI').length,
-            red: raacResponse.filter(item => item['fase rac'] === 'Fase 5' && item['ac vigente'] === 'SI').length,
+            orange2: raacResponse.filter(item => item['fase rac'] === 'Fase 4' && (item['estadoaac'] === 'Vigente' || item['estadoaac'] === 'Vigente (En trámite)' || item['estadoaac'] === 'En trámite')).length,
+            red: raacResponse.filter(item => item['fase rac'] === 'Fase 5' && (item['estadoaac'] === 'Vigente' || item['estadoaac'] === 'Vigente (En trámite)' || item['estadoaac'] === 'En trámite')).length,
             gray: raacResponse.filter(item => 
               (!item['fase rac'] || item['fase rac'] === '' || item['fase rac'] === 'N/A') && 
-              item['ac vigente'] === 'SI'
+              (item['estadoaac'] === '#N/A' || item['estadoaac'] === '' || item['estadoaac'] === null)
             ).length
           });
         } catch (error) {
@@ -130,7 +130,7 @@ const AltaCalidad = () => {
     const estados = {
       AAC: programas.filter(item => item['aac_1a'] === 'SI').map(item => item.id_programa),
       RAAC: programas.filter(item => 
-        item['ac vigente'] === 'SI' || 
+        (item['estadoaac'] === 'Vigente' || item['estadoaac'] === 'Vigente (En trámite)' || item['estadoaac'] === 'En trámite') || 
         item['fase rac'] === 'Vencido'
       ).map(item => item.id_programa),
       INT: programas.filter(item => item['acreditacion internacional'] === 'SI').map(item => item.id_programa)
@@ -193,10 +193,10 @@ const AltaCalidad = () => {
         } 
         // Clasificar programas AAC según su estado de acreditación
         else if (estado === 'AAC') {
-          if (programa['ac vigente'] === 'NO') {
+          if (programa['estadoaac'] !== 'Vigente' || programa['estadoaac'] !== 'Vigente (En trámite)' || programa['estadoaac'] !== 'En trámite') {
             riesgo = 'Alto';
             mensaje = 'Programa con acreditación vencida';
-          } else if (programa['ac vigente'] === 'SI') {
+          } else if (programa['estadoaac'] === 'Vigente' || programa['estadoaac'] === 'Vigente (En trámite)' || programa['estadoaac'] === 'En trámite') {
             // Si tiene fecha de vencimiento, clasificar según la fecha
             if (programa['fechavencac']) {
               const fechaVenc = programa['fechavencac'];
@@ -565,7 +565,7 @@ const AltaCalidad = () => {
     return programs.map(program => {
       // Para programas AAC, clasificar según estado de acreditación
       if (program['aac_1a'] === 'SI') {
-        if (program['ac vigente'] === 'NO') {
+        if (program['estadoaac'] !== 'Vigente' || program['estadoaac'] !== 'Vigente (En trámite)' || program['estadoaac'] !== 'En trámite') {
           return {
             ...program,
             riesgo: 'Alto',
@@ -573,7 +573,7 @@ const AltaCalidad = () => {
           };
         } 
         
-        if (program['ac vigente'] === 'SI' && program['fechavencac']) {
+        if (program['estadoaac'] === 'Vigente' || program['estadoaac'] === 'Vigente (En trámite)' && program['fechavencac']) {
           const fechaVenc = program['fechavencac'];
           const partesFecha = fechaVenc.split('/');
           
@@ -631,7 +631,7 @@ const AltaCalidad = () => {
         }
         
         // Para programas AAC con fase_rac N/A o vacío, clasificar como SinRegistro
-        if (!program['fase rac'] || program['fase rac'] === '' || program['fase rac'] === 'N/A') {
+        if ((!program['fase rac'] || program['fase rac'] === '') &&program['estadoaac'] !== 'Vigente' || program['estadoaac'] !== 'Vigente (En trámite)' || program['estadoaac'] !== 'En trámite') {
           return {
             ...program,
             riesgo: 'SinRegistro',
@@ -641,13 +641,7 @@ const AltaCalidad = () => {
       }
       
       // Asignar riesgo según la fase para programas RAAC
-      if (!program['fase rac'] || program['fase rac'] === '' || program['fase rac'] === 'N/A') {
-        return {
-          ...program,
-          riesgo: 'SinRegistro',
-          mensaje: 'Fase RAC no definida'
-        };
-      } 
+      
       
       if (program['fase rac'] === 'Vencido') {
         return {
@@ -730,7 +724,7 @@ const AltaCalidad = () => {
           // Filter programs appropriately - mostrar todos los programas RAAC inicialmente
           // Incluir también programas con fase_rac vacío o 'N/A' para clasificarlos como SinRegistro
           const allRaacPrograms = response.filter(item => 
-            (item['ac vigente'] === 'SI') || 
+            (item['estadoaac'] === 'Vigente' || item['estadoaac'] === 'Vigente (En trámite)' || item['estadoaac'] === 'En trámite') || 
             item['fase rac'] === 'Vencido'
           );
           

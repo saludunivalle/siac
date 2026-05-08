@@ -106,7 +106,7 @@ const RegistroCalificado = () => {
     const estados = {
       CREA: programas.filter(item => item['estado'] === 'En Creación').map(item => item.id_programa),
       MOD: programas.filter(item => item['mod'] === 'SI').map(item => item.id_programa),
-      RRC: programas.filter(item => item['rc vigente'] === 'SI' && item['fase rrc'] !== 'N/A').map(item => item.id_programa)
+      RRC: programas.filter(item => item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)' || item['estadorc'] === '' || item['estadorc'] === null).map(item => item.id_programa)
     };
 
     const newCounts = {
@@ -556,8 +556,8 @@ const RegistroCalificado = () => {
         response = await Filtro2({ searchTerm: '' });
       }
       
-      // Filter only those with rc_vigente = SI
-      const allRrcPrograms = response.filter(item => item['rc vigente'] === 'SI');
+      // Filter only those with estadorc = SI
+      const allRrcPrograms = response.filter(item => item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)' || item['estadorc'] === '' || item['estadorc'] === null);
       
       // Get all seguimientos to assign risk levels
       const seguimientos = await Filtro7();
@@ -759,8 +759,8 @@ const RegistroCalificado = () => {
             response = await Filtro2({ searchTerm: '' });
           }
           
-          // Filter only those with rc_vigente = SI
-          const rrcPrograms = response.filter(item => item['rc vigente'] === 'SI');
+          // Filter only those with estadorc = SI
+          const rrcPrograms = response.filter(item => item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)' || item['estadorc'] === '' || item['estadorc'] === null);
           
           // Get all seguimientos to assign risk levels
           const seguimientos = await Filtro7();
@@ -800,12 +800,12 @@ const RegistroCalificado = () => {
           
           // Count programs for each RRC phase
           const rrcCounts = {
-            white: response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] === 'SI').length,
-            green: response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] === 'SI').length, // 4 años (Bajo)
-            yellow: response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] === 'SI').length, // 2 años (Medio)
+            white: response.filter(item => item['fase rrc'] === 'Vencido' && item['estadorc'] === 'SI').length,
+            green: response.filter(item => item['fase rrc'] === 'Fase 2' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length, // 4 años (Bajo)
+            yellow: response.filter(item => item['fase rrc'] === 'Fase 3' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length, // 2 años (Medio)
             orange: 0,
-            orange2: response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] === 'SI').length, // 18 meses (Medio)
-            red: response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] === 'SI').length // Año vencimiento (Alto)
+            orange2: response.filter(item => item['fase rrc'] === 'Fase 4' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length, // 18 meses (Medio)
+            red: response.filter(item => item['fase rrc'] === 'Fase 5' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length // Año vencimiento (Alto)
           };
           
           setRrcProgramCounts(rrcCounts);
@@ -848,12 +848,12 @@ const RegistroCalificado = () => {
           
           // Count programs for each RRC phase
           const rrcCounts = {
-            white: response.filter(item => item['fase rrc'] === 'Vencido' && item['rc vigente'] === 'SI').length,
-            green: response.filter(item => item['fase rrc'] === 'Fase 2' && item['rc vigente'] === 'SI').length,
-            yellow: response.filter(item => item['fase rrc'] === 'Fase 3' && item['rc vigente'] === 'SI').length,
+            white: response.filter(item => item['fase rrc'] === 'Vencido' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length,
+            green: response.filter(item => item['fase rrc'] === 'Fase 2' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length,
+            yellow: response.filter(item => item['fase rrc'] === 'Fase 3' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length,
             orange: 0,
-            orange2: response.filter(item => item['fase rrc'] === 'Fase 4' && item['rc vigente'] === 'SI').length,
-            red: response.filter(item => item['fase rrc'] === 'Fase 5' && item['rc vigente'] === 'SI').length
+            orange2: response.filter(item => item['fase rrc'] === 'Fase 4' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length,
+            red: response.filter(item => item['fase rrc'] === 'Fase 5' && (item['estadorc'] === 'Vigente' || item['estadorc'] === 'Vigente (En trámite)')).length
           };
           
           setRrcProgramCounts(rrcCounts);

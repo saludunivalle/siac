@@ -98,7 +98,7 @@ const Home = () => {
 
   // Funciones para obtener programas vencidos - MEMOIZADAS
   const getExpiredRRCPrograms = useCallback((programas) => {
-    return programas.filter((program) => program['fase rrc'] === 'Vencido');
+    return programas.filter((program) => program['estadorc'] !== 'Vigente' || program['estadorc'] !== 'Vigente (En trámite)');
   }, []);
 
   const getExpiredRACPrograms = useCallback((programas) => {
@@ -209,7 +209,7 @@ const Home = () => {
           if (!key) return;
 
           const existing = programMap.get(key);
-          const esActivo = item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede';
+          const esActivo = item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)';
 
           // Si no existe, agregarlo siempre
           if (!existing) {
@@ -217,7 +217,7 @@ const Home = () => {
             return;
           }
 
-          const existingEsActivo = existing['estado'] === 'Activo' || existing['estado'] === 'Activo - Sede';
+          const existingEsActivo = existing['estadorc']=== 'Vigente' || existing['estadorc']=== 'Vigente (En trámite)';
 
           // Si el actual está activo, siempre reemplazar (para tener la info más actualizada)
           if (esActivo) {
@@ -240,7 +240,7 @@ const Home = () => {
         //console.log('=== ANÁLISIS DE CONTEO ===');
         console.log('Programas activos por nivel de formación:');
         const activosPorNivel = {};
-        datosUnicos.filter(item => item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede').forEach(item => {
+        datosUnicos.filter(item => item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)').forEach(item => {
           const nivel = item['nivel de formación'];
           activosPorNivel[nivel] = (activosPorNivel[nivel] || 0) + 1;
         });
@@ -248,9 +248,11 @@ const Home = () => {
 
 
 
+        const activosPorRc = datosUnicos.filter(item => item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)').length;
+        console.log('Total activos por RC:', activosPorRc);
+        console.log('Total activos por RC (detallado):', datosUnicos.filter(item => item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)'));
 
 
-        
         const totalActivosV2 = datosUnicos.filter(item => item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede').length;
         console.log('Total activos calculado:', totalActivosV2);
 
@@ -264,36 +266,36 @@ const Home = () => {
             (['Pregrado', 'Universitario'].includes(item['pregrado/posgrado']) ||
              item['pregrado/posgrado']?.toLowerCase().includes('pregrado')) &&
             item['nivel de formación'] === 'Universitario' &&
-            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+            (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
         ).length;
 
         const activosPregradoTecnologico = datosUnicos.filter(
           (item) =>
             item['pregrado/posgrado'] === 'Pregrado' &&
             item['nivel de formación'] === 'Tecnológico' &&
-            (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+            (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
         ).length;
 
         const activosPosgrado = {
           maestria: datosUnicos.filter(
             (item) =>
               item['nivel de formación'] === 'Maestría' &&
-              (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+              (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
           ).length,
           especializacionUniversitaria: datosUnicos.filter(
             (item) =>
               item['nivel de formación'] === 'Especialización Universitaria' &&
-              (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+              (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
           ).length,
           especializacionMedicoQuirurgica: datosUnicos.filter(
             (item) =>
               item['nivel de formación'] === 'Especialización Médico Quirúrgica' &&
-              (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+              (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
           ).length,
           doctorado: datosUnicos.filter(
             (item) =>
               item['nivel de formación'] === 'Doctorado' &&
-              (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+              (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
           ).length,
         };
 
@@ -310,6 +312,7 @@ const Home = () => {
         const inactivosInactivoSede = datosUnicos.filter(item => item['estado'] === 'Inactivo - Sede').length;
         const inactivosInactivoVencidoRC = datosUnicos.filter(item => item['estado'] === 'Inactivo - Vencido RC').length;
         const inactivosNegacionRC = datosUnicos.filter(item => item['estado'] === 'Negación RC').length;
+        const sinRegistoRc = datosUnicos.filter(item => item['estadorc'] === '' || item['estadorc'] === null).length;
 
         const totalInactivos =
           inactivosDesistidoInterno +
@@ -318,7 +321,8 @@ const Home = () => {
           inactivosInactivo +
           inactivosInactivoSede +
           inactivosInactivoVencidoRC +
-          inactivosNegacionRC;
+          inactivosNegacionRC
+          + sinRegistoRc;
 
         const totalActivos =
           activosPregradoUniversitario +
@@ -329,7 +333,7 @@ const Home = () => {
           activosPosgrado.doctorado;
 
           
-console.log('Total Activos Calculado:', totalActivos);
+console.log('Total Activos Calculado:', activosPorRc);
         setProgramData({
           activos: {
             pregrado: {
@@ -348,6 +352,7 @@ console.log('Total Activos Calculado:', totalActivos);
             inactivoSede: inactivosInactivoSede,
             inactivoVencidoRC: inactivosInactivoVencidoRC,
             negacionRC: inactivosNegacionRC,
+            sinRegistroRc: sinRegistoRc,
             total: totalInactivos,
           },
           totalGeneral: totalActivos + enCreacion + totalInactivos,
@@ -384,38 +389,38 @@ console.log('Total Activos Calculado:', totalActivos);
     if (selectedEscuela !== 'Todos') {
       filteredData = filteredData.filter(
         (item) => item['escuela'] === selectedEscuela &&
-          (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+          (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
       );
     }
   
     if (selectedNivelAcademico !== 'Todos') {
       filteredData = filteredData.filter(
         (item) => item['pregrado/posgrado'] === selectedNivelAcademico &&
-          (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+          (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
       );
     }
   
     if (selectedNivelFormacion !== 'Todos') {
       filteredData = filteredData.filter(
         (item) => item['nivel de formación'] === selectedNivelFormacion &&
-          (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+          (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
       );
     }
   
     const activosPregrado = filteredData.filter(
       (item) =>
         item['pregrado/posgrado'] === 'Pregrado' &&
-        (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+        (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
     ).length;
   
     const activosPosgrado = filteredData.filter(
       (item) =>
         item['pregrado/posgrado'] === 'Posgrado' &&
-        (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede')
+        (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)')
     ).length;
   
     const nivelFormacionCounts = filteredData.reduce((acc, item) => {
-      if (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede') {
+      if (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)') {
         const nivelFormacion = item['nivel de formación'];
         acc[nivelFormacion] = (acc[nivelFormacion] || 0) + 1;
       }
@@ -423,7 +428,7 @@ console.log('Total Activos Calculado:', totalActivos);
     }, {});
   
     const escuelaCounts = filteredData.reduce((acc, item) => {
-      if (item['estado'] === 'Activo' || item['estado'] === 'Activo - Sede') {
+      if (item['estadorc']=== 'Vigente' || item['estadorc']=== 'Vigente (En trámite)') {
         const escuela = item['escuela'];
         acc[escuela] = (acc[escuela] || 0) + 1;
       }
@@ -903,6 +908,7 @@ console.log("total datos:", programData)
                       { label: 'Inactivo - Sede', shortLabel: 'Inactivo-Sede', value: programData.inactivos.inactivoSede },
                       { label: 'Inactivo - Vencido RC', shortLabel: 'Inact. Venc. RC', value: programData.inactivos.inactivoVencidoRC },
                       { label: 'Negación RC', shortLabel: 'Negación RC', value: programData.inactivos.negacionRC }
+                      , { label: 'Sin Registro RC', shortLabel: 'Sin Reg. RC', value: programData.inactivos.sinRegistroRc }
                     ].map((item, index) => (
                       <TableRow key={index} sx={{ 
                         '&:hover': { 

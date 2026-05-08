@@ -5,18 +5,24 @@ import SchoolIcon from '@mui/icons-material/School';
 import { Tooltip } from '@mui/material';
 import ModernRiskChip from '../common/ModernRiskChip';
 import FilterPanel from '../common/FilterPanel';
+import { key } from 'localforage';
 
 const RenovacionRC = ({
   programDetails,
   selectedRisk,
   filteredByRisk,
+  selectedRrcStatus,
+  filteredByRrcStatus,
   setSelectedRisk,
   setFilteredByRisk,
   handleNavigateToProgram,
-  riskConfig
+  riskConfig,
+  rrcProgramCounts
 }) => {
   const procesoProgramas = programDetails?.RRC || [];
-  
+  console.log('Programas en Renovación RC:', procesoProgramas);
+  console.log('Conteos de RRC:', rrcProgramCounts);
+  console.log('Riesgo seleccionado:', selectedRisk);
   // Estados para ordenamiento
   const [orderBy, setOrderBy] = useState('');
   const [order, setOrder] = useState('asc');
@@ -25,9 +31,12 @@ const RenovacionRC = ({
   const [filters, setFilters] = useState({
     'programa académico': [],
     'escuela': [],
-    'riesgo': []
+    'riesgo': [],
+    'estadorc': [],
+    'tiempo':[],
+    'pregrado/posgrado': []
   });
-  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(true);
 
   // Función para manejar el ordenamiento
   const handleSort = (property) => {
@@ -76,7 +85,10 @@ const RenovacionRC = ({
     setFilters({
       'programa académico': [],
       'escuela': [],
-      'riesgo': []
+      'riesgo': [],
+      'estadorc': [],
+      'tiempo': [],
+      'pregrado/posgrado': []
     });
   };
 
@@ -118,7 +130,37 @@ const RenovacionRC = ({
       key: 'riesgo',
       label: 'Riesgo',
       options: getUniqueOptions('riesgo')
-    }
+    },
+    {
+      key: 'tiempo',
+      label: 'Tiempo',
+      options: [
+        {value: '4Años', label: '4 Años antes del vencimiento', count: procesoProgramas.filter(p => p['fase rrc'] === 'Fase 2' && (p.estadorc === 'Vigente' || p.estadorc === 'Vigente (En trámite)')).length },
+        {value: '2Años', label: '2 Años antes del vencimiento', count: procesoProgramas.filter(p => p['fase rrc'] === 'Fase 3' && (p.estadorc === 'Vigente' || p.estadorc === 'Vigente (En trámite)')).length },
+        {value: '18Meses', label: '18 Meses antes del vencimiento', count: procesoProgramas.filter(p => p['fase rrc'] === 'Fase 4' && (p.estadorc === 'Vigente' || p.estadorc === 'Vigente (En trámite)')).length },
+        {value: '1Año', label: 'Año del vencimiento', count: procesoProgramas.filter(p => p['fase rrc'] === 'Fase 5' && (p.estadorc === 'Vigente' || p.estadorc === 'Vigente (En trámite)')).length }
+      ]
+    },
+    {
+      key:'pregrado/posgrado',
+      label:'Pregrado',
+      options:[
+        { value: 'Pregrado', label: 'Universitario', count: procesoProgramas.filter(p => p['nivel de formación'] === 'Universitario' ).length },
+        { value: 'Pregrado', label: 'Tecnológico', count: procesoProgramas.filter(p => p['nivel de formación'] === 'Tecnológico').length }
+          
+        ]
+      },
+     {
+      key:'pregrado/posgrado',
+      label:'Posgrado',
+      options:[
+        { value: 'PosgradoM', label: 'Maestría', count: procesoProgramas.filter(p => p['nivel de formación'] === 'Maestría' ).length },
+        { value: 'PosgradoD', label: 'Doctorado', count: procesoProgramas.filter(p => p['nivel de formación'] === 'Doctorado').length },
+        { value: 'PosgradoE', label: 'Especialización Universitaria', count: procesoProgramas.filter(p => p['nivel de formación'] === 'Especialización Universitaria').length },
+        { value: 'PosgradoEspM', label: 'Especialización Médico Quirúrgica', count: procesoProgramas.filter(p => p['nivel de formación'] === 'Especialización Médico Quirúrgica').length }
+          
+        ]
+      }
   ];
 
   // Función para filtrar programas
@@ -141,6 +183,39 @@ const RenovacionRC = ({
     return [...filtered].sort(getComparator(order, orderBy));
   }, [procesoProgramas, order, orderBy, filters]);
 
+  const statusLabelMap = {
+    vigentes: 'Vigente / En trámite',
+    noVigentes: 'No vigente / Sin registro',
+    vigentesPregrado: 'Vigentes Pregrado',
+    vigentesPosgrado: 'Vigentes Posgrado'
+  };
+
+  const isVigente = (estado) => (
+    estado === 'Vigente' ||
+    estado === 'Vigente (En trámite)' ||
+    estado === 'Vigente (En tramite)'
+  );
+
+  const matchesRrcStatus = (program) => {
+    const vigente = isVigente(program?.estadorc);
+    if (selectedRrcStatus === 'vigentes') return vigente;
+    if (selectedRrcStatus === 'noVigentes') return !vigente;
+    if (selectedRrcStatus === 'vigentesPregrado') {
+      return vigente && program['pregrado/posgrado'] === 'Pregrado';
+    }
+    if (selectedRrcStatus === 'vigentesPosgrado') {
+      return vigente && program['pregrado/posgrado'] === 'Posgrado';
+    }
+    return true;
+  };
+
+  const statusFilteredProgramas = filteredByRrcStatus
+    ? sortedProgramas.filter(matchesRrcStatus)
+    : sortedProgramas;
+  const visibleProgramas = filteredByRisk
+    ? statusFilteredProgramas.filter(program => program.riesgo === selectedRisk)
+    : statusFilteredProgramas;
+
   return (
     <Card sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)', borderRadius: '20px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.02)', width: '100%' }}>
       
@@ -153,17 +228,19 @@ const RenovacionRC = ({
           <div>
             <Typography variant="h6" sx={{ fontWeight: 600, color: '#212529', fontSize: '1.25rem' }}>
               Listado de Programas (Renovación RC)
-              {selectedRisk && (
+              {filteredByRisk && selectedRisk && (
                 <span style={{ color: riskConfig[selectedRisk]?.color, marginLeft: '10px' }}>
-                  • Filtrado por: {selectedRisk === 'SinRegistro' ? 'Sin Registro' : `${selectedRisk} Riesgo`}
+                  • Filtrado por riesgo: {selectedRisk === 'SinRegistro' ? 'Sin Registro' : `${selectedRisk} Riesgo`}
+                </span>
+              )}
+              {filteredByRrcStatus && selectedRrcStatus && (
+                <span style={{ color: '#6C757D', marginLeft: '10px' }}>
+                  • Estado: {statusLabelMap[selectedRrcStatus]}
                 </span>
               )}
             </Typography>
             <Typography variant="body2" sx={{ color: '#6C757D', mt: 0.5 }}>
-              {filteredByRisk 
-                ? `${sortedProgramas.filter(p => p.riesgo === selectedRisk).length} programa${sortedProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''} encontrado${sortedProgramas.filter(p => p.riesgo === selectedRisk).length !== 1 ? 's' : ''}`
-                : `${sortedProgramas.length} programa${sortedProgramas.length !== 1 ? 's' : ''} encontrado${sortedProgramas.length !== 1 ? 's' : ''}`
-              }
+              {`${visibleProgramas.length} programa${visibleProgramas.length !== 1 ? 's' : ''} encontrado${visibleProgramas.length !== 1 ? 's' : ''}`}
             </Typography>
           </div>
         </Box>
@@ -247,7 +324,7 @@ const RenovacionRC = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {(filteredByRisk ? sortedProgramas.filter(program => program.riesgo === selectedRisk) : sortedProgramas).map((program) => (
+              {visibleProgramas.map((program) => (
                 <TableRow key={program.id_programa} hover onClick={() => handleNavigateToProgram(program)} sx={{ cursor: 'pointer' }}>
                   <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
                     <Typography variant="body1" sx={{ fontWeight: 500, color: '#212529', fontSize: '0.9375rem', lineHeight: 1.4 }}>
