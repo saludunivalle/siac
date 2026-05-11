@@ -63,6 +63,46 @@ const DetailedProcessView = ({
     });
     return base;
   }, [procesoProgramas]);
+  const [selectedRrcStatus, setSelectedRrcStatus] = React.useState(null);
+  const [filteredByRrcStatus, setFilteredByRrcStatus] = React.useState(false);
+  const vigenteCounts = React.useMemo(() => {
+    const base = { vigentes: 0, noVigentes: 0, vigentesPregrado: 0, vigentesPosgrado: 0 };
+    procesoProgramas.forEach(program => {
+      const estado = program?.estadorc;
+      const isVigente =
+        estado === 'Vigente' ||
+        estado === 'Vigente (En trámite)' ||
+        estado === 'Vigente (En tramite)';
+
+      if (isVigente) {
+        base.vigentes += 1;
+        const nivel = program['pregrado/posgrado'];
+        if (nivel === 'Pregrado') base.vigentesPregrado += 1;
+        if (nivel === 'Posgrado') base.vigentesPosgrado += 1;
+      } else {
+        base.noVigentes += 1;
+      }
+    });
+    return base;
+  }, [procesoProgramas]);
+
+  React.useEffect(() => {
+    if (selectedRow !== 'RRC') {
+      setSelectedRrcStatus(null);
+      setFilteredByRrcStatus(false);
+    }
+  }, [selectedRow]);
+
+  const handleRrcStatusCardClick = (statusKey) => {
+    if (selectedRrcStatus === statusKey) {
+      setSelectedRrcStatus(null);
+      setFilteredByRrcStatus(false);
+      return;
+    }
+
+    setSelectedRrcStatus(statusKey);
+    setFilteredByRrcStatus(true);
+  };
 
   return (
     <Box sx={{ width: '100%', mt: 2, display: 'flex', justifyContent: 'center' }}>
@@ -164,7 +204,7 @@ const DetailedProcessView = ({
             </Box>
           )}
 
-          {selectedRow === 'RRC' && (
+          {/* {selectedRow === 'RRC' && (
             <Box sx={{ 
               display: 'flex',
               flexDirection: { xs: 'column', sm: 'row' },
@@ -212,9 +252,92 @@ const DetailedProcessView = ({
                 </Button>
               ))}
             </Box>
+          )} */}
+
+          {selectedRow === 'RRC' && (
+            <Grid container spacing={3} sx={{ mb: 4, width: '100%', mx: 0 }}>
+              {[
+                {
+                  key: 'vigentes',
+                  label: 'Vigentes / En trámite',
+                  value: vigenteCounts.vigentes,
+                  color: '#2E7D32',
+                  backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                  borderColor: 'rgba(46, 125, 50, 0.2)'
+                },
+                {
+                  key: 'noVigentes',
+                  label: 'No Vigentes',
+                  value: vigenteCounts.noVigentes,
+                  color: '#C62828',
+                  backgroundColor: 'rgba(198, 40, 40, 0.08)',
+                  borderColor: 'rgba(198, 40, 40, 0.2)'
+                },
+                {
+                  key: 'vigentesPregrado',
+                  label: 'Vigentes Pregrado',
+                  value: vigenteCounts.vigentesPregrado,
+                  color: '#1565C0',
+                  backgroundColor: 'rgba(21, 101, 192, 0.08)',
+                  borderColor: 'rgba(21, 101, 192, 0.2)'
+                },
+                {
+                  key: 'vigentesPosgrado',
+                  label: 'Vigentes Posgrado',
+                  value: vigenteCounts.vigentesPosgrado,
+                  color: '#00838F',
+                  backgroundColor: 'rgba(0, 131, 143, 0.08)',
+                  borderColor: 'rgba(0, 131, 143, 0.2)'
+                }
+              ].map((card, index) => {
+                const isSelected = selectedRrcStatus === card.key;
+                return (
+                <Grid item xs={12} sm={6} md={3} key={card.key}>
+                  <Grow in timeout={600 + index * 100}>
+                    <Card
+                      elevation={0}
+                      onClick={() => handleRrcStatusCardClick(card.key)}
+                      sx={{
+                        borderRadius: '20px',
+                        border: `2px solid ${isSelected ? card.color : card.borderColor}`,
+                        backgroundColor: isSelected ? card.backgroundColor : card.backgroundColor,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'translateY(-6px)'
+                        },
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <CardContent sx={{ p: 3 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{ color: card.color, fontWeight: 600, fontSize: '1.125rem', mb: 1 }}
+                        >
+                          {card.label}
+                        </Typography>
+                        <Typography
+                          variant="h2"
+                          sx={{ fontWeight: 800, color: card.color, fontSize: '3rem', lineHeight: 1 }}
+                        >
+                          {card.value}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: card.color, opacity: 0.7, fontSize: '0.875rem', fontWeight: 500, mt: 1 }}
+                        >
+                          {card.value === 1 ? 'programa' : 'programas'}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                </Grid>
+                );
+              })}
+            </Grid>
           )}
 
-          <Grid container spacing={3} sx={{ mb: 4, width: '100%', mx: 0 }}>
+          {selectedRow !== 'RRC' && (
+            <Grid container spacing={3} sx={{ mb: 4, width: '100%', mx: 0 }}>
             {['Bajo', 'Medio', 'Alto', 'SinRegistro'].map((risk, index) => {
               const config = riskConfig[risk];
               const count = riskCounts[risk];
@@ -288,7 +411,8 @@ const DetailedProcessView = ({
                 </Grid>
               );
             })}
-          </Grid>
+            </Grid>
+          )}
 
           {selectedRow === 'CREA' ? (
             <Creacion
@@ -317,6 +441,8 @@ const DetailedProcessView = ({
               programDetails={programDetails}
               selectedRisk={selectedRisk}
               filteredByRisk={filteredByRisk}
+              selectedRrcStatus={selectedRrcStatus}
+              filteredByRrcStatus={filteredByRrcStatus}
               setSelectedRisk={setSelectedRisk}
               setFilteredByRisk={setFilteredByRisk}
               handleNavigateToProgram={handleNavigateToProgram}
