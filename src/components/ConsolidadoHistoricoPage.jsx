@@ -25,6 +25,30 @@ const ConsolidadoHistoricoPage = () => {
     return typeof value === "string" ? value.trim() : value;
   };
 
+  const isProgramaActivo = (value) => {
+    const normalized = normalizeValue(value);
+    if (!normalized) return false;
+    const lower = normalized.toLowerCase();
+    return lower === "activo" || lower === "activo - sede";
+  };
+
+  const buildProgramaBase = (programa) => ({
+    id_programa: programa.id_programa,
+    programa:
+      normalizeValue(programa["programa académico"]) ||
+      `Programa ${programa.id_programa}`,
+    sede: normalizeValue(programa.sede),
+    nivel_academico: normalizeValue(programa["pregrado/posgrado"]),
+    nivel_formacion: normalizeValue(
+      programa["nivel de formación"] ||
+        programa["nivel de formacion"] ||
+        programa["nivel_formacion"],
+    ),
+    estado: normalizeValue(programa.estado || programa["estado"]),
+    estadoaac: normalizeValue(programa["estadoaac"]),
+    acreditable: normalizeValue(programa["acreditable"]),
+  });
+
   useEffect(() => {
     const cargo = sessionStorage.getItem("cargo");
     if (cargo) {
@@ -45,38 +69,34 @@ const ConsolidadoHistoricoPage = () => {
         const programas = await Filtro5();
         console.log("Datos de programas:", programas);
 
-        // Enriquecer SOLO los datos históricos con información de programas
-        // Solo procesar registros que tienen datos históricos válidos
-        const enrichedHistoricoData = historicoData
-          .filter((item) => item.id_programa !== null)
+        const programasActivos = programas.filter((programa) =>
+          isProgramaActivo(programa.estado || programa["estado"]),
+        );
+        const programasById = new Map(
+          programasActivos.map((programa) => [programa.id_programa, programa]),
+        );
+
+        const programasBase = programasActivos.map((programa) =>
+          buildProgramaBase(programa),
+        );
+
+        const historicoEnriquecido = historicoData
+          .filter((item) => programasById.has(item.id_programa))
           .map((item) => {
-            const programa = programas.find(
-              (prog) => prog.id_programa === item.id_programa,
-            );
+            const programa = programasById.get(item.id_programa);
             return {
               ...item,
-              programa: programa
-                ? normalizeValue(programa["programa académico"])
-                : `Programa ${item.id_programa}`,
-              sede: programa ? normalizeValue(programa.sede) : "",
-              nivel_academico: programa
-                ? normalizeValue(programa["pregrado/posgrado"])
-                : "",
-              nivel_formacion: programa
-                ? normalizeValue(programa["nivel de formación"])
-                : "",
-              estado: programa ? normalizeValue(programa.estado) : "",
-              estadoaac: programa ? normalizeValue(programa["estadoaac"]) : "",
-              acreditable: programa
-                ? normalizeValue(programa["acreditable"])
-                : "",
+              ...buildProgramaBase(programa),
             };
           });
 
-        console.log("Datos históricos enriquecidos:", enrichedHistoricoData);
-        console.log("Programas únicos en datos enriquecidos:", [
-          ...new Set(enrichedHistoricoData.map((item) => item.programa)),
-        ]);
+        const enrichedHistoricoData = [
+          ...programasBase,
+          ...historicoEnriquecido,
+        ];
+
+        console.log("Programas activos:", programasActivos.length);
+        console.log("Historico enriquecido:", historicoEnriquecido.length);
         console.log(
           "Total registros a enviar al componente:",
           enrichedHistoricoData.length,

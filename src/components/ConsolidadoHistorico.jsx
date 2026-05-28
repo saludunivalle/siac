@@ -61,7 +61,11 @@ const ConsolidadoHistorico = ({
     if (!normalized) return null;
 
     const lower = normalized.toLowerCase();
-    if (lower === "universitario") {
+    if (
+      lower === "universitario" ||
+      lower === "especializacion universitaria" ||
+      lower === "especialización universitaria"
+    ) {
       return "Profesional";
     }
 
@@ -313,6 +317,7 @@ const ConsolidadoHistorico = ({
 
     return cumplePrograma && cumpleSede && cumpleNivel && cumpleFormacion;
   });
+  console.log("Datos filtrados para visualización:", dataFiltrada);
 
   const consolidatedData = processConsolidatedData(dataFiltrada);
   const programas = Object.keys(consolidatedData);
@@ -333,17 +338,33 @@ const ConsolidadoHistorico = ({
 
     // Obtener programas únicos con sus datos más recientes
     const programasUnicos = {};
+    const getFechaValue = (value) => {
+      if (!value) return -Infinity;
+      const date = new Date(value);
+      const time = date.getTime();
+      return Number.isNaN(time) ? -Infinity : time;
+    };
+
     dataFiltrada.forEach((item) => {
-      if (
-        !programasUnicos[item.programa] ||
-        new Date(item.fecha_ini) >
-          new Date(programasUnicos[item.programa].fecha_ini)
-      ) {
-        programasUnicos[item.programa] = item;
+      const programaKey =
+        item.id_programa !== null && item.id_programa !== undefined
+          ? String(item.id_programa)
+          : item.programa;
+
+      if (!programaKey) return;
+
+      const currentFecha = getFechaValue(item.fecha_ini);
+      const existingFecha = getFechaValue(
+        programasUnicos[programaKey]?.fecha_ini,
+      );
+
+      if (!programasUnicos[programaKey] || currentFecha > existingFecha) {
+        programasUnicos[programaKey] = item;
       }
     });
 
     const programasArray = Object.values(programasUnicos);
+    console.log("Programas únicos para estadísticas:", programasArray);
     const totalProgramas = programasArray.length;
 
     // Calcular promedio de vigencia por nivel académico
@@ -371,11 +392,7 @@ const ConsolidadoHistorico = ({
     const promedioVigenciaPosgrado = calcularPromedioVigencia(posgrados);
 
     // Calcular programas acreditados vigentes segun estadoaac
-    const estadosAacValidos = new Set([
-      "Vigente",
-      "Vigente (En trámite)",
-      "En trámite",
-    ]);
+    const estadosAacValidos = new Set(["Vigente", "Vigente (En trámite)"]);
 
     const programasAcreditadosVigentes = programasArray.filter((p) => {
       const estadoAac = normalizeValue(p.estadoaac || p["estadoaac"]);
@@ -699,7 +716,7 @@ const ConsolidadoHistorico = ({
         )}
       </Box>
 
-      {programas.length === 0 && (
+      {dataFiltrada.length === 0 && (
         <Box sx={{ mb: 6, textAlign: "center" }}>
           <Typography variant="body1" color="text.secondary">
             {filtrosActivos > 0
@@ -709,7 +726,7 @@ const ConsolidadoHistorico = ({
         </Box>
       )}
 
-      {programas.length > 0 && (
+      {dataFiltrada.length > 0 && (
         <>
           {/* Tarjetas de Estadísticas Generales */}
           <Grid container spacing={2} sx={{ mb: 6 }}>
@@ -1113,268 +1130,305 @@ const ConsolidadoHistorico = ({
             </Grid>
           </Grid>
 
-          {/* Leyenda General de Colores */}
-          <Box sx={{ mt: 6, mb: 6 }}>
-            <Typography
-              variant="h6"
-              gutterBottom
-              sx={{ fontWeight: "600", color: "#2c3e50" }}
-            >
-              Leyenda de Colores de Acreditaciones
-            </Typography>
-            <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 12,
-                    bgcolor: "#DAA520",
-                    borderRadius: 1,
-                  }}
-                />
-                <Typography variant="body2" sx={{ fontWeight: "500" }}>
-                  Acreditación por primera vez
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 12,
-                    bgcolor: "#4caf50",
-                    borderRadius: 1,
-                  }}
-                />
-                <Typography variant="body2" sx={{ fontWeight: "500" }}>
-                  Primera renovación de acreditación de alta calidad
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 12,
-                    bgcolor: "#2196f3",
-                    borderRadius: 1,
-                  }}
-                />
-                <Typography variant="body2" sx={{ fontWeight: "500" }}>
-                  Segunda renovación de acreditación de alta calidad
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 12,
-                    bgcolor: "#9c27b0",
-                    borderRadius: 1,
-                  }}
-                />
-                <Typography variant="body2" sx={{ fontWeight: "500" }}>
-                  Tercera renovación de acreditación de alta calidad
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 12,
-                    bgcolor: "#f44336",
-                    borderRadius: 1,
-                  }}
-                />
-                <Typography variant="body2" sx={{ fontWeight: "500" }}>
-                  Acreditación rechazada
-                </Typography>
-              </Box>
+          {programas.length === 0 ? (
+            <Box sx={{ mb: 6, textAlign: "center" }}>
+              <Typography variant="body1" color="text.secondary">
+                No hay datos historicos para la seleccion actual
+              </Typography>
             </Box>
-          </Box>
-
-          {/* Sistema de Pestañas */}
-          <Box sx={{ mt: 4, mb: 4 }}>
-            <Tabs
-              value={tabValue}
-              onChange={handleTabChange}
-              centered
-              sx={{
-                "& .MuiTab-root": {
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                  textTransform: "none",
-                  minHeight: 48,
-                  px: 3,
-                },
-                "& .Mui-selected": {
-                  color: "#D32F2F",
-                },
-                "& .MuiTabs-indicator": {
-                  backgroundColor: "#D32F2F",
-                  height: 3,
-                },
-              }}
-            >
-              <Tab label="Vista de Línea de Tiempo" />
-              <Tab label="Vista de Tabla" />
-            </Tabs>
-          </Box>
-
-          {/* Contenido de las Pestañas */}
-          {tabValue === 0 && (
-            <Grid container spacing={4} sx={{ mt: 2 }}>
-              {programas.map((programa, index) => {
-                const timelineData = consolidatedData[programa];
-
-                return (
-                  <Grid item xs={12} key={programa}>
-                    {/* Programa Header */}
+          ) : (
+            <>
+              {/* Leyenda General de Colores */}
+              <Box sx={{ mt: 6, mb: 6 }}>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{ fontWeight: "600", color: "#2c3e50" }}
+                >
+                  Leyenda de Colores de Acreditaciones
+                </Typography>
+                <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Box
-                      sx={{ mb: 3, display: "flex", alignItems: "flex-start" }}
-                    >
-                      <Typography
-                        variant="h5"
-                        component="h2"
-                        sx={{
-                          color: "#2c3e50",
-                          fontWeight: "600",
-                          minWidth: "300px",
-                          marginRight: "40px",
-                          textAlign: "left",
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {programa}
-                      </Typography>
-                    </Box>
-
-                    {/* Timeline */}
-                    <TimelineComponent
-                      data={timelineData}
-                      programaAcademico={programa}
-                      showTitle={false}
+                      sx={{
+                        width: 20,
+                        height: 12,
+                        bgcolor: "#DAA520",
+                        borderRadius: 1,
+                      }}
                     />
-                  </Grid>
-                );
-              })}
-            </Grid>
-          )}
+                    <Typography variant="body2" sx={{ fontWeight: "500" }}>
+                      Acreditación por primera vez
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 12,
+                        bgcolor: "#4caf50",
+                        borderRadius: 1,
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ fontWeight: "500" }}>
+                      Primera renovación de acreditación de alta calidad
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 12,
+                        bgcolor: "#2196f3",
+                        borderRadius: 1,
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ fontWeight: "500" }}>
+                      Segunda renovación de acreditación de alta calidad
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 12,
+                        bgcolor: "#9c27b0",
+                        borderRadius: 1,
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ fontWeight: "500" }}>
+                      Tercera renovación de acreditación de alta calidad
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 12,
+                        bgcolor: "#f44336",
+                        borderRadius: 1,
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ fontWeight: "500" }}>
+                      Acreditación rechazada
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
 
-          {tabValue === 1 && (
-            <TableContainer
-              component={Paper}
-              sx={{ mt: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}
-            >
-              <Table
-                sx={{ minWidth: 650 }}
-                aria-label="tabla de acreditaciones"
-              >
-                <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: "bold", color: "#2c3e50" }}>
-                      Programa Académico
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold", color: "#2c3e50" }}>
-                      Resolución
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold", color: "#2c3e50" }}>
-                      Tipo
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold", color: "#2c3e50" }}>
-                      Fecha Inicio
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold", color: "#2c3e50" }}>
-                      Fecha Fin
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold", color: "#2c3e50" }}>
-                      Duración (años)
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold", color: "#2c3e50" }}>
-                      Estado
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: "bold", color: "#2c3e50" }}>
-                      Documento
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {programas.map((programa) => {
+              {/* Sistema de Pestañas */}
+              <Box sx={{ mt: 4, mb: 4 }}>
+                <Tabs
+                  value={tabValue}
+                  onChange={handleTabChange}
+                  centered
+                  sx={{
+                    "& .MuiTab-root": {
+                      fontWeight: 600,
+                      fontSize: "1rem",
+                      textTransform: "none",
+                      minHeight: 48,
+                      px: 3,
+                    },
+                    "& .Mui-selected": {
+                      color: "#D32F2F",
+                    },
+                    "& .MuiTabs-indicator": {
+                      backgroundColor: "#D32F2F",
+                      height: 3,
+                    },
+                  }}
+                >
+                  <Tab label="Vista de Línea de Tiempo" />
+                  <Tab label="Vista de Tabla" />
+                </Tabs>
+              </Box>
+
+              {/* Contenido de las Pestañas */}
+              {tabValue === 0 && (
+                <Grid container spacing={4} sx={{ mt: 2 }}>
+                  {programas.map((programa, index) => {
                     const timelineData = consolidatedData[programa];
-                    return timelineData.map((item, index) => (
-                      <TableRow
-                        key={`${programa}-${item.id || index}`}
-                        sx={{
-                          "&:nth-of-type(odd)": { backgroundColor: "#fafafa" },
-                          "&:hover": { backgroundColor: "#f0f0f0" },
-                        }}
-                      >
-                        <TableCell sx={{ fontWeight: "500" }}>
-                          {index === 0 ? programa : ""}
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: "500" }}>
-                          {item.resolucion}
-                        </TableCell>
-                        <TableCell>
-                          <Box
+
+                    return (
+                      <Grid item xs={12} key={programa}>
+                        {/* Programa Header */}
+                        <Box
+                          sx={{
+                            mb: 3,
+                            display: "flex",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <Typography
+                            variant="h5"
+                            component="h2"
                             sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
+                              color: "#2c3e50",
+                              fontWeight: "600",
+                              minWidth: "300px",
+                              marginRight: "40px",
+                              textAlign: "left",
+                              lineHeight: 1.2,
                             }}
                           >
-                            <Box
-                              sx={{
-                                width: 12,
-                                height: 12,
-                                borderRadius: "50%",
-                                backgroundColor: getResolutionColor(item),
-                              }}
-                            />
-                            <Typography variant="body2">
-                              {item.isRejected
-                                ? "Rechazada"
-                                : item.isInitial
-                                  ? "Acreditación Inicial"
-                                  : `Renovación ${item.conteo_resolucion}°`}
-                            </Typography>
-                          </Box>
+                            {programa}
+                          </Typography>
+                        </Box>
+
+                        {/* Timeline */}
+                        <TimelineComponent
+                          data={timelineData}
+                          programaAcademico={programa}
+                          showTitle={false}
+                        />
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              )}
+
+              {tabValue === 1 && (
+                <TableContainer
+                  component={Paper}
+                  sx={{ mt: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}
+                >
+                  <Table
+                    sx={{ minWidth: 650 }}
+                    aria-label="tabla de acreditaciones"
+                  >
+                    <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                      <TableRow>
+                        <TableCell
+                          sx={{ fontWeight: "bold", color: "#2c3e50" }}
+                        >
+                          Programa Académico
                         </TableCell>
-                        <TableCell>{formatDate(item.startDate)}</TableCell>
-                        <TableCell>{formatDate(item.endDate)}</TableCell>
-                        <TableCell>{item.duracion}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={item.isRejected ? "Rechazada" : "Aprobada"}
-                            color={item.isRejected ? "error" : "success"}
-                            size="small"
-                            variant="outlined"
-                          />
+                        <TableCell
+                          sx={{ fontWeight: "bold", color: "#2c3e50" }}
+                        >
+                          Resolución
                         </TableCell>
-                        <TableCell>
-                          {item.url_doc ? (
-                            <a
-                              href={item.url_doc}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                color: "#2196f3",
-                                textDecoration: "none",
-                                fontWeight: "500",
-                              }}
-                            >
-                              📄 Ver documento
-                            </a>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              No disponible
-                            </Typography>
-                          )}
+                        <TableCell
+                          sx={{ fontWeight: "bold", color: "#2c3e50" }}
+                        >
+                          Tipo
+                        </TableCell>
+                        <TableCell
+                          sx={{ fontWeight: "bold", color: "#2c3e50" }}
+                        >
+                          Fecha Inicio
+                        </TableCell>
+                        <TableCell
+                          sx={{ fontWeight: "bold", color: "#2c3e50" }}
+                        >
+                          Fecha Fin
+                        </TableCell>
+                        <TableCell
+                          sx={{ fontWeight: "bold", color: "#2c3e50" }}
+                        >
+                          Duración (años)
+                        </TableCell>
+                        <TableCell
+                          sx={{ fontWeight: "bold", color: "#2c3e50" }}
+                        >
+                          Estado
+                        </TableCell>
+                        <TableCell
+                          sx={{ fontWeight: "bold", color: "#2c3e50" }}
+                        >
+                          Documento
                         </TableCell>
                       </TableRow>
-                    ));
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {programas.map((programa) => {
+                        const timelineData = consolidatedData[programa];
+                        return timelineData.map((item, index) => (
+                          <TableRow
+                            key={`${programa}-${item.id || index}`}
+                            sx={{
+                              "&:nth-of-type(odd)": {
+                                backgroundColor: "#fafafa",
+                              },
+                              "&:hover": { backgroundColor: "#f0f0f0" },
+                            }}
+                          >
+                            <TableCell sx={{ fontWeight: "500" }}>
+                              {index === 0 ? programa : ""}
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: "500" }}>
+                              {item.resolucion}
+                            </TableCell>
+                            <TableCell>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: "50%",
+                                    backgroundColor: getResolutionColor(item),
+                                  }}
+                                />
+                                <Typography variant="body2">
+                                  {item.isRejected
+                                    ? "Rechazada"
+                                    : item.isInitial
+                                      ? "Acreditación Inicial"
+                                      : `Renovación ${item.conteo_resolucion}°`}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>{formatDate(item.startDate)}</TableCell>
+                            <TableCell>{formatDate(item.endDate)}</TableCell>
+                            <TableCell>{item.duracion}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={
+                                  item.isRejected ? "Rechazada" : "Aprobada"
+                                }
+                                color={item.isRejected ? "error" : "success"}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {item.url_doc ? (
+                                <a
+                                  href={item.url_doc}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    color: "#2196f3",
+                                    textDecoration: "none",
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  📄 Ver documento
+                                </a>
+                              ) : (
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  No disponible
+                                </Typography>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ));
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </>
           )}
         </>
       )}
