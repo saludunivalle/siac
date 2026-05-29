@@ -87,13 +87,25 @@ const Home = () => {
 
   // Estados para los programas próximos a vencer - FUNCIONALIDAD COMPLETA
   const [expiryCounts, setExpiryCounts] = useState({
-    RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
-    AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+    RRC: { oneYear: 0, twoYears: 0, threeYears: 0, enTramite: 0 },
+    AAC: { oneYear: 0, twoYears: 0, threeYears: 0, enTramite: 0 },
   });
 
   const [expiryPrograms, setExpiryPrograms] = useState({
-    RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
-    AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
+    RRC: {
+      oneYear: [],
+      twoYears: [],
+      threeYears: [],
+      enTramite: [],
+      expired: [],
+    },
+    AAC: {
+      oneYear: [],
+      twoYears: [],
+      threeYears: [],
+      enTramite: [],
+      expired: [],
+    },
   });
 
   const [expiredRRCCount, setExpiredRRCCount] = useState(0);
@@ -120,39 +132,79 @@ const Home = () => {
 
   // Funciones para obtener programas vencidos - MEMOIZADAS
   const getExpiredRRCPrograms = useCallback((programas) => {
-    return programas.filter(
-      (program) =>
-        program["estadorc"] !== "Vigente" ||
-        program["estadorc"] !== "Vigente (En trámite)",
-    );
+    return programas.filter((program) => {
+      const isActive =
+        program["estado"] === "Activo" ||
+        program["estado"] === "Activo - Sede";
+      if (!isActive) return false;
+      const estadoRrc = String(program["estadorc"] ?? "").trim();
+      return (
+        estadoRrc !== "Vigente" && estadoRrc !== "Vigente (En trámite)"
+      );
+    });
   }, []);
 
   const getExpiredRACPrograms = useCallback((programas) => {
-    return programas.filter((program) => program["fase rac"] === "Vencido");
+    return programas.filter((program) => {
+      const isActive =
+        program["estado"] === "Activo" ||
+        program["estado"] === "Activo - Sede";
+      if (!isActive) return false;
+      const estadoAac = String(program["estadoaac"] ?? "").trim();
+      return (
+        estadoAac !== "Vigente" &&
+        estadoAac !== "Vigente (En trámite)" &&
+        estadoAac !== "En trámite" &&
+        estadoAac !== "En tramite"
+      );
+    });
   }, []);
 
   // Función para contar programas próximos a vencer - MEMOIZADA Y OPTIMIZADA
   const countExpiringPrograms = useCallback((programas) => {
     const currentYear = new Date().getFullYear();
     const counts = {
-      RRC: { oneYear: 0, twoYears: 0, threeYears: 0 },
-      AAC: { oneYear: 0, twoYears: 0, threeYears: 0 },
+      RRC: { oneYear: 0, twoYears: 0, threeYears: 0, enTramite: 0 },
+      AAC: { oneYear: 0, twoYears: 0, threeYears: 0, enTramite: 0 },
     };
 
     const expiringPrograms = {
-      RRC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
-      AAC: { oneYear: [], twoYears: [], threeYears: [], expired: [] },
+      RRC: {
+        oneYear: [],
+        twoYears: [],
+        threeYears: [],
+        enTramite: [],
+        expired: [],
+      },
+      AAC: {
+        oneYear: [],
+        twoYears: [],
+        threeYears: [],
+        enTramite: [],
+        expired: [],
+      },
     };
 
-    programas.forEach((program) => {
+    const activePrograms = programas.filter(
+      (program) =>
+        program["estado"] === "Activo" || program["estado"] === "Activo - Sede",
+    );
+
+    activePrograms.forEach((program) => {
       const rrcYear = program["fechavencrc"]
         ? parseInt(program["fechavencrc"].split("/")[2])
         : null;
       const aacYear = program["fechavencac"]
         ? parseInt(program["fechavencac"].split("/")[2])
         : null;
+      const estadoRrc = String(program["estadorc"] ?? "").trim();
+      const estadoAac = String(program["estadoaac"] ?? "").trim();
 
       // Para programas RRC
+      if (estadoRrc === "En trámite" || estadoRrc === "En tramite") {
+        counts.RRC.enTramite++;
+        expiringPrograms.RRC.enTramite.push(program);
+      }
       if (rrcYear) {
         if (rrcYear === currentYear + 1) {
           counts.RRC.oneYear++;
@@ -163,12 +215,14 @@ const Home = () => {
         } else if (rrcYear === currentYear + 3) {
           counts.RRC.threeYears++;
           expiringPrograms.RRC.threeYears.push(program);
-        } else if (rrcYear < currentYear) {
-          expiringPrograms.RRC.expired.push(program);
         }
       }
 
       // Para programas AAC
+      if (estadoAac === "En trámite" || estadoAac === "En tramite") {
+        counts.AAC.enTramite++;
+        expiringPrograms.AAC.enTramite.push(program);
+      }
       if (aacYear) {
         if (aacYear === currentYear + 1) {
           counts.AAC.oneYear++;
@@ -179,15 +233,16 @@ const Home = () => {
         } else if (aacYear === currentYear + 3) {
           counts.AAC.threeYears++;
           expiringPrograms.AAC.threeYears.push(program);
-        } else if (aacYear < currentYear) {
-          expiringPrograms.AAC.expired.push(program);
         }
       }
     });
 
+    expiringPrograms.RRC.expired = getExpiredRRCPrograms(activePrograms);
+    expiringPrograms.AAC.expired = getExpiredRACPrograms(activePrograms);
+
     setExpiryCounts(counts);
     setExpiryPrograms(expiringPrograms);
-  }, []);
+  }, [getExpiredRRCPrograms, getExpiredRACPrograms]);
 
   // Manejador para navegación a programas vencidos - MEMOIZADO
   const handleExpiryClick = useCallback(() => {
@@ -523,6 +578,26 @@ const Home = () => {
         return acc;
       }, {});
 
+      const nivelFormacionOrder = [
+        "Universitario",
+        "Maestría",
+        "Doctorado",
+        "Especialización Universitaria",
+        "Especialización Médico Quirúrgica",
+        "Tecnológico",
+      ];
+
+      const nivelFormacionLabels = [
+        ...nivelFormacionOrder,
+        ...Object.keys(nivelFormacionCounts).filter(
+          (nivel) => !nivelFormacionOrder.includes(nivel),
+        ),
+      ];
+
+      const nivelFormacionData = nivelFormacionLabels.map(
+        (nivel) => nivelFormacionCounts[nivel] || 0,
+      );
+
       const escuelaCounts = filteredData.reduce((acc, item) => {
         if (
           item["estadorc"] === "Vigente" ||
@@ -583,11 +658,11 @@ const Home = () => {
       });
 
       setChartDataNivelFormacion({
-        labels: Object.keys(nivelFormacionCounts),
+        labels: nivelFormacionLabels,
         datasets: [
           {
             label: "Programas por Nivel de Formación",
-            data: Object.values(nivelFormacionCounts),
+            data: nivelFormacionData,
             backgroundColor: "#B22222",
             borderColor: "#8B1A1A",
             borderWidth: 2,
@@ -828,6 +903,19 @@ const Home = () => {
       },
     }),
     [isMobile],
+  );
+
+  const barChartScales = useMemo(
+    () => ({
+      x: {
+        grid: { display: false },
+      },
+      y: {
+        grid: { display: false },
+        beginAtZero: true,
+      },
+    }),
+    [],
   );
   console.log("total datos:", programData);
   // Componente de tabla modernizada y responsive
@@ -1276,325 +1364,373 @@ const Home = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* TABLA DE PRÓXIMOS A VENCERSE - FUNCIONALIDAD COMPLETA Y RESPONSIVE */}
-        <Card
-          sx={{
-            boxShadow:
-              "0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)",
-            borderRadius: "16px",
-            overflow: "hidden",
-            border: "1px solid rgba(0,0,0,0.02)",
-            width: "95%",
-            maxWidth: "540px",
-            marginLeft: "0",
-            marginRight: "auto",
-          }}
-        >
-          <CardContent sx={{ p: 0 }}>
-            <Box
-              sx={{
-                p: { xs: 2, sm: 3 },
-                borderBottom: "1px solid rgba(0,0,0,0.03)",
-                background: "linear-gradient(135deg, #FFF8E7 0%, #FFFFFF 100%)",
-              }}
-            >
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 600,
-                  color: "#FF8C00",
-                  fontSize: { xs: "1.25rem", sm: "1.5rem" },
-                  letterSpacing: "-0.02em",
-                  fontFamily:
-                    "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                }}
-              >
-                Próximos a Vencerse
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "#6C757D",
-                  mt: 0.5,
-                  fontWeight: 400,
-                  fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                }}
-              >
-                Programas con registro calificado próximo a vencer
-              </Typography>
-            </Box>
-
-            <div onClick={handleExpiryClick} style={{ cursor: "pointer" }}>
-              <TableContainer
-                sx={{
-                  backgroundColor: "transparent",
-                  overflow: "auto",
-                  maxWidth: "100%",
-                  "& .MuiTable-root": {
-                    borderCollapse: "separate",
-                    borderSpacing: "0",
-                    minWidth: isMobile ? "auto" : "100%",
-                    width: "100%",
-                  },
-                }}
-              >
-                <Table size={isMobile ? "small" : "medium"}>
-                  <TableHead>
-                    <TableRow
-                      sx={{ backgroundColor: "rgba(255, 140, 0, 0.05)" }}
-                    >
-                      <TableCell
-                        sx={{
-                          fontWeight: 700,
-                          color: "#495057",
-                          fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          py: { xs: 1.5, sm: 2 },
-                          px: { xs: 1, sm: 2 },
-                          borderBottom: "1px solid rgba(0,0,0,0.05)",
-                        }}
-                      >
-                        Proceso
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 700,
-                          color: "#495057",
-                          fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          py: { xs: 1.5, sm: 2 },
-                          px: { xs: 0.5, sm: 1 },
-                          borderBottom: "1px solid rgba(0,0,0,0.05)",
-                        }}
-                      >
-                        1 año
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 700,
-                          color: "#495057",
-                          fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          py: { xs: 1.5, sm: 2 },
-                          px: { xs: 0.5, sm: 1 },
-                          borderBottom: "1px solid rgba(0,0,0,0.05)",
-                        }}
-                      >
-                        2 años
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 700,
-                          color: "#495057",
-                          fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          py: { xs: 1.5, sm: 2 },
-                          px: { xs: 0.5, sm: 1 },
-                          borderBottom: "1px solid rgba(0,0,0,0.05)",
-                        }}
-                      >
-                        3 años
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 700,
-                          color: "#DC3545",
-                          fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                          py: { xs: 1.5, sm: 2 },
-                          px: { xs: 1.5, sm: 3 },
-                          borderBottom: "1px solid rgba(0,0,0,0.05)",
-                        }}
-                      >
-                        Vencidos
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {/* Sección RRC */}
-                    <TableRow
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: "rgba(255, 140, 0, 0.02)",
-                          transform: "translateX(2px)",
-                          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                        },
-                      }}
-                    >
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.875rem", sm: "0.95rem" },
-                          color: "#FF8C00",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 1.5, sm: 3 },
-                          fontFamily:
-                            "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                        }}
-                      >
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <WarningIcon
-                            sx={{
-                              fontSize: { xs: 14, sm: 16 },
-                              color: "#FF8C00",
-                            }}
-                          />
-                          RRC
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                          color: "#FFA500",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 0.5, sm: 1 },
-                        }}
-                      >
-                        {expiryCounts.RRC.oneYear}
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                          color: "#FFD700",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 0.5, sm: 1 },
-                        }}
-                      >
-                        {expiryCounts.RRC.twoYears}
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                          color: "#32CD32",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 0.5, sm: 1 },
-                        }}
-                      >
-                        {expiryCounts.RRC.threeYears}
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                          color: "#DC3545",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 1.5, sm: 3 },
-                        }}
-                      >
-                        {expiredRRCCount}
-                      </TableCell>
-                    </TableRow>
-
-                    {/* Sección AAC */}
-                    <TableRow
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: "rgba(255, 140, 0, 0.02)",
-                          transform: "translateX(2px)",
-                          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                        },
-                      }}
-                    >
-                      <TableCell
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.875rem", sm: "0.95rem" },
-                          color: "#FF8C00",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 1.5, sm: 3 },
-                          fontFamily:
-                            "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                        }}
-                      >
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <WarningIcon
-                            sx={{
-                              fontSize: { xs: 14, sm: 16 },
-                              color: "#FF8C00",
-                            }}
-                          />
-                          AAC
-                        </Box>
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                          color: "#FFA500",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 0.5, sm: 1 },
-                        }}
-                      >
-                        {expiryCounts.AAC.oneYear}
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                          color: "#FFD700",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 0.5, sm: 1 },
-                        }}
-                      >
-                        {expiryCounts.AAC.twoYears}
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                          color: "#32CD32",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 0.5, sm: 1 },
-                        }}
-                      >
-                        {expiryCounts.AAC.threeYears}
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                          color: "#DC3545",
-                          borderBottom: "none",
-                          py: { xs: 1.5, sm: 2.5 },
-                          px: { xs: 1.5, sm: 3 },
-                        }}
-                      >
-                        {expiredRACCount}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </div>
-          </CardContent>
-        </Card>
       </Box>
     );
   };
+
+  const ExpiryTable = () => (
+    <Box
+      sx={{
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        mt: { xs: 3, sm: 4, md: 5 },
+      }}
+    >
+      {/* TABLA DE PRÓXIMOS A VENCERSE - FUNCIONALIDAD COMPLETA Y RESPONSIVE */}
+      <Card
+        sx={{
+          boxShadow:
+            "0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)",
+          borderRadius: "16px",
+          overflow: "hidden",
+          border: "1px solid rgba(0,0,0,0.02)",
+          width: "95%",
+          maxWidth: "540px",
+        }}
+      >
+        <CardContent sx={{ p: 0 }}>
+          <Box
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderBottom: "1px solid rgba(0,0,0,0.03)",
+              background: "linear-gradient(135deg, #FFF8E7 0%, #FFFFFF 100%)",
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                color: "#FF8C00",
+                fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                letterSpacing: "-0.02em",
+                fontFamily:
+                  "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              }}
+            >
+              Próximos a Vencerse
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#6C757D",
+                mt: 0.5,
+                fontWeight: 400,
+                fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+              }}
+            >
+              Programas con registro calificado próximo a vencer
+            </Typography>
+          </Box>
+
+          <div onClick={handleExpiryClick} style={{ cursor: "pointer" }}>
+            <TableContainer
+              sx={{
+                backgroundColor: "transparent",
+                overflow: "auto",
+                maxWidth: "100%",
+                "& .MuiTable-root": {
+                  borderCollapse: "separate",
+                  borderSpacing: "0",
+                  minWidth: isMobile ? "auto" : "100%",
+                  width: "100%",
+                },
+              }}
+            >
+              <Table size={isMobile ? "small" : "medium"}>
+                <TableHead>
+                  <TableRow
+                    sx={{ backgroundColor: "rgba(255, 140, 0, 0.05)" }}
+                  >
+                    <TableCell
+                      sx={{
+                        fontWeight: 700,
+                        color: "#495057",
+                        fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 1, sm: 2 },
+                        borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      Proceso
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 700,
+                        color: "#495057",
+                        fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 0.5, sm: 1 },
+                        borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      1 año
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 700,
+                        color: "#495057",
+                        fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 0.5, sm: 1 },
+                        borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      2 años
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 700,
+                        color: "#495057",
+                        fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 0.5, sm: 1 },
+                        borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      3 años
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 700,
+                        color: "#495057",
+                        fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 0.5, sm: 1 },
+                        borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      En trámite
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 700,
+                        color: "#DC3545",
+                        fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 1.5, sm: 3 },
+                        borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      Vencidos
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {/* Sección RRC */}
+                  <TableRow
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 140, 0, 0.02)",
+                        transform: "translateX(2px)",
+                        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                      },
+                    }}
+                  >
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.875rem", sm: "0.95rem" },
+                        color: "#FF8C00",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                        fontFamily:
+                          "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <WarningIcon
+                          sx={{
+                            fontSize: { xs: 14, sm: 16 },
+                            color: "#FF8C00",
+                          }}
+                        />
+                        RRC
+                      </Box>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#FFA500",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 },
+                      }}
+                    >
+                      {expiryCounts.RRC.oneYear}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#FFD700",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 },
+                      }}
+                    >
+                      {expiryCounts.RRC.twoYears}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#32CD32",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 },
+                      }}
+                    >
+                      {expiryCounts.RRC.threeYears}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#6C757D",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 },
+                      }}
+                    >
+                      {expiryCounts.RRC.enTramite}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#DC3545",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                      }}
+                    >
+                      {expiredRRCCount}
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Sección AAC */}
+                  <TableRow
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 140, 0, 0.02)",
+                        transform: "translateX(2px)",
+                        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                      },
+                    }}
+                  >
+                    <TableCell
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.875rem", sm: "0.95rem" },
+                        color: "#FF8C00",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                        fontFamily:
+                          "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <WarningIcon
+                          sx={{
+                            fontSize: { xs: 14, sm: 16 },
+                            color: "#FF8C00",
+                          }}
+                        />
+                        AAC
+                      </Box>
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#FFA500",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 },
+                      }}
+                    >
+                      {expiryCounts.AAC.oneYear}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#FFD700",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 },
+                      }}
+                    >
+                      {expiryCounts.AAC.twoYears}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#32CD32",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 },
+                      }}
+                    >
+                      {expiryCounts.AAC.threeYears}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#6C757D",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 0.5, sm: 1 },
+                      }}
+                    >
+                      {expiryCounts.AAC.enTramite}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
+                        color: "#DC3545",
+                        borderBottom: "none",
+                        py: { xs: 1.5, sm: 2.5 },
+                        px: { xs: 1.5, sm: 3 },
+                      }}
+                    >
+                      {expiredRACCount}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </div>
+        </CardContent>
+      </Card>
+    </Box>
+  );
 
   // Componente de gráficos modernizado y responsive
   const ModernCharts = () => (
@@ -1614,7 +1750,7 @@ const Home = () => {
         <Box
           sx={{
             width: "100%",
-            maxWidth: { xs: "100%", md: "95%", lg: "90%" },
+            maxWidth: { xs: "100%", md: "100%", lg: "100%" },
             mr: { xs: 0, md: 0 },
             display: "flex",
             flexDirection: "column",
@@ -1665,7 +1801,7 @@ const Home = () => {
                     border: "1px solid rgba(0,0,0,0.02)",
                     overflow: "hidden",
                     width: "100%",
-                    maxWidth: "550px",
+                    maxWidth: "100%",
                     ml: { xs: "auto", md: "auto" },
                     mr: { xs: "auto", md: "0" },
                     position: "relative",
@@ -1715,30 +1851,9 @@ const Home = () => {
                         />
                       )}
                     </Box>
-                    <Box sx={{ display: "flex", justifyContent: "center" }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleAcademicLevelClick("Todos")}
-                        sx={{
-                          borderColor: "#E9ECEF",
-                          color: "#6C757D",
-                          fontWeight: 500,
-                          fontSize: { xs: "0.75rem", sm: "0.8125rem" },
-                          px: { xs: 1.5, sm: 2 },
-                          py: 0.75,
-                          borderRadius: "8px",
-                          textTransform: "none",
-                          "&:hover": {
-                            borderColor: "#B22222",
-                            backgroundColor: "rgba(178, 34, 34, 0.02)",
-                            color: "#B22222",
-                          },
-                        }}
-                      >
-                        Mostrar Todos
-                      </Button>
-                    </Box>
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center" }}
+                    ></Box>
                   </CardContent>
                 </Card>
               </Grow>
@@ -1755,7 +1870,7 @@ const Home = () => {
                     border: "1px solid rgba(0,0,0,0.02)",
                     overflow: "hidden",
                     width: "100%",
-                    maxWidth: "550px",
+                    maxWidth: { xs: "100%", md: "720px", lg: "820px" },
                     ml: { xs: "auto", md: "auto" },
                     mr: { xs: "auto", md: "0" },
                     position: "relative",
@@ -1790,6 +1905,7 @@ const Home = () => {
                                 display: false,
                               },
                             },
+                            scales: barChartScales,
                             onClick: (event, elements, chart) => {
                               if (!elements.length || !chart?.data?.labels)
                                 return;
@@ -1801,30 +1917,9 @@ const Home = () => {
                         />
                       )}
                     </Box>
-                    <Box sx={{ display: "flex", justifyContent: "center" }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleLegendClick("Todos")}
-                        sx={{
-                          borderColor: "#E9ECEF",
-                          color: "#6C757D",
-                          fontWeight: 500,
-                          fontSize: { xs: "0.75rem", sm: "0.8125rem" },
-                          px: { xs: 1.5, sm: 2 },
-                          py: 0.75,
-                          borderRadius: "8px",
-                          textTransform: "none",
-                          "&:hover": {
-                            borderColor: "#B22222",
-                            backgroundColor: "rgba(178, 34, 34, 0.02)",
-                            color: "#B22222",
-                          },
-                        }}
-                      >
-                        Mostrar Todos
-                      </Button>
-                    </Box>
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center" }}
+                    ></Box>
                   </CardContent>
                 </Card>
               </Grow>
@@ -1861,7 +1956,7 @@ const Home = () => {
                           "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                       }}
                     >
-                      Escuelas
+                      Programas Activos por Escuelas
                     </Typography>
                     <Box sx={{ height: { xs: 320, sm: 420, md: 520 }, mb: 2 }}>
                       {chartDataEscuelas && (
@@ -1869,7 +1964,6 @@ const Home = () => {
                           data={chartDataEscuelas}
                           options={{
                             ...chartOptions,
-                            indexAxis: "y",
                             plugins: {
                               ...chartOptions.plugins,
                               legend: {
@@ -1884,6 +1978,7 @@ const Home = () => {
                                 },
                               },
                             },
+                            scales: barChartScales,
                             onClick: (event, elements, chart) => {
                               if (!elements.length || !chart?.data?.labels)
                                 return;
@@ -1895,30 +1990,9 @@ const Home = () => {
                         />
                       )}
                     </Box>
-                    <Box sx={{ display: "flex", justifyContent: "center" }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleEscuelaClick("Todos")}
-                        sx={{
-                          borderColor: "#E9ECEF",
-                          color: "#6C757D",
-                          fontWeight: 500,
-                          fontSize: { xs: "0.75rem", sm: "0.8125rem" },
-                          px: { xs: 1.5, sm: 2 },
-                          py: 0.75,
-                          borderRadius: "8px",
-                          textTransform: "none",
-                          "&:hover": {
-                            borderColor: "#B22222",
-                            backgroundColor: "rgba(178, 34, 34, 0.02)",
-                            color: "#B22222",
-                          },
-                        }}
-                      >
-                        Mostrar Todos
-                      </Button>
-                    </Box>
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center" }}
+                    ></Box>
                   </CardContent>
                 </Card>
               </Grow>
@@ -2023,7 +2097,7 @@ const Home = () => {
             <Grid
               item
               xs={12}
-              md={6}
+              md={8}
               sx={{
                 order: { xs: 2, md: 1 },
                 pl: {
@@ -2052,7 +2126,7 @@ const Home = () => {
             <Grid
               item
               xs={12}
-              md={6}
+              md={4}
               sx={{
                 order: { xs: 1, md: 2 },
                 pl: {
@@ -2082,6 +2156,12 @@ const Home = () => {
               </Fade>
             </Grid>
           </Grid>
+
+          <Fade in timeout={700}>
+            <Box sx={{ width: "100%" }}>
+              <ExpiryTable />
+            </Box>
+          </Fade>
 
           {/* Espaciado inferior */}
           <Box sx={{ height: { xs: 40, sm: 60 } }} />

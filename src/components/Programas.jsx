@@ -20,7 +20,11 @@ const Programas = () => {
   const location = useLocation();
   const rowData = location.state;
   const navigate = useNavigate();
-  const [selectedValues, setSelectedValues] = useState(["option3", "option7"]);
+  const [selectedValues, setSelectedValues] = useState([
+    "option3",
+    "option7",
+    "interfacultades",
+  ]);
   const [filteredData, setFilteredData] = useState([]);
   const [headerBackgroundColor, setHeaderBackgroundColor] = useState("#f2f2f2");
   const [loading, setLoading] = useState(false);
@@ -175,14 +179,16 @@ const Programas = () => {
 
         // 3. Ahora calcular los contadores con programsForCounting ya correctamente filtrado
         setActivosCount(
-          programsForCounting.filter((item) => item["estado"] === "Activo")
-            .length,
+          programsForCounting.filter(
+            (item) => item["estado"] === "Activo" && !isInterfacultad(item),
+          ).length,
         );
         setLoadingState((prev) => ({ ...prev, activos: false }));
 
         setActivoSedesCount(
           programsForCounting.filter(
-            (item) => item["estado"] === "Activo - Sede",
+            (item) =>
+              item["estado"] === "Activo - Sede" && !isInterfacultad(item),
           ).length,
         );
         setLoadingState((prev) => ({ ...prev, activosSede: false }));
@@ -399,9 +405,11 @@ const Programas = () => {
             return selectedValues.some((option) => {
               switch (option) {
                 case "option3":
-                  return item["estado"] === "Activo"; // Activos Cali
+                  return item["estado"] === "Activo" && !isInterfacultad(item); // Activos Cali
                 case "option7":
-                  return item["estado"] === "Activo - Sede"; // Activos Sedes
+                  return (
+                    item["estado"] === "Activo - Sede" && !isInterfacultad(item)
+                  ); // Activos Sedes
                 case "interfacultades":
                   return (
                     (item["estado"] === "Activo" ||
@@ -534,9 +542,11 @@ const Programas = () => {
         (item["estado"] === "En Creación" ||
           item["estado"] === "En Creación*")) ||
       (process === "MOD" && item["mod"] === "SI") ||
-      (process === "RRC" && item["rc vigente"] === "SI") ||
+      (process === "RRC" && item["estadorc"] === "Vigente") ||
+      item["estadorc"] === "Vigente (En trámite)" ||
       (process === "AAC" && item["aac_1a"] === "SI") ||
-      (process === "RAAC" && item["ac vigente"] === "SI");
+      (process === "RAAC" && item["estadoaac"] === "Vigente") ||
+      item["estadoaac"] === "Vigente (En trámite)";
 
     if (seguimientos.length === 0) {
       return defaultGreyCondition ? "#E0E0E0" : "white";
@@ -758,7 +768,7 @@ const Programas = () => {
           return newSelectedValues.some((option) => {
             switch (option) {
               case "option3":
-                return item["estado"] === "Activo";
+                return item["estado"] === "Activo" && !isInterfacultad(item);
               case "interfacultades":
                 return (
                   (item["estado"] === "Activo" ||
@@ -795,7 +805,9 @@ const Programas = () => {
                   item["estado"] === "Negación AAC"
                 );
               case "option7":
-                return item["estado"] === "Activo - Sede";
+                return (
+                  item["estado"] === "Activo - Sede" && !isInterfacultad(item)
+                );
               case "option8":
                 return (
                   item["estado"] === "En Creación*" ||
@@ -901,11 +913,11 @@ const Programas = () => {
                     <td>{item["estado"]}</td>
                     <td>{item["pregrado/posgrado"]}</td>
                     <td>{item["nivel de formación"]}</td>
-                    <td>{item["rc vigente"]}</td>
+                    <td>{item["estadorc"]}</td>
                     <td style={{ backgroundColor: rrcColor }}>
                       {item["fechavencrc"] ? item["fechavencrc"] : "N/A"}
                     </td>
-                    <td>{item["ac vigente"]}</td>
+                    <td>{item["estadoaac"]}</td>
                     <td style={{ backgroundColor: aacColor }}>
                       {item["fechavencac"] ? item["fechavencac"] : "N/A"}
                     </td>

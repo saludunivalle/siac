@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { styled } from "@mui/material/styles";
-import { InputBase, Button, Box, Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import {
+  InputBase,
+  Button,
+  Box,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -132,6 +140,21 @@ const Username = styled("div")(({ theme }) => ({
   },
 }));
 
+const LastUpdate = styled("div")(({ theme }) => ({
+  fontSize: "11px",
+  fontWeight: 400,
+  color: "#8A8A8A",
+  fontFamily: "Helvetica, sans-serif",
+  marginTop: "2px",
+  [theme.breakpoints.down("md")]: {
+    fontSize: "10px",
+  },
+  [theme.breakpoints.down("sm")]: {
+    textAlign: "center",
+    fontSize: "10px",
+  },
+}));
+
 const SearchResultLabel = styled("label")(({ theme }) => ({
   padding: "0.2rem",
   border: "1px solid #ccc",
@@ -218,14 +241,19 @@ const Header = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isLabelVisible, setIsLabelVisible] = useState(false);
-  const [user, setUser] = useState('');
-  const [isCargo, setCargo] = useState(['']);
-  const [escuela, setEscuela] = useState(['']);
-  const [programa, setPrograma] = useState(['']);
+  const [user, setUser] = useState("");
+  const [isCargo, setCargo] = useState([""]);
+  const [escuela, setEscuela] = useState([""]);
+  const [programa, setPrograma] = useState([""]);
   const [isLogged, setIsLogged] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const navigate = useNavigate();
   const labelRef = useRef(null);
+  const lastUpdateDate = new Date().toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   const removeAccents = (str) => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -250,8 +278,8 @@ const Header = () => {
         (programa) =>
           programa["programa académico"] &&
           removeAccents(programa["programa académico"].toLowerCase()).includes(
-            searchTermNormalized
-          )
+            searchTermNormalized,
+          ),
       );
 
       setSearchResults(results);
@@ -259,7 +287,7 @@ const Header = () => {
     } catch (error) {
       console.error(
         "Error obteniendo los datos de los programas académicos:",
-        error
+        error,
       );
     }
   };
@@ -282,21 +310,21 @@ const Header = () => {
   };
 
   const extractNameFromEmail = (email) => {
-    const name = email.split('@')[0];
-    const [firstName] = name.split('.');
+    const name = email.split("@")[0];
+    const [firstName] = name.split(".");
     return capitalizeFirstLetter(firstName);
   };
 
   // Función para manejar el logout
   const handleLogout = useCallback(() => {
-    Cookies.remove('token');
-    sessionStorage.removeItem('logged');
+    Cookies.remove("token");
+    sessionStorage.removeItem("logged");
     setIsLogged(false);
-    setUser('');
-    setCargo(['']);
-    setEscuela('');
-    setPrograma('');
-    navigate('/');
+    setUser("");
+    setCargo([""]);
+    setEscuela("");
+    setPrograma("");
+    navigate("/");
   }, [navigate]);
 
   // Función para manejar el login exitoso
@@ -311,48 +339,49 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutsideLabel);
 
     // Verificar si hay token de autenticación
-    const token = Cookies.get('token');
+    const token = Cookies.get("token");
     setIsLogged(!!token);
 
-     const fetchPrograma = async (idPrograma) => {
-    try {
-      const programas = await Filtro5();
-      const found = programas.find(p => p.id_programa === idPrograma);
-      if (found && found["programa académico"]) {
-        setPrograma(found["programa académico"]);
-      } else {
-        setPrograma('');
+    const fetchPrograma = async (idPrograma) => {
+      try {
+        const programas = await Filtro5();
+        const found = programas.find((p) => p.id_programa === idPrograma);
+        if (found && found["programa académico"]) {
+          setPrograma(found["programa académico"]);
+        } else {
+          setPrograma("");
+        }
+      } catch {
+        setPrograma("");
       }
-    } catch {
-      setPrograma('');
-    }
-  };
+    };
 
-
-    if (sessionStorage.getItem('logged')) {
-      const res = JSON.parse(sessionStorage.getItem('logged'));
-      const permisos = res.map(item => item.permiso).flat();
+    if (sessionStorage.getItem("logged")) {
+      const res = JSON.parse(sessionStorage.getItem("logged"));
+      const permisos = res.map((item) => item.permiso).flat();
       setCargo(permisos);
       const email = res[0].user;
       const userName = extractNameFromEmail(email);
       setUser(userName);
       //console.log("Permisos del usuario:", permisos);
-      const director = res.find(item => item.permiso.includes("Director Escuela"));
+      const director = res.find((item) =>
+        item.permiso.includes("Director Escuela"),
+      );
       if (director && director.escuela) {
-      setEscuela(director.escuela);
+        setEscuela(director.escuela);
       } else {
-      setEscuela('');
+        setEscuela("");
       }
 
-
-        // Director Programa
-    const directorPrograma = res.find(item => item.permiso.includes("Director Programa"));
-    if (directorPrograma && directorPrograma.id_programa) {
-      fetchPrograma(directorPrograma.id_programa);
-    } else {
-      setPrograma('');
-    }
-
+      // Director Programa
+      const directorPrograma = res.find((item) =>
+        item.permiso.includes("Director Programa"),
+      );
+      if (directorPrograma && directorPrograma.id_programa) {
+        fetchPrograma(directorPrograma.id_programa);
+      } else {
+        setPrograma("");
+      }
     }
 
     return () => {
@@ -373,7 +402,11 @@ const Header = () => {
   return (
     <HeaderContainer role="navigation" aria-label="Navegación Principal">
       <Logo>
-        <Link to="/" alt="Logo Universidad del Valle" aria-label="Homepage de Sistema Siac">
+        <Link
+          to="/"
+          alt="Logo Universidad del Valle"
+          aria-label="Homepage de Sistema Siac"
+        >
           <img src={logo} loading="lazy" />
         </Link>
       </Logo>
@@ -381,17 +414,18 @@ const Header = () => {
         <Title>Sistema SIAC Facultad de Salud</Title>
         <Username>
           {user
-    ? `${user} - ${isCargo.join(', ')}${
-        isCargo.includes("Director Escuela") && escuela
-          ? ` - ${escuela}`
-          : ""
-      }${
-        isCargo.includes("Director Programa") && programa
-          ? ` - ${programa}`
-          : ""
-      }`
-    : "Cargando..."}
+            ? `${user} - ${isCargo.join(", ")}${
+                isCargo.includes("Director Escuela") && escuela
+                  ? ` - ${escuela}`
+                  : ""
+              }${
+                isCargo.includes("Director Programa") && programa
+                  ? ` - ${programa}`
+                  : ""
+              }`
+            : "Cargando..."}
         </Username>
+        <LastUpdate>Ultima actualizacion: {lastUpdateDate}</LastUpdate>
       </TitleContainer>
       <SearchBar>
         <SearchInputContainer>
@@ -413,12 +447,14 @@ const Header = () => {
               onClick={() => handleResultClick(result)}
             >
               {result["programa académico"]}
-              {result["sede"] && result["sede"] !== "Cali" ? ` - ${result["sede"]}` : ""}
+              {result["sede"] && result["sede"] !== "Cali"
+                ? ` - ${result["sede"]}`
+                : ""}
             </SearchResultItem>
           ))}
         </SearchResultLabel>
       </SearchBar>
-      
+
       {/* Área de autenticación */}
       <AuthContainer>
         {isLogged ? (
@@ -451,30 +487,32 @@ const Header = () => {
         maxWidth="xs"
         PaperProps={{
           style: {
-            borderRadius: '16px',
-            padding: '20px',
-            minWidth: '320px',
+            borderRadius: "16px",
+            padding: "20px",
+            minWidth: "320px",
           },
         }}
       >
         <DialogTitle
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0 0 16px 0',
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "0 0 16px 0",
           }}
         >
-          <span style={{ fontWeight: 600, fontSize: '1.125rem', color: '#333' }}>
+          <span
+            style={{ fontWeight: 600, fontSize: "1.125rem", color: "#333" }}
+          >
             Iniciar Sesión
           </span>
           <IconButton
             onClick={() => setShowLoginDialog(false)}
             size="small"
             aria-label="Cerrar diálogo"
-            sx={{ 
-              color: '#666',
-              '&:hover': { backgroundColor: '#f5f5f5' }
+            sx={{
+              color: "#666",
+              "&:hover": { backgroundColor: "#f5f5f5" },
             }}
           >
             <CloseIcon fontSize="small" />
@@ -482,20 +520,22 @@ const Header = () => {
         </DialogTitle>
         <DialogContent
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px 0',
-            gap: '16px',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px 0",
+            gap: "16px",
           }}
         >
-          <Box sx={{ 
-            textAlign: 'center', 
-            color: '#666', 
-            fontSize: '0.875rem',
-            marginBottom: '8px'
-          }}>
+          <Box
+            sx={{
+              textAlign: "center",
+              color: "#666",
+              fontSize: "0.875rem",
+              marginBottom: "8px",
+            }}
+          >
             Selecciona tu cuenta de Google institucional
           </Box>
           <GoogleLogin setIsLogin={handleLoginSuccess} />
