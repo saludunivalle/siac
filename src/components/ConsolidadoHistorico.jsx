@@ -606,9 +606,7 @@ const ConsolidadoHistorico = ({
             Consolidado Histórico de Acreditaciones
           </Typography>
           <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-            <Typography variant="body2" color="text.secondary">
-              Ultima actualizacion: {fechaActualTexto}
-            </Typography>
+            <Typography variant="body2" color="text.secondary"></Typography>
           </Box>
         </Box>
       )}
