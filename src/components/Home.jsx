@@ -134,21 +134,17 @@ const Home = () => {
   const getExpiredRRCPrograms = useCallback((programas) => {
     return programas.filter((program) => {
       const isActive =
-        program["estado"] === "Activo" ||
-        program["estado"] === "Activo - Sede";
+        program["estado"] === "Activo" || program["estado"] === "Activo - Sede";
       if (!isActive) return false;
       const estadoRrc = String(program["estadorc"] ?? "").trim();
-      return (
-        estadoRrc !== "Vigente" && estadoRrc !== "Vigente (En trámite)"
-      );
+      return estadoRrc !== "Vigente" && estadoRrc !== "Vigente (En trámite)";
     });
   }, []);
 
   const getExpiredRACPrograms = useCallback((programas) => {
     return programas.filter((program) => {
       const isActive =
-        program["estado"] === "Activo" ||
-        program["estado"] === "Activo - Sede";
+        program["estado"] === "Activo" || program["estado"] === "Activo - Sede";
       if (!isActive) return false;
       const estadoAac = String(program["estadoaac"] ?? "").trim();
       return (
@@ -161,88 +157,92 @@ const Home = () => {
   }, []);
 
   // Función para contar programas próximos a vencer - MEMOIZADA Y OPTIMIZADA
-  const countExpiringPrograms = useCallback((programas) => {
-    const currentYear = new Date().getFullYear();
-    const counts = {
-      RRC: { oneYear: 0, twoYears: 0, threeYears: 0, enTramite: 0 },
-      AAC: { oneYear: 0, twoYears: 0, threeYears: 0, enTramite: 0 },
-    };
+  const countExpiringPrograms = useCallback(
+    (programas) => {
+      const currentYear = new Date().getFullYear();
+      const counts = {
+        RRC: { oneYear: 0, twoYears: 0, threeYears: 0, enTramite: 0 },
+        AAC: { oneYear: 0, twoYears: 0, threeYears: 0, enTramite: 0 },
+      };
 
-    const expiringPrograms = {
-      RRC: {
-        oneYear: [],
-        twoYears: [],
-        threeYears: [],
-        enTramite: [],
-        expired: [],
-      },
-      AAC: {
-        oneYear: [],
-        twoYears: [],
-        threeYears: [],
-        enTramite: [],
-        expired: [],
-      },
-    };
+      const expiringPrograms = {
+        RRC: {
+          oneYear: [],
+          twoYears: [],
+          threeYears: [],
+          enTramite: [],
+          expired: [],
+        },
+        AAC: {
+          oneYear: [],
+          twoYears: [],
+          threeYears: [],
+          enTramite: [],
+          expired: [],
+        },
+      };
 
-    const activePrograms = programas.filter(
-      (program) =>
-        program["estado"] === "Activo" || program["estado"] === "Activo - Sede",
-    );
+      const activePrograms = programas.filter(
+        (program) =>
+          program["estado"] === "Activo" ||
+          program["estado"] === "Activo - Sede",
+      );
 
-    activePrograms.forEach((program) => {
-      const rrcYear = program["fechavencrc"]
-        ? parseInt(program["fechavencrc"].split("/")[2])
-        : null;
-      const aacYear = program["fechavencac"]
-        ? parseInt(program["fechavencac"].split("/")[2])
-        : null;
-      const estadoRrc = String(program["estadorc"] ?? "").trim();
-      const estadoAac = String(program["estadoaac"] ?? "").trim();
+      activePrograms.forEach((program) => {
+        const rrcYear = program["fechavencrc"]
+          ? parseInt(program["fechavencrc"].split("/")[2])
+          : null;
+        const aacYear = program["fechavencac"]
+          ? parseInt(program["fechavencac"].split("/")[2])
+          : null;
+        const estadoRrc = String(program["estadorc"] ?? "").trim();
+        const estadoAac = String(program["estadoaac"] ?? "").trim();
 
-      // Para programas RRC
-      if (estadoRrc === "En trámite" || estadoRrc === "En tramite") {
-        counts.RRC.enTramite++;
-        expiringPrograms.RRC.enTramite.push(program);
-      }
-      if (rrcYear) {
-        if (rrcYear === currentYear + 1) {
-          counts.RRC.oneYear++;
-          expiringPrograms.RRC.oneYear.push(program);
-        } else if (rrcYear === currentYear + 2) {
-          counts.RRC.twoYears++;
-          expiringPrograms.RRC.twoYears.push(program);
-        } else if (rrcYear === currentYear + 3) {
-          counts.RRC.threeYears++;
-          expiringPrograms.RRC.threeYears.push(program);
+        // Para programas RRC
+        if (estadoRrc === "En trámite" || estadoRrc === "En tramite") {
+          counts.RRC.enTramite++;
+          expiringPrograms.RRC.enTramite.push(program);
         }
-      }
-
-      // Para programas AAC
-      if (estadoAac === "En trámite" || estadoAac === "En tramite") {
-        counts.AAC.enTramite++;
-        expiringPrograms.AAC.enTramite.push(program);
-      }
-      if (aacYear) {
-        if (aacYear === currentYear + 1) {
-          counts.AAC.oneYear++;
-          expiringPrograms.AAC.oneYear.push(program);
-        } else if (aacYear === currentYear + 2) {
-          counts.AAC.twoYears++;
-          expiringPrograms.AAC.twoYears.push(program);
-        } else if (aacYear === currentYear + 3) {
-          counts.AAC.threeYears++;
-          expiringPrograms.AAC.threeYears.push(program);
+        if (rrcYear) {
+          if (rrcYear === currentYear + 1) {
+            counts.RRC.oneYear++;
+            expiringPrograms.RRC.oneYear.push(program);
+          } else if (rrcYear === currentYear + 2) {
+            counts.RRC.twoYears++;
+            expiringPrograms.RRC.twoYears.push(program);
+          } else if (rrcYear === currentYear + 3) {
+            counts.RRC.threeYears++;
+            expiringPrograms.RRC.threeYears.push(program);
+          }
         }
-      }
-    });
 
-    expiringPrograms.RRC.expired = getExpiredRRCPrograms(activePrograms);
-    expiringPrograms.AAC.expired = getExpiredRACPrograms(activePrograms);
+        // Para programas AAC
+        if (estadoAac === "En trámite" || estadoAac === "En tramite") {
+          counts.AAC.enTramite++;
+          expiringPrograms.AAC.enTramite.push(program);
+        }
+        if (aacYear) {
+          if (aacYear === currentYear + 1) {
+            counts.AAC.oneYear++;
+            expiringPrograms.AAC.oneYear.push(program);
+          } else if (aacYear === currentYear + 2) {
+            counts.AAC.twoYears++;
+            expiringPrograms.AAC.twoYears.push(program);
+          } else if (aacYear === currentYear + 3) {
+            counts.AAC.threeYears++;
+            expiringPrograms.AAC.threeYears.push(program);
+          }
+        }
+      });
 
-    setExpiryCounts(counts);
-    setExpiryPrograms(expiringPrograms);
-  }, [getExpiredRRCPrograms, getExpiredRACPrograms]);
+      expiringPrograms.RRC.expired = getExpiredRRCPrograms(activePrograms);
+      expiringPrograms.AAC.expired = getExpiredRACPrograms(activePrograms);
+
+      setExpiryCounts(counts);
+      setExpiryPrograms(expiringPrograms);
+    },
+    [getExpiredRRCPrograms, getExpiredRACPrograms],
+  );
 
   // Manejador para navegación a programas vencidos - MEMOIZADO
   const handleExpiryClick = useCallback(() => {
@@ -1380,8 +1380,7 @@ const Home = () => {
       {/* TABLA DE PRÓXIMOS A VENCERSE - FUNCIONALIDAD COMPLETA Y RESPONSIVE */}
       <Card
         sx={{
-          boxShadow:
-            "0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)",
           borderRadius: "16px",
           overflow: "hidden",
           border: "1px solid rgba(0,0,0,0.02)",
@@ -1439,9 +1438,7 @@ const Home = () => {
             >
               <Table size={isMobile ? "small" : "medium"}>
                 <TableHead>
-                  <TableRow
-                    sx={{ backgroundColor: "rgba(255, 140, 0, 0.05)" }}
-                  >
+                  <TableRow sx={{ backgroundColor: "rgba(255, 140, 0, 0.05)" }}>
                     <TableCell
                       sx={{
                         fontWeight: 700,
@@ -1936,7 +1933,7 @@ const Home = () => {
                     border: "1px solid rgba(0,0,0,0.02)",
                     overflow: "hidden",
                     width: "100%",
-                    maxWidth: "550px",
+                    maxWidth: { xs: "100%", md: "780px", lg: "920px" },
                     ml: { xs: "auto", md: "auto" },
                     mr: { xs: "auto", md: "0" },
                     position: "relative",
