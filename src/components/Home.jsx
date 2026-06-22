@@ -921,7 +921,7 @@ const Home = () => {
   // Componente de tabla modernizada y responsive
   const ModernTable = () => {
     return (
-      <Box sx={{ width: "100%", overflow: "hidden" }}>
+      <Box sx={{ width: "100%", overflow: "hidden", height: "98%" }}>
         <Card
           sx={{
             boxShadow:
@@ -936,7 +936,7 @@ const Home = () => {
             marginRight: "auto",
           }}
         >
-          <CardContent sx={{ p: 0 }}>
+          <CardContent sx={{ p: 0, height: "70%" }}>
             <Box
               sx={{
                 p: { xs: 2, sm: 3 },
@@ -1237,7 +1237,12 @@ const Home = () => {
                         }}
                       >
                         <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            mb: 4.5,
+                          }}
                         >
                           <AssessmentIcon
                             sx={{
@@ -1757,7 +1762,7 @@ const Home = () => {
           <Typography
             variant="h5"
             sx={{
-              mb: 3,
+              ml: 6,
               fontWeight: 600,
               color: "#B22222",
               fontSize: { xs: "1.25rem", sm: "1.5rem" },
@@ -1775,7 +1780,8 @@ const Home = () => {
             variant="body2"
             sx={{
               color: "#6C757D",
-              mb: 4,
+
+              ml: 6,
               fontWeight: 400,
               fontSize: { xs: "0.8125rem", sm: "0.875rem" },
               pl: { xs: 1, sm: 0 },
@@ -1797,13 +1803,14 @@ const Home = () => {
                     borderRadius: "16px",
                     border: "1px solid rgba(0,0,0,0.02)",
                     overflow: "hidden",
-                    width: "100%",
-                    maxWidth: "100%",
+                    width: "90%",
+                    maxWidth: "90%",
                     ml: { xs: "auto", md: "auto" },
-                    mr: { xs: "auto", md: "0" },
+                    mr: { xs: "auto", md: "50px" },
                     position: "relative",
                     zIndex: 2,
                     mb: 3,
+                    mt: 4,
                   }}
                 >
                   <CardContent sx={{ p: { xs: 1.5, sm: 2 }, height: "100%" }}>
@@ -1866,10 +1873,10 @@ const Home = () => {
                     borderRadius: "16px",
                     border: "1px solid rgba(0,0,0,0.02)",
                     overflow: "hidden",
-                    width: "100%",
-                    maxWidth: { xs: "100%", md: "720px", lg: "820px" },
+                    width: "90%",
+                    maxWidth: { xs: "90%", md: "780px", lg: "920px" },
                     ml: { xs: "auto", md: "auto" },
-                    mr: { xs: "auto", md: "0" },
+                    mr: { xs: "auto", md: "50px" },
                     position: "relative",
                     zIndex: 2,
                     mb: 3,
@@ -1932,10 +1939,10 @@ const Home = () => {
                     borderRadius: "16px",
                     border: "1px solid rgba(0,0,0,0.02)",
                     overflow: "hidden",
-                    width: "100%",
-                    maxWidth: { xs: "100%", md: "780px", lg: "920px" },
-                    ml: { xs: "auto", md: "auto" },
-                    mr: { xs: "auto", md: "0" },
+                    width: "85vw",
+                    maxWidth: "85vw",
+                    ml: "33px",
+                    mr: 0,
                     position: "relative",
                     zIndex: 2,
                     mb: 3,
@@ -1955,7 +1962,13 @@ const Home = () => {
                     >
                       Programas Activos por Escuelas
                     </Typography>
-                    <Box sx={{ height: { xs: 320, sm: 420, md: 520 }, mb: 2 }}>
+                    <Box
+                      sx={{
+                        height: { xs: 320, sm: 420, md: 520 },
+                        mb: 2,
+                        width: "100%",
+                      }}
+                    >
                       {chartDataEscuelas && (
                         <Bar
                           data={chartDataEscuelas}
