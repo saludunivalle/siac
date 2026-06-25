@@ -579,12 +579,12 @@ const Home = () => {
       }, {});
 
       const nivelFormacionOrder = [
+        "Tecnológico",
         "Universitario",
-        "Maestría",
-        "Doctorado",
         "Especialización Universitaria",
         "Especialización Médico Quirúrgica",
-        "Tecnológico",
+        "Maestría",
+        "Doctorado",
       ];
 
       const nivelFormacionLabels = [
@@ -1423,7 +1423,7 @@ const Home = () => {
                 fontSize: { xs: "0.8125rem", sm: "0.875rem" },
               }}
             >
-              Programas con registro calificado próximo a vencer
+              Programas con registro calificado y acreditación próximos a vencer
             </Typography>
           </Box>
 
@@ -1507,19 +1507,6 @@ const Home = () => {
                       }}
                     >
                       En trámite
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      sx={{
-                        fontWeight: 700,
-                        color: "#DC3545",
-                        fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                        py: { xs: 1.5, sm: 2 },
-                        px: { xs: 1.5, sm: 3 },
-                        borderBottom: "1px solid rgba(0,0,0,0.05)",
-                      }}
-                    >
-                      Vencidos
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -1610,19 +1597,6 @@ const Home = () => {
                     >
                       {expiryCounts.RRC.enTramite}
                     </TableCell>
-                    <TableCell
-                      align="center"
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                        color: "#DC3545",
-                        borderBottom: "none",
-                        py: { xs: 1.5, sm: 2.5 },
-                        px: { xs: 1.5, sm: 3 },
-                      }}
-                    >
-                      {expiredRRCCount}
-                    </TableCell>
                   </TableRow>
 
                   {/* Sección AAC */}
@@ -1710,19 +1684,6 @@ const Home = () => {
                       }}
                     >
                       {expiryCounts.AAC.enTramite}
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: { xs: "0.8125rem", sm: "0.9rem" },
-                        color: "#DC3545",
-                        borderBottom: "none",
-                        py: { xs: 1.5, sm: 2.5 },
-                        px: { xs: 1.5, sm: 3 },
-                      }}
-                    >
-                      {expiredRACCount}
                     </TableCell>
                   </TableRow>
                 </TableBody>
