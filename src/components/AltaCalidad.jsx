@@ -429,9 +429,7 @@ const AltaCalidad = () => {
 
       const estado = program?.estadoaac;
       const esAcreditado =
-        estado === "Vigente" ||
-        estado === "Vigente (En trámite)" ||
-        estado === "En trámite";
+        estado === "Vigente" || estado === "Vigente (En trámite)";
 
       const acreditableValue = String(
         program?.acreditable ?? program?.Acreditable ?? "",

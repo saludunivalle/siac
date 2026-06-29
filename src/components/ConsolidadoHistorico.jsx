@@ -33,6 +33,7 @@ const ConsolidadoHistorico = ({
   // Estados para los filtros
   const [filtroPrograma, setFiltroPrograma] = useState("Todos");
   const [filtroSede, setFiltroSede] = useState("Todos");
+  const [filtroEscuela, setFiltroEscuela] = useState("Todas");
   const [filtroNivel, setFiltroNivel] = useState("Todos");
   const [filtroFormacion, setFiltroFormacion] = useState("Todos");
   const [opcionesFiltros, setOpcionesFiltros] = useState({
@@ -40,6 +41,7 @@ const ConsolidadoHistorico = ({
     sedes: [],
     niveles: [],
     formaciones: [],
+    escuelas: [],
   });
   const [tabValue, setTabValue] = useState(0);
   // Normalize values - treat "N/A", empty strings, and whitespace as null
@@ -201,7 +203,13 @@ const ConsolidadoHistorico = ({
   // Generar opciones de filtros que se afectan mutuamente
   const generarOpcionesFiltros = () => {
     if (!Array.isArray(data) || data.length === 0) {
-      return { programas: [], sedes: [], niveles: [], formaciones: [] };
+      return {
+        programas: [],
+        sedes: [],
+        niveles: [],
+        formaciones: [],
+        escuelas: [],
+      };
     }
 
     // Solo usar datos con programa para construir opciones
@@ -220,7 +228,11 @@ const ConsolidadoHistorico = ({
       const cumpleFormacion =
         filtroFormacion === "Todos" ||
         getNivelFormacion(item) === filtroFormacion;
-      return cumpleSede && cumpleNivel && cumpleFormacion;
+      const cumpleEscuela =
+        filtroEscuela === "Todas" ||
+        item.escuela === filtroEscuela ||
+        item["escuela"] === filtroEscuela;
+      return cumpleSede && cumpleNivel && cumpleFormacion && cumpleEscuela;
     });
 
     // Opciones para sedes (filtrado por programa y nivel)
@@ -234,7 +246,11 @@ const ConsolidadoHistorico = ({
       const cumpleFormacion =
         filtroFormacion === "Todos" ||
         getNivelFormacion(item) === filtroFormacion;
-      return cumplePrograma && cumpleNivel && cumpleFormacion;
+      const cumpleEscuela =
+        filtroEscuela === "Todas" ||
+        item.escuela === filtroEscuela ||
+        item["escuela"] === filtroEscuela;
+      return cumplePrograma && cumpleNivel && cumpleFormacion && cumpleEscuela;
     });
 
     // Opciones para niveles (filtrado por programa y sede)
@@ -245,7 +261,11 @@ const ConsolidadoHistorico = ({
       const cumpleFormacion =
         filtroFormacion === "Todos" ||
         getNivelFormacion(item) === filtroFormacion;
-      return cumplePrograma && cumpleSede && cumpleFormacion;
+      const cumpleEscuela =
+        filtroEscuela === "Todas" ||
+        item.escuela === filtroEscuela ||
+        item["escuela"] === filtroEscuela;
+      return cumplePrograma && cumpleSede && cumpleFormacion && cumpleEscuela;
     });
 
     // Opciones para nivel de formacion (filtrado por programa, sede y nivel)
@@ -258,6 +278,30 @@ const ConsolidadoHistorico = ({
         item.nivel_academico === filtroNivel ||
         item["pregrado/posgrado"] === filtroNivel;
       return cumplePrograma && cumpleSede && cumpleNivel;
+    });
+
+    const datosFiltradosParaEscuelas = datosConHistorial.filter((item) => {
+      const cumplePrograma =
+        filtroPrograma === "Todos" || item.programa === filtroPrograma;
+      const cumpleSede = filtroSede === "Todos" || item.sede === filtroSede;
+      const cumpleNivel =
+        filtroNivel === "Todos" ||
+        item.nivel_academico === filtroNivel ||
+        item["pregrado/posgrado"] === filtroNivel;
+      const cumpleFormacion =
+        filtroFormacion === "Todos" ||
+        getNivelFormacion(item) === filtroFormacion;
+      const cumpleEscuela =
+        filtroEscuela === "Todas" ||
+        item.escuela === filtroEscuela ||
+        item["escuela"] === filtroEscuela;
+      return (
+        cumplePrograma &&
+        cumpleSede &&
+        cumpleNivel &&
+        cumpleFormacion &&
+        cumpleEscuela
+      );
     });
 
     const programasDisponibles = [
@@ -287,11 +331,20 @@ const ConsolidadoHistorico = ({
       ),
     ].sort();
 
+    const escuelasDisponibles = [
+      ...new Set(
+        datosFiltradosParaEscuelas
+          .map((item) => item.escuela || item["escuela"])
+          .filter((e) => e),
+      ),
+    ].sort();
+
     return {
       programas: programasDisponibles,
       sedes: sedesDisponibles,
       niveles: nivelesDisponibles,
       formaciones: formacionesDisponibles,
+      escuelas: escuelasDisponibles,
     };
   };
 
@@ -300,7 +353,14 @@ const ConsolidadoHistorico = ({
     const nuevasOpciones = generarOpcionesFiltros();
     console.log("Opciones actualizadas:", nuevasOpciones);
     setOpcionesFiltros(nuevasOpciones);
-  }, [data, filtroPrograma, filtroSede, filtroNivel, filtroFormacion]);
+  }, [
+    data,
+    filtroPrograma,
+    filtroSede,
+    filtroNivel,
+    filtroFormacion,
+    filtroEscuela,
+  ]);
 
   // Filtrar datos según los filtros seleccionados
   const dataFiltrada = data.filter((item) => {
@@ -314,8 +374,18 @@ const ConsolidadoHistorico = ({
     const cumpleFormacion =
       filtroFormacion === "Todos" ||
       getNivelFormacion(item) === filtroFormacion;
+    const cumpleEscuela =
+      filtroEscuela === "Todas" ||
+      item.escuela === filtroEscuela ||
+      item["escuela"] === filtroEscuela;
 
-    return cumplePrograma && cumpleSede && cumpleNivel && cumpleFormacion;
+    return (
+      cumplePrograma &&
+      cumpleSede &&
+      cumpleNivel &&
+      cumpleFormacion &&
+      cumpleEscuela
+    );
   });
   console.log("Datos filtrados para visualización:", dataFiltrada);
 
@@ -446,6 +516,7 @@ const ConsolidadoHistorico = ({
     let nuevoFiltroSede = filtroSede;
     let nuevoFiltroNivel = filtroNivel;
     let nuevoFiltroFormacion = filtroFormacion;
+    let nuevoFiltroEscuela = filtroEscuela;
 
     // Actualizar el filtro que cambió
     switch (tipo) {
@@ -460,6 +531,9 @@ const ConsolidadoHistorico = ({
         break;
       case "formacion":
         nuevoFiltroFormacion = valor;
+        break;
+      case "escuela":
+        nuevoFiltroEscuela = valor;
         break;
       default:
         break;
@@ -481,8 +555,18 @@ const ConsolidadoHistorico = ({
       const cumpleFormacion =
         nuevoFiltroFormacion === "Todos" ||
         getNivelFormacion(item) === nuevoFiltroFormacion;
+      const cumpleEscuela =
+        nuevoFiltroEscuela === "Todas" ||
+        item.escuela === nuevoFiltroEscuela ||
+        item["escuela"] === nuevoFiltroEscuela;
 
-      return cumplePrograma && cumpleSede && cumpleNivel && cumpleFormacion;
+      return (
+        cumplePrograma &&
+        cumpleSede &&
+        cumpleNivel &&
+        cumpleFormacion &&
+        cumpleEscuela
+      );
     });
 
     // Obtener opciones válidas después del filtrado
@@ -502,6 +586,13 @@ const ConsolidadoHistorico = ({
     const formacionesValidas = [
       ...new Set(
         datosFiltrados.map((item) => getNivelFormacion(item)).filter((n) => n),
+      ),
+    ];
+    const escuelasValidas = [
+      ...new Set(
+        datosFiltrados
+          .map((item) => item.escuela || item["escuela"])
+          .filter((e) => e),
       ),
     ];
 
@@ -530,12 +621,19 @@ const ConsolidadoHistorico = ({
     ) {
       nuevoFiltroFormacion = "Todos";
     }
+    if (
+      nuevoFiltroEscuela !== "Todas" &&
+      !escuelasValidas.includes(nuevoFiltroEscuela)
+    ) {
+      nuevoFiltroEscuela = "Todas";
+    }
 
     // Aplicar todos los cambios
     setFiltroPrograma(nuevoFiltroPrograma);
     setFiltroSede(nuevoFiltroSede);
     setFiltroNivel(nuevoFiltroNivel);
     setFiltroFormacion(nuevoFiltroFormacion);
+    setFiltroEscuela(nuevoFiltroEscuela);
   };
 
   // Función para limpiar todos los filtros
@@ -544,6 +642,7 @@ const ConsolidadoHistorico = ({
     setFiltroSede("Todos");
     setFiltroNivel("Todos");
     setFiltroFormacion("Todos");
+    setFiltroEscuela("Todas");
   };
 
   // Contar cuántos filtros están activos
@@ -552,6 +651,7 @@ const ConsolidadoHistorico = ({
     filtroSede,
     filtroNivel,
     filtroFormacion,
+    filtroEscuela,
   ].filter((f) => f !== "Todos").length;
 
   // Función para manejar cambio de pestañas
@@ -698,8 +798,25 @@ const ConsolidadoHistorico = ({
               </Select>
             </FormControl>
           </Grid>
-        </Grid>
 
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth variant="outlined">
+              <InputLabel>Escuela</InputLabel>
+              <Select
+                value={filtroEscuela}
+                onChange={(e) => handleFiltroChange("escuela", e.target.value)}
+                label="Escuela"
+              >
+                <MenuItem value="Todas">Todas las escuelas</MenuItem>
+                {opcionesFiltros.escuelas.map((escuela, index) => (
+                  <MenuItem key={index} value={escuela}>
+                    {escuela}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
         {filtrosActivos > 0 && (
           <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
             <Chip
