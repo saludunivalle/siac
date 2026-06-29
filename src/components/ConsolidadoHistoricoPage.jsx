@@ -44,6 +44,7 @@ const ConsolidadoHistoricoPage = () => {
         programa["nivel de formacion"] ||
         programa["nivel_formacion"],
     ),
+    escuela: normalizeValue(programa["escuela"]),
     estado: normalizeValue(programa.estado || programa["estado"]),
     estadoaac: normalizeValue(programa["estadoaac"]),
     acreditable: normalizeValue(programa["acreditable"]),

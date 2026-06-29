@@ -200,13 +200,13 @@ const Sidebar = ({ isCargo }) => {
           tooltip: "Inicio",
         },
         {
-          text: "Programas por Vencer",
+          text: "Programas próximos a vencerse",
           icon: <DescriptionIcon />,
           path: "/programas-venc",
-          tooltip: "Programas por Vencer",
+          tooltip: "Programas próximos a vencerse",
         },
         {
-          text: "Estadísticas",
+          text: "Estadísticas Posgrados",
           icon: <QueryStatsIcon />,
           path: "/estadisticas",
           tooltip: "Dashboard de Estadísticas",

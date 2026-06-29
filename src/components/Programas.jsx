@@ -917,6 +917,7 @@ const Programas = () => {
                     <td style={{ backgroundColor: rrcColor }}>
                       {item["fechavencrc"] ? item["fechavencrc"] : "N/A"}
                     </td>
+                    <td>{item["acreditable"]}</td>
                     <td>{item["estadoaac"]}</td>
                     <td style={{ backgroundColor: aacColor }}>
                       {item["fechavencac"] ? item["fechavencac"] : "N/A"}
@@ -1203,6 +1204,9 @@ const Programas = () => {
                 </th>
                 <th style={{ backgroundColor: headerBackgroundColor }}>
                   Fecha de Vencimiento RC
+                </th>
+                <th style={{ backgroundColor: headerBackgroundColor }}>
+                  Acreditable
                 </th>
                 <th style={{ backgroundColor: headerBackgroundColor }}>
                   AAC Vigente
