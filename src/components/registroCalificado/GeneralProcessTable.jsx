@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Fade, Card, CardContent, Typography, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Chip, alpha } from '@mui/material';
-import ModernRiskChip from '../common/ModernRiskChip';
+import RiskValue from '../common/RiskValue';
 
 const GeneralProcessTable = ({ counts, riskConfig, processConfig, getTotalByProcess, getTotalByRisk, getGrandTotal, handleRowClick }) => {
   return (
@@ -100,24 +100,11 @@ const GeneralProcessTable = ({ counts, riskConfig, processConfig, getTotalByProc
                       </TableCell>
                       {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => (
                         <TableCell key={risk} align="center" sx={{ py: 3, px: 2, borderBottom: 'none' }}>
-                          <ModernRiskChip riskLevel={risk} value={counts[proceso][risk]} configOverride={riskConfig} />
+                          <RiskValue risk={risk} value={counts[proceso][risk]} riskConfig={riskConfig} />
                         </TableCell>
                       ))}
                       <TableCell align="center" sx={{ py: 3, px: 3, borderBottom: 'none' }}>
-                        <Chip 
-                          label={getTotalByProcess(proceso)}
-                          sx={{ 
-                            background: 'linear-gradient(135deg, #495057 0%, #343A40 100%)', 
-                            color: 'white', 
-                            fontWeight: 800,
-                            fontSize: '1.125rem',
-                            height: 48,
-                            minWidth: '100px',
-                            borderRadius: '14px',
-                            boxShadow: '0 4px 16px rgba(73, 80, 87, 0.3)',
-                            '& .MuiChip-label': { color: 'white', fontWeight: 800 }
-                          }}
-                        />
+                        < Typography variant="h6" sx={{ fontWeight: 700, color: '#212529', fontSize: '1.25rem' }}>{getTotalByProcess(proceso)}</Typography>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -131,14 +118,11 @@ const GeneralProcessTable = ({ counts, riskConfig, processConfig, getTotalByProc
                     </TableCell>
                     {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => (
                       <TableCell key={risk} align="center" sx={{ py: 3, px: 2, borderBottom: 'none' }}>
-                        <ModernRiskChip riskLevel={risk} value={getTotalByRisk(risk)} size="large" configOverride={riskConfig} />
+                        <RiskValue risk={risk} value={getTotalByRisk(risk)} size="large" riskConfig={riskConfig} />
                       </TableCell>
                     ))}
                     <TableCell align="center" sx={{ py: 3, px: 3, borderBottom: 'none' }}>
-                      <Chip 
-                        label={getGrandTotal()}
-                        sx={{ background: 'linear-gradient(135deg, #B22222 0%, #8B1A1A 100%)', color: 'white', fontWeight: 800, fontSize: '1.125rem', height: 48, minWidth: '100px', borderRadius: '14px', '& .MuiChip-label': { color: 'white', fontWeight: 800 } }}
-                      />
+                      < Typography variant="h6" sx={{ fontWeight: 700, color: '#212529', fontSize: '1.25rem' }}>{getGrandTotal()}</Typography>
                     </TableCell>
                   </TableRow>
                 </TableBody>

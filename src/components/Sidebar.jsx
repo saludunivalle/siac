@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Drawer,
@@ -49,7 +49,7 @@ const Sidebar = ({ isCargo }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState("");
   const [hoveredItem, setHoveredItem] = useState(null);
-
+  const sidebarRef = useRef(null);
   // En dispositivos móviles, comenzar con el sidebar cerrado
   useEffect(() => {
     if (isMobile) {
@@ -75,6 +75,22 @@ const Sidebar = ({ isCargo }) => {
       console.log('No hay datos en sessionStorage con clave "logged"');
     }
   }, []);
+
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    // Limpiar el evento para evitar errores
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
 
   const handleDrawerToggle = () => {
     if (isHidden) {
@@ -431,6 +447,7 @@ const Sidebar = ({ isCargo }) => {
       )}
 
       <Drawer
+        ref={sidebarRef}
         variant="permanent"
         sx={{
           width: isHidden ? 0 : open ? 280 : 72,
@@ -846,17 +863,17 @@ const Sidebar = ({ isCargo }) => {
               sx={{
                 width: 24,
                 height: 24,
-                backgroundColor: "#FFFFFF",
+                backgroundColor: "#717171",
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
                 "&:hover": {
-                  backgroundColor: "#FAFBFC",
+                  backgroundColor: "#434343",
                   transform: "scale(1.05)",
                 },
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               <KeyboardArrowRightRoundedIcon
-                sx={{ fontSize: 16, color: "#6C757D" }}
+                sx={{ fontSize: 16, color: "#ffffff" }}
               />
             </IconButton>
           </Tooltip>

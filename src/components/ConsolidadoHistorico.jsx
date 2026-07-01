@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -28,12 +28,13 @@ const ConsolidadoHistorico = ({
   data,
   programaAcademico,
   showTitle = true,
+  defaultEscuela = null,
 }) => {
   console.log("Datos recibidos en ConsolidadoHistorico:", data);
   // Estados para los filtros
   const [filtroPrograma, setFiltroPrograma] = useState("Todos");
   const [filtroSede, setFiltroSede] = useState("Todos");
-  const [filtroEscuela, setFiltroEscuela] = useState("Todas");
+  const [filtroEscuela, setFiltroEscuela] = useState(() => defaultEscuela || "Todas");
   const [filtroNivel, setFiltroNivel] = useState("Todos");
   const [filtroFormacion, setFiltroFormacion] = useState("Todos");
   const [opcionesFiltros, setOpcionesFiltros] = useState({
@@ -44,6 +45,7 @@ const ConsolidadoHistorico = ({
     escuelas: [],
   });
   const [tabValue, setTabValue] = useState(0);
+  const hasAppliedDefaultEscuela = useRef(false);
   // Normalize values - treat "N/A", empty strings, and whitespace as null
   const normalizeValue = (value) => {
     if (
@@ -361,6 +363,33 @@ const ConsolidadoHistorico = ({
     filtroFormacion,
     filtroEscuela,
   ]);
+
+  // Aplicar escuela por defecto del usuario una sola vez cuando los datos estén disponibles
+  useEffect(() => {
+    if (
+      !defaultEscuela ||
+      hasAppliedDefaultEscuela.current ||
+      !Array.isArray(data) ||
+      data.length === 0
+    ) {
+      return;
+    }
+
+    const escuelasEnDatos = [
+      ...new Set(
+        data
+          .filter((item) => item && item.programa)
+          .map((item) => item.escuela || item["escuela"])
+          .filter(Boolean),
+      ),
+    ];
+
+    if (escuelasEnDatos.includes(defaultEscuela)) {
+      setFiltroEscuela(defaultEscuela);
+    }
+
+    hasAppliedDefaultEscuela.current = true;
+  }, [defaultEscuela, data]);
 
   // Filtrar datos según los filtros seleccionados
   const dataFiltrada = data.filter((item) => {
@@ -727,6 +756,23 @@ const ConsolidadoHistorico = ({
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth variant="outlined">
+              <InputLabel>Escuela</InputLabel>
+              <Select
+                value={filtroEscuela}
+                onChange={(e) => handleFiltroChange("escuela", e.target.value)}
+                label="Escuela"
+              >
+                <MenuItem value="Todas">Todas las escuelas</MenuItem>
+                {opcionesFiltros.escuelas.map((escuela, index) => (
+                  <MenuItem key={index} value={escuela}>
+                    {escuela}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth variant="outlined">
               <InputLabel>Programa Académico</InputLabel>
               <Select
                 value={filtroPrograma}
@@ -793,24 +839,6 @@ const ConsolidadoHistorico = ({
                 {opcionesFiltros.formaciones.map((formacion, index) => (
                   <MenuItem key={index} value={formacion}>
                     {formacion}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>Escuela</InputLabel>
-              <Select
-                value={filtroEscuela}
-                onChange={(e) => handleFiltroChange("escuela", e.target.value)}
-                label="Escuela"
-              >
-                <MenuItem value="Todas">Todas las escuelas</MenuItem>
-                {opcionesFiltros.escuelas.map((escuela, index) => (
-                  <MenuItem key={index} value={escuela}>
-                    {escuela}
                   </MenuItem>
                 ))}
               </Select>

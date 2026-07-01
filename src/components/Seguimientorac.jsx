@@ -310,6 +310,7 @@ const Seguimientorac = () => {
             </>
           }
         />
+        
         <CollapsibleButton
           buttonText="Convenio Docencia Servicio"
           content={
@@ -338,6 +339,7 @@ const Seguimientorac = () => {
             </>
           }
         />
+
       </div>
 
       <Modal
