@@ -15,6 +15,7 @@ import { Filtro4, Filtro5, Filtro7 } from "../service/data";
 import CollapsibleButton from "./CollapsibleButton";
 import "/src/styles/home.css";
 import "/src/styles/table.css";
+import { CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
 
 const Programas = () => {
   const location = useLocation();
@@ -917,7 +918,7 @@ const Programas = () => {
                     <td style={{ backgroundColor: rrcColor }}>
                       {item["fechavencrc"] ? item["fechavencrc"] : "N/A"}
                     </td>
-                    <td>{item["acreditable"]}</td>
+                    <td>{item["acreditable"] == "Acreditable" ? <CheckBox sx={{ color: "green" }} /> : <CheckBoxOutlineBlank sx={{ color: "grey" }} />}</td>
                     <td>{item["estadoaac"]}</td>
                     <td style={{ backgroundColor: aacColor }}>
                       {item["fechavencac"] ? item["fechavencac"] : "N/A"}
@@ -1170,59 +1171,54 @@ const Programas = () => {
       </div>
       {filteredData && filteredData.length > 0 ? (
         <div className="row-container">
-          <table
-            style={{ width: "100%", textAlign: "center", marginTop: "10px" }}
-          >
-            <thead>
-              <tr>
-                <th
-                  className="bold"
-                  style={{
-                    width: "25%",
-                    backgroundColor: headerBackgroundColor,
-                  }}
-                >
-                  Programa Académico
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  Departamento
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  Sección
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  Estado
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  Nivel Académico
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  Nivel de Formación
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  RC Vigente
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  Fecha de Vencimiento RC
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  Acreditable
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  AAC Vigente
-                </th>
-                <th style={{ backgroundColor: headerBackgroundColor }}>
-                  Fecha de Vencimiento AAC
-                </th>
-                {/* <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>CREA</th>
-                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>MOD</th>
-                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>RRC</th>
-                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>AAC</th>
-                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>RAAC</th>
-                                <th style={{ width: '5%', backgroundColor: headerBackgroundColor }}>INT</th> */}
-              </tr>
-            </thead>
-          </table>
+          <div className="programas-sticky-header">
+            <table style={{ width: "100%", textAlign: "center", marginTop: "10px" }}>
+              <thead>
+                <tr>
+                  <th
+                    className="bold"
+                    style={{
+                      width: "25%",
+                      backgroundColor: headerBackgroundColor,
+                      border: "1px solid #dee2e6",
+                    }}
+                  >
+                    Programa Académico
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    Departamento
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    Sección
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    Estado
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    Nivel Académico
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    Nivel de Formación
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    RC Vigente
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    Fecha de Vencimiento RC
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    Acreditable
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    AAC Vigente
+                  </th>
+                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                    Fecha de Vencimiento AAC
+                  </th>
+                </tr>
+              </thead>
+            </table>
+          </div>
           <div
             style={{
               display: "flex",

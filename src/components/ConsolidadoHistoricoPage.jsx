@@ -6,11 +6,32 @@ import LoadingSpinner from "./common/LoadingSpinner";
 import ConsolidadoHistorico from "./ConsolidadoHistorico";
 import { Filtro5, FiltroHistoricoTimeline } from "../service/data";
 
+const getUserEscuela = () => {
+  try {
+    const logged = sessionStorage.getItem("logged");
+    if (!logged) return null;
+
+    const res = JSON.parse(logged);
+    if (!Array.isArray(res) || res.length === 0) return null;
+
+    const directorEscuela = res.find((item) => {
+      const permiso = item.permiso;
+      if (Array.isArray(permiso)) return permiso.includes("Director Escuela");
+      return permiso === "Director Escuela";
+    });
+
+    return directorEscuela?.escuela || res[0]?.escuela || null;
+  } catch {
+    return null;
+  }
+};
+
 const ConsolidadoHistoricoPage = () => {
   const [isCargo, setCargo] = useState([" "]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [historicoData, setHistoricoData] = useState([]);
+  const [userEscuela] = useState(() => getUserEscuela());
 
   const normalizeValue = (value) => {
     if (
@@ -133,7 +154,11 @@ const ConsolidadoHistoricoPage = () => {
     <>
       <Header />
       <Sidebar isCargo={isCargo} />
-      <ConsolidadoHistorico data={historicoData} showTitle={true} />
+      <ConsolidadoHistorico
+        data={historicoData}
+        showTitle={true}
+        defaultEscuela={userEscuela}
+      />
     </>
   );
 };
