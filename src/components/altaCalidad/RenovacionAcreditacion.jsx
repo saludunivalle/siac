@@ -25,6 +25,7 @@ import SummarizeIcon from '@mui/icons-material/Summarize';
 import WarningIcon from '@mui/icons-material/Warning';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ModernRiskChip from '../common/ModernRiskChip';
+import RiskValue from '../common/RiskValue';
 import FilterPanel from '../common/FilterPanel';
 
 // Vista específica del proceso de Renovación de Acreditación (RAAC)
@@ -396,7 +397,7 @@ const RenovacionAcreditacion = ({
               },
               {
                 key: 'noVigentes',
-                label: 'No vigentes / Sin registro',
+                label: 'No vigentes/Sin registro',
                 value: estadoCounts.noVigentes,
                 color: '#C62828',
                 backgroundColor: 'rgba(198, 40, 40, 0.08)',
@@ -656,9 +657,11 @@ const RenovacionAcreditacion = ({
                           {program['fechavencac'] || 'N/A'}
                         </Typography>
                       </TableCell>
-                      <TableCell>
-                        <ModernRiskChip riskLevel={program.riesgo} value={program.riesgo} />
-                      </TableCell>
+                      {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => program.riesgo === risk && (
+                    <TableCell key={risk} sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
+                      <RiskValue risk={risk} value={program.riesgo} riskConfig={riskConfig} />
+                    </TableCell>
+                  ))}
                       <TableCell>
                         <Tooltip title={program.mensaje} arrow placement="top">
                           <Typography variant="body2" sx={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#6C757D', fontSize: '0.875rem', cursor: 'help' }}>

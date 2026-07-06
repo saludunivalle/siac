@@ -16,6 +16,7 @@ import CollapsibleButton from "./CollapsibleButton";
 import "/src/styles/home.css";
 import "/src/styles/table.css";
 import { CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
+import Sidebar from "./Sidebar";
 
 const Programas = () => {
   const location = useLocation();
@@ -954,6 +955,7 @@ const Programas = () => {
   return (
     <>
       {/* Overlay de carga que cubre toda la pantalla */}
+      <Sidebar isCargo={isCargo} />
       <Backdrop
         sx={{
           color: "#fff",

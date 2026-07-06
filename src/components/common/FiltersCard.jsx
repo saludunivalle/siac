@@ -11,7 +11,7 @@ import {
   Box,
   Slider
 } from '@mui/material';
-import { NIVELES_ACADEMICOS } from '../../constants/dashboardConstants';
+import { NIVELES_ACADEMICOS, ESCUELAS } from '../../constants/dashboardConstants';
 
 const FiltersCard = ({
   title,
@@ -25,11 +25,13 @@ const FiltersCard = ({
   availableOptions = {},
   showPeriodoFilter = false,
   hidePrograma = false,
-  hideNivel = false
+  hideNivel = false,
+  hideEscuela = false
 }) => {
   const {
     years = [],
     semesters = [],
+    escuelas = ESCUELAS,
     niveles = NIVELES_ACADEMICOS,
     programas = [],
     periodos = []
@@ -84,6 +86,25 @@ const FiltersCard = ({
             </Grid>
           )}
 
+           {/* Filtro de Escuela */}
+           {filters.hasOwnProperty('selectedEscuela') && !hideEscuela && (
+            <Grid item xs={12} sm={3} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Escuela</InputLabel>
+                <Select
+                  value={filters.selectedEscuela}
+                  label="Escuela"
+                  onChange={(e) => handleFilterChange('selectedEscuela', e.target.value)}
+                >
+                  <MenuItem value="Todos">Todos</MenuItem>
+                  {escuelas.map(escuela => (
+                    <MenuItem key={escuela} value={escuela}>{escuela}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
+
           {/* Filtro de Nivel */}
           {filters.hasOwnProperty('selectedNivel') && !hideNivel && (
             <Grid item xs={12} sm={3} md={3}>
@@ -102,6 +123,8 @@ const FiltersCard = ({
               </FormControl>
             </Grid>
           )}
+
+         
 
           {/* Filtro de Programa */}
           {filters.hasOwnProperty('selectedPrograma') && !hidePrograma && (

@@ -7,6 +7,17 @@ export const NIVELES_ACADEMICOS = [
   'Doctorado'
 ];
 
+export const ESCUELAS = [
+  'Odontología',
+'Ciencias Básicas',
+  'Medicina',
+  'Bacteriología',
+  'Salud Pública',
+  'Rehabilitación Humana',
+  'Enfermería',
+  'Dirección de Posgrados'
+];
+
 export const CHART_COLORS = {
   primary: 'rgba(178, 34, 34, 0.8)', // Rojo sangre toro
   primaryBorder: 'rgba(178, 34, 34, 1)',

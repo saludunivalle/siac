@@ -21,6 +21,7 @@ import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import StarIcon from '@mui/icons-material/Star';
 import ModernRiskChip from '../common/ModernRiskChip';
+import RiskValue from '../common/RiskValue';
 import FilterPanel from '../common/FilterPanel';
 
 // Vista específica del proceso de Acreditación (AAC)
@@ -339,7 +340,7 @@ const Acreditacion = ({
               },
               {
                 key: 'noVigentes',
-                label: 'No vigentes / Sin registro',
+                label: 'No vigentes/Sin registro',
                 value: estadoCounts.noVigentes,
                 color: '#C62828',
                 backgroundColor: 'rgba(198, 40, 40, 0.08)',
@@ -543,9 +544,11 @@ const Acreditacion = ({
                           {program['nivel de formación']}
                         </Typography>
                       </TableCell>
-                      <TableCell>
-                        <ModernRiskChip riskLevel={program.riesgo} value={program.riesgo} />
-                      </TableCell>
+                      {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => program.riesgo === risk && (
+                    <TableCell key={risk} sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
+                      <RiskValue risk={risk} value={program.riesgo} riskConfig={riskConfig} />
+                    </TableCell>
+                  ))}
                       <TableCell>
                         <Tooltip title={program.mensaje} arrow placement="top">
                           <Typography variant="body2" sx={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#6C757D', fontSize: '0.875rem', cursor: 'help' }}>

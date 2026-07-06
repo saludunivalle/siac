@@ -15,11 +15,36 @@ import {
   Card,
   CardContent,
   useMediaQuery,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import WarningIcon from "@mui/icons-material/Warning";
 import { Filtro5 } from "../service/data";
 import { useTheme } from "@mui/material/styles";
+import { ESCUELAS } from "../constants/dashboardConstants";
+
+const getUserEscuela = () => {
+  try {
+    const logged = sessionStorage.getItem("logged");
+    if (!logged) return null;
+
+    const res = JSON.parse(logged);
+    if (!Array.isArray(res) || res.length === 0) return null;
+
+    const directorEscuela = res.find((item) => {
+      const permiso = item.permiso;
+      if (Array.isArray(permiso)) return permiso.includes("Director Escuela");
+      return permiso === "Director Escuela";
+    });
+
+    return directorEscuela?.escuela || res[0]?.escuela || null;
+  } catch {
+    return null;
+  }
+};
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   borderLeft: `1px solid ${theme.palette.grey[400]}`,

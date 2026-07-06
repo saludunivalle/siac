@@ -27,6 +27,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import RuleIcon from '@mui/icons-material/Rule';
 import ModernRiskChip from '../common/ModernRiskChip';
+import RiskValue from '../common/RiskValue';
 import Creacion from './Creacion';
 import Modificacion from './Modificacion';
 import RenovacionRC from './RenovacionRC';
@@ -519,7 +520,7 @@ const DetailedProcessView = ({
                           </Typography>
                         </TableCell>
                         <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
-                          <ModernRiskChip riskLevel={program.riesgo} value={program.riesgo} configOverride={riskConfig} />
+                          <RiskValue riskLevel={program.riesgo} value={program.riesgo} configOverride={riskConfig} />
                         </TableCell>
                         <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
                           <Tooltip title={program.mensaje} arrow placement="top">

@@ -263,12 +263,7 @@ const Sidebar = ({ isCargo }) => {
           path: "/seguimiento-inicio",
           tooltip: "Seguimiento PM",
         },
-        {
-          text: "Docencia Servicio",
-          icon: <LocalHospitalIcon />,
-          path: "/docencia-servicio",
-          tooltip: "Docencia Servicio",
-        },
+
         ...(isCargo.includes("Creación") || isCargo.includes("Sistemas")
           ? [
               {
@@ -282,6 +277,15 @@ const Sidebar = ({ isCargo }) => {
       ],
     },
   ];
+
+/**
+ *         {/** 
+          text: "Docencia Servicio",
+          icon: <LocalHospitalIcon />,
+          path: "/docencia-servicio",
+          tooltip: "Docencia Servicio",
+        },
+ */
 
   // Componente para elementos del menú
   const MenuItem = ({ item, section }) => {
@@ -551,7 +555,7 @@ const Sidebar = ({ isCargo }) => {
                 <MenuIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Tooltip>
-
+                {
             <Tooltip title="Ocultar menú" placement="left" arrow>
               <IconButton
                 onClick={() => setIsHidden(true)}
@@ -570,6 +574,7 @@ const Sidebar = ({ isCargo }) => {
                 <KeyboardArrowLeftRoundedIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Tooltip>
+} 
           </Box>
         </Box>
 

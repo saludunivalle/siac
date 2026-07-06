@@ -15,6 +15,7 @@ export const useTablaMatriculaData = (matriculaFilteredData) => {
 
     const codPlanKey = findKey('codplan') || 'codPlan';
     const planKey = findKey('plan') || 'plan';
+    const escuelaKey = findKey('escuela') || 'escuela';
     const nivelKey = findKey('nivel') || 'nivel';
     const periodoKey = findKey('periodo') || 'periodo';
     const matriculadosKey = findKey('matriculados') || 'matriculados';
@@ -29,11 +30,13 @@ export const useTablaMatriculaData = (matriculaFilteredData) => {
         : 'N/A'; // Código del programa
       const programa = item[planKey]; // Nombre del programa académico
       const nivel = item[nivelKey] || item.Nivel;
+      const escuela = item[escuelaKey] || item.Escuela;
       
       if (!datosPorPrograma[codPrograma]) {
         datosPorPrograma[codPrograma] = {
           codPrograma,
           programa,
+          escuela,
           nivel,
           periodos: {},
           totalMatriculados: 0

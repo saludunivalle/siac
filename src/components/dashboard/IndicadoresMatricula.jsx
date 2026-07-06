@@ -5,6 +5,7 @@ import NivelStatsCard from '../common/NivelStatsCard';
 import ChartCard from '../common/ChartCard';
 import DataTable from '../common/DataTable';
 import { useEstadisticasPorNivel } from '../../hooks/useEstadisticasPorNivel';
+import { useEstadisticasPorEscuela } from '../../hooks/useEstadisticasPorEscuela';
 import { useTablaMatriculaData } from '../../hooks/useTablaMatriculaData';
 import { useProgramasDistribucion } from '../../hooks/useProgramasDistribucion';
 import { CHART_COLORS } from '../../constants/dashboardConstants';
@@ -21,6 +22,7 @@ const IndicadoresMatricula = ({
   availableOptions
 }) => {
   const estadisticasPorNivel = useEstadisticasPorNivel(matriculaFilteredData);
+  const estadisticasPorEscuela = useEstadisticasPorEscuela(matriculaFilteredData);
   const datosTablaMatricula = useTablaMatriculaData(matriculaFilteredData);
   const { chartData: programasDistribucionData } = useProgramasDistribucion(datosTablaMatricula, matriculaFilteredData);
 
@@ -182,12 +184,15 @@ const IndicadoresMatricula = ({
       <FiltersCard
         title="Filtros de Indicadores de Matrícula"
         filters={{
+          selectedEscuela: filters.selectedEscuelaMatricula,
           selectedNivel: filters.selectedNivelMatricula,
           selectedPrograma: filters.selectedProgramaMatricula,
           selectedPeriodo: filters.selectedPeriodoMatricula
         }}
         onFilterChange={(filterName, value) => {
-          if (filterName === 'selectedNivel') {
+          if (filterName === 'selectedEscuela') {
+            onFilterChange('selectedEscuelaMatricula', value);
+          } else if (filterName === 'selectedNivel') {
             onFilterChange('selectedNivelMatricula', value);
           } else if (filterName === 'selectedPrograma') {
             onFilterChange('selectedProgramaMatricula', value);

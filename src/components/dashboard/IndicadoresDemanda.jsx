@@ -17,6 +17,7 @@ const IndicadoresDemanda = ({
   availableOptions,
   hidePrograma = false,
   hideNivel = false,
+  hideEscuela = false,
   showPeriodoFilter = true
 }) => {
   // Agrupar por periodo para construir los gráficos de barras + línea
@@ -151,13 +152,15 @@ const IndicadoresDemanda = ({
       <FiltersCard
         title="Filtros de Indicadores de demanda"
         filters={{
+          selectedEscuela: filters?.selectedEscuelaCupos,
           selectedNivel: filters?.selectedNivelCupos,
           selectedPrograma: filters?.selectedProgramaCupos,
           selectedPeriodo: filters?.selectedPeriodoCupos
         }}
         onFilterChange={(filterName, value) => {
           if (!onFilterChange) return;
-          if (filterName === 'selectedNivel') onFilterChange('selectedNivelCupos', value);
+          if (filterName === 'selectedEscuela') onFilterChange('selectedEscuelaCupos', value);
+          else if (filterName === 'selectedNivel') onFilterChange('selectedNivelCupos', value);
           else if (filterName === 'selectedPrograma') onFilterChange('selectedProgramaCupos', value);
           else if (filterName === 'selectedPeriodo') onFilterChange('selectedPeriodoCupos', value);
         }}
@@ -170,6 +173,7 @@ const IndicadoresDemanda = ({
         showPeriodoFilter={showPeriodoFilter}
         hidePrograma={hidePrograma}
         hideNivel={hideNivel}
+        hideEscuela={hideEscuela}
       />
 
       <Grid container spacing={3} sx={{ mb: 3 }}>

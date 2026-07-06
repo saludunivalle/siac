@@ -4,6 +4,7 @@ import RuleIcon from '@mui/icons-material/Rule';
 import SchoolIcon from '@mui/icons-material/School';
 import { Tooltip } from '@mui/material';
 import ModernRiskChip from '../common/ModernRiskChip';
+import RiskValue from '../common/RiskValue';
 import FilterPanel from '../common/FilterPanel';
 import { key } from 'localforage';
 
@@ -351,9 +352,11 @@ const RenovacionRC = ({
                       {program['fechavencrc'] || 'N/A'}
                     </Typography>
                   </TableCell>
-                  <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
-                    <ModernRiskChip riskLevel={program.riesgo} value={program.riesgo} configOverride={riskConfig} />
-                  </TableCell>
+                  {['Alto', 'Medio', 'Bajo', 'SinRegistro'].map((risk) => program.riesgo === risk && (
+                    <TableCell key={risk} sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
+                      <RiskValue risk={risk} value={program.riesgo} riskConfig={riskConfig} />
+                    </TableCell>
+                  ))}
                   <TableCell sx={{ py: 3, px: { xs: 1, sm: 2 }, borderBottom: 'none' }}>
                     <Tooltip title={program.mensaje} arrow placement="top">
                       <Typography variant="body2" sx={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#6C757D', fontSize: '0.875rem', cursor: 'help' }}>
