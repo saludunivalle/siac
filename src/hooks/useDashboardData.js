@@ -47,6 +47,9 @@ export const useDashboardData = () => {
   
   // Obtener niveles únicos de los datos reales para debug
   const nivelesUnicos = obtenerValoresUnicos(estadisticas, 'nivel');
+  const escuelas = obtenerValoresUnicos(estadisticas, 'escuela');
+  console.log('Escuelas únicas encontradas en los datos originales:', escuelas);
+
   console.log('Niveles únicos encontrados en los datos originales:', nivelesUnicos);
 
   // Calcular rango de años
@@ -62,6 +65,7 @@ export const useDashboardData = () => {
     semesters,
     programas,
     nivelesUnicos,
+    escuelas,
     minYear,
     maxYear
   };
@@ -102,6 +106,7 @@ export const useMatriculaData = (estadisticas, filtros) => {
   const matriculaFilteredData = filtrarDatosMatricula(estadisticas, {
     yearRange: yearRangeMatricula,
     selectedNivel: filtros.selectedNivelMatricula,
+    selectedEscuela: filtros.selectedEscuelaMatricula,
     selectedPrograma: filtros.selectedProgramaMatricula,
     selectedPeriodo: filtros.selectedPeriodoMatricula
   });
@@ -218,6 +223,7 @@ export const useCuposData = (estadisticas, filtros) => {
   const cuposFilteredData = filtrarDatosCupos(estadisticas, {
     yearRange: yearRangeCupos,
     selectedNivel: filtros.selectedNivelCupos,
+    selectedEscuela: filtros.selectedEscuelaCupos,
     selectedPrograma: filtros.selectedProgramaCupos,
     selectedPeriodo: filtros.selectedPeriodoCupos
   });

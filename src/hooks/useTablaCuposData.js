@@ -16,6 +16,7 @@ export const useTablaCuposData = (cuposFilteredData) => {
     const codPlanKey = findKey('codplan') || 'codPlan';
     const planKey = findKey('plan') || 'plan';
     const nivelKey = findKey('nivel') || 'nivel';
+    const escuelaKey = findKey('escuela') || 'escuela';
     const periodoKey = findKey('periodo') || 'periodo';
     const cuposMaxKey = findKey('cuposmax') || 'cupos_max';
     const primeraVezKey = findKey('primeravez') || 'primera_vez';
@@ -30,11 +31,12 @@ export const useTablaCuposData = (cuposFilteredData) => {
         : 'N/A'; // Código del programa
       const programa = item[planKey]; // Nombre del programa académico
       const nivel = item[nivelKey] || item.Nivel;
-      
+      const escuela = item[escuelaKey] || item.Escuela;
       if (!datosPorPrograma[codPrograma]) {
         datosPorPrograma[codPrograma] = {
           codPrograma,
           programa,
+          escuela,
           nivel,
           totalCuposMax: 0,
           totalPrimeraVez: 0

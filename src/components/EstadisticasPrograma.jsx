@@ -10,11 +10,12 @@ import { useDashboardData, useMatriculaData, useProcessedMatriculaData, useCupos
 import { useEstadisticasPorNivel } from '../hooks/useEstadisticasPorNivel';
 import { useTablaMatriculaData } from '../hooks/useTablaMatriculaData';
 import { useEstadisticasPorNivelCupos } from '../hooks/useEstadisticasPorNivelCupos';
+import { useEstadisticasPorEscuelaCupos } from '../hooks/useEstadisticasPorEscuelaCupos';
 import { useTablaCuposData } from '../hooks/useTablaCuposData';
 import { useProgramasDistribucion } from '../hooks/useProgramasDistribucion';
 import { useFilters } from '../hooks/useFilters';
 import FiltersCard from './common/FiltersCard';
-import { CHART_COLORS, YEARS_RANGE, NIVELES_ACADEMICOS } from '../constants/dashboardConstants';
+import { CHART_COLORS, YEARS_RANGE, NIVELES_ACADEMICOS, ESCUELAS } from '../constants/dashboardConstants';
 import { filtrarDatosMatricula, filtrarDatosCupos, parsearPeriodo } from '../utils/dashboardUtils';
 import '../utils/chartConfig'; // Configuración de Chart.js
 import '../styles/dashboard.css';
@@ -50,6 +51,7 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
   // Filtros específicos para matrícula de este programa
   const matriculaFilteredData = filtrarDatosMatricula(filtrarPorPrograma(estadisticas), {
     yearRange: yearRangeMatricula,
+    selectedEscuela: 'Todos', // Sin filtro de escuela
     selectedNivel: 'Todos', // Sin filtro de nivel
     selectedPrograma: 'Todos', // Ya está filtrado por programa
     selectedPeriodo: filters.selectedPeriodoMatricula || 'Todos'
@@ -58,6 +60,7 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
   // Filtros específicos para cupos de este programa
   const cuposFilteredData = filtrarDatosCupos(filtrarPorPrograma(estadisticas), {
     yearRange: yearRangeCupos,
+    selectedEscuela: 'Todos', // Sin filtro de escuela
     selectedNivel: 'Todos', // Sin filtro de nivel
     selectedPrograma: 'Todos', // Ya está filtrado por programa
     selectedPeriodo: filters.selectedPeriodoCupos || 'Todos'
@@ -71,6 +74,10 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
   const estadisticasPorNivelMatricula = useEstadisticasPorNivel(matriculaFilteredData);
   const estadisticasPorNivelCupos = useEstadisticasPorNivelCupos(cuposFilteredData);
 
+
+  // Hooks para estadísticas por escuela
+  const estadisticasPorEscuelaMatricula = useEstadisticasPorEscuela(matriculaFilteredData);
+  const estadisticasPorEscuelaCupos = useEstadisticasPorEscuelaCupos(cuposFilteredData);
   // Hooks para tablas de datos
   const datosTablaMatricula = useTablaMatriculaData(matriculaFilteredData);
   const datosTablaCupos = useTablaCuposData(cuposFilteredData);
@@ -85,6 +92,7 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
   const availableOptions = {
     years,
     semesters,
+    escuelas: ESCUELAS,
     niveles: NIVELES_ACADEMICOS,
     programas: [programaAcademico], // Solo este programa
     periodos
@@ -380,6 +388,7 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
               showPeriodoFilter={true}
               hidePrograma={true} // Ocultar filtro de programa
               hideNivel={true} // Ocultar filtro de nivel
+              hideEscuela={true} // Ocultar filtro de escuela
             />
 
             {/* Verificar si hay datos de matrícula */}
@@ -451,6 +460,7 @@ const EstadisticasPrograma = ({ programaAcademico }) => {
               showPeriodoFilter={true}
               hidePrograma={true} // Ocultar filtro de programa
               hideNivel={true} // Ocultar filtro de nivel
+              hideEscuela={true} // Ocultar filtro de escuela
             />
 
             {/* Verificar si hay datos de cupos */}

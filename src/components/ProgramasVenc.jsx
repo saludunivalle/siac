@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -15,11 +15,36 @@ import {
   Card,
   CardContent,
   useMediaQuery,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import WarningIcon from "@mui/icons-material/Warning";
 import { Filtro5 } from "../service/data";
 import { useTheme } from "@mui/material/styles";
+import { ESCUELAS } from "../constants/dashboardConstants";
+
+const getUserEscuela = () => {
+  try {
+    const logged = sessionStorage.getItem("logged");
+    if (!logged) return null;
+
+    const res = JSON.parse(logged);
+    if (!Array.isArray(res) || res.length === 0) return null;
+
+    const directorEscuela = res.find((item) => {
+      const permiso = item.permiso;
+      if (Array.isArray(permiso)) return permiso.includes("Director Escuela");
+      return permiso === "Director Escuela";
+    });
+
+    return directorEscuela?.escuela || res[0]?.escuela || null;
+  } catch {
+    return null;
+  }
+};
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   borderLeft: `1px solid ${theme.palette.grey[400]}`,
@@ -81,6 +106,20 @@ const ProgramasVenc = () => {
   const [isCargo, setCargo] = useState([" "]);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [allPrograms, setAllPrograms] = useState([]);
+  const [selectedEscuela, setSelectedEscuela] = useState(() => {
+    return getUserEscuela() || "Todas";
+  });
+
+  const uniqueEscuelas = useMemo(() => {
+    const baseEscuelas = [...ESCUELAS];
+    const userEscuela = getUserEscuela();
+    if (userEscuela && !baseEscuelas.includes(userEscuela)) {
+      baseEscuelas.push(userEscuela);
+    }
+    return baseEscuelas;
+  }, []);
 
   // Obtener los permisos del usuario
   useEffect(() => {
@@ -220,13 +259,7 @@ const ProgramasVenc = () => {
         if (!response) {
           throw new Error("response is undefined");
         }
-
-        const expiredRRCPrograms = getExpiredRRCPrograms(response);
-        const expiredRACPrograms = getExpiredRACPrograms(response);
-
-        setExpiredRRCCount(expiredRRCPrograms);
-        setExpiredRACCount(expiredRACPrograms);
-        countExpiringPrograms(response);
+        setAllPrograms(response);
       } catch (error) {
         console.error("Error al filtrar datos:", error);
       }
@@ -238,6 +271,29 @@ const ProgramasVenc = () => {
     }
     fetchData();
   }, []);
+
+  // Efecto para filtrar y contar programas cuando cambie la escuela o los programas cargados
+  useEffect(() => {
+    if (allPrograms.length === 0) return;
+
+    const filtered =
+      selectedEscuela === "Todas"
+        ? allPrograms
+        : allPrograms.filter((p) => p.escuela === selectedEscuela);
+
+    const expiredRRCPrograms = getExpiredRRCPrograms(filtered);
+    const expiredRACPrograms = getExpiredRACPrograms(filtered);
+
+    setExpiredRRCCount(expiredRRCPrograms);
+    setExpiredRACCount(expiredRACPrograms);
+    countExpiringPrograms(filtered);
+  }, [
+    allPrograms,
+    selectedEscuela,
+    getExpiredRRCPrograms,
+    getExpiredRACPrograms,
+    countExpiringPrograms,
+  ]);
 
   //Función para redirigir a la página de detalles del programa
   const handleRowClick = (program) => {
@@ -597,9 +653,44 @@ const ProgramasVenc = () => {
           mt: "80px",
         }}
       >
-        <Typography variant="h4" gutterBottom>
+        <Typography
+          variant="h4"
+          sx={{ fontWeight: 700, color: "#212529", m: 0, ml: 5 }}
+        >
           Programas por Vencer
         </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+            flexWrap: "wrap",
+            gap: 2,
+            mt: 2,
+            ml: 5,
+          }}
+        >
+          <FormControl sx={{ minWidth: 240 }} size="small">
+            <InputLabel id="escuela-filter-label">
+              Filtrar por Escuela
+            </InputLabel>
+            <Select
+              labelId="escuela-filter-label"
+              id="escuela-filter"
+              value={selectedEscuela}
+              label="Filtrar por Escuela"
+              onChange={(e) => setSelectedEscuela(e.target.value)}
+            >
+              <MenuItem value="Todas">Todas las Escuelas</MenuItem>
+              {uniqueEscuelas.map((escuela) => (
+                <MenuItem key={escuela} value={escuela}>
+                  {escuela}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
         <ExpiryTable />
         <Box sx={{ mt: 4 }}>
           <Typography variant="h5" gutterBottom>

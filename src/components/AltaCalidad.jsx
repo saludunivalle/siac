@@ -27,6 +27,24 @@ import StarIcon from "@mui/icons-material/Star";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import PublicIcon from "@mui/icons-material/Public";
 
+const ESTADOS_AAC_VIGENTE = ["Vigente", "Vigente (En trámite)", "En trámite"];
+
+const isEstadoAacVigente = (estado) =>
+  ESTADOS_AAC_VIGENTE.includes(String(estado ?? "").trim());
+
+const getRiesgoAac = (programa) => {
+  if (isEstadoAacVigente(programa["estadoaac"])) {
+    return {
+      riesgo: "Medio",
+      mensaje: "Programa con acreditación vigente - Riesgo medio",
+    };
+  }
+  return {
+    riesgo: "Alto",
+    mensaje: "Programa con acreditación vencida",
+  };
+};
+
 const AltaCalidad = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -107,7 +125,7 @@ const AltaCalidad = () => {
           }
 
           setRaacProgramCounts({
-            white: raacResponse.filter((item) => item["fase rac"] === "Vencido")
+            white: raacResponse.filter((item) => item["fase rac"] === "Vencido" && item['estadoaac'] == "No Vigente" || item['estadoaac'] != '')
               .length,
             green: raacResponse.filter(
               (item) =>
@@ -231,7 +249,7 @@ const AltaCalidad = () => {
           ) {
             riesgo = "SinRegistro";
             mensaje = "Fase RAC no definida";
-          } else if (programa["fase rac"] === "Vencido") {
+          } else if (programa["fase rac"] === "Vencido" && (programa['estadoaac'] == '' || programa['estadoaac'] == 'No Vigente')) {
             riesgo = "Alto";
             mensaje = "Programa con acreditación vencida";
           } else if (programa["fase rac"] === "Fase 5") {
@@ -239,7 +257,7 @@ const AltaCalidad = () => {
             mensaje = "Programa en Fase 5 - Alto riesgo";
           } else if (
             programa["fase rac"] === "Fase 4" ||
-            programa["fase rac"] === "Fase 3"
+            programa["fase rac"] === "Fase 3" || (programa["fase rac"] === "Vencido" && (programa['estadoaac'] == 'Vigente' || programa['estadoaac'] == 'Vigente (En trámite)'))
           ) {
             riesgo = "Medio";
             mensaje = `Programa en ${programa["fase rac"]} - Riesgo medio`;
@@ -254,70 +272,9 @@ const AltaCalidad = () => {
             mensaje = seguimiento ? seguimiento.mensaje : "Sin información";
           }
         }
-        // Clasificar programas AAC según su estado de acreditación
+        // Clasificar programas AAC: vigente siempre es riesgo medio
         else if (estado === "AAC") {
-          if (
-            programa["estadoaac"] !== "Vigente" ||
-            programa["estadoaac"] !== "Vigente (En trámite)" ||
-            programa["estadoaac"] !== "En trámite"
-          ) {
-            riesgo = "Alto";
-            mensaje = "Programa con acreditación vencida";
-          } else if (
-            programa["estadoaac"] === "Vigente" ||
-            programa["estadoaac"] === "Vigente (En trámite)" ||
-            programa["estadoaac"] === "En trámite"
-          ) {
-            // Si tiene fecha de vencimiento, clasificar según la fecha
-            if (programa["fechavencac"]) {
-              const fechaVenc = programa["fechavencac"];
-              const partesFecha = fechaVenc.split("/");
-              if (partesFecha.length === 3) {
-                const año = parseInt(partesFecha[2]);
-                const mes = parseInt(partesFecha[1]) - 1;
-                const dia = parseInt(partesFecha[0]);
-                const fechaVencimiento = new Date(año, mes, dia);
-                const hoy = new Date();
-
-                // Calcular diferencia en meses
-                const diferenciaMeses =
-                  (fechaVencimiento.getFullYear() - hoy.getFullYear()) * 12 +
-                  (fechaVencimiento.getMonth() - hoy.getMonth());
-
-                if (diferenciaMeses <= 0) {
-                  // Ya venció o vence este mes
-                  riesgo = "Alto";
-                  mensaje = "Programa próximo a vencer o vencido";
-                } else if (diferenciaMeses <= 12) {
-                  // Vence en menos de un año
-                  riesgo = "Alto";
-                  mensaje = "Programa vence en menos de un año";
-                } else if (diferenciaMeses <= 24) {
-                  // Vence en menos de dos años
-                  riesgo = "Medio";
-                  mensaje = "Programa vence en menos de dos años";
-                } else {
-                  // Vence en más de dos años
-                  riesgo = "Bajo";
-                  mensaje = "Programa con vigencia extendida";
-                }
-              } else {
-                // Formato de fecha incorrecto
-                riesgo = "SinRegistro";
-                mensaje = "Formato de fecha de vencimiento incorrecto";
-              }
-            } else {
-              // No tiene fecha de vencimiento
-              riesgo = "SinRegistro";
-              mensaje = "Sin fecha de vencimiento registrada";
-            }
-          } else {
-            // Si no tiene información de vigencia
-            riesgo = seguimiento ? seguimiento.riesgo : "SinRegistro";
-            mensaje = seguimiento
-              ? seguimiento.mensaje
-              : "Sin información de vigencia";
-          }
+          ({ riesgo, mensaje } = getRiesgoAac(programa));
         }
         // Para los demás casos, usar el seguimiento
         else {
@@ -776,98 +733,15 @@ const AltaCalidad = () => {
     return programs.map((program) => {
       // Para programas AAC, clasificar según estado de acreditación
       if (program["aac_1a"] === "SI") {
-        if (
-          program["estadoaac"] !== "Vigente" ||
-          program["estadoaac"] !== "Vigente (En trámite)" ||
-          program["estadoaac"] !== "En trámite"
-        ) {
-          return {
-            ...program,
-            riesgo: "Alto",
-            mensaje: "Programa con acreditación vencida",
-          };
-        }
-
-        if (
-          program["estadoaac"] === "Vigente" ||
-          (program["estadoaac"] === "Vigente (En trámite)" &&
-            program["fechavencac"])
-        ) {
-          const fechaVenc = program["fechavencac"];
-          const partesFecha = fechaVenc.split("/");
-
-          if (partesFecha.length === 3) {
-            const año = parseInt(partesFecha[2]);
-            const mes = parseInt(partesFecha[1]) - 1;
-            const dia = parseInt(partesFecha[0]);
-            const fechaVencimiento = new Date(año, mes, dia);
-            const hoy = new Date();
-
-            // Calcular diferencia en meses
-            const diferenciaMeses =
-              (fechaVencimiento.getFullYear() - hoy.getFullYear()) * 12 +
-              (fechaVencimiento.getMonth() - hoy.getMonth());
-
-            if (diferenciaMeses <= 0) {
-              return {
-                ...program,
-                riesgo: "Alto",
-                mensaje: "Programa próximo a vencer o vencido",
-              };
-            }
-
-            if (diferenciaMeses <= 12) {
-              return {
-                ...program,
-                riesgo: "Alto",
-                mensaje: "Programa vence en menos de un año",
-              };
-            }
-
-            if (diferenciaMeses <= 24) {
-              return {
-                ...program,
-                riesgo: "Medio",
-                mensaje: "Programa vence en menos de dos años",
-              };
-            }
-
-            return {
-              ...program,
-              riesgo: "Bajo",
-              mensaje: "Programa con vigencia extendida",
-            };
-          }
-        }
-
-        // Si es un programa AAC pero no cumple las condiciones anteriores, clasificar como SinRegistro
-        // Esto incluye programas sin fecha de vencimiento o con formato incorrecto
-        if (!program["fechavencac"] || program["fechavencac"] === "") {
-          return {
-            ...program,
-            riesgo: "SinRegistro",
-            mensaje: "Sin fecha de vencimiento registrada",
-          };
-        }
-
-        // Para programas AAC con fase_rac N/A o vacío, clasificar como SinRegistro
-        if (
-          ((!program["fase rac"] || program["fase rac"] === "") &&
-            program["estadoaac"] !== "Vigente") ||
-          program["estadoaac"] !== "Vigente (En trámite)" ||
-          program["estadoaac"] !== "En trámite"
-        ) {
-          return {
-            ...program,
-            riesgo: "SinRegistro",
-            mensaje: "Fase RAC no definida",
-          };
-        }
+        return {
+          ...program,
+          ...getRiesgoAac(program),
+        };
       }
 
       // Asignar riesgo según la fase para programas RAAC
 
-      if (program["fase rac"] === "Vencido") {
+      if (program["fase rac"] === "Vencido" && (program['estadoaac'] == '' || program['estadoaac'] == 'No Vigente')) {
         return {
           ...program,
           riesgo: "Alto",
@@ -885,7 +759,7 @@ const AltaCalidad = () => {
 
       if (
         program["fase rac"] === "Fase 4" ||
-        program["fase rac"] === "Fase 3"
+        program["fase rac"] === "Fase 3" || ((program["fase rac"] === "Vencido" ||  program["fase rac"] === "N/A") && (program['estadoaac'] == 'Vigente' || program['estadoaac'] == 'Vigente (En trámite)'))
       ) {
         return {
           ...program,
@@ -1145,7 +1019,8 @@ const AltaCalidad = () => {
             />
           ) : (
             <>
-              <Box sx={{ width: "100%", mb: 4 }}>
+            <Box sx={{ width: "100%", mb: 4 }}>
+              
                 <Card
                   sx={{
                     boxShadow:
@@ -1182,8 +1057,8 @@ const AltaCalidad = () => {
                     </Box>
                   </CardContent>
                 </Card>
-              </Box>
-              <GeneralProcessTable
+              
+              <GeneralProcessTable 
                 counts={counts}
                 processConfig={processConfig}
                 riskConfig={riskConfig}
@@ -1192,6 +1067,7 @@ const AltaCalidad = () => {
                 getGrandTotal={getGrandTotal}
                 handleRowClick={handleRowClick}
               />
+              </Box>
             </>
           )}
         </Box>

@@ -27,6 +27,7 @@ const DashboardEstadisticas = () => {
     semesters, 
     programas, 
     nivelesUnicos,
+    escuelas,
     minYear, 
     maxYear 
   } = useDashboardData();
@@ -115,6 +116,7 @@ const DashboardEstadisticas = () => {
     years,
     semesters,
     niveles: nivelesUnicos, // Usar los niveles únicos de los datos reales
+    escuelas,
     programas,
     periodos
   };

@@ -5,6 +5,7 @@ import NivelStatsCard from '../common/NivelStatsCard';
 import ChartCard from '../common/ChartCard';
 import DataTable from '../common/DataTable';
 import { useEstadisticasPorNivelCupos } from '../../hooks/useEstadisticasPorNivelCupos';
+import { useEstadisticasPorEscuela } from '../../hooks/useEstadisticasPorEscuela';
 import { useTablaCuposData } from '../../hooks/useTablaCuposData';
 import { CHART_COLORS } from '../../constants/dashboardConstants';
 
@@ -20,6 +21,7 @@ const IndicadoresCupos = ({
   availableOptions
 }) => {
   const estadisticasPorNivel = useEstadisticasPorNivelCupos(cuposFilteredData);
+  const estadisticasPorEscuela = useEstadisticasPorEscuela(cuposFilteredData);
   const datosTablaCupos = useTablaCuposData(cuposFilteredData);
 
   // Configuración del gráfico combinado de cupos
@@ -133,6 +135,7 @@ const IndicadoresCupos = ({
       <FiltersCard
         title="Filtros de Indicadores de Cupos Asignados"
         filters={{
+          selectedEscuela: filters.selectedEscuelaCupos,
           selectedNivel: filters.selectedNivelCupos,
           selectedPrograma: filters.selectedProgramaCupos,
           selectedPeriodo: filters.selectedPeriodoCupos
@@ -140,6 +143,8 @@ const IndicadoresCupos = ({
         onFilterChange={(filterName, value) => {
           if (filterName === 'selectedNivel') {
             onFilterChange('selectedNivelCupos', value);
+          } else if (filterName === 'selectedEscuela') {
+            onFilterChange('selectedEscuelaCupos', value);
           } else if (filterName === 'selectedPrograma') {
             onFilterChange('selectedProgramaCupos', value);
           } else if (filterName === 'selectedPeriodo') {
