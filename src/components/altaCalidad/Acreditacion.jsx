@@ -15,7 +15,11 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  TableSortLabel
+  TableSortLabel,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl
 } from '@mui/material';
 import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import SummarizeIcon from '@mui/icons-material/Summarize';
@@ -53,7 +57,7 @@ const Acreditacion = ({
   const [filters, setFilters] = useState({
     'programa académico': [],
     'escuela': [],
-    'riesgo': [],
+    // 'riesgo': [],
     'estadoaac': [],
     'tiempo':[],
     'pregrado/posgrado': []
@@ -107,7 +111,7 @@ const Acreditacion = ({
     setFilters({
       'programa académico': [],
       'escuela': [],
-      'riesgo': [],
+      // 'riesgo': [],
       'estadoaac': [],
       'tiempo':[],
       'pregrado/posgrado': []
@@ -148,11 +152,11 @@ const Acreditacion = ({
       label: 'Escuela',
       options: getUniqueOptions('escuela')
     },
-    {
+    /* {
       key: 'riesgo',
       label: 'Riesgo',
       options: getUniqueOptions('riesgo')
-    },
+    }, */
      {
           key: 'tiempo',
           label: 'Tiempo',
@@ -470,6 +474,33 @@ const Acreditacion = ({
                   Limpiar filtro riesgo
                 </Button>
               )}
+            </Box>
+
+            {/* Filtro de Riesgo (Radio Buttons) */}
+            <Box sx={{ px: 3, pt: 2, pb: 1, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#495057' }}>
+                Filtrar por Riesgo:
+              </Typography>
+              <RadioGroup
+                row
+                value={selectedRisk || 'Todos'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'Todos') {
+                    setSelectedRisk(null);
+                    setFilteredByRisk(false);
+                  } else {
+                    setSelectedRisk(val);
+                    setFilteredByRisk(true);
+                  }
+                }}
+              >
+                <FormControlLabel value="Todos" control={<Radio size="small" sx={{ color: '#6C757D', '&.Mui-checked': { color: '#6C757D' } }} />} label="Todos" />
+                <FormControlLabel value="Alto" control={<Radio size="small" sx={{ color: '#DC3545', '&.Mui-checked': { color: '#DC3545' } }} />} label="Alto" />
+                <FormControlLabel value="Medio" control={<Radio size="small" sx={{ color: '#FF8C00', '&.Mui-checked': { color: '#FF8C00' } }} />} label="Medio" />
+                <FormControlLabel value="Bajo" control={<Radio size="small" sx={{ color: '#28A745', '&.Mui-checked': { color: '#28A745' } }} />} label="Bajo" />
+                <FormControlLabel value="SinRegistro" control={<Radio size="small" sx={{ color: '#6C757D', '&.Mui-checked': { color: '#6C757D' } }} />} label="Sin Registro" />
+              </RadioGroup>
             </Box>
 
             {/* Panel de filtros */}
