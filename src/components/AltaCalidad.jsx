@@ -68,6 +68,9 @@ const isVigente = (estado) => {
   );
 };
 
+const now = new Date();
+const currentYear = now.getFullYear();
+
 const parseDate = (value) => {
   const raw = normalize(value);
   if (!raw) return null;
@@ -94,23 +97,23 @@ const getVencimientoInfo = (fechaVencimiento) => {
     (fecha.getMonth() - now.getMonth());
 
   if (diffMonths <= 12)
-    return { key: "red", label: "Año del vencimiento", color: "#DC3545" };
+    return { key: "red", label: "Este año", color: "#DC3545" };
   if (diffMonths <= 24)
     return {
       key: "orange",
-      label: "18 meses antes del vencimiento",
+      label: "A 18 meses",
       color: "#FF8C00",
     };
   if (diffMonths <= 36)
     return {
       key: "yellow",
-      label: "2 años antes del vencimiento",
+      label: "A 2 años",
       color: "#F4C430",
     };
   if (diffMonths <= 48)
     return {
       key: "green",
-      label: "4 años antes del vencimiento",
+      label: "A 4 años",
       color: "#2E7D32",
     };
   return { key: "darkGreen", label: "Más de 4 años", color: "#1B5E20" };
@@ -456,8 +459,8 @@ const AltaCalidad = () => {
             (label) =>
               rows.filter((row) => row.nivelFormacion === label).length,
           ),
-          backgroundColor: "rgba(108, 117, 125, 0.45)",
-          borderColor: "#6C757D",
+          backgroundColor: "rgba(144, 153, 161, 0.45)",
+          borderColor: "#141414",
           borderWidth: 1,
         },
       ],
@@ -729,7 +732,7 @@ const AltaCalidad = () => {
                       {chartData.labels.length > 0 ? (
                         <Bar data={chartData} options={chartOptions} />
                       ) : (
-                        <Typography sx={{ color: "#6C757D" }}>
+                        <Typography sx={{ color: "#2e2e2e" }}>
                           Sin datos para mostrar.
                         </Typography>
                       )}
@@ -746,7 +749,7 @@ const AltaCalidad = () => {
                     const isSelected = selectedEstado === card.key;
                     const value = estadoCounts[card.key];
                     return (
-                      <Grid item xs={12} sm={6} md={3} key={card.key}>
+                      <Grid item xs={12} sm={6} md={2} key={card.key}>
                         <Fade in timeout={500 + index * 80}>
                           <Card
                             elevation={0}
@@ -760,6 +763,7 @@ const AltaCalidad = () => {
                               position: "relative",
                               overflow: "hidden",
                               cursor: "pointer",
+                              width: "100%",
                               transition:
                                 "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                               "&:hover": { transform: "translateY(-6px)" },
@@ -813,7 +817,7 @@ const AltaCalidad = () => {
                     );
                   })}
                 </Grid>
-
+                {/** 
                 <Card
                   sx={{
                     mb: 3,
@@ -859,10 +863,10 @@ const AltaCalidad = () => {
                     >
                       Ver ambos procesos
                     </Button>
-*/}
+
                   </CardContent>
                 </Card>
-
+*/}
                 <Card
                   sx={{
                     mb: 3,
@@ -872,11 +876,26 @@ const AltaCalidad = () => {
                   }}
                 >
                   <CardContent
-                    sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 3, // Aumenté el gap para mejor separación entre filtros
+                      alignItems: "center", // Centra verticalmente todo el contenido
+                    }}
                   >
-                    <Box>
-                      <Typography sx={{ fontWeight: 700, mb: 1 }}>
-                        Riesgo por seguimiento
+                    {/* Primer filtro: Riesgo por seguimiento */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center", // Alinea el título y las opciones en la misma línea
+                        gap: 1,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <Typography
+                        sx={{ fontWeight: 700, whiteSpace: "nowrap" }}
+                      >
+                        Riesgo por seguimiento:
                       </Typography>
                       <RadioGroup
                         row
@@ -887,6 +906,10 @@ const AltaCalidad = () => {
                             riesgoSeguimiento: e.target.value,
                           }))
                         }
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                        }}
                       >
                         {["Alto", "Medio", "Bajo", "SinRegistro"].map(
                           (risk) => (
@@ -921,9 +944,20 @@ const AltaCalidad = () => {
                         )}
                       </RadioGroup>
                     </Box>
-                    <Box>
-                      <Typography sx={{ fontWeight: 700, mb: 1 }}>
-                        Riesgo por vencimiento
+
+                    {/* Segundo filtro: Riesgo por vencimiento */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center", // Alinea el título y las opciones en la misma línea
+                        gap: 1,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <Typography
+                        sx={{ fontWeight: 700, whiteSpace: "nowrap" }}
+                      >
+                        Riesgo por vencimiento:
                       </Typography>
                       <RadioGroup
                         row
@@ -934,33 +968,49 @@ const AltaCalidad = () => {
                             riesgoVencimiento: e.target.value,
                           }))
                         }
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                        }}
                       >
                         {[
                           {
                             key: "green",
-                            label: "4 años antes del vencimiento",
+                            label: "A 4 años",
                             color: getVencimientoInfo(
-                              new Date(new Date().getFullYear() + 3, 0, 1),
+                              new Date(
+                                currentYear + 4,
+                                now.getMonth(),
+                                now.getDate(),
+                              ),
                             ).color,
                           },
                           {
                             key: "yellow",
-                            label: "2 años antes del vencimiento",
+                            label: "A 2 años",
                             color: getVencimientoInfo(
-                              new Date(new Date().getFullYear() + 2, 0, 1),
+                              new Date(
+                                currentYear + 2,
+                                now.getMonth(),
+                                now.getDate(),
+                              ),
                             ).color,
                           },
                           {
                             key: "orange",
-                            label: "18 meses antes del vencimiento",
+                            label: "A 18 meses",
                             color: getVencimientoInfo(
-                              new Date(new Date().getFullYear() + 1, 0, 1),
+                              new Date(
+                                currentYear + 1,
+                                now.getMonth() + 6,
+                                now.getDate(),
+                              ),
                             ).color,
                           },
                           {
                             key: "red",
-                            label: "Año del vencimiento",
-                            color: getVencimientoInfo(new Date()).color,
+                            label: "Este año",
+                            color: getVencimientoInfo(now).color,
                           },
                         ].map((item) => (
                           <FormControlLabel
@@ -1073,7 +1123,10 @@ const AltaCalidad = () => {
                       flexWrap: "wrap",
                     }}
                   >
-                    <Typography variant="body2" sx={{ color: "#6C757D" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#070707", fontWeight: 600 }}
+                    >
                       {estadoFilteredRows.length} programa
                       {estadoFilteredRows.length === 1 ? "" : "s"} encontrado
                       {estadoFilteredRows.length === 1 ? "" : "s"}
@@ -1097,18 +1150,70 @@ const AltaCalidad = () => {
                   }}
                 >
                   <Box
-                    sx={{ p: 3, borderBottom: "1px solid rgba(0,0,0,0.06)" }}
+                    sx={{
+                      p: 3,
+                      borderBottom: "1px solid rgba(0,0,0,0.06)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 1,
+                    }}
                   >
-                    <Typography
-                      variant="h6"
-                      sx={{ fontWeight: 700, color: "#212529" }}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
                     >
-                      Programas
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "#6C757D" }}>
-                      Datos de acreditacion y renovacion de acreditacion
-                    </Typography>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 700, color: "#212529" }}
+                      >
+                        {`Programas (${estadoFilteredRows.length})`}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#6C757D" }}>
+                        Datos de acreditacion y renovacion de acreditacion
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {processCards.map((process) => {
+                        const active = filters.procesos.includes(process.key);
+                        return (
+                          <Button
+                            key={process.key}
+                            variant={active ? "contained" : "outlined"}
+                            onClick={() => toggleProcess(process.key)}
+                            sx={{
+                              borderColor: "#B22222",
+                              color: active ? "white" : "#B22222",
+                              backgroundColor: active
+                                ? "#B22222"
+                                : "transparent",
+                              "&:hover": {
+                                backgroundColor: active
+                                  ? "#8B1A1A"
+                                  : "rgba(178, 34, 34, 0.04)",
+                                borderColor: "#B22222",
+                              },
+                            }}
+                          >
+                            {process.label}
+                          </Button>
+                        );
+                      })}
+                    </Box>
                   </Box>
+
                   <TableContainer
                     component={Paper}
                     elevation={0}
