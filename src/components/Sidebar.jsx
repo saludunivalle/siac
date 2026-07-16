@@ -54,6 +54,7 @@ const Sidebar = ({ isCargo }) => {
   useEffect(() => {
     if (isMobile) {
       setOpen(false);
+      setIsHidden(false);
     }
   }, [isMobile]);
 
@@ -81,6 +82,9 @@ const Sidebar = ({ isCargo }) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
         setIsHidden(true); // Esto oculta el sidebar completamente
         setOpen(false);
+        if (isMobile) {
+          setOpen(false);
+        }
       }
     };
     if (open) {
@@ -90,7 +94,7 @@ const Sidebar = ({ isCargo }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [open]);
+  }, [open, isMobile]);
 
   const handleDrawerToggle = () => {
     if (isHidden) {
@@ -102,7 +106,12 @@ const Sidebar = ({ isCargo }) => {
   };
 
   const handleHideSidebar = () => {
-    setIsHidden(true);
+    if (isMobile) {
+      setOpen(false); // En móvil solo cerrar
+    } else {
+      setIsHidden(true);
+      setOpen(false);
+    }
   };
 
   const isActive = (path) => {
@@ -850,7 +859,7 @@ const Sidebar = ({ isCargo }) => {
       </Drawer>
 
       {/* Botón flotante cuando el menú está oculto */}
-      {isHidden && (
+      {(isHidden || (isMobile && !open)) && (
         <Box
           sx={{
             position: "fixed",
