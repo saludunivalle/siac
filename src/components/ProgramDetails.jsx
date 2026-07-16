@@ -1188,6 +1188,7 @@ const ProgramDetails = () => {
               >
                 Actualizar Datos
               </Button>
+              {/** 
               <Button
                 variant="contained"
                 color="primary"
@@ -1195,7 +1196,7 @@ const ProgramDetails = () => {
                 style={{ minWidth: 180 }}
               >
                 Descargar Seguimiento Excel
-              </Button>
+              </Button>*/}
             </Box>
           )}
 

@@ -76,19 +76,19 @@ const Sidebar = ({ isCargo }) => {
     }
   }, []);
 
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setIsHidden(true); // Esto oculta el sidebar completamente
         setOpen(false);
       }
     };
     if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
     // Limpiar el evento para evitar errores
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [open]);
 
@@ -215,12 +215,7 @@ const Sidebar = ({ isCargo }) => {
           path: "/",
           tooltip: "Inicio",
         },
-        {
-          text: "Programas próximos a vencerse",
-          icon: <DescriptionIcon />,
-          path: "/programas-venc",
-          tooltip: "Programas próximos a vencerse",
-        },
+
         {
           text: "Estadísticas Posgrados",
           icon: <QueryStatsIcon />,
@@ -278,12 +273,18 @@ const Sidebar = ({ isCargo }) => {
     },
   ];
 
-/**
+  /**
  *         {/** 
           text: "Docencia Servicio",
           icon: <LocalHospitalIcon />,
           path: "/docencia-servicio",
           tooltip: "Docencia Servicio",
+        },
+                {
+          text: "Programas próximos a vencerse",
+          icon: <DescriptionIcon />,
+          path: "/programas-venc",
+          tooltip: "Programas próximos a vencerse",
         },
  */
 
@@ -555,26 +556,26 @@ const Sidebar = ({ isCargo }) => {
                 <MenuIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Tooltip>
-                {
-            <Tooltip title="Ocultar menú" placement="left" arrow>
-              <IconButton
-                onClick={() => setIsHidden(true)}
-                sx={{
-                  width: 28,
-                  height: 28,
-                  backgroundColor: "rgba(108, 117, 125, 0.08)",
-                  color: "#6C757D",
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                  "&:hover": {
-                    backgroundColor: "rgba(108, 117, 125, 0.12)",
-                    transform: "scale(1.05)",
-                  },
-                }}
-              >
-                <KeyboardArrowLeftRoundedIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
-} 
+            {
+              <Tooltip title="Ocultar menú" placement="left" arrow>
+                <IconButton
+                  onClick={() => setIsHidden(true)}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    backgroundColor: "rgba(108, 117, 125, 0.08)",
+                    color: "#6C757D",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    "&:hover": {
+                      backgroundColor: "rgba(108, 117, 125, 0.12)",
+                      transform: "scale(1.05)",
+                    },
+                  }}
+                >
+                  <KeyboardArrowLeftRoundedIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            }
           </Box>
         </Box>
 

@@ -221,6 +221,7 @@ export const sendDataToServer = async (data) => {
 
 export const updateSeguimiento = async (data) => {
   try {
+    const searchTimestamp = data.originalTimestamp || data.timestamp;
     const response = await fetch(
       "https://siac-server.vercel.app/updateSeguimientoRow",
       {
@@ -231,7 +232,7 @@ export const updateSeguimiento = async (data) => {
         body: JSON.stringify({
           searchData: {
             id_programa: data.id_programa,
-            timestamp: data.timestamp,
+            timestamp: searchTimestamp,
             usuario: data.usuario,
             topic: data.topic,
           },
