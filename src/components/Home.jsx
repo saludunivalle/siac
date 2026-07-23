@@ -1,5 +1,5 @@
 // src/components/Home.jsx
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Filtro5,
@@ -17,21 +17,18 @@ import {
   CardContent,
   Typography,
   Grid,
-  Button,
   CircularProgress,
   TableContainer,
   Table,
   TableBody,
   TableCell,
   TableRow,
-  Paper,
   Box,
   TableHead,
   Fade,
   Grow,
   useMediaQuery,
 } from "@mui/material";
-import DescriptionIcon from "@mui/icons-material/Description";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import SchoolIcon from "@mui/icons-material/School";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -1891,7 +1888,7 @@ const Home = () => {
             </Grid>
 
             {/* Gráfico Escuelas */}
-            <Grid item xs={12}>
+            <Grid item xs={12} sx={{ width: "100%" }}>
               <Grow in={!!chartDataEscuelas} timeout={1200}>
                 <Card
                   sx={{
@@ -1900,8 +1897,8 @@ const Home = () => {
                     borderRadius: "16px",
                     border: "1px solid rgba(0,0,0,0.02)",
                     overflow: "hidden",
-                    width: "85vw",
-                    maxWidth: "85vw",
+                    width: "calc(85vw - 40px)",
+                    maxWidth: "calc(85vw - 40px)",
                     ml: "33px",
                     mr: 0,
                     position: "relative",
@@ -1925,7 +1922,7 @@ const Home = () => {
                     </Typography>
                     <Box
                       sx={{
-                        height: { xs: 320, sm: 420, md: 520 },
+                        height: { xs: 380, sm: 480, md: 580, lg: 640 },
                         mb: 2,
                         width: "100%",
                       }}
@@ -2039,7 +2036,6 @@ const Home = () => {
             position: "relative",
             left: { xs: 0, sm: 0, md: "-20px", lg: "-20px" },
             boxSizing: "border-box",
-            overflowX: "hidden",
           }}
         >
           {/* Header principal */}
