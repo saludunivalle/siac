@@ -87,7 +87,7 @@ const parseDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const getVencimientoInfo = (fechaVencimiento) => {
+const getVencimientoInfo = (fechaVencimiento, estadoaac) => {
   const fecha = parseDate(fechaVencimiento);
   if (!fecha) return { key: "gray", label: "Sin fecha", color: "#6C757D" };
 
@@ -96,8 +96,16 @@ const getVencimientoInfo = (fechaVencimiento) => {
     (fecha.getFullYear() - now.getFullYear()) * 12 +
     (fecha.getMonth() - now.getMonth());
 
+  // Fechas ya vencidas (diffMonths < 0)
+  if (diffMonths < 0) {
+    if (isVigente(estadoaac)) {
+      return { key: "vencidoVigente", label: "Vencido vigente", color: "#E65100" };
+    }
+    return { key: "vencido", label: "Vencido", color: "#4A0000" };
+  }
+
   if (diffMonths <= 12)
-    return { key: "red", label: "Este año", color: "#DC3545" };
+    return { key: "red", label: "A un año", color: "#DC3545" };
   if (diffMonths <= 24)
     return {
       key: "orange",
@@ -150,7 +158,7 @@ const estadoCards = [
   },
   {
     key: "enProcesoFacultad",
-    label: "En proceso facultad",
+    label: "En proceso Facultad",
     color: "#6F42C1",
     backgroundColor: "rgba(111, 66, 193, 0.08)",
     borderColor: "rgba(111, 66, 193, 0.2)",
@@ -346,7 +354,7 @@ const AltaCalidad = () => {
         );
         const seguimientoRiesgo = seguimientoRAAC || seguimientoAAC;
 
-        return {
+        const row = {
           ...programa,
           proceso,
           programaAcademico: normalize(
@@ -378,8 +386,39 @@ const AltaCalidad = () => {
               "fecha vencac",
               "fecha_vencac",
             ),
+            programa.estadoaac,
           ),
         };
+
+        const vigente = isVigente(row.estadoaac);
+        let estadoVigenciaLabel = "";
+        let estadoVigenciaColor = "";
+
+        if (vigente) {
+          if (row.nivelAcademico === "Pregrado") {
+            estadoVigenciaLabel = "Vigentes Pregrado";
+            estadoVigenciaColor = "#1565C0";
+          } else if (row.nivelAcademico === "Posgrado") {
+            estadoVigenciaLabel = "Vigentes Posgrado";
+            estadoVigenciaColor = "#00838F";
+          } else {
+            estadoVigenciaLabel = "Vigentes / En tramite";
+            estadoVigenciaColor = "#2E7D32";
+          }
+        } else if (isEnProcesoFacultad(row, seguimientos)) {
+          estadoVigenciaLabel = "En proceso Facultad";
+          estadoVigenciaColor = "#6F42C1";
+        } else {
+          estadoVigenciaLabel = "No vigentes/Sin registro";
+          estadoVigenciaColor = "#C62828";
+        }
+
+        row.estadoVigencia = {
+          label: estadoVigenciaLabel,
+          color: estadoVigenciaColor,
+        };
+
+        return row;
       }),
     [programas, seguimientos, fasesById],
   );
@@ -505,7 +544,7 @@ const AltaCalidad = () => {
     }));
   };
 
-  const clearFilters = () =>
+  const clearFilters = () => {
     setFilters({
       procesos: [],
       riesgoSeguimiento: "",
@@ -515,6 +554,8 @@ const AltaCalidad = () => {
       nivelAcademico: "",
       nivelFormacion: "",
     });
+    setSelectedEstado(null);
+  };
 
   const handleSelectChange = (field) => (event) => {
     const value = event.target.value;
@@ -911,6 +952,31 @@ const AltaCalidad = () => {
                           alignItems: "center",
                         }}
                       >
+                        <FormControlLabel
+                          key="Todos"
+                          value=""
+                          control={
+                            <Radio
+                              size="small"
+                              sx={{
+                                color: "#6C757D",
+                                "&.Mui-checked": {
+                                  color: "#6C757D",
+                                },
+                              }}
+                            />
+                          }
+                          label={
+                            <Box
+                              sx={{
+                                color: "#6C757D",
+                                fontWeight: 700,
+                              }}
+                            >
+                              Todos
+                            </Box>
+                          }
+                        />
                         {["Alto", "Medio", "Bajo", "SinRegistro"].map(
                           (risk) => (
                             <FormControlLabel
@@ -973,6 +1039,31 @@ const AltaCalidad = () => {
                           alignItems: "center",
                         }}
                       >
+                        <FormControlLabel
+                          key="Todos"
+                          value=""
+                          control={
+                            <Radio
+                              size="small"
+                              sx={{
+                                color: "#6C757D",
+                                "&.Mui-checked": {
+                                  color: "#6C757D",
+                                },
+                              }}
+                            />
+                          }
+                          label={
+                            <Box
+                              sx={{
+                                color: "#6C757D",
+                                fontWeight: 700,
+                              }}
+                            >
+                              Todos
+                            </Box>
+                          }
+                        />
                         {[
                           {
                             key: "green",
@@ -1009,8 +1100,18 @@ const AltaCalidad = () => {
                           },
                           {
                             key: "red",
-                            label: "Este año",
+                            label: "A un año",
                             color: getVencimientoInfo(now).color,
+                          },
+                          {
+                            key: "vencidoVigente",
+                            label: "Vencido vigente",
+                            color: "#E65100",
+                          },
+                          {
+                            key: "vencido",
+                            label: "Vencido",
+                            color: "#4A0000",
                           },
                         ].map((item) => (
                           <FormControlLabel
@@ -1221,7 +1322,7 @@ const AltaCalidad = () => {
                   >
                     <Table
                       aria-label="tabla de alta calidad"
-                      sx={{ minWidth: 1400 }}
+                      sx={{ minWidth: 1600 }}
                     >
                       <TableHead>
                         <TableRow>
@@ -1229,12 +1330,13 @@ const AltaCalidad = () => {
                             "Programa academico",
                             "Escuela",
                             "Nivel academico",
-                            "Nivel de formacion",
+                            "Nivel de formacion",                         
                             "FASE AAC",
                             "FASE RAAC",
                             "Fecha de vencimiento",
                             "Riesgo por seguimiento",
                             "Riesgo por vencimiento",
+                            "Estado vigencia",
                           ].map((label) => (
                             <TableCell
                               key={label}
@@ -1286,6 +1388,14 @@ const AltaCalidad = () => {
                               }}
                             >
                               {row.riesgoVencimiento.label}
+                            </TableCell>
+                                                        <TableCell
+                              sx={{
+                                color: row.estadoVigencia.color,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {row.estadoVigencia.label}
                             </TableCell>
                           </TableRow>
                         ))}
