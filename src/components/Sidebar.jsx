@@ -22,6 +22,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import VerifiedIcon from "@mui/icons-material/Verified";
+import RuleIcon from "@mui/icons-material/Rule";
 import StarIcon from "@mui/icons-material/Star";
 import HomeIcon from "@mui/icons-material/Home";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
@@ -242,6 +243,12 @@ const Sidebar = ({ isCargo }) => {
           icon: <VerifiedIcon />,
           path: "/registro-calificado",
           tooltip: "Registro Calificado",
+        },
+        {
+          text: "Modificación RC",
+          icon: <RuleIcon />,
+          path: "/registro-calificado-modificacion",
+          tooltip: "Modificación Registro Calificado",
         },
         {
           text: "Acreditación Alta Calidad",
