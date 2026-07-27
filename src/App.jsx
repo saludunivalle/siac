@@ -18,6 +18,7 @@ import Crea from './components/Crea';
 import Aac from './components/Aac';
 import Mod from './components/Mod';
 import RegistroCalificado from './components/RegistroCalificado';
+import RegistroCalificadoModificacion from './components/RegistroCalificadoModificacion';
 import AcreditacionAltaCalidad from './components/AltaCalidad';
 import DashboardEstadisticas from './components/DashboardEstadisticas';
 import ConsolidadoHistoricoPage from './components/ConsolidadoHistoricoPage';
@@ -82,6 +83,7 @@ function App() {
               <Route path="/aac" element={<Aac />} />
               <Route path="/mod" element={<Mod />} />
               <Route path="/registro-calificado" element={<RegistroCalificado />} />
+              <Route path="/registro-calificado-modificacion" element={<RegistroCalificadoModificacion />} />
               <Route path="/acreditacion-alta-calidad" element={<AcreditacionAltaCalidad />} />
               
             </>
