@@ -12,16 +12,43 @@ const getLatestSeguimiento = (seguimientos, idPrograma, process = "MOD") => {
   const items = (seguimientos || [])
     .filter((seg) => normalize(seg.id_programa) === normalize(idPrograma))
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  return items.find((item) => normalize(item.proceso).toUpperCase() === process) || items[0] || null;
+  return (
+    items.find((item) => normalize(item.proceso).toUpperCase() === process) ||
+    items[0] ||
+    null
+  );
 };
 
 const getPhaseLabel = (seguimiento, fases) => {
   if (!seguimiento) return "Sin seguimientos";
   const faseId = normalize(seguimiento.fase);
   const fase = (fases || []).find(
-    (item) => normalize(item.id) === faseId || normalize(item.id) === normalize(Number(faseId)),
+    (item) =>
+      normalize(item.id) === faseId ||
+      normalize(item.id) === normalize(Number(faseId)),
   );
   return fase?.fase_sup || fase?.fase || "Sin seguimientos";
+};
+
+const getUserEscuela = () => {
+  try {
+    const logged = sessionStorage.getItem("logged");
+    if (!logged) return "";
+
+    const res = JSON.parse(logged);
+    if (!Array.isArray(res) || res.length === 0) return "";
+
+    const directorEscuela = res.find((item) => {
+      const permiso = item?.permiso;
+      return Array.isArray(permiso)
+        ? permiso.includes("Director Escuela")
+        : permiso === "Director Escuela";
+    });
+
+    return normalize(directorEscuela?.escuela || res[0]?.escuela);
+  } catch {
+    return "";
+  }
 };
 
 const RegistroCalificadoModificacion = () => {
@@ -32,6 +59,7 @@ const RegistroCalificadoModificacion = () => {
   const [programDetails, setProgramDetails] = useState({ MOD: [] });
   const [selectedRisk, setSelectedRisk] = useState(null);
   const [filteredByRisk, setFilteredByRisk] = useState(false);
+  const escuelaUsuario = useMemo(getUserEscuela, []);
 
   useEffect(() => {
     if (sessionStorage.getItem("logged")) {
@@ -54,14 +82,20 @@ const RegistroCalificadoModificacion = () => {
         let response = await Filtro5();
         const fases = await Filtro10();
         if (isCargo.includes("Posgrados")) {
-          response = response.filter((item) => item["pregrado/posgrado"] === "Posgrado");
+          response = response.filter(
+            (item) => item["pregrado/posgrado"] === "Posgrado",
+          );
         }
 
         const modPrograms = response.filter((item) => item.mod === "SI");
         const seguimientos = await Filtro7();
 
         const programsWithRisk = modPrograms.map((program) => {
-          const latestSeguimiento = getLatestSeguimiento(seguimientos, program.id_programa, "MOD");
+          const latestSeguimiento = getLatestSeguimiento(
+            seguimientos,
+            program.id_programa,
+            "MOD",
+          );
           const fase = normalize(program["fase rrc"]);
           let riesgo = "SinRegistro";
           if (fase === "Vencido" || fase === "Fase 5") riesgo = "Alto";
@@ -105,18 +139,40 @@ const RegistroCalificadoModificacion = () => {
     <>
       <Header />
       <Sidebar isCargo={isCargo} />
-      <Box className="content content-with-sidebar" sx={{ minHeight: "100vh", pt: 4, display: "flex", justifyContent: "center" }}>
-        <Box sx={{ width: "100%", maxWidth: { xs: "100%", md: "1450px" }, px: 2 }}>
+      <Box
+        className="content content-with-sidebar"
+        sx={{
+          ml: 0,
+          minHeight: "100vh",
+          pt: 4,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <Box
+          sx={{ width: "100%", maxWidth: { xs: "100%", md: "1450px" }, px: 2 }}
+        >
           {loading ? (
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "60vh",
+              }}
+            >
               <CircularProgress sx={{ color: "#B22222" }} />
-              <Typography sx={{ mt: 2, color: "#6C757D" }}>Cargando información...</Typography>
+              <Typography sx={{ mt: 2, color: "#6C757D" }}>
+                Cargando información...
+              </Typography>
             </Box>
           ) : (
             <Fade in timeout={350}>
               <Box>
                 <Modificacion
                   programDetails={programDetails}
+                  escuelaUsuario={escuelaUsuario}
                   selectedRisk={selectedRisk}
                   filteredByRisk={filteredByRisk}
                   setSelectedRisk={setSelectedRisk}
