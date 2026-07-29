@@ -265,6 +265,27 @@ const filterRows = (rows, filters) =>
 const getUniqueOptions = (rows, field) =>
   [...new Set(rows.map((row) => normalize(row[field])).filter(Boolean))].sort();
 
+const getUserEscuela = () => {
+  try {
+    const logged = sessionStorage.getItem("logged");
+    if (!logged) return "";
+
+    const res = JSON.parse(logged);
+    if (!Array.isArray(res) || res.length === 0) return "";
+
+    const directorEscuela = res.find((item) => {
+      const permiso = item?.permiso;
+      return Array.isArray(permiso)
+        ? permiso.includes("Director Escuela")
+        : permiso === "Director Escuela";
+    });
+
+    return normalize(directorEscuela?.escuela || res[0]?.escuela);
+  } catch {
+    return "";
+  }
+};
+
 const AltaCalidad = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -275,11 +296,12 @@ const AltaCalidad = () => {
   const [seguimientos, setSeguimientos] = useState([]);
   const [fases, setFases] = useState([]);
   const [selectedEstado, setSelectedEstado] = useState(null);
+  const userEscuela = useMemo(getUserEscuela, []);
   const [filters, setFilters] = useState({
     procesos: [],
     riesgoSeguimiento: "",
     riesgoVencimiento: "",
-    escuela: "",
+    escuela: userEscuela,
     programa: "",
     nivelAcademico: "",
     nivelFormacion: "",
@@ -292,6 +314,14 @@ const AltaCalidad = () => {
       setCargo(permisos);
     }
   }, []);
+
+  useEffect(() => {
+    if (userEscuela) {
+      setFilters((prev) =>
+        prev.escuela === userEscuela ? prev : { ...prev, escuela: userEscuela },
+      );
+    }
+  }, [userEscuela]);
 
   useEffect(() => {
     if (location.state?.fromSidebar) {

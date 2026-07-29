@@ -164,6 +164,27 @@ const filterRows = (rows, filters) =>
 const getUniqueOptions = (rows, field) =>
   [...new Set(rows.map((row) => normalize(row[field])).filter(Boolean))].sort();
 
+const getUserEscuela = () => {
+  try {
+    const logged = sessionStorage.getItem("logged");
+    if (!logged) return "";
+
+    const res = JSON.parse(logged);
+    if (!Array.isArray(res) || res.length === 0) return "";
+
+    const directorEscuela = res.find((item) => {
+      const permiso = item?.permiso;
+      return Array.isArray(permiso)
+        ? permiso.includes("Director Escuela")
+        : permiso === "Director Escuela";
+    });
+
+    return normalize(directorEscuela?.escuela || res[0]?.escuela);
+  } catch {
+    return "";
+  }
+};
+
 const RISK_CONFIG = {
   Alto: { color: "#DC3545", label: "Alto" },
   Medio: { color: "#FF8C00", label: "Medio" },
@@ -233,9 +254,10 @@ const RegistroCalificado = () => {
   const [fases, setFases] = useState([]);
   const [selectedEstado, setSelectedEstado] = useState(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const userEscuela = useMemo(getUserEscuela, []);
   const [filters, setFilters] = useState({
     procesos: [],
-    escuela: "",
+    escuela: userEscuela,
     programa: "",
     nivelAcademico: "",
     nivelFormacion: "",
@@ -249,6 +271,14 @@ const RegistroCalificado = () => {
       setCargo(res.map((item) => item.permiso).flat());
     }
   }, []);
+
+  useEffect(() => {
+    if (userEscuela) {
+      setFilters((prev) =>
+        prev.escuela === userEscuela ? prev : { ...prev, escuela: userEscuela },
+      );
+    }
+  }, [userEscuela]);
 
   useEffect(() => {
     if (location.state?.fromSidebar)
