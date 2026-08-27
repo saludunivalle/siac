@@ -926,6 +926,7 @@ const Seguimiento = ({
   };
 
   const isMonitorUser = avaibleRange("Monitor");
+  const isDirectorEscuela = avaibleRange("Director Escuela");
   const canCreatePlanTracking = isMonitorUser || avaibleRange(isPlan);
   const canCreateAcredTracking =
     isMonitorUser || avaibleRange(isAcred) || avaibleRange(isPlan);
@@ -2220,7 +2221,9 @@ const Seguimiento = ({
 
     // Si soloSinFase es true, filtrar solo los seguimientos sin fase asignada
     if (soloSinFase) {
-      tableData = tableData.filter((item) => esSeguimientoSinFase(item));
+      tableData = isDirectorEscuela
+        ? []
+        : tableData.filter((item) => esSeguimientoSinFase(item));
       console.log(
         "📋 renderFilteredTable - Después de filtrar sin fase:",
         tableData?.length,
@@ -2521,7 +2524,9 @@ const Seguimiento = ({
     const canCreateForThisProcess = canCreateForTopic(nombreProceso);
 
     // Filtrar solo seguimientos sin fase asignada
-    tableData = tableData.filter((item) => esSeguimientoSinFase(item));
+    tableData = isDirectorEscuela
+      ? []
+      : tableData.filter((item) => esSeguimientoSinFase(item));
 
     if (tableData.length === 0) {
       const collapsibleName = getNombreProceso();

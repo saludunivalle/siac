@@ -19,6 +19,19 @@ import { CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
 import Sidebar from "./Sidebar";
 
 const Programas = () => {
+  const tableColumnWidths = [
+    "25%",
+    "10%",
+    "8%",
+    "9%",
+    "10%",
+    "12%",
+    "8%",
+    "9%",
+    "5%",
+    "7%",
+    "9%",
+  ];
   const location = useLocation();
   const rowData = location.state;
   const navigate = useNavigate();
@@ -880,7 +893,18 @@ const Programas = () => {
         {loading ? (
           <p>Cargando datos...</p>
         ) : (
-          <table style={{ width: "100%" }}>
+          <table
+            style={{
+              width: "100%",
+              tableLayout: "fixed",
+              borderCollapse: "collapse",
+            }}
+          >
+            <colgroup>
+              {tableColumnWidths.map((width, index) => (
+                <col key={`body-col-${index}`} style={{ width }} />
+              ))}
+            </colgroup>
             <tbody>
               {filteredData.map((item, index) => {
                 const rrcYear = item["fechavencrc"]
@@ -919,7 +943,13 @@ const Programas = () => {
                     <td style={{ backgroundColor: rrcColor }}>
                       {item["fechavencrc"] ? item["fechavencrc"] : "N/A"}
                     </td>
-                    <td>{item["acreditable"] == "Acreditable" ? <CheckBox sx={{ color: "green" }} /> : <CheckBoxOutlineBlank sx={{ color: "grey" }} />}</td>
+                    <td>
+                      {item["acreditable"] == "Acreditable" ? (
+                        <CheckBox sx={{ color: "green" }} />
+                      ) : (
+                        <CheckBoxOutlineBlank sx={{ color: "grey" }} />
+                      )}
+                    </td>
                     <td>{item["estadoaac"]}</td>
                     <td style={{ backgroundColor: aacColor }}>
                       {item["fechavencac"] ? item["fechavencac"] : "N/A"}
@@ -1174,7 +1204,20 @@ const Programas = () => {
       {filteredData && filteredData.length > 0 ? (
         <div className="row-container">
           <div className="programas-sticky-header">
-            <table style={{ width: "100%", textAlign: "center", marginTop: "10px" }}>
+            <table
+              style={{
+                width: "100%",
+                textAlign: "center",
+                marginTop: "10px",
+                tableLayout: "fixed",
+                borderCollapse: "collapse",
+              }}
+            >
+              <colgroup>
+                {tableColumnWidths.map((width, index) => (
+                  <col key={`header-col-${index}`} style={{ width }} />
+                ))}
+              </colgroup>
               <thead>
                 <tr>
                   <th
@@ -1187,34 +1230,84 @@ const Programas = () => {
                   >
                     Programa Académico
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "10%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     Departamento
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "8%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     Sección
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "9%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     Estado
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "10%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     Nivel Académico
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "12%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     Nivel de Formación
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "8%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     RC Vigente
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "9%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     Fecha de Vencimiento RC
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "5%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     Acreditable
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "7%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     AAC Vigente
                   </th>
-                  <th style={{ backgroundColor: headerBackgroundColor }}>
+                  <th
+                    style={{
+                      width: "9%",
+                      backgroundColor: headerBackgroundColor,
+                    }}
+                  >
                     Fecha de Vencimiento AAC
                   </th>
                 </tr>

@@ -61,11 +61,7 @@ const getFieldValue = (obj, ...keys) => {
 
 const isVigente = (estado) => {
   const value = stripAccents(estado);
-  return (
-    value === "vigente" ||
-    value === "vigente (en tramite)" ||
-    value === "en tramite"
-  );
+  return value === "vigente" || value === "vigente (en tramite)";
 };
 
 const now = new Date();
@@ -99,7 +95,11 @@ const getVencimientoInfo = (fechaVencimiento, estadoaac) => {
   // Fechas ya vencidas (diffMonths < 0)
   if (diffMonths < 0) {
     if (isVigente(estadoaac)) {
-      return { key: "vencidoVigente", label: "Vencido vigente", color: "#E65100" };
+      return {
+        key: "vencidoVigente",
+        label: "Vencido vigente",
+        color: "#E65100",
+      };
     }
     return { key: "vencido", label: "Vencido", color: "#4A0000" };
   }
@@ -1360,7 +1360,7 @@ const AltaCalidad = () => {
                             "Programa academico",
                             "Escuela",
                             "Nivel academico",
-                            "Nivel de formacion",                         
+                            "Nivel de formacion",
                             "FASE AAC",
                             "FASE RAAC",
                             "Fecha de vencimiento",
@@ -1419,7 +1419,7 @@ const AltaCalidad = () => {
                             >
                               {row.riesgoVencimiento.label}
                             </TableCell>
-                                                        <TableCell
+                            <TableCell
                               sx={{
                                 color: row.estadoVigencia.color,
                                 fontWeight: 700,
