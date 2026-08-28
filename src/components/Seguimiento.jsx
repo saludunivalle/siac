@@ -927,6 +927,7 @@ const Seguimiento = ({
 
   const isMonitorUser = avaibleRange("Monitor");
   const isDirectorEscuela = avaibleRange("Director Escuela");
+  const isDirectorPrograma = avaibleRange("Director Programa");
   const canCreatePlanTracking = isMonitorUser || avaibleRange(isPlan);
   const canCreateAcredTracking =
     isMonitorUser || avaibleRange(isAcred) || avaibleRange(isPlan);
@@ -2221,7 +2222,7 @@ const Seguimiento = ({
 
     // Si soloSinFase es true, filtrar solo los seguimientos sin fase asignada
     if (soloSinFase) {
-      tableData = isDirectorEscuela
+      tableData = isDirectorEscuela || isDirectorPrograma
         ? []
         : tableData.filter((item) => esSeguimientoSinFase(item));
       console.log(
@@ -2524,7 +2525,7 @@ const Seguimiento = ({
     const canCreateForThisProcess = canCreateForTopic(nombreProceso);
 
     // Filtrar solo seguimientos sin fase asignada
-    tableData = isDirectorEscuela
+    tableData = isDirectorEscuela || isDirectorPrograma
       ? []
       : tableData.filter((item) => esSeguimientoSinFase(item));
 
@@ -2533,7 +2534,7 @@ const Seguimiento = ({
       return (
         <div>
           <p>Ningún seguimiento por mostrar</p>
-          {canCreateForThisProcess && !soloLectura && (
+          {canCreateForThisProcess && !soloLectura && !isDirectorPrograma && (
             <div
               style={{
                 textAlign: "center",
@@ -2849,7 +2850,7 @@ const Seguimiento = ({
       return (
         <>
           {renderTablaSeguimientos(seguimientos)}
-          {esActual && canCreateForThisProcess && !soloLectura && (
+          {esActual && canCreateForThisProcess && !soloLectura && !isDirectorPrograma && (
             <div
               style={{
                 textAlign: "center",
@@ -4140,7 +4141,7 @@ const Seguimiento = ({
                         fasesTabla,
                         true,
                       )}
-                      {canCreatePlanTracking && !soloLectura && (
+                      {canCreatePlanTracking && !soloLectura && !isDirectorPrograma && (
                         <Button
                           onClick={() =>
                             handleNewTrackingClick("Plan de Mejoramiento")
@@ -4218,7 +4219,7 @@ const Seguimiento = ({
                         true,
                       )}
 
-                      {canCreateAcredTracking && !soloLectura && (
+                      {canCreateAcredTracking && !soloLectura && !isDirectorPrograma && (
                         <div
                           style={{
                             textAlign: "center",
@@ -4288,7 +4289,7 @@ const Seguimiento = ({
                         true,
                       )}
 
-                      {canCreateRenAcredTracking && !soloLectura && (
+                      {canCreateRenAcredTracking && !soloLectura && !isDirectorPrograma && (
                         <div
                           style={{
                             textAlign: "center",
@@ -4351,7 +4352,7 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {canCreateCreaTracking && !soloLectura && (
+                      {canCreateCreaTracking && !soloLectura && !isDirectorPrograma && (
                         <div
                           style={{
                             textAlign: "center",
@@ -4414,7 +4415,7 @@ const Seguimiento = ({
                         true,
                       )}
 
-                      {canCreateModTracking && !soloLectura && (
+                      {canCreateModTracking && !soloLectura && !isDirectorPrograma && (
                         <div
                           style={{
                             textAlign: "center",

@@ -51,6 +51,16 @@ const Sidebar = ({ isCargo }) => {
   const [user, setUser] = useState("");
   const [hoveredItem, setHoveredItem] = useState(null);
   const sidebarRef = useRef(null);
+
+  const hasPermission = (permission) =>
+    Array.isArray(isCargo) &&
+    isCargo.some((cargo) => {
+      const normalizedCargo = String(cargo || "").trim().toLowerCase();
+      return normalizedCargo === String(permission).trim().toLowerCase();
+    });
+
+  const hideActivitiesReport =
+    hasPermission("Director Escuela") || hasPermission("Director Programa");
   // En dispositivos móviles, comenzar con el sidebar cerrado
   useEffect(() => {
     if (isMobile) {
@@ -732,7 +742,7 @@ const Sidebar = ({ isCargo }) => {
                 button
                 onClick={() =>
                   openExternalLink(
-                    "https://docs.google.com/spreadsheets/d/13mWox6_Ep8exOjK4Tv8K56LUgffTLgoOiLpw8CkoE9o/edit?gid=1623641148#gid=1623641148",
+                    "https://docs.google.com/spreadsheets/d/1VPqOgVDhT41p6kyuEqXxuwqYi1zbEi5P1ulG5E9Zzgg/edit?pli=1&gid=1999345634#gid=1999345634",
                   )
                 }
                 onMouseEnter={() => setHoveredItem("docentes")}
@@ -789,78 +799,81 @@ const Sidebar = ({ isCargo }) => {
                 </Collapse>
               </ListItem>
             </Tooltip>
-
+            {/** 
             <Tooltip
               title={open ? "" : "Generar reporte de actividades"}
               placement="right"
               arrow
               enterDelay={300}
             >
-              <ListItem
-                button
-                onClick={handleGenerateActivitiesReport}
-                disabled={isLoading}
-                onMouseEnter={() => setHoveredItem("report")}
-                onMouseLeave={() => setHoveredItem(null)}
-                sx={{
-                  py: 0.5,
-                  px: open ? 1.5 : 0.75,
-                  mx: open ? 0.5 : 0.15,
-                  my: 0.13,
-                  borderRadius: open ? "8px" : "6px",
-                  minHeight: "32px",
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                  backgroundColor:
-                    hoveredItem === "report"
-                      ? "rgba(178, 34, 34, 0.04)"
-                      : "transparent",
-                  transform:
-                    hoveredItem === "report"
-                      ? "translateX(4px)"
-                      : "translateX(0px)",
-                  boxShadow:
-                    hoveredItem === "report"
-                      ? "0 2px 4px rgba(0, 0, 0, 0.08)"
-                      : "none",
-                  "&.Mui-disabled": {
-                    opacity: 0.6,
-                  },
-                }}
-              >
-                <ListItemIcon
+              {!hideActivitiesReport && (
+                <ListItem
+                  button
+                  onClick={handleGenerateActivitiesReport}
+                  disabled={isLoading}
+                  onMouseEnter={() => setHoveredItem("report")}
+                  onMouseLeave={() => setHoveredItem(null)}
                   sx={{
-                    minWidth: open ? "32px" : "20px",
-                    color: isLoading ? "#B22222" : "#6C757D",
+                    py: 0.5,
+                    px: open ? 1.5 : 0.75,
+                    mx: open ? 0.5 : 0.15,
+                    my: 0.13,
+                    borderRadius: open ? "8px" : "6px",
+                    minHeight: "32px",
                     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    "& .MuiSvgIcon-root": {
-                      fontSize: "16px",
+                    backgroundColor:
+                      hoveredItem === "report"
+                        ? "rgba(178, 34, 34, 0.04)"
+                        : "transparent",
+                    transform:
+                      hoveredItem === "report"
+                        ? "translateX(4px)"
+                        : "translateX(0px)",
+                    boxShadow:
+                      hoveredItem === "report"
+                        ? "0 2px 4px rgba(0, 0, 0, 0.08)"
+                        : "none",
+                    "&.Mui-disabled": {
+                      opacity: 0.6,
                     },
                   }}
                 >
-                  {isLoading ? (
-                    <CircularProgress size={16} sx={{ color: "#B22222" }} />
-                  ) : (
-                    <SummarizeIcon />
-                  )}
-                </ListItemIcon>
-                <Collapse in={open} orientation="horizontal">
-                  <ListItemText
-                    primary="Reporte de Actividad"
+                  <ListItemIcon
                     sx={{
-                      "& .MuiListItemText-primary": {
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                        color: "#495057",
-                        fontFamily:
-                          "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                        letterSpacing: "-0.01em",
-                        whiteSpace: "nowrap",
+                      minWidth: open ? "32px" : "20px",
+                      color: isLoading ? "#B22222" : "#6C757D",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      "& .MuiSvgIcon-root": {
+                        fontSize: "16px",
                       },
                     }}
-                  />
-                </Collapse>
-              </ListItem>
+                  >
+                    {isLoading ? (
+                      <CircularProgress size={16} sx={{ color: "#B22222" }} />
+                    ) : (
+                      <SummarizeIcon />
+                    )}
+                  </ListItemIcon>
+                  <Collapse in={open} orientation="horizontal">
+                    <ListItemText
+                      primary="Reporte de Actividad"
+                      sx={{
+                        "& .MuiListItemText-primary": {
+                          fontSize: "0.75rem",
+                          fontWeight: 500,
+                          color: "#495057",
+                          fontFamily:
+                            "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                          letterSpacing: "-0.01em",
+                          whiteSpace: "nowrap",
+                        },
+                      }}
+                    />
+                  </Collapse>
+                </ListItem>
+              )}
             </Tooltip>
+*/}
           </Box>
         </Box>
       </Drawer>
