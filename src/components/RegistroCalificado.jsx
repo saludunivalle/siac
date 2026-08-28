@@ -185,6 +185,49 @@ const getUserEscuela = () => {
   }
 };
 
+const getUserAccessScope = () => {
+  try {
+    const logged = sessionStorage.getItem("logged");
+    if (!logged) return { role: "", escuela: "", programa: "" };
+
+    const res = JSON.parse(logged);
+    if (!Array.isArray(res) || res.length === 0) {
+      return { role: "", escuela: "", programa: "" };
+    }
+
+    const directorEscuela = res.find((item) => {
+      const permiso = item?.permiso;
+      return Array.isArray(permiso)
+        ? permiso.includes("Director Escuela")
+        : permiso === "Director Escuela";
+    });
+
+    const directorPrograma = res.find((item) => {
+      const permiso = item?.permiso;
+      return Array.isArray(permiso)
+        ? permiso.includes("Director Programa")
+        : permiso === "Director Programa";
+    });
+
+    return {
+      role: directorEscuela
+        ? "Director Escuela"
+        : directorPrograma
+          ? "Director Programa"
+          : "",
+      escuela: normalize(directorEscuela?.escuela || res[0]?.escuela),
+      programa: normalize(
+        directorPrograma?.id_programa ||
+          directorPrograma?.programa ||
+          res[0]?.id_programa ||
+          "",
+      ),
+    };
+  } catch {
+    return { role: "", escuela: "", programa: "" };
+  }
+};
+
 const RISK_CONFIG = {
   Alto: { color: "#DC3545", label: "Alto" },
   Medio: { color: "#FF8C00", label: "Medio" },
@@ -254,6 +297,7 @@ const RegistroCalificado = () => {
   const [fases, setFases] = useState([]);
   const [selectedEstado, setSelectedEstado] = useState(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const userScope = useMemo(getUserAccessScope, []);
   const userEscuela = useMemo(getUserEscuela, []);
   const [filters, setFilters] = useState({
     procesos: [],
@@ -304,7 +348,20 @@ const RegistroCalificado = () => {
             estadorc === ""
           );
         });
-        setProgramas(baseProgramas);
+        const programasFiltrados =
+          userScope.role === "Director Escuela" && userScope.escuela
+            ? baseProgramas.filter(
+                (programa) =>
+                  normalize(getFieldValue(programa, "escuela")) === userScope.escuela,
+              )
+            : userScope.role === "Director Programa" && userScope.programa
+              ? baseProgramas.filter(
+                  (programa) =>
+                    normalize(getFieldValue(programa, "id_programa")) ===
+                    userScope.programa,
+                )
+              : baseProgramas;
+        setProgramas(programasFiltrados);
         setSeguimientos(
           Array.isArray(seguimientosData) ? seguimientosData : [],
         );
@@ -317,7 +374,7 @@ const RegistroCalificado = () => {
     };
 
     fetchData();
-  }, [isCargo]);
+  }, [isCargo, userScope]);
 
   const fasesById = useMemo(() => {
     const map = new Map();

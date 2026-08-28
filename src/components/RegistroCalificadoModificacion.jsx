@@ -51,6 +51,49 @@ const getUserEscuela = () => {
   }
 };
 
+const getUserAccessScope = () => {
+  try {
+    const logged = sessionStorage.getItem("logged");
+    if (!logged) return { role: "", escuela: "", programa: "" };
+
+    const res = JSON.parse(logged);
+    if (!Array.isArray(res) || res.length === 0) {
+      return { role: "", escuela: "", programa: "" };
+    }
+
+    const directorEscuela = res.find((item) => {
+      const permiso = item?.permiso;
+      return Array.isArray(permiso)
+        ? permiso.includes("Director Escuela")
+        : permiso === "Director Escuela";
+    });
+
+    const directorPrograma = res.find((item) => {
+      const permiso = item?.permiso;
+      return Array.isArray(permiso)
+        ? permiso.includes("Director Programa")
+        : permiso === "Director Programa";
+    });
+
+    return {
+      role: directorEscuela
+        ? "Director Escuela"
+        : directorPrograma
+          ? "Director Programa"
+          : "",
+      escuela: normalize(directorEscuela?.escuela || res[0]?.escuela),
+      programa: normalize(
+        directorPrograma?.id_programa ||
+          directorPrograma?.programa ||
+          res[0]?.id_programa ||
+          "",
+      ),
+    };
+  } catch {
+    return { role: "", escuela: "", programa: "" };
+  }
+};
+
 const RegistroCalificadoModificacion = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,6 +102,7 @@ const RegistroCalificadoModificacion = () => {
   const [programDetails, setProgramDetails] = useState({ MOD: [] });
   const [selectedRisk, setSelectedRisk] = useState(null);
   const [filteredByRisk, setFilteredByRisk] = useState(false);
+  const userScope = useMemo(getUserAccessScope, []);
   const escuelaUsuario = useMemo(getUserEscuela, []);
 
   useEffect(() => {
@@ -86,6 +130,17 @@ const RegistroCalificadoModificacion = () => {
             (item) => item["pregrado/posgrado"] === "Posgrado",
           );
         }
+
+        response =
+          userScope.role === "Director Escuela" && userScope.escuela
+            ? response.filter(
+                (item) => normalize(item.escuela) === userScope.escuela,
+              )
+            : userScope.role === "Director Programa" && userScope.programa
+              ? response.filter(
+                  (item) => normalize(item.id_programa) === userScope.programa,
+                )
+              : response;
 
         const modPrograms = response.filter((item) => item.mod === "SI");
         const seguimientos = await Filtro7();
@@ -119,7 +174,7 @@ const RegistroCalificadoModificacion = () => {
     };
 
     fetchData();
-  }, [isCargo]);
+  }, [isCargo, userScope]);
 
   const riskConfig = useMemo(
     () => ({
