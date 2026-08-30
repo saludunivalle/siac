@@ -55,7 +55,9 @@ const Sidebar = ({ isCargo }) => {
   const hasPermission = (permission) =>
     Array.isArray(isCargo) &&
     isCargo.some((cargo) => {
-      const normalizedCargo = String(cargo || "").trim().toLowerCase();
+      const normalizedCargo = String(cargo || "")
+        .trim()
+        .toLowerCase();
       return normalizedCargo === String(permission).trim().toLowerCase();
     });
 
@@ -799,81 +801,81 @@ const Sidebar = ({ isCargo }) => {
                 </Collapse>
               </ListItem>
             </Tooltip>
-            {/** 
-            <Tooltip
-              title={open ? "" : "Generar reporte de actividades"}
-              placement="right"
-              arrow
-              enterDelay={300}
-            >
-              {!hideActivitiesReport && (
-                <ListItem
-                  button
-                  onClick={handleGenerateActivitiesReport}
-                  disabled={isLoading}
-                  onMouseEnter={() => setHoveredItem("report")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  sx={{
-                    py: 0.5,
-                    px: open ? 1.5 : 0.75,
-                    mx: open ? 0.5 : 0.15,
-                    my: 0.13,
-                    borderRadius: open ? "8px" : "6px",
-                    minHeight: "32px",
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    backgroundColor:
-                      hoveredItem === "report"
-                        ? "rgba(178, 34, 34, 0.04)"
-                        : "transparent",
-                    transform:
-                      hoveredItem === "report"
-                        ? "translateX(4px)"
-                        : "translateX(0px)",
-                    boxShadow:
-                      hoveredItem === "report"
-                        ? "0 2px 4px rgba(0, 0, 0, 0.08)"
-                        : "none",
-                    "&.Mui-disabled": {
-                      opacity: 0.6,
-                    },
-                  }}
-                >
-                  <ListItemIcon
+            {
+              <Tooltip
+                title={open ? "" : "Generar reporte de actividades"}
+                placement="right"
+                arrow
+                enterDelay={300}
+              >
+                {!hideActivitiesReport && (
+                  <ListItem
+                    button
+                    onClick={handleGenerateActivitiesReport}
+                    disabled={isLoading}
+                    onMouseEnter={() => setHoveredItem("report")}
+                    onMouseLeave={() => setHoveredItem(null)}
                     sx={{
-                      minWidth: open ? "32px" : "20px",
-                      color: isLoading ? "#B22222" : "#6C757D",
+                      py: 0.5,
+                      px: open ? 1.5 : 0.75,
+                      mx: open ? 0.5 : 0.15,
+                      my: 0.13,
+                      borderRadius: open ? "8px" : "6px",
+                      minHeight: "32px",
                       transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      "& .MuiSvgIcon-root": {
-                        fontSize: "16px",
+                      backgroundColor:
+                        hoveredItem === "report"
+                          ? "rgba(178, 34, 34, 0.04)"
+                          : "transparent",
+                      transform:
+                        hoveredItem === "report"
+                          ? "translateX(4px)"
+                          : "translateX(0px)",
+                      boxShadow:
+                        hoveredItem === "report"
+                          ? "0 2px 4px rgba(0, 0, 0, 0.08)"
+                          : "none",
+                      "&.Mui-disabled": {
+                        opacity: 0.6,
                       },
                     }}
                   >
-                    {isLoading ? (
-                      <CircularProgress size={16} sx={{ color: "#B22222" }} />
-                    ) : (
-                      <SummarizeIcon />
-                    )}
-                  </ListItemIcon>
-                  <Collapse in={open} orientation="horizontal">
-                    <ListItemText
-                      primary="Reporte de Actividad"
+                    <ListItemIcon
                       sx={{
-                        "& .MuiListItemText-primary": {
-                          fontSize: "0.75rem",
-                          fontWeight: 500,
-                          color: "#495057",
-                          fontFamily:
-                            "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                          letterSpacing: "-0.01em",
-                          whiteSpace: "nowrap",
+                        minWidth: open ? "32px" : "20px",
+                        color: isLoading ? "#B22222" : "#6C757D",
+                        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                        "& .MuiSvgIcon-root": {
+                          fontSize: "16px",
                         },
                       }}
-                    />
-                  </Collapse>
-                </ListItem>
-              )}
-            </Tooltip>
-*/}
+                    >
+                      {isLoading ? (
+                        <CircularProgress size={16} sx={{ color: "#B22222" }} />
+                      ) : (
+                        <SummarizeIcon />
+                      )}
+                    </ListItemIcon>
+                    <Collapse in={open} orientation="horizontal">
+                      <ListItemText
+                        primary="Reporte de Actividad"
+                        sx={{
+                          "& .MuiListItemText-primary": {
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            color: "#495057",
+                            fontFamily:
+                              "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                            letterSpacing: "-0.01em",
+                            whiteSpace: "nowrap",
+                          },
+                        }}
+                      />
+                    </Collapse>
+                  </ListItem>
+                )}
+              </Tooltip>
+            }
           </Box>
         </Box>
       </Drawer>

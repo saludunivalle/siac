@@ -385,6 +385,12 @@ const Seguimiento = ({
 
   // Funciones para edición de seguimientos
   const handleOpenEditModal = (seguimiento) => {
+    if (
+      !canEditSeguimiento(seguimiento) ||
+      isSeguimientoVerified(seguimiento)
+    ) {
+      return;
+    }
     setEditingSeguimiento({
       ...seguimiento,
       originalTimestamp: seguimiento.timestamp,
@@ -925,21 +931,49 @@ const Seguimiento = ({
     });
   };
 
-  const isMonitorUser = avaibleRange("Monitor");
+  const hasExactPermission = (permisoBuscado) => {
+    if (!Array.isArray(isCargo)) return false;
+
+    const normalizar = (valor) =>
+      String(valor || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+    const objetivo = normalizar(permisoBuscado);
+    if (!objetivo) return false;
+
+    return isCargo.some((cargo) => normalizar(cargo) === objetivo);
+  };
+
+  const isMonitorUser = hasExactPermission("Monitor");
+  const isMonitorAcreditacionUser = hasExactPermission("Monitor Acreditación");
+  const isMonitorRegistroCalificadoUser = hasExactPermission(
+    "Monitor Registro Calificado",
+  );
+  const isMonitorLikeUser =
+    isMonitorUser ||
+    isMonitorAcreditacionUser ||
+    isMonitorRegistroCalificadoUser;
   const isDirectorEscuela = avaibleRange("Director Escuela");
   const isDirectorPrograma = avaibleRange("Director Programa");
-  const canCreatePlanTracking = isMonitorUser || avaibleRange(isPlan);
+  const canCreatePlanTracking = isMonitorLikeUser || avaibleRange(isPlan);
   const canCreateAcredTracking =
-    isMonitorUser || avaibleRange(isAcred) || avaibleRange(isPlan);
+    isMonitorLikeUser || avaibleRange(isAcred) || avaibleRange(isPlan);
   const canCreateRenAcredTracking =
-    isMonitorUser || avaibleRange(isRenAcred) || avaibleRange(isPlan);
+    isMonitorLikeUser || avaibleRange(isRenAcred) || avaibleRange(isPlan);
   const canCreateCreaTracking =
-    isMonitorUser || avaibleRange(isCrea) || avaibleRange(isPlan);
+    isMonitorLikeUser || avaibleRange(isCrea) || avaibleRange(isPlan);
   const canCreateModTracking =
-    isMonitorUser || avaibleRange(isMod) || avaibleRange(isPlan);
+    isMonitorLikeUser || avaibleRange(isMod) || avaibleRange(isPlan);
 
   const getVerificationFieldsForNewSeguimiento = () => {
-    if (isMonitorUser) {
+    if (
+      isMonitorUser ||
+      isMonitorAcreditacionUser ||
+      isMonitorRegistroCalificadoUser
+    ) {
       return ["false", "", ""];
     }
     return ["", "", ""];
@@ -949,6 +983,59 @@ const Seguimiento = ({
     String(seguimiento?.verificado ?? "")
       .trim()
       .toLowerCase();
+
+  const getMonitorAllowedTopics = () => {
+    if (isMonitorAcreditacionUser) {
+      return ["acreditacion", "renovacion acreditacion", "aac", "raac"];
+    }
+
+    if (isMonitorRegistroCalificadoUser) {
+      return [
+        "renovacion registro calificado",
+        "renovacion acreditacion",
+        "rrc",
+        "raac",
+      ];
+    }
+
+    if (isMonitorUser) {
+      return null;
+    }
+
+    return [];
+  };
+
+  const canMonitorInteractWithTopic = (topic) => {
+    if (!isMonitorLikeUser) {
+      return false;
+    }
+
+    if (isMonitorUser) {
+      return true;
+    }
+
+    const allowedTopics = getMonitorAllowedTopics();
+    if (!allowedTopics || allowedTopics.length === 0) {
+      return false;
+    }
+
+    const topicNormalizado = normalizarTexto(topic);
+    return allowedTopics.some((allowed) =>
+      topicNormalizado.includes(normalizarTexto(allowed)),
+    );
+  };
+
+  const canMonitorTouchSeguimiento = (seguimiento) => {
+    if (!isMonitorLikeUser || !seguimiento) {
+      return false;
+    }
+
+    if (!canMonitorInteractWithTopic(seguimiento.topic || "")) {
+      return false;
+    }
+
+    return true;
+  };
 
   const isPendingMonitorVerification = (seguimiento) =>
     getVerificationStatus(seguimiento) === "false";
@@ -1034,12 +1121,16 @@ const Seguimiento = ({
       return false;
     }
 
-    return avaibleRange(permisoRequerido);
+    if (avaibleRange(permisoRequerido)) {
+      return true;
+    }
+
+    return canMonitorTouchSeguimiento(seguimiento);
   };
 
   const canCreateForTopic = (topic) => {
-    if (isMonitorUser) {
-      return true;
+    if (isMonitorLikeUser) {
+      return canMonitorInteractWithTopic(topic);
     }
 
     const permisoRequerido = getPermissionByTopic(topic);
@@ -1049,6 +1140,12 @@ const Seguimiento = ({
 
     return avaibleRange(permisoRequerido);
   };
+
+  const canEditSeguimiento = (seguimiento) =>
+    !isSeguimientoVerified(seguimiento) &&
+    !soloLectura &&
+    (avaibleRange(getPermissionByTopic(seguimiento?.topic || "")) ||
+      canMonitorTouchSeguimiento(seguimiento));
 
   const handleVerifySeguimiento = async (seguimiento, checkedValue = true) => {
     if (!canVerifySeguimiento(seguimiento)) return;
@@ -1220,27 +1317,40 @@ const Seguimiento = ({
     const canCheck = canVerifySeguimiento(item) && !soloLectura;
 
     return (
-      <Checkbox
-        key={rowKey}
-        size="small"
-        checked={checked}
-        disabled={!canCheck}
-        title={
-          checked
-            ? `${item.verificado_por || ""} ${item.fecha_verificado || ""}`.trim()
-            : "Pendiente de verificacion"
-        }
-        onClick={(e) => {
-          e.stopPropagation();
+      <Box
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+
+          backgroundColor: checked ? "rgba(25, 118, 210, 0.06)" : "#fff",
+          width: "32px",
+          height: "32px",
+          mx: "auto",
         }}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
-        onChange={(e) => {
-          e.stopPropagation();
-          handleVerifySeguimiento(item, e.target.checked);
-        }}
-      />
+      >
+        <Checkbox
+          key={rowKey}
+          size="small"
+          checked={checked}
+          disabled={!canCheck}
+          title={
+            checked
+              ? `${item.verificado_por || ""} ${item.fecha_verificado || ""}`.trim()
+              : "Pendiente de verificacion"
+          }
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleVerifySeguimiento(item, e.target.checked);
+          }}
+        />
+      </Box>
     );
   };
 
@@ -1460,11 +1570,11 @@ const Seguimiento = ({
                 <th
                   style={{
                     width: "52px",
-                    border: "none",
-                    padding: "3px 0 3px 4px",
+                    border: "1px solid grey",
+                    padding: "3px",
                     fontSize: "0.78rem",
                     fontWeight: 600,
-                    backgroundColor: "transparent",
+                    backgroundColor: "white",
                   }}
                 >
                   Check
@@ -1486,7 +1596,7 @@ const Seguimiento = ({
                   onMouseEnter={() => setHoveredRowIndex(rowKey)}
                   onMouseLeave={() => setHoveredRowIndex(null)}
                   onClick={() => {
-                    if (!soloLectura) handleOpenEditModal(item);
+                    if (canEditSeguimiento(item)) handleOpenEditModal(item);
                   }}
                 >
                   <td
@@ -1512,7 +1622,7 @@ const Seguimiento = ({
                   >
                     {item["mensaje"]}
                     {/* Botón de edición dentro de la celda de comentario */}
-                    {hoveredRowIndex === rowKey && !soloLectura && (
+                    {hoveredRowIndex === rowKey && canEditSeguimiento(item) && (
                       <IconButton
                         size="small"
                         onClick={(e) => {
@@ -1583,11 +1693,11 @@ const Seguimiento = ({
                     <td
                       style={{
                         width: "52px",
-                        border: "none",
+                        border: "1px solid grey",
                         backgroundColor: "transparent",
                         textAlign: "center",
                         verticalAlign: "middle",
-                        padding: "0 0 0 4px",
+                        padding: "0",
                       }}
                     >
                       {renderVerificationCheckControl(item, rowKey)}
@@ -2222,9 +2332,10 @@ const Seguimiento = ({
 
     // Si soloSinFase es true, filtrar solo los seguimientos sin fase asignada
     if (soloSinFase) {
-      tableData = isDirectorEscuela || isDirectorPrograma
-        ? []
-        : tableData.filter((item) => esSeguimientoSinFase(item));
+      tableData =
+        isDirectorEscuela || isDirectorPrograma
+          ? []
+          : tableData.filter((item) => esSeguimientoSinFase(item));
       console.log(
         "📋 renderFilteredTable - Después de filtrar sin fase:",
         tableData?.length,
@@ -2334,7 +2445,7 @@ const Seguimiento = ({
                 <th
                   style={{
                     width: "52px",
-                    border: "none",
+                    border: "1px solid grey",
                     padding: "3px 0 3px 4px",
                     fontSize: "0.78rem",
                     fontWeight: 600,
@@ -2360,7 +2471,7 @@ const Seguimiento = ({
                   onMouseEnter={() => setHoveredRowIndex(rowKey)}
                   onMouseLeave={() => setHoveredRowIndex(null)}
                   onClick={() => {
-                    if (!soloLectura) handleOpenEditModal(item);
+                    if (canEditSeguimiento(item)) handleOpenEditModal(item);
                   }}
                 >
                   <td
@@ -2386,7 +2497,7 @@ const Seguimiento = ({
                   >
                     {item["mensaje"]}
                     {/* Botón de edición dentro de la celda de comentario */}
-                    {hoveredRowIndex === rowKey && !soloLectura && (
+                    {hoveredRowIndex === rowKey && canEditSeguimiento(item) && (
                       <IconButton
                         size="small"
                         onClick={(e) => {
@@ -2468,7 +2579,7 @@ const Seguimiento = ({
                     <td
                       style={{
                         width: "52px",
-                        border: "none",
+                        border: "1px solid grey",
                         backgroundColor: "transparent",
                         textAlign: "center",
                         verticalAlign: "middle",
@@ -2525,9 +2636,10 @@ const Seguimiento = ({
     const canCreateForThisProcess = canCreateForTopic(nombreProceso);
 
     // Filtrar solo seguimientos sin fase asignada
-    tableData = isDirectorEscuela || isDirectorPrograma
-      ? []
-      : tableData.filter((item) => esSeguimientoSinFase(item));
+    tableData =
+      isDirectorEscuela || isDirectorPrograma
+        ? []
+        : tableData.filter((item) => esSeguimientoSinFase(item));
 
     if (tableData.length === 0) {
       const collapsibleName = getNombreProceso();
@@ -2696,7 +2808,7 @@ const Seguimiento = ({
                   <th
                     style={{
                       width: "52px",
-                      border: "none",
+                      border: "1px solid grey",
                       padding: "3px 0 3px 4px",
                       fontSize: "0.78rem",
                       fontWeight: 600,
@@ -2722,7 +2834,7 @@ const Seguimiento = ({
                     onMouseEnter={() => setHoveredRowIndex(rowKey)}
                     onMouseLeave={() => setHoveredRowIndex(null)}
                     onClick={() => {
-                      if (!soloLectura) handleOpenEditModal(item);
+                      if (canEditSeguimiento(item)) handleOpenEditModal(item);
                     }}
                   >
                     <td
@@ -2748,26 +2860,27 @@ const Seguimiento = ({
                     >
                       {item["mensaje"]}
                       {/* Contenedor del botón de edición dentro de la celda */}
-                      {hoveredRowIndex === rowKey && !soloLectura && (
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEditModal(item);
-                          }}
-                          style={{
-                            backgroundColor: "#1976d2",
-                            color: "white",
-                            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                            padding: "4px",
-                            marginLeft: "8px",
-                            float: "right",
-                          }}
-                          title="Editar seguimiento"
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      )}
+                      {hoveredRowIndex === rowKey &&
+                        canEditSeguimiento(item) && (
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEditModal(item);
+                            }}
+                            style={{
+                              backgroundColor: "#1976d2",
+                              color: "white",
+                              boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                              padding: "4px",
+                              marginLeft: "8px",
+                              float: "right",
+                            }}
+                            title="Editar seguimiento"
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        )}
                     </td>
                     <td
                       style={{
@@ -2850,31 +2963,34 @@ const Seguimiento = ({
       return (
         <>
           {renderTablaSeguimientos(seguimientos)}
-          {esActual && canCreateForThisProcess && !soloLectura && !isDirectorPrograma && (
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: "20px",
-                marginBottom: "20px",
-              }}
-            >
-              <Button
-                onClick={() => {
-                  handleOpenNewTrackingModal(
-                    collapsibleName,
-                    null,
-                    idHistoricoPeriodo,
-                    true,
-                  );
+          {esActual &&
+            canCreateForThisProcess &&
+            !soloLectura &&
+            !isDirectorPrograma && (
+              <div
+                style={{
+                  textAlign: "center",
+                  marginTop: "20px",
+                  marginBottom: "20px",
                 }}
-                variant="contained"
-                color="primary"
-                style={{ textAlign: "center", marginBottom: "25px" }}
               >
-                Agregar seguimiento sin fase
-              </Button>
-            </div>
-          )}
+                <Button
+                  onClick={() => {
+                    handleOpenNewTrackingModal(
+                      collapsibleName,
+                      null,
+                      idHistoricoPeriodo,
+                      true,
+                    );
+                  }}
+                  variant="contained"
+                  color="primary"
+                  style={{ textAlign: "center", marginBottom: "25px" }}
+                >
+                  Agregar seguimiento sin fase
+                </Button>
+              </div>
+            )}
           {contenido_tablaFases(collapsibleName)}
         </>
       );
@@ -4141,18 +4257,20 @@ const Seguimiento = ({
                         fasesTabla,
                         true,
                       )}
-                      {canCreatePlanTracking && !soloLectura && !isDirectorPrograma && (
-                        <Button
-                          onClick={() =>
-                            handleNewTrackingClick("Plan de Mejoramiento")
-                          }
-                          variant="contained"
-                          color="primary"
-                          style={{ textAlign: "center", margin: "8px" }}
-                        >
-                          Nuevo Seguimiento
-                        </Button>
-                      )}
+                      {canCreatePlanTracking &&
+                        !soloLectura &&
+                        !isDirectorPrograma && (
+                          <Button
+                            onClick={() =>
+                              handleNewTrackingClick("Plan de Mejoramiento")
+                            }
+                            variant="contained"
+                            color="primary"
+                            style={{ textAlign: "center", margin: "8px" }}
+                          >
+                            Nuevo Seguimiento
+                          </Button>
+                        )}
                       {showCollapsible["Plan de Mejoramiento"] && (
                         <>{contenido_seguimiento()}</>
                       )}
@@ -4219,34 +4337,36 @@ const Seguimiento = ({
                         true,
                       )}
 
-                      {canCreateAcredTracking && !soloLectura && !isDirectorPrograma && (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            marginTop: "20px",
-                            marginBottom: "20px",
-                          }}
-                        >
-                          <Button
-                            onClick={() =>
-                              handleOpenNewTrackingModal(
-                                "Acreditación",
-                                null,
-                                "",
-                                true,
-                              )
-                            }
-                            variant="contained"
-                            color="primary"
+                      {canCreateAcredTracking &&
+                        !soloLectura &&
+                        !isDirectorPrograma && (
+                          <div
                             style={{
                               textAlign: "center",
-                              marginBottom: "25px",
+                              marginTop: "20px",
+                              marginBottom: "20px",
                             }}
                           >
-                            Agregar seguimiento sin fase
-                          </Button>
-                        </div>
-                      )}
+                            <Button
+                              onClick={() =>
+                                handleOpenNewTrackingModal(
+                                  "Acreditación",
+                                  null,
+                                  "",
+                                  true,
+                                )
+                              }
+                              variant="contained"
+                              color="primary"
+                              style={{
+                                textAlign: "center",
+                                marginBottom: "25px",
+                              }}
+                            >
+                              Agregar seguimiento sin fase
+                            </Button>
+                          </div>
+                        )}
 
                       {contenido_tablaFases("Acreditación")}
                     </div>
@@ -4289,34 +4409,36 @@ const Seguimiento = ({
                         true,
                       )}
 
-                      {canCreateRenAcredTracking && !soloLectura && !isDirectorPrograma && (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            marginTop: "20px",
-                            marginBottom: "20px",
-                          }}
-                        >
-                          <Button
-                            onClick={() =>
-                              handleOpenNewTrackingModal(
-                                "Renovación Acreditación",
-                                null,
-                                "",
-                                true,
-                              )
-                            }
-                            variant="contained"
-                            color="primary"
+                      {canCreateRenAcredTracking &&
+                        !soloLectura &&
+                        !isDirectorPrograma && (
+                          <div
                             style={{
                               textAlign: "center",
-                              marginBottom: "25px",
+                              marginTop: "20px",
+                              marginBottom: "20px",
                             }}
                           >
-                            Agregar seguimiento sin fase
-                          </Button>
-                        </div>
-                      )}
+                            <Button
+                              onClick={() =>
+                                handleOpenNewTrackingModal(
+                                  "Renovación Acreditación",
+                                  null,
+                                  "",
+                                  true,
+                                )
+                              }
+                              variant="contained"
+                              color="primary"
+                              style={{
+                                textAlign: "center",
+                                marginBottom: "25px",
+                              }}
+                            >
+                              Agregar seguimiento sin fase
+                            </Button>
+                          </div>
+                        )}
 
                       {contenido_tablaFases("Renovación Acreditación")}
                     </div>
@@ -4352,34 +4474,36 @@ const Seguimiento = ({
                         false,
                         true,
                       )}
-                      {canCreateCreaTracking && !soloLectura && !isDirectorPrograma && (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            marginTop: "20px",
-                            marginBottom: "20px",
-                          }}
-                        >
-                          <Button
-                            onClick={() =>
-                              handleOpenNewTrackingModal(
-                                "Creación",
-                                null,
-                                "",
-                                true,
-                              )
-                            }
-                            variant="contained"
-                            color="primary"
+                      {canCreateCreaTracking &&
+                        !soloLectura &&
+                        !isDirectorPrograma && (
+                          <div
                             style={{
                               textAlign: "center",
-                              marginBottom: "25px",
+                              marginTop: "20px",
+                              marginBottom: "20px",
                             }}
                           >
-                            Agregar seguimiento sin fase
-                          </Button>
-                        </div>
-                      )}
+                            <Button
+                              onClick={() =>
+                                handleOpenNewTrackingModal(
+                                  "Creación",
+                                  null,
+                                  "",
+                                  true,
+                                )
+                              }
+                              variant="contained"
+                              color="primary"
+                              style={{
+                                textAlign: "center",
+                                marginBottom: "25px",
+                              }}
+                            >
+                              Agregar seguimiento sin fase
+                            </Button>
+                          </div>
+                        )}
                       {contenido_tablaFases("Creación")}
                     </div>
                   </>
@@ -4415,34 +4539,36 @@ const Seguimiento = ({
                         true,
                       )}
 
-                      {canCreateModTracking && !soloLectura && !isDirectorPrograma && (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            marginTop: "20px",
-                            marginBottom: "20px",
-                          }}
-                        >
-                          <Button
-                            onClick={() =>
-                              handleOpenNewTrackingModal(
-                                "Modificación",
-                                null,
-                                "",
-                                true,
-                              )
-                            }
-                            variant="contained"
-                            color="primary"
+                      {canCreateModTracking &&
+                        !soloLectura &&
+                        !isDirectorPrograma && (
+                          <div
                             style={{
                               textAlign: "center",
-                              marginBottom: "25px",
+                              marginTop: "20px",
+                              marginBottom: "20px",
                             }}
                           >
-                            Agregar seguimiento sin fase
-                          </Button>
-                        </div>
-                      )}
+                            <Button
+                              onClick={() =>
+                                handleOpenNewTrackingModal(
+                                  "Modificación",
+                                  null,
+                                  "",
+                                  true,
+                                )
+                              }
+                              variant="contained"
+                              color="primary"
+                              style={{
+                                textAlign: "center",
+                                marginBottom: "25px",
+                              }}
+                            >
+                              Agregar seguimiento sin fase
+                            </Button>
+                          </div>
+                        )}
 
                       {contenido_tablaFases("Modificación")}
                     </div>
@@ -4731,6 +4857,7 @@ const Seguimiento = ({
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                disabled={!canEditSeguimiento(editingSeguimiento)}
               />
 
               <FormControl component="fieldset" sx={{ mt: 2, mb: 2 }}>
@@ -4749,16 +4876,19 @@ const Seguimiento = ({
                     value="Alto"
                     control={<Radio />}
                     label="Alto"
+                    disabled={!canEditSeguimiento(editingSeguimiento)}
                   />
                   <FormControlLabel
                     value="Medio"
                     control={<Radio />}
                     label="Medio"
+                    disabled={!canEditSeguimiento(editingSeguimiento)}
                   />
                   <FormControlLabel
                     value="Bajo"
                     control={<Radio />}
                     label="Bajo"
+                    disabled={!canEditSeguimiento(editingSeguimiento)}
                   />
                 </RadioGroup>
               </FormControl>
@@ -4771,6 +4901,7 @@ const Seguimiento = ({
                   label="Fecha"
                   value={editDate}
                   onChange={(date) => setEditDate(date)}
+                  disabled={!canEditSeguimiento(editingSeguimiento)}
                   slotProps={{
                     textField: { fullWidth: true, margin: "normal" },
                   }}
@@ -4785,6 +4916,7 @@ const Seguimiento = ({
                 margin="normal"
                 variant="outlined"
                 placeholder="https://..."
+                disabled={!canEditSeguimiento(editingSeguimiento)}
               />
 
               <FormControl fullWidth margin="normal" variant="outlined">
@@ -4794,6 +4926,7 @@ const Seguimiento = ({
                   value={editFase}
                   onChange={(e) => setEditFase(e.target.value)}
                   label="Actividad"
+                  disabled={!canEditSeguimiento(editingSeguimiento)}
                   MenuProps={{
                     disableScrollLock: true,
                     PaperProps: {
@@ -4856,6 +4989,7 @@ const Seguimiento = ({
                   color="error"
                   startIcon={<DeleteIcon />}
                   onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={!canEditSeguimiento(editingSeguimiento)}
                 >
                   Eliminar
                 </Button>
@@ -4872,7 +5006,9 @@ const Seguimiento = ({
                     color="primary"
                     startIcon={<SaveIcon />}
                     onClick={handleSaveEdit}
-                    disabled={editLoading}
+                    disabled={
+                      editLoading || !canEditSeguimiento(editingSeguimiento)
+                    }
                   >
                     {editLoading ? "Guardando..." : "Guardar"}
                   </Button>
