@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Radio,
@@ -1821,7 +1821,18 @@ const Seguimiento = ({
                     <div>
                       <h2>Fases del Proceso</h2>
                       {groupedFasesEntries.map(
-                        ([grupo, fasesGrupo], grupoIndex) => (
+                        ([grupo, fasesGrupo], grupoIndex) => {
+                          const todasCompletadas = fasesGrupo.length > 0 && fasesGrupo.every(fase => fasesEstados[fase.id] === "Completado");
+                          const algunaConSeguimiento = fasesGrupo.some(fase => filteredData.some(seg => seg.fase && seg.fase === fase.id));
+                          
+                          let grupoBackgroundColor = "#d4d5d5";
+                          if (todasCompletadas) {
+                            grupoBackgroundColor = "#c8e6c9";
+                          } else if (algunaConSeguimiento) {
+                            grupoBackgroundColor = "#fff59d";
+                          }
+
+                          return (
                           <CollapsibleButton
                             key={grupo}
                             defaultClosed={true}
@@ -1857,7 +1868,7 @@ const Seguimiento = ({
                               </span>
                             }
                             buttonStyle={{
-                              backgroundColor: "#d4d5d5",
+                              backgroundColor: grupoBackgroundColor,
                               width: "100%",
                               marginBottom: "12px",
                               padding: "14px",
@@ -2250,10 +2261,11 @@ const Seguimiento = ({
                                     />
                                   );
                                 })}
-                              </div>
-                            }
-                          />
-                        ),
+                                </div>
+                              }
+                            />
+                          );
+                        }
                       )}
                     </div>
                   )}
@@ -2343,7 +2355,7 @@ const Seguimiento = ({
     }
 
     if (tableData.length === 0) {
-      return <p>Ningún seguimiento por mostrar</p>;
+      return <p></p>;
     }
 
     tableData.sort((a, b) => {
@@ -2645,7 +2657,7 @@ const Seguimiento = ({
       const collapsibleName = getNombreProceso();
       return (
         <div>
-          <p>Ningún seguimiento por mostrar</p>
+          <p></p>
           {canCreateForThisProcess && !soloLectura && !isDirectorPrograma && (
             <div
               style={{
