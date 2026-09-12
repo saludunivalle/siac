@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+﻿import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Radio,
@@ -244,6 +244,15 @@ const Seguimiento = ({
 
   // Estado para trackear el estado de cada fase
   const [fasesEstados, setFasesEstados] = useState({});
+  const [openCollapsibles, setOpenCollapsibles] = useState({});
+  const [showPreviousPeriods, setShowPreviousPeriods] = useState(false);
+
+  const toggleCollapsible = (group, id, nextOpen) => {
+    setOpenCollapsibles((prev) => ({
+      ...prev,
+      [group]: nextOpen ? id : null,
+    }));
+  };
 
   const documentosDisponibles = useMemo(() => {
     if (!Array.isArray(docs)) return [];
@@ -1822,450 +1831,486 @@ const Seguimiento = ({
                       <h2>Fases del Proceso</h2>
                       {groupedFasesEntries.map(
                         ([grupo, fasesGrupo], grupoIndex) => {
-                          const todasCompletadas = fasesGrupo.length > 0 && fasesGrupo.every(fase => fasesEstados[fase.id] === "Completado");
-                          const algunaConSeguimiento = fasesGrupo.some(fase => filteredData.some(seg => seg.fase && seg.fase === fase.id));
-                          
-                          let grupoBackgroundColor = "#d4d5d5";
-                          if (todasCompletadas) {
-                            grupoBackgroundColor = "#c8e6c9";
-                          } else if (algunaConSeguimiento) {
-                            grupoBackgroundColor = "#fff59d";
-                          }
+                          const fasesConSeguimientos = fasesGrupo.filter(
+                            (fase) =>
+                              filteredData.some(
+                                (seg) => seg.fase && seg.fase === fase.id,
+                              ),
+                          );
+                          const tieneSeguimientos =
+                            fasesConSeguimientos.length > 0;
+                          const todasCompletadas =
+                            tieneSeguimientos &&
+                            fasesConSeguimientos.every(
+                              (fase) => fasesEstados[fase.id] === "Completado",
+                            );
+                          const grupoBackgroundColor = !tieneSeguimientos
+                            ? "#d4d5d5"
+                            : todasCompletadas
+                              ? "#c8e6c9"
+                              : "#fff59d";
 
                           return (
-                          <CollapsibleButton
-                            key={grupo}
-                            defaultClosed={true}
-                            buttonText={
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  width: "100%",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                }}
-                              >
+                            <CollapsibleButton
+                              key={grupo}
+                              open={
+                                openCollapsibles.phaseGroups
+                                  ? openCollapsibles.phaseGroups ===
+                                    `group-${grupoIndex}`
+                                  : undefined
+                              }
+                              onToggle={(nextOpen) =>
+                                toggleCollapsible(
+                                  "phaseGroups",
+                                  `group-${grupoIndex}`,
+                                  nextOpen,
+                                )
+                              }
+                              defaultClosed={true}
+                              buttonText={
                                 <span
                                   style={{
-                                    fontWeight: "bold",
-                                    color: "#000000",
+                                    display: "inline-flex",
+                                    width: "100%",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
                                   }}
                                 >
-                                  {grupo === "Sin Agrupar"
-                                    ? "Actividades sin agrupar"
-                                    : grupo.toUpperCase()}
+                                  <span
+                                    style={{
+                                      fontWeight: "bold",
+                                      color: "#000000",
+                                    }}
+                                  >
+                                    {grupo === "Sin Agrupar"
+                                      ? "Actividades sin agrupar"
+                                      : grupo.toUpperCase()}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: "0.85rem",
+                                      color: "#000000",
+                                      marginRight: "7px",
+                                    }}
+                                  >
+                                    {fasesGrupo.length} actividad
+                                    {fasesGrupo.length === 1 ? "" : "es"}
+                                  </span>
                                 </span>
-                                <span
+                              }
+                              buttonStyle={{
+                                backgroundColor: grupoBackgroundColor,
+                                width: "100%",
+                                marginBottom: "12px",
+                                padding: "14px",
+                                textAlign: "left",
+                                fontSize: "0.95rem",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                whiteSpace: "normal",
+                                color: "#000000",
+                                wordBreak: "break-word",
+                                lineHeight: "1.5",
+                                minHeight: "48px",
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                              content={
+                                <div
                                   style={{
-                                    fontSize: "0.85rem",
-                                    color: "#000000",
-                                    marginRight: "7px",
+                                    padding: "10px 0 0 0",
+                                    backgroundColor: "white",
                                   }}
                                 >
-                                  {fasesGrupo.length} actividad
-                                  {fasesGrupo.length === 1 ? "" : "es"}
-                                </span>
-                              </span>
-                            }
-                            buttonStyle={{
-                              backgroundColor: grupoBackgroundColor,
-                              width: "100%",
-                              marginBottom: "12px",
-                              padding: "14px",
-                              textAlign: "left",
-                              fontSize: "0.95rem",
-                              border: "1px solid #ddd",
-                              borderRadius: "8px",
-                              whiteSpace: "normal",
-                              color: "#000000",
-                              wordBreak: "break-word",
-                              lineHeight: "1.5",
-                              minHeight: "48px",
-                              display: "flex",
-                              alignItems: "center",
-                            }}
-                            content={
-                              <div
-                                style={{
-                                  padding: "10px 0 0 0",
-                                  backgroundColor: "white",
-                                }}
-                              >
-                                {fasesGrupo.map((fase, index) => {
-                                  const actividadIndice = `${grupoIndex + 1}.${index + 1}`;
-                                  const nombreFase = formatFaseLabel(
-                                    grupoIndex,
-                                    index,
-                                    fase.fase,
-                                  );
-                                  const isFaseName = fasesName.find(
-                                    (fn) =>
-                                      fn.proceso === fase.proceso &&
-                                      fn.fase === fase.fase,
-                                  );
+                                  {fasesGrupo.map((fase, index) => {
+                                    const actividadIndice = `${grupoIndex + 1}.${index + 1}`;
+                                    const nombreFase = formatFaseLabel(
+                                      grupoIndex,
+                                      index,
+                                      fase.fase,
+                                    );
+                                    const tieneSeguimientos = filteredData.some(
+                                      (seg) => seg.fase && seg.fase === fase.id,
+                                    );
+                                    const backgroundColor = !tieneSeguimientos
+                                      ? "#f5f5f5"
+                                      : fasesEstados[fase.id] === "Completado"
+                                        ? "#c8e6c9"
+                                        : "#fff59d";
 
-                                  const tieneSeguimientos = filteredData.some(
-                                    (seg) => seg.fase && seg.fase === fase.id,
-                                  );
+                                    const responsable =
+                                      fase.responsable &&
+                                      fase.responsable.trim() !== ""
+                                        ? fase.responsable
+                                        : "N/A";
 
-                                  let backgroundColor = "#f5f5f5";
-                                  if (fasesEstados[fase.id] === "Completado") {
-                                    backgroundColor = "#c8e6c9";
-                                  } else if (tieneSeguimientos) {
-                                    if (
-                                      itemActual &&
-                                      fase.fase === itemActual.fase
-                                    ) {
-                                      backgroundColor = "#64b06a";
-                                    } else if (isFaseName) {
-                                      backgroundColor = "#aae3ae";
-                                    }
-                                  }
+                                    const documentosFase = docs.filter(
+                                      (doc) => {
+                                        if (!doc.id_fase) return false;
+                                        const ids = doc.id_fase
+                                          .split(",")
+                                          .map((id) => id.trim());
+                                        return ids.includes(fase.id);
+                                      },
+                                    );
 
-                                  const responsable =
-                                    fase.responsable &&
-                                    fase.responsable.trim() !== ""
-                                      ? fase.responsable
-                                      : "N/A";
-
-                                  const documentosFase = docs.filter((doc) => {
-                                    if (!doc.id_fase) return false;
-                                    const ids = doc.id_fase
-                                      .split(",")
-                                      .map((id) => id.trim());
-                                    return ids.includes(fase.id);
-                                  });
-
-                                  return (
-                                    <CollapsibleButton
-                                      key={fase.id || index}
-                                      buttonText={
-                                        <span
-                                          style={{
-                                            display: "inline-block",
-                                            width: "100%",
-                                          }}
-                                        >
-                                          <span style={{ fontWeight: "bold" }}>
-                                            {nombreFase}
-                                          </span>
-                                        </span>
-                                      }
-                                      defaultClosed={true}
-                                      buttonStyle={{
-                                        backgroundColor,
-                                        width: "100%",
-                                        marginBottom: "8px",
-                                        padding: "12px",
-                                        textAlign: "left",
-                                        fontSize: "0.9rem",
-                                        border: "1px solid #ddd",
-                                        borderRadius: "6px",
-                                        whiteSpace: "normal",
-                                        wordBreak: "break-word",
-                                        lineHeight: "1.5",
-                                        minHeight: "44px",
-                                        display: "flex",
-                                        alignItems: "center",
-                                      }}
-                                      content={
-                                        <div
-                                          style={{
-                                            padding: "10px",
-                                            backgroundColor: "white",
-                                          }}
-                                        >
-                                          {canCreateForCurrentProcess &&
-                                            !soloLectura && (
-                                              <div
-                                                style={{
-                                                  marginTop: "4px",
-                                                  marginBottom: "10px",
-                                                  display: "flex",
-                                                  justifyContent: "flex-end",
-                                                }}
-                                              >
-                                                <Button
-                                                  variant="contained"
-                                                  color="primary"
-                                                  style={{
-                                                    textTransform: "none",
-                                                  }}
-                                                  onClick={() => {
-                                                    handleOpenNewTrackingModal(
-                                                      procesoTopic,
-                                                      fase,
-                                                      idProcHistoricoActual ||
-                                                        "",
-                                                    );
-                                                  }}
-                                                >
-                                                  Nuevo Seguimiento
-                                                </Button>
-                                              </div>
-                                            )}
-
-                                          {renderSeguimientosPorFase(fase)}
-
-                                          <div
+                                    return (
+                                      <CollapsibleButton
+                                        key={fase.id || index}
+                                        open={
+                                          openCollapsibles.phases ===
+                                          String(fase.id || index)
+                                        }
+                                        onToggle={(nextOpen) =>
+                                          toggleCollapsible(
+                                            "phases",
+                                            String(fase.id || index),
+                                            nextOpen,
+                                          )
+                                        }
+                                        buttonText={
+                                          <span
                                             style={{
-                                              padding: "15px",
-                                              backgroundColor: "#f9f9f9",
-                                              borderRadius: "6px",
-                                              marginTop: "10px",
-                                              border: "1px solid #e0e0e0",
-                                              display: "grid",
-                                              gridTemplateColumns:
-                                                "1fr 1fr 1fr",
-                                              gap: "16px",
+                                              display: "inline-block",
+                                              width: "100%",
                                             }}
                                           >
-                                            <div style={{ textAlign: "left" }}>
-                                              <strong
-                                                style={{
-                                                  fontSize: "0.9rem",
-                                                  color: "#333",
-                                                }}
-                                              >
-                                                Documentos Requeridos:
-                                              </strong>
-                                              {documentosFase.length > 0 ? (
-                                                <ul
+                                            <span
+                                              style={{ fontWeight: "bold" }}
+                                            >
+                                              {nombreFase}
+                                            </span>
+                                          </span>
+                                        }
+                                        defaultClosed={true}
+                                        buttonStyle={{
+                                          backgroundColor,
+                                          width: "100%",
+                                          marginBottom: "8px",
+                                          padding: "12px",
+                                          textAlign: "left",
+                                          fontSize: "0.9rem",
+                                          border: "1px solid #ddd",
+                                          borderRadius: "6px",
+                                          whiteSpace: "normal",
+                                          wordBreak: "break-word",
+                                          lineHeight: "1.5",
+                                          minHeight: "44px",
+                                          display: "flex",
+                                          alignItems: "center",
+                                        }}
+                                        content={
+                                          <div
+                                            style={{
+                                              padding: "10px",
+                                              backgroundColor: "white",
+                                            }}
+                                          >
+                                            {canCreateForCurrentProcess &&
+                                              !soloLectura && (
+                                                <div
                                                   style={{
-                                                    margin: "8px 0 0 0",
-                                                    paddingLeft: 20,
-                                                    textAlign: "left",
-                                                    listStylePosition:
-                                                      "outside",
+                                                    marginTop: "4px",
+                                                    marginBottom: "10px",
+                                                    display: "flex",
+                                                    justifyContent: "flex-end",
                                                   }}
                                                 >
-                                                  {documentosFase.map(
-                                                    (doc, docIdx) => {
-                                                      const filtroVerde =
-                                                        Filtro21Data.some(
-                                                          (filtro) =>
-                                                            String(
-                                                              filtro.id_doc,
-                                                            ) ===
-                                                              String(doc.id) &&
-                                                            String(
-                                                              filtro.id_programa,
-                                                            ) ===
-                                                              String(
-                                                                idProgramaFinal,
-                                                              ),
-                                                        );
-                                                      const fondoVerde =
-                                                        filtroVerde
-                                                          ? {
-                                                              cursor: "pointer",
-                                                            }
-                                                          : {
-                                                              cursor: "pointer",
-                                                            };
-                                                      const filtro =
-                                                        Filtro21Data.find(
-                                                          (filtro) =>
-                                                            String(
-                                                              filtro.id_doc,
-                                                            ) ===
-                                                              String(doc.id) &&
-                                                            String(
-                                                              filtro.id_programa,
-                                                            ) ===
-                                                              String(
-                                                                idProgramaFinal,
-                                                              ),
-                                                        );
-                                                      const filtroUrl = filtro
-                                                        ? filtro.url
-                                                        : null;
-                                                      const handleClick =
-                                                        filtroUrl
-                                                          ? () =>
-                                                              window.open(
-                                                                filtroUrl,
-                                                                "_blank",
-                                                              )
-                                                          : () =>
-                                                              handleOpen(doc);
-                                                      const handleLinkClick = (
-                                                        event,
-                                                      ) => {
-                                                        event.stopPropagation();
-                                                      };
-                                                      return (
-                                                        <li
-                                                          key={docIdx}
-                                                          style={{
-                                                            marginBottom: "6px",
-                                                          }}
-                                                        >
-                                                          <span
-                                                            style={fondoVerde}
-                                                            onClick={
-                                                              handleClick
-                                                            }
-                                                          >
-                                                            {filtroUrl ? (
-                                                              <a
-                                                                href={filtroUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                style={{
-                                                                  color:
-                                                                    "#1976d2",
-                                                                  textDecoration:
-                                                                    "underline",
-                                                                  fontSize:
-                                                                    "0.85rem",
-                                                                }}
-                                                                onClick={
-                                                                  handleLinkClick
-                                                                }
-                                                              >
-                                                                {doc.nombre_doc}
-                                                              </a>
-                                                            ) : (
-                                                              <span
-                                                                style={{
-                                                                  fontSize:
-                                                                    "0.85rem",
-                                                                }}
-                                                              >
-                                                                {doc.nombre_doc}
-                                                              </span>
-                                                            )}
-                                                          </span>
-                                                        </li>
+                                                  <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    style={{
+                                                      textTransform: "none",
+                                                    }}
+                                                    onClick={() => {
+                                                      handleOpenNewTrackingModal(
+                                                        procesoTopic,
+                                                        fase,
+                                                        idProcHistoricoActual ||
+                                                          "",
                                                       );
-                                                    },
-                                                  )}
-                                                </ul>
-                                              ) : (
-                                                <span
-                                                  style={{
-                                                    color: "#888",
-                                                    marginLeft: "8px",
-                                                    fontSize: "0.85rem",
-                                                  }}
-                                                >
-                                                  No requiere
-                                                </span>
+                                                    }}
+                                                  >
+                                                    Nuevo Seguimiento
+                                                  </Button>
+                                                </div>
                                               )}
-                                            </div>
+
+                                            {renderSeguimientosPorFase(fase)}
 
                                             <div
                                               style={{
-                                                textAlign: "left",
+                                                padding: "15px",
+                                                backgroundColor: "#f9f9f9",
+                                                borderRadius: "6px",
                                                 marginTop: "10px",
-                                                marginLeft: "50px",
+                                                border: "1px solid #e0e0e0",
+                                                display: "grid",
+                                                gridTemplateColumns:
+                                                  "1fr 1fr 1fr",
+                                                gap: "16px",
                                               }}
                                             >
-                                              <strong
-                                                style={{
-                                                  fontSize: "0.9rem",
-                                                  color: "#333",
-                                                }}
+                                              <div
+                                                style={{ textAlign: "left" }}
                                               >
-                                                Responsable de la actividad:
-                                              </strong>
-                                              {responsable !== "N/A" ? (
-                                                <span
+                                                <strong
                                                   style={{
-                                                    marginLeft: "8px",
                                                     fontSize: "0.9rem",
-                                                    color: "black",
+                                                    color: "#333",
                                                   }}
                                                 >
-                                                  {responsable}
-                                                </span>
-                                              ) : (
-                                                <span
-                                                  style={{
-                                                    marginLeft: "8px",
-                                                    fontSize: "0.9rem",
-                                                    color: "black",
-                                                  }}
-                                                >
-                                                  Responsable no asignado
-                                                </span>
-                                              )}
-                                            </div>
+                                                  Documentos Requeridos:
+                                                </strong>
+                                                {documentosFase.length > 0 ? (
+                                                  <ul
+                                                    style={{
+                                                      margin: "8px 0 0 0",
+                                                      paddingLeft: 20,
+                                                      textAlign: "left",
+                                                      listStylePosition:
+                                                        "outside",
+                                                    }}
+                                                  >
+                                                    {documentosFase.map(
+                                                      (doc, docIdx) => {
+                                                        const filtroVerde =
+                                                          Filtro21Data.some(
+                                                            (filtro) =>
+                                                              String(
+                                                                filtro.id_doc,
+                                                              ) ===
+                                                                String(
+                                                                  doc.id,
+                                                                ) &&
+                                                              String(
+                                                                filtro.id_programa,
+                                                              ) ===
+                                                                String(
+                                                                  idProgramaFinal,
+                                                                ),
+                                                          );
+                                                        const fondoVerde =
+                                                          filtroVerde
+                                                            ? {
+                                                                cursor:
+                                                                  "pointer",
+                                                              }
+                                                            : {
+                                                                cursor:
+                                                                  "pointer",
+                                                              };
+                                                        const filtro =
+                                                          Filtro21Data.find(
+                                                            (filtro) =>
+                                                              String(
+                                                                filtro.id_doc,
+                                                              ) ===
+                                                                String(
+                                                                  doc.id,
+                                                                ) &&
+                                                              String(
+                                                                filtro.id_programa,
+                                                              ) ===
+                                                                String(
+                                                                  idProgramaFinal,
+                                                                ),
+                                                          );
+                                                        const filtroUrl = filtro
+                                                          ? filtro.url
+                                                          : null;
+                                                        const handleClick =
+                                                          filtroUrl
+                                                            ? () =>
+                                                                window.open(
+                                                                  filtroUrl,
+                                                                  "_blank",
+                                                                )
+                                                            : () =>
+                                                                handleOpen(doc);
+                                                        const handleLinkClick =
+                                                          (event) => {
+                                                            event.stopPropagation();
+                                                          };
+                                                        return (
+                                                          <li
+                                                            key={docIdx}
+                                                            style={{
+                                                              marginBottom:
+                                                                "6px",
+                                                            }}
+                                                          >
+                                                            <span
+                                                              style={fondoVerde}
+                                                              onClick={
+                                                                handleClick
+                                                              }
+                                                            >
+                                                              {filtroUrl ? (
+                                                                <a
+                                                                  href={
+                                                                    filtroUrl
+                                                                  }
+                                                                  target="_blank"
+                                                                  rel="noopener noreferrer"
+                                                                  style={{
+                                                                    color:
+                                                                      "#1976d2",
+                                                                    textDecoration:
+                                                                      "underline",
+                                                                    fontSize:
+                                                                      "0.85rem",
+                                                                  }}
+                                                                  onClick={
+                                                                    handleLinkClick
+                                                                  }
+                                                                >
+                                                                  {
+                                                                    doc.nombre_doc
+                                                                  }
+                                                                </a>
+                                                              ) : (
+                                                                <span
+                                                                  style={{
+                                                                    fontSize:
+                                                                      "0.85rem",
+                                                                  }}
+                                                                >
+                                                                  {
+                                                                    doc.nombre_doc
+                                                                  }
+                                                                </span>
+                                                              )}
+                                                            </span>
+                                                          </li>
+                                                        );
+                                                      },
+                                                    )}
+                                                  </ul>
+                                                ) : (
+                                                  <span
+                                                    style={{
+                                                      color: "#888",
+                                                      marginLeft: "8px",
+                                                      fontSize: "0.85rem",
+                                                    }}
+                                                  >
+                                                    No requiere
+                                                  </span>
+                                                )}
+                                              </div>
 
-                                            {!soloLectura && (
                                               <div
                                                 style={{
-                                                  marginBottom: "15px",
-                                                  padding: "10px",
-                                                  backgroundColor: "#f0f7ff",
-                                                  borderRadius: "6px",
-                                                  border: "1px solid #b3d9ff",
+                                                  textAlign: "left",
+                                                  marginTop: "10px",
+                                                  marginLeft: "50px",
                                                 }}
                                               >
-                                                <FormControl
-                                                  fullWidth
-                                                  variant="outlined"
-                                                  size="small"
-                                                  disabled={
-                                                    fasesEstados[fase.id] ===
-                                                    "Completado"
-                                                  }
+                                                <strong
+                                                  style={{
+                                                    fontSize: "0.9rem",
+                                                    color: "#333",
+                                                  }}
                                                 >
-                                                  <InputLabel
-                                                    id={`estado-fase-label-${fase.id}`}
+                                                  Responsable de la actividad:
+                                                </strong>
+                                                {responsable !== "N/A" ? (
+                                                  <span
+                                                    style={{
+                                                      marginLeft: "8px",
+                                                      fontSize: "0.9rem",
+                                                      color: "black",
+                                                    }}
                                                   >
-                                                    Estado de la actividad
-                                                  </InputLabel>
-                                                  <Select
-                                                    labelId={`estado-fase-label-${fase.id}`}
-                                                    value={
-                                                      fasesEstados[fase.id] ||
-                                                      ""
-                                                    }
-                                                    onChange={(e) =>
-                                                      handleEstadoFaseChange(
-                                                        fase,
-                                                        e.target.value,
-                                                        procesoTopic,
-                                                        actividadIndice,
-                                                      )
-                                                    }
-                                                    label="Estado de la actividad"
+                                                    {responsable}
+                                                  </span>
+                                                ) : (
+                                                  <span
+                                                    style={{
+                                                      marginLeft: "8px",
+                                                      fontSize: "0.9rem",
+                                                      color: "black",
+                                                    }}
                                                   >
-                                                    <MenuItem value="Pendiente">
-                                                      Pendiente
-                                                    </MenuItem>
-                                                    <MenuItem value="En revisión">
-                                                      En revisión
-                                                    </MenuItem>
-                                                    <MenuItem value="Por ajustar">
-                                                      Por ajustar
-                                                    </MenuItem>
-                                                    <MenuItem value="Por actualizar">
-                                                      Por actualizar
-                                                    </MenuItem>
-                                                    <MenuItem value="Completado">
-                                                      Completado
-                                                    </MenuItem>
-                                                    <MenuItem value="No aplica">
-                                                      No aplica
-                                                    </MenuItem>
-                                                  </Select>
-                                                </FormControl>
+                                                    Responsable no asignado
+                                                  </span>
+                                                )}
                                               </div>
-                                            )}
+
+                                              {!soloLectura && (
+                                                <div
+                                                  style={{
+                                                    marginBottom: "15px",
+                                                    padding: "10px",
+                                                    backgroundColor: "#f0f7ff",
+                                                    borderRadius: "6px",
+                                                    border: "1px solid #b3d9ff",
+                                                  }}
+                                                >
+                                                  <FormControl
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    size="small"
+                                                    disabled={
+                                                      fasesEstados[fase.id] ===
+                                                      "Completado"
+                                                    }
+                                                  >
+                                                    <InputLabel
+                                                      id={`estado-fase-label-${fase.id}`}
+                                                    >
+                                                      Estado de la actividad
+                                                    </InputLabel>
+                                                    <Select
+                                                      labelId={`estado-fase-label-${fase.id}`}
+                                                      value={
+                                                        fasesEstados[fase.id] ||
+                                                        ""
+                                                      }
+                                                      onChange={(e) =>
+                                                        handleEstadoFaseChange(
+                                                          fase,
+                                                          e.target.value,
+                                                          procesoTopic,
+                                                          actividadIndice,
+                                                        )
+                                                      }
+                                                      label="Estado de la actividad"
+                                                    >
+                                                      <MenuItem value="Pendiente">
+                                                        Pendiente
+                                                      </MenuItem>
+                                                      <MenuItem value="En revisión">
+                                                        En revisión
+                                                      </MenuItem>
+                                                      <MenuItem value="Por ajustar">
+                                                        Por ajustar
+                                                      </MenuItem>
+                                                      <MenuItem value="Por actualizar">
+                                                        Por actualizar
+                                                      </MenuItem>
+                                                      <MenuItem value="Completado">
+                                                        Completado
+                                                      </MenuItem>
+                                                      <MenuItem value="No aplica">
+                                                        No aplica
+                                                      </MenuItem>
+                                                    </Select>
+                                                  </FormControl>
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
-                                        </div>
-                                      }
-                                    />
-                                  );
-                                })}
+                                        }
+                                      />
+                                    );
+                                  })}
                                 </div>
                               }
                             />
                           );
-                        }
+                        },
                       )}
                     </div>
                   )}
@@ -2615,6 +2660,7 @@ const Seguimiento = ({
     data,
     filters,
     procesoFiltro = "rrc",
+    timeline = null,
   ) => {
     if (!Array.isArray(filters)) {
       filters = [filters];
@@ -2656,35 +2702,44 @@ const Seguimiento = ({
     if (tableData.length === 0) {
       const collapsibleName = getNombreProceso();
       return (
-        <div>
-          <p></p>
-          {canCreateForThisProcess && !soloLectura && !isDirectorPrograma && (
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: "20px",
-                marginBottom: "20px",
-              }}
-            >
-              <Button
-                onClick={() => {
-                  handleOpenNewTrackingModal(
-                    collapsibleName,
-                    null,
-                    idProcHistoricoActual || "",
-                    true,
-                  );
-                }}
-                variant="contained"
-                color="primary"
-                style={{ textAlign: "center", marginBottom: "25px" }}
-              >
-                Agregar seguimiento sin fase
-              </Button>
-            </div>
-          )}
-          {contenido_tablaFases(collapsibleName)}
-        </div>
+        <CollapsibleButton
+          buttonText={collapsibleName}
+          defaultClosed={false}
+          content={
+            <>
+              {timeline}
+              <p></p>
+              {canCreateForThisProcess &&
+                !soloLectura &&
+                !isDirectorPrograma && (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      marginTop: "20px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    <Button
+                      onClick={() => {
+                        handleOpenNewTrackingModal(
+                          collapsibleName,
+                          null,
+                          idProcHistoricoActual || "",
+                          true,
+                        );
+                      }}
+                      variant="contained"
+                      color="primary"
+                      style={{ textAlign: "center", marginBottom: "25px" }}
+                    >
+                      Agregar seguimiento sin fase
+                    </Button>
+                  </div>
+                )}
+              {contenido_tablaFases(collapsibleName)}
+            </>
+          }
+        />
       );
     }
 
@@ -2974,6 +3029,7 @@ const Seguimiento = ({
 
       return (
         <>
+          {esActual && timeline}
           {renderTablaSeguimientos(seguimientos)}
           {esActual &&
             canCreateForThisProcess &&
@@ -3014,6 +3070,18 @@ const Seguimiento = ({
         {periodoActual && (
           <div style={{ marginBottom: "20px" }}>
             <CollapsibleButton
+              open={
+                openCollapsibles.periods
+                  ? openCollapsibles.periods === `actual-${procesoFiltro}`
+                  : undefined
+              }
+              onToggle={(nextOpen) =>
+                toggleCollapsible(
+                  "periods",
+                  `actual-${procesoFiltro}`,
+                  nextOpen,
+                )
+              }
               buttonText={`${getNombreProceso()} - periodo: ${periodoActual.periodo}`}
               content={renderContenidoPeriodo(
                 periodoActual.seguimientos,
@@ -3025,25 +3093,66 @@ const Seguimiento = ({
           </div>
         )}
 
-        {/* Periodos viejos (cerrados por defecto) */}
-        {periodosViejos.map((grupo, idx) => (
-          <div key={`grupo-${idx}`} style={{ marginBottom: "20px" }}>
-            <CollapsibleButton
-              buttonText={`${getNombreProceso()} - periodo: ${grupo.periodo}`}
-              content={renderContenidoPeriodo(
-                grupo.seguimientos,
-                false,
-                grupo.idHistorico,
-              )}
-              defaultClosed={true}
-            />
-          </div>
-        ))}
+        {periodosViejos.length +
+          gruposSinPeriodo.length +
+          (seguimientosSinHistorico.length > 0 ? 1 : 0) >
+          0 && (
+          <Button
+            variant="outlined"
+            onClick={() => setShowPreviousPeriods((prev) => !prev)}
+            sx={{ mb: 2 }}
+          >
+            {showPreviousPeriods
+              ? "Ocultar periodos anteriores"
+              : "Ver periodos anteriores"}
+          </Button>
+        )}
+
+        {/* Periodos anteriores y seguimientos sin periodo */}
+        {showPreviousPeriods &&
+          periodosViejos.map((grupo, idx) => (
+            <div key={`grupo-${idx}`} style={{ marginBottom: "20px" }}>
+              <CollapsibleButton
+                open={
+                  openCollapsibles.periods
+                    ? openCollapsibles.periods === `old-${idx}-${procesoFiltro}`
+                    : undefined
+                }
+                onToggle={(nextOpen) =>
+                  toggleCollapsible(
+                    "periods",
+                    `old-${idx}-${procesoFiltro}`,
+                    nextOpen,
+                  )
+                }
+                buttonText={`${getNombreProceso()} - periodo: ${grupo.periodo}`}
+                content={renderContenidoPeriodo(
+                  grupo.seguimientos,
+                  false,
+                  grupo.idHistorico,
+                )}
+                defaultClosed={true}
+              />
+            </div>
+          ))}
 
         {/* Seguimientos sin id_proc_historico */}
-        {seguimientosSinHistorico.length > 0 && (
+        {showPreviousPeriods && seguimientosSinHistorico.length > 0 && (
           <div style={{ marginBottom: "20px" }}>
             <CollapsibleButton
+              open={
+                openCollapsibles.periods
+                  ? openCollapsibles.periods ===
+                    `without-period-${procesoFiltro}`
+                  : undefined
+              }
+              onToggle={(nextOpen) =>
+                toggleCollapsible(
+                  "periods",
+                  `without-period-${procesoFiltro}`,
+                  nextOpen,
+                )
+              }
               buttonText={`${getNombreProceso()} (sin periodo)`}
               content={renderContenidoPeriodo(
                 seguimientosSinHistorico,
@@ -3056,22 +3165,36 @@ const Seguimiento = ({
         )}
 
         {/* Grupos sin periodo pero con id_proc_historico */}
-        {gruposSinPeriodo.map((grupo, idx) => (
-          <div
-            key={`grupo-sin-periodo-${idx}`}
-            style={{ marginBottom: "20px" }}
-          >
-            <CollapsibleButton
-              buttonText={`${getNombreProceso()} (ID: ${grupo.idHistorico})`}
-              content={renderContenidoPeriodo(
-                grupo.seguimientos,
-                esActualSinPeriodo,
-                grupo.idHistorico,
-              )}
-              defaultClosed={true}
-            />
-          </div>
-        ))}
+        {showPreviousPeriods &&
+          gruposSinPeriodo.map((grupo, idx) => (
+            <div
+              key={`grupo-sin-periodo-${idx}`}
+              style={{ marginBottom: "20px" }}
+            >
+              <CollapsibleButton
+                open={
+                  openCollapsibles.periods
+                    ? openCollapsibles.periods ===
+                      `without-id-${idx}-${procesoFiltro}`
+                    : undefined
+                }
+                onToggle={(nextOpen) =>
+                  toggleCollapsible(
+                    "periods",
+                    `without-id-${idx}-${procesoFiltro}`,
+                    nextOpen,
+                  )
+                }
+                buttonText={`${getNombreProceso()} (ID: ${grupo.idHistorico})`}
+                content={renderContenidoPeriodo(
+                  grupo.seguimientos,
+                  esActualSinPeriodo,
+                  grupo.idHistorico,
+                )}
+                defaultClosed={true}
+              />
+            </div>
+          ))}
       </div>
     );
   };
@@ -4304,19 +4427,18 @@ const Seguimiento = ({
                   Descargar seguimientos
                 </Button>
               </div>
-              <SimpleTimeline
-                fechaExpedicion={rowData ? rowData["fechaexpedrc"] : null}
-                fechaVencimiento={rowData ? rowData["fechavencrc"] : null}
-                fechasCalculadas={fechasCalculadas}
-                tipo="RRC"
-              />
-
               {/* Renderizar seguimientos agrupados por periodos de forma independiente */}
               <div style={{ textAlign: "center", marginBottom: "30px" }}>
                 {renderSeguimientosPorPeriodos(
                   filteredData,
                   ["renovación registro calificado"],
                   "rrc",
+                  <SimpleTimeline
+                    fechaExpedicion={rowData ? rowData["fechaexpedrc"] : null}
+                    fechaVencimiento={rowData ? rowData["fechavencrc"] : null}
+                    fechasCalculadas={fechasCalculadas}
+                    tipo="RRC"
+                  />,
                 )}
               </div>
             </>
@@ -4390,12 +4512,6 @@ const Seguimiento = ({
           {handleButtonClick === "raac" && (
             <>
               <h3>Seguimiento del Proceso de Renovación Acreditación</h3>
-              <SimpleTimeline
-                fechaExpedicion={rowData ? rowData["fechaexpedac"] : null}
-                fechaVencimiento={rowData ? rowData["fechavencac"] : null}
-                fechasCalculadas={fechasCalculadasAC}
-                tipo="RAAC"
-              />
               <div style={{ textAlign: "right", marginBottom: "12px" }}>
                 <Button
                   variant="contained"
@@ -4413,6 +4529,16 @@ const Seguimiento = ({
                       className="contenido"
                       style={{ textAlign: "center", marginBottom: "30px" }}
                     >
+                      <SimpleTimeline
+                        fechaExpedicion={
+                          rowData ? rowData["fechaexpedac"] : null
+                        }
+                        fechaVencimiento={
+                          rowData ? rowData["fechavencac"] : null
+                        }
+                        fechasCalculadas={fechasCalculadasAC}
+                        tipo="RAAC"
+                      />
                       {renderFilteredTable(
                         filteredData,
                         ["renovación acreditación"],

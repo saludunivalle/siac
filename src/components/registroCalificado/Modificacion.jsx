@@ -42,6 +42,17 @@ const getFieldValue = (obj, ...keys) => {
   return "";
 };
 
+const INTERFACULTAD_EXCLUSIONS = new Set([
+  "Facultad de Salud",
+  "Salud",
+  "#N/A",
+]);
+
+const isInterfacultad = (programa) => {
+  const facultad = normalize(getFieldValue(programa, "facultad"));
+  return facultad !== "" && !INTERFACULTAD_EXCLUSIONS.has(facultad);
+};
+
 const parseDate = (value) => {
   const raw = normalize(value);
   if (!raw) return new Date(0);
@@ -121,6 +132,7 @@ const Modificacion = ({
     programa: "",
     nivelAcademico: "",
     nivelFormacion: "",
+    interfacultad: "",
   });
 
   useEffect(() => {
@@ -198,6 +210,11 @@ const Modificacion = ({
         nivelFormacion !== normalize(filters.nivelFormacion)
       )
         return false;
+      if (
+        filters.interfacultad &&
+        (filters.interfacultad === "si") !== isInterfacultad(program)
+      )
+        return false;
       return true;
     });
   }, [visibleBase, filters]);
@@ -232,6 +249,7 @@ const Modificacion = ({
       programa: "",
       nivelAcademico: "",
       nivelFormacion: "",
+      interfacultad: "",
     });
   };
 
@@ -245,7 +263,7 @@ const Modificacion = ({
       sx={{
         boxShadow: "0 1px 3px rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)",
         borderRadius: "20px",
-        overflow: "hidden",
+        overflow: "visible",
         border: "1px solid rgba(0,0,0,0.02)",
         width: "100%",
       }}
@@ -356,6 +374,23 @@ const Modificacion = ({
           }}
         >
           No sustanciales
+        </Button>
+        <Button
+          variant={filters.interfacultad === "si" ? "contained" : "outlined"}
+          onClick={() =>
+            setFilters((prev) => ({
+              ...prev,
+              interfacultad: prev.interfacultad === "si" ? "" : "si",
+            }))
+          }
+          sx={{
+            borderColor: "#B22222",
+            color: filters.interfacultad === "si" ? "white" : "#B22222",
+            backgroundColor:
+              filters.interfacultad === "si" ? "#B22222" : "transparent",
+          }}
+        >
+          Interfacultad
         </Button>
       </Box>
 
@@ -589,7 +624,11 @@ const Modificacion = ({
         <TableContainer
           component={Paper}
           elevation={0}
-          sx={{ width: "100%", overflowX: "auto" }}
+          sx={{
+            width: "100%",
+            overflowX: "auto",
+            overflowY: "clip",
+          }}
         >
           <Table
             aria-label="lista de programas"
@@ -617,7 +656,7 @@ const Modificacion = ({
                       py: 2.5,
                       px: { xs: 1, sm: 2 },
                       position: "sticky",
-                      top: 0,
+                      top: "80px",
                       zIndex: 10,
                     }}
                     sortDirection={orderBy === column.key ? order : false}

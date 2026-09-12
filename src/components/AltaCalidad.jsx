@@ -59,6 +59,17 @@ const getFieldValue = (obj, ...keys) => {
   return "";
 };
 
+const INTERFACULTAD_EXCLUSIONS = new Set([
+  "Facultad de Salud",
+  "Salud",
+  "#N/A",
+]);
+
+const isInterfacultad = (programa) => {
+  const facultad = normalize(getFieldValue(programa, "facultad"));
+  return facultad !== "" && !INTERFACULTAD_EXCLUSIONS.has(facultad);
+};
+
 const isVigente = (estado) => {
   const value = stripAccents(estado);
   return value === "vigente" || value === "vigente (en tramite)";
@@ -150,6 +161,20 @@ const processCards = [
 
 const estadoCards = [
   {
+    key: "vigentesPregrado",
+    label: "Vigentes Pregrado",
+    color: "#1565C0",
+    backgroundColor: "rgba(21, 101, 192, 0.08)",
+    borderColor: "rgba(21, 101, 192, 0.2)",
+  },
+  {
+    key: "vigentesPosgrado",
+    label: "Vigentes Posgrado",
+    color: "#00838F",
+    backgroundColor: "rgba(0, 131, 143, 0.08)",
+    borderColor: "rgba(0, 131, 143, 0.2)",
+  },
+  {
     key: "vigentes",
     label: "Vigentes / En tramite",
     color: "#2E7D32",
@@ -169,20 +194,6 @@ const estadoCards = [
     color: "#C62828",
     backgroundColor: "rgba(198, 40, 40, 0.08)",
     borderColor: "rgba(198, 40, 40, 0.2)",
-  },
-  {
-    key: "vigentesPregrado",
-    label: "Vigentes Pregrado",
-    color: "#1565C0",
-    backgroundColor: "rgba(21, 101, 192, 0.08)",
-    borderColor: "rgba(21, 101, 192, 0.2)",
-  },
-  {
-    key: "vigentesPosgrado",
-    label: "Vigentes Posgrado",
-    color: "#00838F",
-    backgroundColor: "rgba(0, 131, 143, 0.08)",
-    borderColor: "rgba(0, 131, 143, 0.2)",
   },
 ];
 
@@ -241,6 +252,11 @@ const isEnProcesoFacultad = (row, seguimientos) =>
 const filterRows = (rows, filters) =>
   rows.filter((row) => {
     if (filters.procesos.length > 0 && !filters.procesos.includes(row.proceso))
+      return false;
+    if (
+      filters.interfacultad &&
+      (filters.interfacultad === "si") !== isInterfacultad(row)
+    )
       return false;
     if (
       filters.riesgoSeguimiento &&
@@ -343,6 +359,7 @@ const AltaCalidad = () => {
   const userEscuela = useMemo(getUserEscuela, []);
   const [filters, setFilters] = useState({
     procesos: [],
+    interfacultad: "",
     riesgoSeguimiento: "",
     riesgoVencimiento: "",
     escuela: userEscuela,
@@ -382,12 +399,15 @@ const AltaCalidad = () => {
           Filtro7(),
           Filtro10(),
         ]);
-        const baseProgramas = (programasData || []).filter(isAltaCalidadProgram);
+        const baseProgramas = (programasData || []).filter(
+          isAltaCalidadProgram,
+        );
         const programasFiltrados =
           userScope.role === "Director Escuela" && userScope.escuela
             ? baseProgramas.filter(
                 (programa) =>
-                  normalize(getFieldValue(programa, "escuela")) === userScope.escuela,
+                  normalize(getFieldValue(programa, "escuela")) ===
+                  userScope.escuela,
               )
             : userScope.role === "Director Programa" && userScope.programa
               ? baseProgramas.filter(
@@ -635,6 +655,7 @@ const AltaCalidad = () => {
   const clearFilters = () => {
     setFilters({
       procesos: [],
+      interfacultad: "",
       riesgoSeguimiento: "",
       riesgoVencimiento: "",
       escuela: "",
@@ -717,7 +738,7 @@ const AltaCalidad = () => {
           background: "linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%)",
           minHeight: "100vh",
           pt: 4,
-          overflowX: "hidden",
+          overflowX: "visible",
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
@@ -885,14 +906,24 @@ const AltaCalidad = () => {
                             onClick={() => handleEstadoCardClick(card.key)}
                             sx={{
                               borderRadius: "20px",
+                              position: "relative",
                               border: `2px solid ${isSelected ? "#ffffff" : card.borderColor}`,
                               backgroundColor: isSelected
                                 ? card.color
                                 : card.backgroundColor,
-                              position: "relative",
                               overflow: "hidden",
                               cursor: "pointer",
                               width: "100%",
+                              ...(index === 3 && {
+                                borderLeft: {
+                                  xs: "none",
+                                  sm: "1px solid rgba(33, 37, 41, 0.18)",
+                                },
+                                borderTop: {
+                                  xs: "1px solid rgba(33, 37, 41, 0.18)",
+                                  sm: "none",
+                                },
+                              }),
                               transition:
                                 "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                               "&:hover": { transform: "translateY(-6px)" },
@@ -1333,7 +1364,7 @@ const AltaCalidad = () => {
                 <Card
                   sx={{
                     borderRadius: 4,
-                    overflow: "hidden",
+                    overflow: "visible",
                     border: "1px solid rgba(0,0,0,0.04)",
                     mb: 4,
                   }}
@@ -1400,13 +1431,51 @@ const AltaCalidad = () => {
                           </Button>
                         );
                       })}
+                      <Button
+                        variant={
+                          filters.interfacultad === "si"
+                            ? "contained"
+                            : "outlined"
+                        }
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            interfacultad:
+                              prev.interfacultad === "si" ? "" : "si",
+                          }))
+                        }
+                        sx={{
+                          borderColor: "#B22222",
+                          color:
+                            filters.interfacultad === "si"
+                              ? "white"
+                              : "#B22222",
+                          backgroundColor:
+                            filters.interfacultad === "si"
+                              ? "#B22222"
+                              : "transparent",
+                          "&:hover": {
+                            backgroundColor:
+                              filters.interfacultad === "si"
+                                ? "#8B1A1A"
+                                : "rgba(178, 34, 34, 0.04)",
+                            borderColor: "#B22222",
+                          },
+                        }}
+                      >
+                        Interfacultad
+                      </Button>
                     </Box>
                   </Box>
 
                   <TableContainer
                     component={Paper}
                     elevation={0}
-                    sx={{ width: "100%", overflowX: "auto" }}
+                    sx={{
+                      width: "100%",
+                      overflowX: "auto",
+                      overflowY: "clip",
+                    }}
                   >
                     <Table
                       aria-label="tabla de alta calidad"
@@ -1431,6 +1500,9 @@ const AltaCalidad = () => {
                               sx={{
                                 fontWeight: 700,
                                 backgroundColor: "#F8F9FA",
+                                position: "sticky",
+                                top: "80px",
+                                zIndex: 2,
                               }}
                             >
                               {label}
