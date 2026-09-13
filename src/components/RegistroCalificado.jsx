@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Divider,
   Fade,
   FormControl,
   FormControlLabel,
@@ -766,83 +767,87 @@ const RegistroCalificado = () => {
                         justifyContent: "center",
                       }}
                     >
-                      {ESTADO_CARDS.map((card, index) => {
+                      {ESTADO_CARDS.map((card) => {
                         const isSelected = selectedEstado === card.key;
                         return (
-                          <Card
-                            key={card.key}
-                            elevation={0}
-                            onClick={() =>
-                              setSelectedEstado((prev) =>
-                                prev === card.key ? null : card.key,
-                              )
-                            }
-                            sx={{
-                              minWidth: { xs: "100%", sm: "220px" },
-                              flex: "1 1 220px",
-                              position: "relative",
-                              borderRadius: "20px",
-                              border: `2px solid ${isSelected ? "#ffffff" : card.borderColor}`,
-                              backgroundColor: isSelected
-                                ? card.color
-                                : card.backgroundColor,
-                              transition:
-                                "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                              "&:hover": {
-                                transform: "translateY(-6px)",
-                              },
-                              cursor: "pointer",
-                              ...(index === 3 && {
-                                borderLeft: {
-                                  xs: "none",
-                                  sm: "1px solid rgba(33, 37, 41, 0.18)",
+                          <React.Fragment key={card.key}>
+                            <Card
+                              elevation={0}
+                              onClick={() =>
+                                setSelectedEstado((prev) =>
+                                  prev === card.key ? null : card.key,
+                                )
+                              }
+                              sx={{
+                                minWidth: { xs: "100%", sm: "220px" },
+                                flex: "1 1 220px",
+                                position: "relative",
+                                borderRadius: "20px",
+                                border: `2px solid ${isSelected ? "#ffffff" : card.borderColor}`,
+                                backgroundColor: isSelected
+                                  ? card.color
+                                  : card.backgroundColor,
+                                transition:
+                                  "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                "&:hover": {
+                                  transform: "translateY(-6px)",
                                 },
-                                borderTop: {
-                                  xs: "1px solid rgba(33, 37, 41, 0.18)",
-                                  sm: "none",
-                                },
-                              }),
-                            }}
-                          >
-                            <CardContent sx={{ p: 3 }}>
-                              <Typography
-                                variant="h6"
+                                cursor: "pointer",
+                              }}
+                            >
+                              <CardContent sx={{ p: 3 }}>
+                                <Typography
+                                  variant="h6"
+                                  sx={{
+                                    color: isSelected ? "#ffffff" : card.color,
+                                    fontWeight: 600,
+                                    fontSize: "1.125rem",
+                                    mb: 1,
+                                  }}
+                                >
+                                  {card.label}
+                                </Typography>
+                                <Typography
+                                  variant="h2"
+                                  sx={{
+                                    fontWeight: 800,
+                                    color: isSelected ? "#ffffff" : card.color,
+                                    fontSize: "3rem",
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  {estadoCounts[card.key] ?? 0}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    color: isSelected ? "#ffffff" : card.color,
+                                    opacity: 0.7,
+                                    fontSize: "0.875rem",
+                                    fontWeight: 500,
+                                    mt: 1,
+                                  }}
+                                >
+                                  {(estadoCounts[card.key] ?? 0) === 1
+                                    ? "programa"
+                                    : "programas"}
+                                </Typography>
+                              </CardContent>
+                            </Card>
+                            {card.key === "vigentes" && (
+                              <Divider
+                                orientation="vertical"
+                                flexItem
                                 sx={{
-                                  color: isSelected ? "#ffffff" : card.color,
-                                  fontWeight: 600,
-                                  fontSize: "1.125rem",
-                                  mb: 1,
+                                  display: { xs: "none", sm: "block" },
+                                  flex: "0 0 2px",
+                                  alignSelf: "stretch",
+                                  my: 3,
+                                  borderColor: "rgba(33, 37, 41, 0.35)",
                                 }}
-                              >
-                                {card.label}
-                              </Typography>
-                              <Typography
-                                variant="h2"
-                                sx={{
-                                  fontWeight: 800,
-                                  color: isSelected ? "#ffffff" : card.color,
-                                  fontSize: "3rem",
-                                  lineHeight: 1,
-                                }}
-                              >
-                                {estadoCounts[card.key] ?? 0}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  color: isSelected ? "#ffffff" : card.color,
-                                  opacity: 0.7,
-                                  fontSize: "0.875rem",
-                                  fontWeight: 500,
-                                  mt: 1,
-                                }}
-                              >
-                                {(estadoCounts[card.key] ?? 0) === 1
-                                  ? "programa"
-                                  : "programas"}
-                              </Typography>
-                            </CardContent>
-                          </Card>
+                              />
+                            )}
+                          </React.Fragment>
                         );
                       })}
                     </Box>
@@ -1196,8 +1201,9 @@ const RegistroCalificado = () => {
                     elevation={0}
                     sx={{
                       width: "100%",
+                      maxHeight: { xs: 420, md: 560 },
                       overflowX: "auto",
-                      overflowY: "clip",
+                      overflowY: "auto",
                     }}
                   >
                     <Table
@@ -1224,7 +1230,7 @@ const RegistroCalificado = () => {
                                 fontWeight: 700,
                                 backgroundColor: "#F8F9FA",
                                 position: "sticky",
-                                top: "80px",
+                                top: 0,
                                 zIndex: 2,
                               }}
                             >

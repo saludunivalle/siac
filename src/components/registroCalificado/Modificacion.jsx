@@ -626,8 +626,9 @@ const Modificacion = ({
           elevation={0}
           sx={{
             width: "100%",
+            maxHeight: { xs: 420, md: 560 },
             overflowX: "auto",
-            overflowY: "clip",
+            overflowY: "auto",
           }}
         >
           <Table
@@ -656,7 +657,7 @@ const Modificacion = ({
                       py: 2.5,
                       px: { xs: 1, sm: 2 },
                       position: "sticky",
-                      top: "80px",
+                      top: 0,
                       zIndex: 10,
                     }}
                     sortDirection={orderBy === column.key ? order : false}
