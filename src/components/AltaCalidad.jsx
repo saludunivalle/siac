@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Divider,
   Fade,
   FormControl,
   FormControlLabel,
@@ -911,24 +912,29 @@ const AltaCalidad = () => {
                               backgroundColor: isSelected
                                 ? card.color
                                 : card.backgroundColor,
-                              overflow: "hidden",
+                              overflow: "visible",
                               cursor: "pointer",
                               width: "100%",
-                              ...(index === 3 && {
-                                borderLeft: {
-                                  xs: "none",
-                                  sm: "1px solid rgba(33, 37, 41, 0.18)",
-                                },
-                                borderTop: {
-                                  xs: "1px solid rgba(33, 37, 41, 0.18)",
-                                  sm: "none",
-                                },
-                              }),
                               transition:
                                 "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                               "&:hover": { transform: "translateY(-6px)" },
                             }}
                           >
+                            {card.key === "vigentes" && (
+                              <Divider
+                                orientation="vertical"
+                                sx={{
+                                  display: { xs: "none", sm: "block" },
+                                  position: "absolute",
+                                  right: { sm: -13 },
+                                  top: "16%",
+                                  height: "68%",
+                                  borderRightWidth: 2,
+                                  borderColor: "rgba(33, 37, 41, 0.35)",
+                                  zIndex: 2,
+                                }}
+                              />
+                            )}
                             <CardContent sx={{ p: 3 }}>
                               <Box
                                 display="flex"
@@ -1473,8 +1479,9 @@ const AltaCalidad = () => {
                     elevation={0}
                     sx={{
                       width: "100%",
+                      maxHeight: { xs: 420, md: 560 },
                       overflowX: "auto",
-                      overflowY: "clip",
+                      overflowY: "auto",
                     }}
                   >
                     <Table
@@ -1501,7 +1508,7 @@ const AltaCalidad = () => {
                                 fontWeight: 700,
                                 backgroundColor: "#F8F9FA",
                                 position: "sticky",
-                                top: "80px",
+                                top: 0,
                                 zIndex: 2,
                               }}
                             >
