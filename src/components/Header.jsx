@@ -309,11 +309,10 @@ const Header = () => {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
   };
 
-  const extractNameFromEmail = (email) => {
+  const extractNameFromEmail = useCallback((email) => {
     const name = email.split("@")[0];
-    const [firstName] = name.split(".");
-    return capitalizeFirstLetter(firstName);
-  };
+    return name.split(".").filter(Boolean).map(capitalizeFirstLetter).join(" ");
+  }, []);
 
   // Función para manejar el logout
   const handleLogout = useCallback(() => {
@@ -387,7 +386,7 @@ const Header = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutsideLabel);
     };
-  }, []);
+  }, [extractNameFromEmail]);
 
   const handleInputChange = (e) => {
     setSearchTerm(e.target.value);
@@ -398,6 +397,10 @@ const Header = () => {
       handleSearch();
     }
   };
+
+  const cargosVisibles = isCargo.map((cargo) =>
+    cargo === "Director Escuela" ? "Rol: Escuela" : cargo,
+  );
 
   return (
     <HeaderContainer role="navigation" aria-label="Navegación Principal">
@@ -414,7 +417,7 @@ const Header = () => {
         <Title>Sistema SIAC Facultad de Salud</Title>
         <Username>
           {user
-            ? `${user} - ${isCargo.join(", ")}${
+            ? `${user} - ${cargosVisibles.join(", ")}${
                 isCargo.includes("Director Escuela") && escuela
                   ? ` - ${escuela}`
                   : ""

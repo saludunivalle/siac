@@ -1,13 +1,13 @@
-import React from 'react';
-import { Box, Grid } from '@mui/material';
-import FiltersCard from '../common/FiltersCard';
-import NivelStatsCard from '../common/NivelStatsCard';
-import ChartCard from '../common/ChartCard';
-import DataTable from '../common/DataTable';
-import { useEstadisticasPorNivelCupos } from '../../hooks/useEstadisticasPorNivelCupos';
-import { useEstadisticasPorEscuela } from '../../hooks/useEstadisticasPorEscuela';
-import { useTablaCuposData } from '../../hooks/useTablaCuposData';
-import { CHART_COLORS } from '../../constants/dashboardConstants';
+import React from "react";
+import { Box, Grid } from "@mui/material";
+import FiltersCard from "../common/FiltersCard";
+import NivelStatsCard from "../common/NivelStatsCard";
+import ChartCard from "../common/ChartCard";
+import DataTable from "../common/DataTable";
+import { useEstadisticasPorNivelCupos } from "../../hooks/useEstadisticasPorNivelCupos";
+import { useEstadisticasPorEscuela } from "../../hooks/useEstadisticasPorEscuela";
+import { useTablaCuposData } from "../../hooks/useTablaCuposData";
+import { CHART_COLORS } from "../../constants/dashboardConstants";
 
 const IndicadoresCupos = ({
   filters,
@@ -18,115 +18,126 @@ const IndicadoresCupos = ({
   maxYear,
   cuposFilteredData,
   datosCuposProcesados,
-  availableOptions
+  availableOptions,
 }) => {
   const estadisticasPorNivel = useEstadisticasPorNivelCupos(cuposFilteredData);
   const estadisticasPorEscuela = useEstadisticasPorEscuela(cuposFilteredData);
   const datosTablaCupos = useTablaCuposData(cuposFilteredData);
+  const programaSeleccionado =
+    filters.selectedProgramaCupos !== "Todos"
+      ? ` - ${filters.selectedProgramaCupos}`
+      : "";
 
   // Configuración del gráfico combinado de cupos
   const cuposChartData = {
-    labels: datosCuposProcesados.map(item => item.periodo),
+    labels: datosCuposProcesados.map((item) => item.periodo),
     datasets: [
       {
-        type: 'bar',
-        label: 'Cupos Máximos',
-        data: datosCuposProcesados.map(item => item.cuposMax),
+        type: "bar",
+        label: "Cupos Máximos",
+        data: datosCuposProcesados.map((item) => item.cuposMax),
         backgroundColor: CHART_COLORS.primary,
         borderColor: CHART_COLORS.primaryBorder,
         borderWidth: 1,
-        yAxisID: 'y'
+        yAxisID: "y",
       },
       {
-        type: 'bar',
-        label: 'Matrícula Primera Vez',
-        data: datosCuposProcesados.map(item => item.primeraVez),
+        type: "bar",
+        label: "Matrícula Primera Vez",
+        data: datosCuposProcesados.map((item) => item.primeraVez),
         backgroundColor: CHART_COLORS.secondary,
         borderColor: CHART_COLORS.secondaryBorder,
         borderWidth: 1,
-        yAxisID: 'y'
+        yAxisID: "y",
       },
       {
-        type: 'line',
-        label: 'Tasa de Asignación (%)',
-        data: datosCuposProcesados.map(item => item.tasaAsignacion),
+        type: "line",
+        label: "Tasa de Asignación (%)",
+        data: datosCuposProcesados.map((item) => item.tasaAsignacion),
         borderColor: CHART_COLORS.tertiaryBorder,
         backgroundColor: CHART_COLORS.tertiary,
         borderWidth: 3,
         fill: false,
         tension: 0.1,
-        yAxisID: 'y1'
-      }
-    ]
+        yAxisID: "y1",
+      },
+    ],
   };
 
   const cuposChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
-      mode: 'index',
+      mode: "index",
       intersect: false,
     },
     plugins: {
       title: {
         display: true,
-        text: 'Cupos Asignados por Periodo y Tasa de Asignación'
+        text: `Cupos Asignados por Periodo y Tasa de Asignación${programaSeleccionado}`,
       },
       legend: {
-        position: 'top',
+        position: "top",
       },
       datalabels: {
-        display: false
-      }
+        display: false,
+      },
     },
     scales: {
       x: {
         display: true,
         title: {
           display: true,
-          text: 'Periodo'
-        }
+          text: "Periodo",
+        },
       },
       y: {
-        type: 'linear',
+        type: "linear",
         display: true,
-        position: 'left',
+        position: "left",
         title: {
           display: true,
-          text: 'Número de Cupos/Estudiantes'
+          text: "Número de Cupos/Estudiantes",
         },
-        beginAtZero: true
+        beginAtZero: true,
       },
       y1: {
-        type: 'linear',
+        type: "linear",
         display: true,
-        position: 'right',
+        position: "right",
         title: {
           display: true,
-          text: 'Tasa de Asignación (%)'
+          text: "Tasa de Asignación (%)",
         },
         grid: {
           drawOnChartArea: false,
         },
         min: 0,
-        max: 120
+        max: 120,
       },
     },
   };
 
   // Obtener períodos únicos para el filtro
-  const periodosDisponibles = [...new Set(cuposFilteredData.map(item => item.periodo))].sort();
+  const periodosDisponibles = [
+    ...new Set(cuposFilteredData.map((item) => item.periodo)),
+  ].sort();
   const availableOptionsWithPeriods = {
     ...availableOptions,
-    periodos: periodosDisponibles
+    periodos: periodosDisponibles,
   };
 
   // Configuración de columnas para la tabla
   const tableColumns = [
-    { header: 'Código del Programa', key: 'codPrograma', type: 'text' },
-    { header: 'Programa Académico', key: 'programa', type: 'text' },
-    { header: 'Tasa de Asignación (%)', key: 'tasaAsignacion', type: 'number' },
-    { header: 'Indicador', key: 'indicador', type: 'indicadorAsignacion', sourceKey: 'tasaAsignacion' }
+    { header: "Código del Programa", key: "codPrograma", type: "text" },
+    { header: "Programa Académico", key: "programa", type: "text" },
+    { header: "Tasa de Asignación (%)", key: "tasaAsignacion", type: "number" },
+    {
+      header: "Indicador",
+      key: "indicador",
+      type: "indicadorAsignacion",
+      sourceKey: "tasaAsignacion",
+    },
   ];
 
   return (
@@ -138,17 +149,17 @@ const IndicadoresCupos = ({
           selectedEscuela: filters.selectedEscuelaCupos,
           selectedNivel: filters.selectedNivelCupos,
           selectedPrograma: filters.selectedProgramaCupos,
-          selectedPeriodo: filters.selectedPeriodoCupos
+          selectedPeriodo: filters.selectedPeriodoCupos,
         }}
         onFilterChange={(filterName, value) => {
-          if (filterName === 'selectedNivel') {
-            onFilterChange('selectedNivelCupos', value);
-          } else if (filterName === 'selectedEscuela') {
-            onFilterChange('selectedEscuelaCupos', value);
-          } else if (filterName === 'selectedPrograma') {
-            onFilterChange('selectedProgramaCupos', value);
-          } else if (filterName === 'selectedPeriodo') {
-            onFilterChange('selectedPeriodoCupos', value);
+          if (filterName === "selectedNivel") {
+            onFilterChange("selectedNivelCupos", value);
+          } else if (filterName === "selectedEscuela") {
+            onFilterChange("selectedEscuelaCupos", value);
+          } else if (filterName === "selectedPrograma") {
+            onFilterChange("selectedProgramaCupos", value);
+          } else if (filterName === "selectedPeriodo") {
+            onFilterChange("selectedPeriodoCupos", value);
           }
         }}
         showYearRange={true}
@@ -163,7 +174,15 @@ const IndicadoresCupos = ({
       {/* Tarjetas de resumen por nivel académico */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {estadisticasPorNivel.map((nivel) => (
-          <Grid item xs={12} sm={6} md={2.4} lg={2.4} xl={2.4} key={nivel.nivel}>
+          <Grid
+            item
+            xs={12}
+            sm={6}
+            md={2.4}
+            lg={2.4}
+            xl={2.4}
+            key={nivel.nivel}
+          >
             <NivelStatsCard
               nivel={nivel.nivel}
               totalMatriculados={nivel.totalCuposMax}
@@ -180,7 +199,7 @@ const IndicadoresCupos = ({
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12}>
           <ChartCard
-            title="Cupos Asignados por Periodo y Tasa de Asignación"
+            title={`Cupos Asignados por Periodo y Tasa de Asignación${programaSeleccionado}`}
             data={cuposChartData}
             options={cuposChartOptions}
             type="bar"
