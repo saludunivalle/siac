@@ -352,6 +352,50 @@ const Seguimiento = ({
       .trim()
       .replace(/^\d+(?:\.\d+)?\s+/u, "");
 
+  const obtenerOrdenFase = (fase) => {
+    const orden = Number(fase?.orden);
+    if (Number.isFinite(orden)) return orden;
+
+    const prefijo = String(fase?.fase || "").match(/^\s*\d+(?:\.\d+)?/);
+    return prefijo ? Number(prefijo[0]) : Number.MAX_SAFE_INTEGER;
+  };
+
+  const ordenarFases = (lista) =>
+    [...lista].sort((a, b) => {
+      const diferencia = obtenerOrdenFase(a) - obtenerOrdenFase(b);
+      if (diferencia !== 0) return diferencia;
+
+      return String(a?.id || "").localeCompare(String(b?.id || ""), "es", {
+        numeric: true,
+      });
+    });
+
+  const agruparFasesOrdenadas = (lista) => {
+    const grupos = lista.reduce((acc, fase) => {
+      const grupo = fase.fase_sup || "Sin Agrupar";
+      if (!acc[grupo]) acc[grupo] = [];
+      acc[grupo].push(fase);
+      return acc;
+    }, {});
+
+    return Object.entries(grupos)
+      .map(([grupo, fasesGrupo]) => [grupo, ordenarFases(fasesGrupo)])
+      .sort(([grupoA, fasesA], [grupoB, fasesB]) => {
+        const numeroGrupo = (grupo) => {
+          const match = String(grupo).match(/\d+(?:\.\d+)?/);
+          return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER;
+        };
+
+        return (
+          numeroGrupo(grupoA) - numeroGrupo(grupoB) ||
+          obtenerOrdenFase(fasesA[0]) - obtenerOrdenFase(fasesB[0]) ||
+          String(grupoA).localeCompare(String(grupoB), "es", {
+            numeric: true,
+          })
+        );
+      });
+  };
+
   // Cargar datos históricos al montar el componente
   useEffect(() => {
     const cargarDatosHistoricos = async () => {
@@ -795,9 +839,9 @@ const Seguimiento = ({
       const fasesProgramas = await Filtro11();
       console.log("Filtro11 response:", fasesProgramas);
 
-      const general2 = general
-        .filter((item) => item["proceso"] === procesoActual)
-        .sort((a, b) => a.orden - b.orden);
+      const general2 = ordenarFases(
+        general.filter((item) => item["proceso"] === procesoActual),
+      );
 
       const response = await obtenerFasesProceso();
       console.log("obtenerFasesProceso response:", response);
@@ -829,18 +873,21 @@ const Seguimiento = ({
       }
 
       const fasesFiltradas = response.filter(
-        (item) => item.id_programa === idProgramaFinal,
+        (item) =>
+          String(item.id_programa).trim() === String(idProgramaFinal).trim(),
       );
       const result2 = fasesFiltradas.map((fase) => {
-        const filtro10Item = general.find((item) => item.id === fase.id_fase);
+        const filtro10Item = general.find(
+          (item) => String(item.id).trim() === String(fase.id_fase).trim(),
+        );
         return filtro10Item ? filtro10Item : null;
       });
 
-      const result3 = result2
-        .filter((item) => item && item["proceso"] === procesoActual)
-        .sort((a, b) => a.orden - b.orden);
+      const result3 = ordenarFases(
+        result2.filter((item) => item && item["proceso"] === procesoActual),
+      );
 
-      setFases(general2);
+      setFases(result3.length > 0 ? result3 : general2);
       setFasesName(result3);
 
       if (result3 && result3.length > 0) {
@@ -886,9 +933,9 @@ const Seguimiento = ({
         procesoActual = "Modificación";
       }
       const response = await Filtro10();
-      const result = response
-        .filter((item) => item["proceso"] === procesoActual)
-        .sort((a, b) => a.orden - b.orden); // Ordenar por orden
+      const result = ordenarFases(
+        response.filter((item) => item["proceso"] === procesoActual),
+      );
 
       setMenuItems(result);
     } catch (error) {
@@ -1776,15 +1823,7 @@ const Seguimiento = ({
   const contenido_tablaFases = (procesoTopic = "") => {
     const canCreateForCurrentProcess = canCreateForTopic(procesoTopic);
 
-    const groupedFases = fases.reduce((acc, fase) => {
-      const grupo = fase.fase_sup || "Sin Agrupar";
-      if (!acc[grupo]) {
-        acc[grupo] = [];
-      }
-      acc[grupo].push(fase);
-      return acc;
-    }, {});
-    const groupedFasesEntries = Object.entries(groupedFases);
+    const groupedFasesEntries = agruparFasesOrdenadas(fases);
 
     return (
       <>
@@ -1826,7 +1865,7 @@ const Seguimiento = ({
                       </Button>
                     </div>
                   )*/}
-                  {Object.keys(groupedFases).length > 0 && (
+                  {groupedFasesEntries.length > 0 && (
                     <div>
                       <h2>Fases del Proceso</h2>
                       {groupedFasesEntries.map(
@@ -3767,14 +3806,7 @@ const Seguimiento = ({
 
   // Contenido del seguimiento por defecto de los demás botones
   const contenido_seguimiento_default = (idProcHistorico = null) => {
-    const groupedFases = menuItems.reduce((acc, item) => {
-      const grupo = item.fase_sup || "Sin Agrupar";
-      if (!acc[grupo]) {
-        acc[grupo] = [];
-      }
-      acc[grupo].push(item);
-      return acc;
-    }, {});
+    const groupedFases = Object.fromEntries(agruparFasesOrdenadas(menuItems));
 
     const handleGuardarClickDefault = async () => {
       try {
@@ -4822,12 +4854,9 @@ const Seguimiento = ({
               >
                 <MenuItem value={0}>{SIN_FASE_LABEL}</MenuItem>
                 {(() => {
-                  const groupedFases = menuItems.reduce((acc, item) => {
-                    const grupo = item.fase_sup || "Sin Agrupar";
-                    if (!acc[grupo]) acc[grupo] = [];
-                    acc[grupo].push(item);
-                    return acc;
-                  }, {});
+                  const groupedFases = Object.fromEntries(
+                    agruparFasesOrdenadas(menuItems),
+                  );
 
                   return Object.entries(groupedFases).map(
                     ([grupo, fases], grupoIndex) => [
@@ -5079,14 +5108,9 @@ const Seguimiento = ({
                     <em>Sin actividad asignada</em>
                   </MenuItem>
                   {(() => {
-                    const groupedFases = menuItems.reduce((acc, item) => {
-                      const grupo = item.fase_sup || "Sin Agrupar";
-                      if (!acc[grupo]) {
-                        acc[grupo] = [];
-                      }
-                      acc[grupo].push(item);
-                      return acc;
-                    }, {});
+                    const groupedFases = Object.fromEntries(
+                      agruparFasesOrdenadas(menuItems),
+                    );
 
                     return Object.entries(groupedFases).map(
                       ([grupo, fases], grupoIndex) => [
