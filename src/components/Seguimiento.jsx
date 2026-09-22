@@ -773,7 +773,7 @@ const Seguimiento = ({
     if (handleButtonClick != null) {
       cargarFases();
     }
-  }, [handleButtonClick]);
+  }, [handleButtonClick, idProgramaFinal]);
 
   const clearFileLink = () => {
     setFileLink("");
@@ -854,7 +854,8 @@ const Seguimiento = ({
         return;
       }
 
-      // Validar que idPrograma sea válido antes de filtrar
+      // Si el id del programa todavia no esta disponible, se muestra el
+      // catalogo general del proceso y se omiten las fases asignadas.
       if (
         !idProgramaFinal ||
         idProgramaFinal === "N/A" ||
@@ -863,19 +864,20 @@ const Seguimiento = ({
         console.warn(
           "cargarFases: idPrograma no válido:",
           idProgramaFinal,
-          "no se pueden cargar fases",
+          "se mostrará el catálogo general de fases",
         );
-        setFases([]);
-        setFasesName([]);
-        setDocs([]);
-        setLoading(false);
-        return;
       }
 
-      const fasesFiltradas = response.filter(
-        (item) =>
-          String(item.id_programa).trim() === String(idProgramaFinal).trim(),
-      );
+      const fasesFiltradas =
+        idProgramaFinal &&
+        idProgramaFinal !== "N/A" &&
+        idProgramaFinal !== "undefined"
+          ? response.filter(
+              (item) =>
+                String(item.id_programa).trim() ===
+                String(idProgramaFinal).trim(),
+            )
+          : [];
       const result2 = fasesFiltradas.map((fase) => {
         const filtro10Item = general.find(
           (item) => String(item.id).trim() === String(fase.id_fase).trim(),
@@ -887,8 +889,8 @@ const Seguimiento = ({
         result2.filter((item) => item && item["proceso"] === procesoActual),
       );
 
-      setFases(result3.length > 0 ? result3 : general2);
-      setFasesName(result3);
+      setFases(general2);
+      setFasesName(general2);
 
       if (result3 && result3.length > 0) {
         setItemActual(result3[0]);
