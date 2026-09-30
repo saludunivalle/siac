@@ -286,6 +286,12 @@ const Sidebar = ({ isCargo }) => {
           path: "/seguimiento-inicio",
           tooltip: "Seguimiento PM",
         },
+        {
+          text: "Docencia Servicio",
+          icon: <LocalHospitalIcon />,
+          path: "/docencia-servicio",
+          tooltip: "Docencia Servicio",
+        },
 
         ...(isCargo.includes("Creación") || isCargo.includes("Sistemas")
           ? [
@@ -302,12 +308,7 @@ const Sidebar = ({ isCargo }) => {
   ];
 
   /**
- *         {/** 
-          text: "Docencia Servicio",
-          icon: <LocalHospitalIcon />,
-          path: "/docencia-servicio",
-          tooltip: "Docencia Servicio",
-        },
+ *        
                 {
           text: "Programas próximos a vencerse",
           icon: <DescriptionIcon />,
