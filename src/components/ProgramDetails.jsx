@@ -1229,9 +1229,9 @@ const ProgramDetails = () => {
               <Tab label="RRC" value="rrc" sx={tabSx("rrc")} />
               <Tab label="AAC" value="aac" sx={tabSx("aac")} />
               <Tab label="RAAC" value="raac" sx={tabSx("raac")} />
-              {/**
+
               <Tab label="Docencia Servicio" value="conv" sx={tabSx("conv")} />
-               */}
+
               <Tab label="Seguimiento PM" value="Seg" sx={tabSx("Seg")} />
               <Tab
                 label="Estadísticas Posgrado"
