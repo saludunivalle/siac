@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop, Typography, RadioGroup, FormControlLabel, Radio, FormLabel, Autocomplete } from '@mui/material';
+import { Button, MenuItem, Select, TextField, FormGroup, FormControl, InputLabel, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, CircularProgress, Backdrop, Typography, RadioGroup, FormControlLabel, Radio, FormLabel, Autocomplete, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { Filtro13, Filtro14, Filtro15, Filtro16, sendDataRelEscPract, sendDataHorariosPract } from '../service/data';
 import '/src/styles/home.css';
 import axios from 'axios';
@@ -12,6 +12,49 @@ const axiosInstance = axios.create({
         'Content-Type': 'application/json'
     }
 });
+
+const PRACTICE_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const PRACTICE_HOURS = ['6-7','7-8','8-9','9-10','10-11','11-12','12-13','13-14','14-15','15-16','16-17','17-18','18-19','19-20'];
+const emptyPracticePlan = () => ({
+    id: `${Date.now()}-${Math.random()}`,
+    nombre: '',
+    semanas: '',
+    grid: PRACTICE_DAYS.map(() => PRACTICE_HOURS.map(() => false)),
+    expandido: true
+});
+const serializePracticePlans = (plans = []) => ({
+    horarios: JSON.stringify(plans.map((p, i) => ({ plan: i + 1, nombre: p.nombre || `Plan ${i + 1}`, horarios: PRACTICE_DAYS.map((d, di) => `${d}: ${PRACTICE_HOURS.filter((_, hi) => p.grid?.[di]?.[hi]).join(', ')}`).filter(x => !x.endsWith(': ')).join(' | '), semanas: p.semanas || '' }))),
+    horas_dia: plans.map((p, i) => `P${i + 1}:${p.grid?.map(row => row.filter(Boolean).length).join(', ') || ''}`).join(' || '),
+    horas_semana: plans.map((p, i) => `P${i + 1}:${p.grid?.flat().filter(Boolean).length || 0}`).join(' | '),
+    numero_semanas: plans.map((p, i) => `P${i + 1}:${p.semanas || 0}`).join(' | '),
+    creditos: plans.map((p, i) => `P${i + 1}:${((p.grid?.flat().filter(Boolean).length || 0) * 4).toFixed(2)}`).join(' | ')
+});
+const parsePracticePlans = (raw, rawWeeks = '') => {
+    try {
+        const rows = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (!Array.isArray(rows)) return [];
+        const weeksByPlan = {};
+        String(rawWeeks || '').split('|').forEach(part => {
+            const match = part.trim().match(/^P(\d+)\s*:\s*(.*)$/);
+            if (match) weeksByPlan[Number(match[1])] = match[2].trim();
+        });
+        return rows.map((row, rowIndex) => {
+            const grid = PRACTICE_DAYS.map(() => PRACTICE_HOURS.map(() => false));
+            String(row.horarios || '').split(' | ').forEach(part => {
+                const [day, blocks] = part.split(': ');
+                const di = PRACTICE_DAYS.indexOf(day);
+                if (di >= 0) String(blocks || '').split(', ').forEach(block => { const hi = PRACTICE_HOURS.indexOf(block); if (hi >= 0) grid[di][hi] = true; });
+            });
+            return {
+                id: `${Date.now()}-${Math.random()}`,
+                nombre: row.nombre || '',
+                semanas: row.semanas ?? weeksByPlan[rowIndex + 1] ?? '',
+                grid,
+                expandido: true
+            };
+        });
+    } catch { return []; }
+};
 
 
 
@@ -623,6 +666,7 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
         // procesoCalidad: '',
         cierre: '',
         observaciones: '',
+        planes: [],
         // localFile: null
     });
     
@@ -643,6 +687,142 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
     
     const [anexosList, setAnexosList] = useState([]);
     const [reloadAnexos, setReloadAnexos] = useState(false);
+
+    const PracticePlansEditor = ({ value = [], onChange }) => {
+        const updatePlan = (index, changes) => onChange(value.map((plan, planIndex) => (
+            planIndex === index ? { ...plan, ...changes } : plan
+        )));
+        const togglePlan = (index) => updatePlan(index, { expandido: !value[index].expandido });
+        const toggleSchedule = (planIndex, dayIndex, hourIndex) => {
+            const plan = value[planIndex];
+            const grid = plan.grid.map((row, rowIndex) => rowIndex === dayIndex
+                ? row.map((checked, currentHour) => currentHour === hourIndex ? !checked : checked)
+                : row);
+            updatePlan(planIndex, { grid });
+        };
+
+        return (
+            <Box sx={{ mt: 3, p: 2, border: '1px solid #c8e6c9', borderRadius: 2, backgroundColor: '#fff' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2e7d32' }}>
+                        Planes Generales de Práctica Formativa
+                    </Typography>
+                    <Button size="small" variant="contained" onClick={() => onChange([...value, emptyPracticePlan()])}>
+                        + Añadir Plan
+                    </Button>
+                </Box>
+                {value.map((plan, planIndex) => {
+                    const hoursByDay = plan.grid.map(row => row.filter(Boolean).length);
+                    const weeklyHours = hoursByDay.reduce((total, hours) => total + hours, 0);
+                    const maxDailyHours = Math.max(0, ...hoursByDay);
+                    const dailySummary = hoursByDay
+                        .map((hours, index) => hours > 0 ? `${['L', 'Ma', 'Mi', 'J', 'V', 'Sa', 'D'][index]}: ${hours}h` : null)
+                        .filter(Boolean)
+                        .join('  · ') || '—';
+                    const credits = (maxDailyHours * 4).toFixed(2);
+
+                    return (
+                        <Box key={plan.id || planIndex} sx={{ border: '1px solid #c8e6c9', borderRadius: 2, mb: 2, overflow: 'hidden', backgroundColor: '#fff' }}>
+                            <Box
+                                sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.5, backgroundColor: '#e8f5e9', cursor: 'pointer', borderBottom: plan.expandido ? '1px solid #c8e6c9' : 'none' }}
+                                onClick={() => togglePlan(planIndex)}
+                            >
+                                <Typography sx={{ flex: 1, fontWeight: 600, color: '#2e7d32' }}>
+                                    {plan.nombre || `Plan ${planIndex + 1}`}
+                                </Typography>
+                                {weeklyHours > 0 && (
+                                    <Typography variant="caption" sx={{ color: '#555', mr: 1 }}>
+                                        {weeklyHours}h/semana · {credits} créditos
+                                    </Typography>
+                                )}
+                                <Button
+                                    size="small"
+                                    color="error"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onChange(value.filter((_, index) => index !== planIndex));
+                                    }}
+                                    sx={{ minWidth: 'auto', p: 0.5 }}
+                                >
+                                    ✕
+                                </Button>
+                                <Typography sx={{ color: '#555', userSelect: 'none' }}>{plan.expandido ? '▲' : '▼'}</Typography>
+                            </Box>
+
+                            {plan.expandido && (
+                                <Box sx={{ p: 2 }}>
+                                    <TextField
+                                        label="Nombre del plan (opcional)"
+                                        size="small"
+                                        fullWidth
+                                        value={plan.nombre || ''}
+                                        onChange={event => updatePlan(planIndex, { nombre: event.target.value })}
+                                        placeholder={`Ej: Plan ${planIndex + 1} – Rotación Medicina`}
+                                        sx={{ mb: 2 }}
+                                    />
+                                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 600, color: '#333' }}>
+                                        Selecciona los bloques horarios:
+                                    </Typography>
+                                    <Box sx={{ overflowX: 'auto' }}>
+                                        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '12px' }}>
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ padding: '4px 8px', background: '#1b5e20', color: '#fff', textAlign: 'left', minWidth: 90 }}>Día / Hora</th>
+                                                    {PRACTICE_HOURS.map(hour => (
+                                                        <th key={hour} style={{ padding: '4px 6px', background: '#2e7d32', color: '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>{hour}</th>
+                                                    ))}
+                                                    <th style={{ padding: '4px 8px', background: '#1b5e20', color: '#fff', textAlign: 'center' }}>Total (h)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {PRACTICE_DAYS.map((day, dayIndex) => (
+                                                    <tr key={day} style={{ background: dayIndex % 2 === 0 ? '#f9fbe7' : '#fff' }}>
+                                                        <td style={{ padding: '4px 8px', fontWeight: 600, whiteSpace: 'nowrap' }}>{day}</td>
+                                                        {PRACTICE_HOURS.map((hour, hourIndex) => (
+                                                            <td key={hour} style={{ padding: '2px', textAlign: 'center' }}>
+                                                                <input type="checkbox" checked={!!plan.grid?.[dayIndex]?.[hourIndex]} onChange={() => toggleSchedule(planIndex, dayIndex, hourIndex)} style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2e7d32' }} />
+                                                            </td>
+                                                        ))}
+                                                        <td style={{ padding: '4px 8px', textAlign: 'center', fontWeight: 700, color: hoursByDay[dayIndex] > 0 ? '#2e7d32' : '#bbb' }}>{hoursByDay[dayIndex]}</td>
+                                                    </tr>
+                                                ))}
+                                                <tr style={{ background: '#c8e6c9' }}>
+                                                    <td style={{ padding: '4px 8px', fontWeight: 700 }}>Total/hora</td>
+                                                    {PRACTICE_HOURS.map((_, hourIndex) => {
+                                                        const count = PRACTICE_DAYS.filter((__, dayIndex) => plan.grid?.[dayIndex]?.[hourIndex]).length;
+                                                        return <td key={hourIndex} style={{ padding: '4px 6px', textAlign: 'center', fontWeight: 600, color: count > 0 ? '#1b5e20' : '#bbb' }}>{count > 0 ? count : '-'}</td>;
+                                                    })}
+                                                    <td style={{ padding: '4px 8px', textAlign: 'center', fontWeight: 800, color: '#1b5e20', fontSize: 14 }}>{weeklyHours}h</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap' }}>
+                                        <Box sx={{ flex: 1, minWidth: 140, p: 1.5, borderRadius: 1, background: '#e8f5e9', textAlign: 'center' }}>
+                                            <Typography variant="caption" color="text.secondary">Horas por semana</Typography>
+                                            <Typography variant="h6" color="#2e7d32" fontWeight={700}>{weeklyHours}</Typography>
+                                        </Box>
+                                        <Box sx={{ flex: 1.5, minWidth: 200, p: 1.5, borderRadius: 1, background: '#e8f5e9' }}>
+                                            <Typography variant="caption" color="text.secondary">Horas por día</Typography>
+                                            <Typography variant="body2" color="#2e7d32" fontWeight={700} sx={{ mt: 0.5, lineHeight: 1.6 }}>{dailySummary}</Typography>
+                                        </Box>
+                                        <Box sx={{ flex: 1, minWidth: 140 }}>
+                                            <TextField label="N° de semanas" type="number" size="small" fullWidth value={plan.semanas ?? ''} onChange={event => updatePlan(planIndex, { semanas: event.target.value })} inputProps={{ min: 1, step: 1 }} />
+                                        </Box>
+                                        <Box sx={{ flex: 1, minWidth: 140, p: 1.5, borderRadius: 1, background: '#fff3e0', textAlign: 'center' }}>
+                                            <Typography variant="caption" color="text.secondary">Créditos (max h/día × 4)</Typography>
+                                            <Typography variant="h6" color="#e65100" fontWeight={700}>{credits}</Typography>
+                                        </Box>
+                                    </Box>
+                                </Box>
+                            )}
+                        </Box>
+                    );
+                })}
+                {!value.length && <Typography variant="body2" sx={{ mt: 2, color: '#777' }}>Añade uno o más planes con sus horarios.</Typography>}
+            </Box>
+        );
+    };
 
     // Obtener los anexos actuales de la hoja ANEXOS_TEC
 
@@ -767,6 +947,7 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
                 proceso_calidad: '', // anexoFormData.procesoCalidad,
                 cierre: anexoFormData.cierre,
                 observaciones: anexoFormData.observaciones
+                , ...serializePracticePlans(anexoFormData.planes)
             }));
 
             // Verificar los datos a enviar
@@ -932,6 +1113,7 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
         const [anexos, setAnexos] = useState([]);
         const [editingId, setEditingId] = useState(null);
         const [editedAnexo, setEditedAnexo] = useState({});
+        const [editModalOpen, setEditModalOpen] = useState(false);
       
         const fetchAnexos = async () => {
             try {
@@ -997,12 +1179,16 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
         }, [reloadTrigger]);
         
         const handleEdit = (anexo) => {
-          setEditingId(anexo.id);
+          const parsedPlans = Array.isArray(anexo.planes) && anexo.planes.length > 0
+            ? anexo.planes
+            : parsePracticePlans(anexo.horarios, anexo.numero_semanas);
           setEditedAnexo({ 
             ...anexo,
             // Asegurar consistencia en los nombres de campos
-            idEscenario: anexo.id_escenario || anexo.idEscenario
+            idEscenario: anexo.id_escenario || anexo.idEscenario,
+            planes: parsedPlans
           });
+          setEditModalOpen(true);
         };
       
         const handleSave = async (id) => {
@@ -1025,7 +1211,8 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
                 editedAnexo.version,
                 '', // editedAnexo.proceso_calidad,
                 editedAnexo.cierre,
-                editedAnexo.observaciones
+                editedAnexo.observaciones,
+                ...Object.values(serializePracticePlans(editedAnexo.planes || []))
               ];
               
               console.log('updateData formateada:', updateData);
@@ -1040,6 +1227,7 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
               console.log('✅ Anexo actualizado correctamente');
               setEditingId(null);
               setEditedAnexo({});
+              setEditModalOpen(false);
               await fetchAnexos();
             } catch (error) {
               console.error('❌ Error al guardar el anexo:', error);
@@ -1163,6 +1351,7 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
         
       
         return (
+            <>
             <Box sx={{ width: '100%', marginTop: 2 }}>
                 <TableContainer component={Paper}>
                     <Table>
@@ -1472,6 +1661,25 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
                     </Table>
                 </TableContainer>
             </Box>
+            <Dialog open={editModalOpen} onClose={() => setEditModalOpen(false)} maxWidth="xl" fullWidth>
+                <DialogTitle>Editar anexo técnico</DialogTitle>
+                <DialogContent dividers>
+                    <TextField fullWidth margin="normal" label="URL del Documento" value={editedAnexo.url || ''} onChange={e => setEditedAnexo({ ...editedAnexo, url: e.target.value })} />
+                    <TextField fullWidth margin="normal" label="Tipo" value={editedAnexo.tipo || ''} onChange={e => setEditedAnexo({ ...editedAnexo, tipo: e.target.value })} />
+                    <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                        <TextField fullWidth label="Vigencia Desde" type="date" InputLabelProps={{ shrink: true }} value={convertirFechaParaInput(editedAnexo.vigencia_desde) || ''} onChange={e => setEditedAnexo({ ...editedAnexo, vigencia_desde: e.target.value })} />
+                        <TextField fullWidth label="Vigencia Hasta" type="date" InputLabelProps={{ shrink: true }} value={convertirFechaParaInput(editedAnexo.vigencia_hasta) || ''} onChange={e => setEditedAnexo({ ...editedAnexo, vigencia_hasta: e.target.value })} />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                        <TextField fullWidth label="Versión" value={editedAnexo.version || ''} onChange={e => setEditedAnexo({ ...editedAnexo, version: e.target.value })} />
+                        <TextField fullWidth label="Cierre" value={editedAnexo.cierre || ''} onChange={e => setEditedAnexo({ ...editedAnexo, cierre: e.target.value })} />
+                    </Box>
+                    <TextField fullWidth margin="normal" label="Observaciones" multiline rows={3} value={editedAnexo.observaciones || ''} onChange={e => setEditedAnexo({ ...editedAnexo, observaciones: e.target.value })} />
+                    <PracticePlansEditor value={editedAnexo.planes || []} onChange={planes => setEditedAnexo({ ...editedAnexo, planes })} />
+                </DialogContent>
+                <DialogActions><Button onClick={() => setEditModalOpen(false)}>Cancelar</Button><Button variant="contained" onClick={() => handleSave(editedAnexo.id)}>Guardar Anexo</Button></DialogActions>
+            </Dialog>
+            </>
         );
     };
     
@@ -2049,8 +2257,10 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
                 Añadir Anexo
                 </Button>
 
-                {showAnexoForm && (
-                <Box component="form" onSubmit={handleAnexoFormSubmit} sx={{ marginTop: 2 }}>
+                <Dialog open={showAnexoForm} onClose={toggleAnexoForm} maxWidth="xl" fullWidth>
+                <DialogTitle>Añadir anexo técnico</DialogTitle>
+                <DialogContent dividers>
+                <Box component="form" onSubmit={handleAnexoFormSubmit} sx={{ marginTop: 0 }}>
                     <FormGroup>
                         {/* Campo de selección de múltiples programas con búsqueda inteligente */}
                         <Autocomplete
@@ -2248,16 +2458,16 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
                         )}
 
                     </FormGroup>
+                <PracticePlansEditor value={anexoFormData.planes} onChange={planes => setAnexoFormData(prev => ({ ...prev, planes }))} />
                     <Button type="submit" variant="contained" sx={{ marginTop: 2 }}>
                         Guardar Anexo
                     </Button>
                 </Box>
-                )}
+                </DialogContent>
+                </Dialog>
                 <AnexosTable reloadTrigger={reloadAnexos} />
             </div>
             )}
-
-
 
             <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={saving}>
                 <CircularProgress color="inherit" />
