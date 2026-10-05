@@ -1023,6 +1023,7 @@ const DocenciaServicio = () => {
   // Componente interno: tabla de horarios de un plan
   const PlanHorarioForm = ({ plan, planIdx }) => {
     const horasPorDia = calcularHorasDia(plan.grid);
+    const cantidadSemanas = parseInt(plan.numero_semanas) || 0;
     const horasSemana = calcularHorasSemana(plan.grid);
     const { texto: horasDiaTexto, maxDia } = calcularResumenHorasDia(plan.grid);
     const creditos = (horasSemana * 4).toFixed(2);
@@ -1057,6 +1058,11 @@ const DocenciaServicio = () => {
           {horasSemana > 0 && (
             <Typography variant="caption" sx={{ color: "#555", mr: 1 }}>
               {horasSemana}h/semana · {creditos} créditos
+            </Typography>
+          )}
+          {cantidadSemanas > 0 && (
+            <Typography variant="caption" sx={{ color: "#555", mr: 1 }}>
+              {cantidadSemanas} semanas
             </Typography>
           )}
           <Button
