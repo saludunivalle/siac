@@ -5,6 +5,7 @@ import "/src/styles/programDetails.css";
 import Header from "./Header";
 import Seguimiento from "./Seguimiento";
 import EstadisticasPrograma from "./EstadisticasPrograma";
+import PracticeScenario from "./PracticeScenario";
 import TimelineComponent from "./Timeline";
 import {
   Filtro5,
@@ -1350,6 +1351,14 @@ const ProgramDetails = () => {
               >
                 <EstadisticasPrograma programaAcademico={programaAcademico} />
               </Box>
+            ) : clickedButton === "conv" ? (
+              <PracticeScenario
+                data={{
+                  ...rowData,
+                  id_programa: rowData.id_programa || rowData.id || rowData.ID,
+                }}
+                soloLectura={soloLectura}
+              />
             ) : (
               isUserLoggedIn && (
                 <Seguimiento
