@@ -40,6 +40,9 @@ import {
 import "/src/styles/home.css";
 import axios from "axios";
 import CollapsibleButton from "./CollapsibleButton";
+import ModalAsignaturas from "./docenciaServicio/ModalAsignaturas";
+import ModalEsquema from "./docenciaServicio/ModalEsquema";
+import ModalHorarios from "./docenciaServicio/ModalHorarios";
 
 // Configurar axios con timeout
 const axiosInstance = axios.create({
@@ -879,6 +882,9 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
   };
 
   const [showAnexoForm, setShowAnexoForm] = useState(false);
+  const [showAsignaturasModal, setShowAsignaturasModal] = useState(false);
+  const [showEsquemaModal, setShowEsquemaModal] = useState(false);
+  const [showHorariosModal, setShowHorariosModal] = useState(false);
   const [anexoFormData, setAnexoFormData] = useState({
     idPrograma: "", // Guardará el ID del programa principal
     programasSeleccionados: [], // Array de programas seleccionados
@@ -3417,9 +3423,32 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
 
       {!soloLectura && (
         <div style={{ marginTop: "20px", marginBottom: "40px" }}>
-          <Button variant="contained" onClick={toggleAnexoForm}>
-            Añadir Anexo
-          </Button>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <Button variant="contained" onClick={toggleAnexoForm}>
+              Añadir Anexo
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => setShowAsignaturasModal(true)}
+              disabled={!data?.id_programa}
+            >
+              Asignaturas
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => setShowEsquemaModal(true)}
+              disabled={!data?.id_programa}
+            >
+              Esquema
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => setShowHorariosModal(true)}
+              disabled={!data?.id_programa}
+            >
+              Horarios
+            </Button>
+          </Box>
 
           <Dialog
             open={showAnexoForm}
@@ -3686,6 +3715,43 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
           <AnexosTable reloadTrigger={reloadAnexos} />
         </div>
       )}
+
+      <ModalAsignaturas
+        open={showAsignaturasModal}
+        onClose={() => setShowAsignaturasModal(false)}
+        programa={{
+          ...data,
+          ...(programasData.find(
+            (programa) =>
+              String(programa.id_programa) === String(data?.id_programa),
+          ) || {}),
+        }}
+        onSaved={() => setReloadAnexos((value) => !value)}
+      />
+      <ModalEsquema
+        open={showEsquemaModal}
+        onClose={() => setShowEsquemaModal(false)}
+        programa={{
+          ...data,
+          ...(programasData.find(
+            (programa) =>
+              String(programa.id_programa) === String(data?.id_programa),
+          ) || {}),
+        }}
+        onSaved={() => setReloadAnexos((value) => !value)}
+      />
+      <ModalHorarios
+        open={showHorariosModal}
+        onClose={() => setShowHorariosModal(false)}
+        programa={{
+          ...data,
+          ...(programasData.find(
+            (programa) =>
+              String(programa.id_programa) === String(data?.id_programa),
+          ) || {}),
+        }}
+        onSaved={() => setReloadAnexos((value) => !value)}
+      />
 
       <Backdrop
         sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
