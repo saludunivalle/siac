@@ -33,6 +33,7 @@ import {
   Autocomplete,
 } from "@mui/material";
 import axios from "axios";
+import ModalAsignaturas from "./docenciaServicio/ModalAsignaturas";
 
 const DocenciaServicio = () => {
   const [data, setData] = useState([]);
@@ -53,6 +54,7 @@ const DocenciaServicio = () => {
 
   // Estados para el formulario de anexos técnicos
   const [showAnexoForm, setShowAnexoForm] = useState(false);
+  const [showAsignaturasModal, setShowAsignaturasModal] = useState(false);
   // Constantes para la tabla de horarios
   const DIAS = [
     "Lunes",
@@ -110,6 +112,10 @@ const DocenciaServicio = () => {
     // localFile: null
   });
   const [reloadAnexos, setReloadAnexos] = useState(false);
+
+  const programaSeleccionado = programasData.find(
+    (programa) => programa["programa académico"] === filtroPrograma,
+  );
 
   // Estados para el formulario de documentos de escenario
   const [showDocEscenarioForm, setShowDocEscenarioForm] = useState(null); // Cambiado a null para rastrear cuál escenario
@@ -1023,6 +1029,7 @@ const DocenciaServicio = () => {
   // Componente interno: tabla de horarios de un plan
   const PlanHorarioForm = ({ plan, planIdx }) => {
     const horasPorDia = calcularHorasDia(plan.grid);
+    const cantidadSemanas = parseInt(plan.numero_semanas) || 0;
     const horasSemana = calcularHorasSemana(plan.grid);
     const { texto: horasDiaTexto, maxDia } = calcularResumenHorasDia(plan.grid);
     const creditos = (horasSemana * 4).toFixed(2);
@@ -1057,6 +1064,11 @@ const DocenciaServicio = () => {
           {horasSemana > 0 && (
             <Typography variant="caption" sx={{ color: "#555", mr: 1 }}>
               {horasSemana}h/semana · {creditos} créditos
+            </Typography>
+          )}
+          {cantidadSemanas > 0 && (
+            <Typography variant="caption" sx={{ color: "#555", mr: 1 }}>
+              {cantidadSemanas} semanas
             </Typography>
           )}
           <Button
@@ -2303,6 +2315,14 @@ const DocenciaServicio = () => {
                 </Button>
                 <Button
                   variant="contained"
+                  onClick={() => setShowAsignaturasModal(true)}
+                  disabled={!programaSeleccionado}
+                  sx={{ mb: 2 }}
+                >
+                  Asignaturas
+                </Button>
+                <Button
+                  variant="contained"
                   onClick={() => {
                     // Reset form data for general document scenario form
                     setDocEscenarioFormData({
@@ -3385,6 +3405,12 @@ const DocenciaServicio = () => {
             </>
           )}
         </Box>
+        <ModalAsignaturas
+          open={showAsignaturasModal}
+          onClose={() => setShowAsignaturasModal(false)}
+          programa={programaSeleccionado}
+          onSaved={() => setReloadAnexos((value) => !value)}
+        />
       </div>
     </>
   );
