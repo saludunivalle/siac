@@ -63,6 +63,7 @@ const Sidebar = ({ isCargo }) => {
 
   const hideActivitiesReport =
     hasPermission("Director Escuela") || hasPermission("Director Programa");
+  const hideDocenciaSeguimiento = hideActivitiesReport;
   // En dispositivos móviles, comenzar con el sidebar cerrado
   useEffect(() => {
     if (isMobile) {
@@ -280,18 +281,22 @@ const Sidebar = ({ isCargo }) => {
       id: "management",
       title: "Gestión",
       items: [
-        {
-          text: "Seguimiento PM",
-          icon: <AssessmentIcon />,
-          path: "/seguimiento-inicio",
-          tooltip: "Seguimiento PM",
-        },
-        {
-          text: "Docencia Servicio",
-          icon: <LocalHospitalIcon />,
-          path: "/docencia-servicio",
-          tooltip: "Docencia Servicio",
-        },
+        ...(!hideDocenciaSeguimiento
+          ? [
+              {
+                text: "Seguimiento PM",
+                icon: <AssessmentIcon />,
+                path: "/seguimiento-inicio",
+                tooltip: "Seguimiento PM",
+              },
+              {
+                text: "Docencia Servicio",
+                icon: <LocalHospitalIcon />,
+                path: "/docencia-servicio",
+                tooltip: "Docencia Servicio",
+              },
+            ]
+          : []),
 
         ...(isCargo.includes("Creación") || isCargo.includes("Sistemas")
           ? [

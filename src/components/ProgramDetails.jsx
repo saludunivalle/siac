@@ -66,12 +66,21 @@ const ProgramDetails = () => {
   const isUserLoggedIn = Boolean(Cookies.get("token"));
 
   let userPermiso = "";
+  let userPermisos = [];
   let userEscuela = "";
   let userPrograma = "";
   try {
     const logged = JSON.parse(sessionStorage.getItem("logged"));
     if (Array.isArray(logged) && logged.length > 0) {
-      userPermiso = logged[0].permiso || "";
+      userPermisos = logged
+        .flatMap((item) =>
+          Array.isArray(item.permiso) ? item.permiso : [item.permiso],
+        )
+        .filter(Boolean)
+        .flatMap((permiso) => String(permiso).split(","))
+        .map((permiso) => permiso.trim())
+        .filter(Boolean);
+      userPermiso = userPermisos[0] || "";
       userEscuela = logged[0].escuela || "";
       userPrograma = logged[0].id_programa || "";
     }
@@ -79,8 +88,12 @@ const ProgramDetails = () => {
     console.error("Error al parsear el sessionStorage:", error);
   }
 
-  const esDirectorEscuela = userPermiso === "Director Escuela";
-  const esDirectorPrograma = userPermiso === "Director Programa";
+  const permisosNormalizados = userPermisos.map((permiso) =>
+    permiso.toLowerCase(),
+  );
+  const esDirectorEscuela = permisosNormalizados.includes("director escuela");
+  const esDirectorPrograma = permisosNormalizados.includes("director programa");
+  const esSistemas = permisosNormalizados.includes("sistemas");
   const escuelaPrograma = rowData?.escuela || rowData?.Escuela || "";
   const nombrePrograma = rowData?.id_programa || "";
 
@@ -100,6 +113,10 @@ const ProgramDetails = () => {
   const puedesVerSoloBasico =
     puedesVerSoloBasicoEscuela || puedesVerSoloBasicoPrograma;
   const soloLectura = puedesVerTodoEscuela || puedesVerTodoPrograma; // True si es director y ve su escuela/programa
+  // Las pestañas de Docencia Servicio y Seguimiento PM no están disponibles
+  // para directores, ni siquiera cuando consultan su propio programa.
+  const puedeVerDocenciaYSeguimiento =
+    esSistemas || (!esDirectorEscuela && !esDirectorPrograma);
 
   const [options, setOptions] = useState({
     Sede: [],
@@ -477,6 +494,12 @@ const ProgramDetails = () => {
   }, [rowData]);
 
   const handleTabChange = (event, newValue) => {
+    if (
+      (newValue === "conv" || newValue === "Seg") &&
+      !puedeVerDocenciaYSeguimiento
+    ) {
+      return;
+    }
     setClickedButton(newValue);
   };
 
@@ -736,13 +759,19 @@ const ProgramDetails = () => {
       process,
       clickedButton === process,
     ),
-    color: clickedButton === process ? "#000" : "#555",
+    color: clickedButton === process ? "#000" : "#333",
     border:
       clickedButton === process ? "2px solid darkgreen" : "1px solid #ccc",
     borderRadius: "6px 6px 0 0",
     marginRight: "4px",
     padding: "6px 12px",
     flex: 1,
+    opacity: 1,
+    cursor: "pointer",
+    "&:hover": {
+      backgroundColor: clickedButton === process ? undefined : "#e8f5e9",
+      color: "#000",
+    },
     "&.Mui-selected": {
       backgroundColor: getSeguimientoBackgroundColor(process, true),
       color: "#000",
@@ -1202,7 +1231,7 @@ const ProgramDetails = () => {
           )}
 
         {/* Solo mostrar tabs si el usuario está logueado y no está en modo solo lectura */}
-        {!puedesVerSoloBasico && isUserLoggedIn && (
+        {(!puedesVerSoloBasico || esSistemas) && isUserLoggedIn && (
           <Box
             sx={{
               borderBottom: 1,
@@ -1231,9 +1260,22 @@ const ProgramDetails = () => {
               <Tab label="AAC" value="aac" sx={tabSx("aac")} />
               <Tab label="RAAC" value="raac" sx={tabSx("raac")} />
 
-              <Tab label="Docencia Servicio" value="conv" sx={tabSx("conv")} />
-
-              <Tab label="Seguimiento PM" value="Seg" sx={tabSx("Seg")} />
+              {puedeVerDocenciaYSeguimiento && (
+                <>
+                  <Tab
+                    label="Docencia Servicio"
+                    value="conv"
+                    onClick={() => setClickedButton("conv")}
+                    sx={tabSx("conv")}
+                  />
+                  <Tab
+                    label="Seguimiento PM"
+                    value="Seg"
+                    onClick={() => setClickedButton("Seg")}
+                    sx={tabSx("Seg")}
+                  />
+                </>
+              )}
               <Tab
                 label="Estadísticas Posgrado"
                 value="estadisticas"
@@ -1243,7 +1285,9 @@ const ProgramDetails = () => {
           </Box>
         )}
         {/* Mostrar el mensaje 'Creado el...' arriba del collapse button SOLO si hay seguimientos de creación Y el programa está en fase 28 */}
-        {!puedesVerSoloBasico && (
+        {(!puedesVerSoloBasico || esSistemas) &&
+          (puedeVerDocenciaYSeguimiento ||
+            (clickedButton !== "conv" && clickedButton !== "Seg")) && (
           <>
             {clickedButton === "crea" &&
             seguimientosCreacion.length > 0 &&
