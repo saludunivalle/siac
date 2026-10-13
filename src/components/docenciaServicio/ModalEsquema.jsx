@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -11,11 +8,12 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
+  Tab,
+  Tabs,
   Typography,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SaveIcon from "@mui/icons-material/Save";
-import { fetchPostGeneral } from "../../service/fetch";
+import { clearCache, fetchPostGeneral } from "../../service/fetch";
 
 const URL = "https://siac-server.vercel.app";
 const COLORS = [
@@ -53,6 +51,7 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [periodoActivo, setPeriodoActivo] = useState(0);
   const color = (id) => {
     const index = subjects.findIndex((item) => String(item.id) === String(id));
     return index >= 0 ? `hsl(${(index * 137) % 360} 70% 78%)` : COLORS[0];
@@ -95,6 +94,19 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
   const subjectsFor = (p) =>
     subjects.filter((x) => Number(x.numero_periodo) === p);
   const blocksFor = (p) => blocks.filter((x) => Number(x.numero_periodo) === p);
+  const canPlace = (subject, period, row, start) => {
+    const duration = Number(subject.numero_semanas) || 1;
+    const first = Math.max(1, Math.min(start, semanas - duration + 1));
+    const last = first + duration - 1;
+    return !blocksFor(period).some(
+      (block) =>
+        Number(block.numero_fila) === row &&
+        String(block.id_asignatura) !==
+          String(subject.id_asignatura || subject.id) &&
+        Number(block.semana_inicio) <= last &&
+        Number(block.semana_fin) >= first,
+    );
+  };
   const place = (subject, period, row, start) => {
     const duration = Number(subject.numero_semanas) || 1;
     const first = Math.max(1, Math.min(start, semanas - duration + 1));
@@ -136,7 +148,26 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
     setError("");
     setSaving(true);
     try {
-      const rows = blocks.map((x) => [
+      // Los bloques que ya vienen de la hoja tienen id y no deben volver a
+      // insertarse. Solo se envían los nuevos y se eliminan duplicados del
+      // estado local antes de construir insertData.
+      const newBlocks = Array.from(
+        new Map(
+          blocks
+            .filter((x) => !x.id)
+            .map((x) => [
+              [
+                x.id_asignatura,
+                x.numero_periodo,
+                x.numero_fila,
+                x.semana_inicio,
+                x.semana_fin,
+              ].join("|"),
+              x,
+            ]),
+        ).values(),
+      );
+      const rows = newBlocks.map((x) => [
         x.id ||
           `${idPrograma}-${x.id_asignatura}-${x.numero_periodo}-${Date.now()}`,
         idPrograma,
@@ -153,12 +184,18 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
         x.orden_fila,
         x.color,
       ]);
+      if (!rows.length) {
+        onSaved?.();
+        onClose();
+        return;
+      }
       const response = await fetchPostGeneral({
         dataSend: { insertData: rows },
         sheetName: "ESQUEMAS",
         urlEndPoint: `${URL}/sendDocServ`,
       });
       if (!response?.status) throw Error();
+      clearCache();
       onSaved?.();
       onClose();
     } catch {
@@ -186,27 +223,32 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
         {loading ? (
           <Typography>Cargando...</Typography>
         ) : (
-          Array.from({ length: totalPeriodos }, (_, i) => {
-            const p = i + 1;
+          <>
+            <Tabs value={periodoActivo} onChange={(_, value) => setPeriodoActivo(value)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
+              {Array.from({ length: totalPeriodos }, (_, i) => (
+                <Tab key={i + 1} label={`Periodo ${i + 1}`} />
+              ))}
+            </Tabs>
+            {(() => {
+            const p = periodoActivo + 1;
             const assigned = blocksFor(p);
             const available = subjectsFor(p).filter(
               (s) =>
                 !assigned.some((b) => String(b.id_asignatura) === String(s.id)),
             );
             return (
-              <Accordion
-                key={p}
+              <Box
                 defaultExpanded={assigned.length > 0}
                 sx={{
                   backgroundColor: assigned.length ? "#e8f5e9" : "#f2f2f2",
                 }}
               >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography>
-                    Periodo {p} · {semanas} semanas
+                <Box sx={{ p: 1 }}>
+                  <Typography sx={{ fontWeight: "bold" }}>
+                    Periodo {p}: {semanas} semanas
                   </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+                </Box>
+                <Box sx={{ p: 1 }}>
                   <Box sx={{ overflowX: "auto" }}>
                     <Box
                       sx={{
@@ -230,10 +272,7 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
                       ))}
                       {Array.from(
                         {
-                          length: Math.max(
-                            available.length + assigned.length,
-                            1,
-                          ),
+                          length: subjectsFor(p).length,
                         },
                         (_, r) => (
                           <React.Fragment key={r}>
@@ -261,7 +300,9 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
                                   onDragStart={() => b && setDrag(b)}
                                   onDragOver={(e) => e.preventDefault()}
                                   onDrop={() =>
-                                    drag && place(drag, p, r + 1, w + 1)
+                                    drag &&
+                                    canPlace(drag, p, r + 1, w + 1) &&
+                                    place(drag, p, r + 1, w + 1)
                                   }
                                   sx={{
                                     minHeight: 42,
@@ -309,10 +350,11 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
                       </Box>
                     ))}
                   </Stack>
-                </AccordionDetails>
-              </Accordion>
+                </Box>
+              </Box>
             );
-          })
+            })()}
+          </>
         )}
       </DialogContent>
       <DialogActions>
@@ -323,7 +365,7 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
           onClick={save}
           disabled={saving || loading}
         >
-          {saving ? "Guardando..." : "Guardar esquema"}
+          {saving ? "Guardando..." : "Guardar y continuar"}
         </Button>
       </DialogActions>
     </Dialog>

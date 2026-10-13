@@ -3424,9 +3424,6 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
       {!soloLectura && (
         <div style={{ marginTop: "20px", marginBottom: "40px" }}>
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Button variant="contained" onClick={toggleAnexoForm}>
-              Añadir Anexo
-            </Button>
             <Button
               variant="contained"
               onClick={() => setShowAsignaturasModal(true)}
@@ -3447,6 +3444,9 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
               disabled={!data?.id_programa}
             >
               Horarios
+            </Button>
+            <Button variant="contained" onClick={toggleAnexoForm}>
+              Añadir Anexo
             </Button>
           </Box>
 
@@ -3726,7 +3726,11 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
               String(programa.id_programa) === String(data?.id_programa),
           ) || {}),
         }}
-        onSaved={() => setReloadAnexos((value) => !value)}
+        onSaved={() => {
+          setReloadAnexos((value) => !value);
+          setShowAsignaturasModal(false);
+          setShowEsquemaModal(true);
+        }}
       />
       <ModalEsquema
         open={showEsquemaModal}
@@ -3738,7 +3742,11 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
               String(programa.id_programa) === String(data?.id_programa),
           ) || {}),
         }}
-        onSaved={() => setReloadAnexos((value) => !value)}
+        onSaved={() => {
+          setReloadAnexos((value) => !value);
+          setShowEsquemaModal(false);
+          setShowHorariosModal(true);
+        }}
       />
       <ModalHorarios
         open={showHorariosModal}
@@ -3750,7 +3758,10 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
               String(programa.id_programa) === String(data?.id_programa),
           ) || {}),
         }}
-        onSaved={() => setReloadAnexos((value) => !value)}
+        onSaved={() => {
+          setReloadAnexos((value) => !value);
+          setShowHorariosModal(false);
+        }}
       />
 
       <Backdrop
