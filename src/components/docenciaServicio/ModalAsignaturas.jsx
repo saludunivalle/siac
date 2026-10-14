@@ -1,8 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -14,13 +11,14 @@ import {
   IconButton,
   Stack,
   TextField,
+  Tab,
+  Tabs,
   Typography,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
-import { fetchPostGeneral } from "../../service/fetch";
+import { clearCache, fetchPostGeneral } from "../../service/fetch";
 
 const ENDPOINT = "https://siac-server.vercel.app/docServ";
 
@@ -68,6 +66,7 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [periodoActivo, setPeriodoActivo] = useState(0);
 
   const periodicidad = getProgramField(programa, "periodicidad");
   const duracion = getProgramField(programa, "duracion", "duracion_programa");
@@ -146,12 +145,10 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
         (row) =>
           !Number.isInteger(Number(row.numero_semanas)) ||
           Number(row.numero_semanas) <= 0 ||
-          Number(row.numero_semanas) > semanasPeriodo,
+          Number(row.numero_semanas) > 48,
       )
     ) {
-      setError(
-        `Cada asignatura debe tener entre 1 y ${semanasPeriodo} semanas.`,
-      );
+      setError("Cada asignatura debe tener entre 1 y 48 semanas.");
       return;
     }
     setSaving(true);
@@ -175,6 +172,7 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
         urlEndPoint: "https://siac-server.vercel.app/sendDocServ",
       });
       if (!response?.status) throw new Error("save");
+      clearCache();
       onSaved?.();
       onClose();
     } catch {
@@ -209,14 +207,18 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
         {loading ? (
           <Typography>Cargando asignaturas...</Typography>
         ) : (
-          Array.from({ length: totalPeriodos }, (_, index) => {
-            const period = index + 1;
+          <>
+            <Tabs value={periodoActivo} onChange={(_, value) => setPeriodoActivo(value)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
+              {Array.from({ length: totalPeriodos }, (_, index) => (
+                <Tab key={index + 1} label={`Periodo ${index + 1}`} />
+              ))}
+            </Tabs>
+            {(() => {
+            const period = periodoActivo + 1;
             const periodRows = rowsForPeriod(period);
             const tieneAsignaturas = periodRows.length > 0;
             return (
-              <Accordion
-                key={period}
-                defaultExpanded={tieneAsignaturas}
+              <Box
                 sx={{
                   backgroundColor: tieneAsignaturas ? "#e8f5e9" : "#f2f2f2",
                   border: "1px solid",
@@ -224,14 +226,17 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
                   "&:before": { display: "none" },
                 }}
               >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography>
-                    Periodo {period} · {semanasPeriodo} semanas
+                <Box sx={{ p: 1 }}>
+                  <Typography sx={{ fontWeight: "bold" }}>
+                    Periodo {period}: {semanasPeriodo} semanas
                   </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                    Prácticas Formativas o Roaciones a Desarrollar
+                </Box>
+                <Box sx={{ p: 1 }}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ mb: 1, fontWeight: "bold" }}
+                  >
+                    Prácticas Formativas o Rotaciones a Desarrollar
                   </Typography>
                   {periodRows.map((row) => (
                     <Stack
@@ -256,14 +261,15 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
                         label="N.º semanas"
                         type="number"
                         value={row.numero_semanas || ""}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const value = e.target.value;
                           updateRow(
                             row.localId,
                             "numero_semanas",
-                            e.target.value,
-                          )
-                        }
-                        inputProps={{ min: 1, max: semanasPeriodo }}
+                            value === "" ? "" : Math.min(Number(value), 48),
+                          );
+                        }}
+                        inputProps={{ min: 1, max: 48 }}
                       />
                       <IconButton
                         color="error"
@@ -279,10 +285,11 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
                   >
                     Agregar asignatura
                   </Button>
-                </AccordionDetails>
-              </Accordion>
+                </Box>
+              </Box>
             );
-          })
+            })()}
+          </>
         )}
       </DialogContent>
       <DialogActions>
@@ -293,7 +300,7 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
           onClick={handleSave}
           disabled={saving || loading}
         >
-          {saving ? "Guardando..." : "Guardar"}
+          {saving ? "Guardando..." : "Guardar y continuar"}
         </Button>
       </DialogActions>
     </Dialog>

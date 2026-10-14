@@ -14,7 +14,7 @@ import {
   Tabs,
   Typography,
 } from "@mui/material";
-import { fetchPostGeneral } from "../../service/fetch";
+import { clearCache, fetchPostGeneral } from "../../service/fetch";
 
 const URL = "https://siac-server.vercel.app";
 const DAYS = [
@@ -67,10 +67,14 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
     });
     return result;
   }, [blocks]);
+  const colorFor = (subject) =>
+    subject?.color || colors[subject?.id_asignatura] || "#d32f2f";
 
   useEffect(() => {
     if (!open || !idPrograma) return;
     let active = true;
+    setSelected({});
+    setLocked({});
     setLoading(true);
     Promise.all([
       fetchPostGeneral({
@@ -121,7 +125,24 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
 
   const periods = Array.from({ length: totalPeriodos }, (_, i) => i + 1);
   const blocksFor = (period) => {
-    const source = blocks.filter((b) => Number(b.numero_periodo) === period);
+    // Un mismo esquema puede aparecer repetido en la hoja (por ejemplo,
+    // después de guardar nuevamente la modal). Para horarios solo necesitamos
+    // una representación de cada bloque real.
+    const source = Array.from(
+      new Map(
+        blocks
+          .filter((b) => Number(b.numero_periodo) === period)
+          .map((b) => [
+            [
+              b.id_asignatura,
+              b.numero_fila,
+              b.semana_inicio,
+              b.semana_fin,
+            ].join("|"),
+            b,
+          ]),
+      ).values(),
+    );
     const boundaries = [
       ...new Set(
         source
@@ -137,12 +158,17 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
           (b) =>
             Number(b.semana_inicio) <= start && Number(b.semana_fin) >= end,
         );
+        const subjects = Array.from(
+          new Map(
+            active.map((subject) => [String(subject.id_asignatura), subject]),
+          ).values(),
+        );
         return {
-          ...active[0],
+          ...subjects[0],
           id: `segment-${period}-${start}-${end}`,
           semana_inicio: start,
           semana_fin: end,
-          subjects: active,
+          subjects,
         };
       })
       .filter((b) => b.subjects.length);
@@ -210,6 +236,7 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
         urlEndPoint: `${URL}/sendDocServ`,
       });
       if (!response?.status) throw Error();
+      clearCache();
       onSaved?.();
       onClose();
     } catch {
@@ -261,7 +288,7 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
                           `${block.numero_periodo}-${block.semana_inicio}`
                       ],
                     ),
-                ) || block.subjects[0];
+                );
               const selectorKey =
                 block.id || `${block.numero_periodo}-${block.semana_inicio}`;
               const current =
@@ -307,11 +334,14 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
                             color: isLocked ? "#777" : "#fff",
                             backgroundColor: isLocked
                               ? "#e0e0e0"
-                              : isSelected
-                                ? "#b71c1c"
-                                : "#d32f2f",
+                              : `${colorFor(s)} !important`,
+                            boxShadow: isSelected
+                              ? "0 0 0 3px rgba(0, 0, 0, 0.28)"
+                              : "none",
                             "&:hover": {
-                              backgroundColor: isLocked ? "#e0e0e0" : "#b71c1c",
+                              backgroundColor: isLocked
+                                ? "#e0e0e0"
+                                  : `${colorFor(s)} !important`,
                             },
                           }}
                         >
@@ -330,6 +360,11 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
                       Cambiar asignatura
                     </Button>
                   </Stack>
+                  {!subject && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      Selecciona una asignatura para habilitar su horario.
+                    </Typography>
+                  )}
                   {subject && (
                     <Box sx={{ overflowX: "auto" }}>
                       <Box
@@ -392,7 +427,7 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
                                   backgroundColor: (
                                     current[day] || []
                                   ).includes(hour)
-                                    ? colors[subject.id_asignatura]
+                                    ? colorFor(subject)
                                     : "transparent",
                                 }}
                               />
@@ -411,7 +446,7 @@ export default function ModalHorarios({ open, onClose, programa, onSaved }) {
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" onClick={save} disabled={saving || loading}>
-          {saving ? "Guardando..." : "Guardar horarios"}
+          {saving ? "Guardando..." : "Guardar y continuar"}
         </Button>
       </DialogActions>
     </Dialog>
