@@ -295,6 +295,7 @@ export default function ModalAsignaturas({ open, onClose, onBack, programa, onSa
       </DialogContent>
       <DialogActions>
         <Button onClick={onBack} disabled={saving}>Atrás</Button>
+        <Box sx={{ flexGrow: 1 }} />
         <Button onClick={onClose}>Cancelar</Button>
         <Button
           variant="contained"

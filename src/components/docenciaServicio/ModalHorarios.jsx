@@ -307,34 +307,58 @@ export default function ModalHorarios({
       ratio,
     };
   };
+  const totalHorasPeriodoFor = (period, subject) =>
+    blocksFor(period).reduce((total, block) => {
+      if (!block.subjects?.some(
+        (item) => String(item.id_asignatura) === String(subject.id_asignatura),
+      )) return total;
+      return total + statsFor(block, subject).totalHorasGlobales;
+    }, 0);
   const save = async () => {
     setError("");
     setSaving(true);
     try {
-      const rows = Object.values(schedules)
+      const scheduleRows = Object.values(schedules)
         .filter((x) =>
           Object.values(x.horario || {}).some((items) => items.length),
         )
-        .map((x) => [
-          x.id ||
-            `${idPrograma}-${x.id_asignatura}-${x.numero_periodo}-${x.semana_inicio}-${Date.now()}`,
-          idPrograma,
-          x.id_esquema,
-          x.id_asignatura,
-          periodicidad,
-          totalPeriodos,
-          x.numero_periodo,
-          x.semana_inicio,
-          x.semana_fin,
-          Number(x.semana_fin) - Number(x.semana_inicio) + 1,
-          JSON.stringify(x.horario),
-        ]);
-      const response = await fetchPostGeneral({
-        dataSend: { insertData: rows },
-        sheetName: "HORARIOS",
-        urlEndPoint: `${URL}/sendDocServ`,
-      });
-      if (!response?.status) throw Error();
+        .map((x) => ({
+          ...x,
+          row: [
+            x.id ||
+              `${idPrograma}-${x.id_asignatura}-${x.numero_periodo}-${x.semana_inicio}-${Date.now()}`,
+            idPrograma,
+            x.id_esquema,
+            x.id_asignatura,
+            periodicidad,
+            totalPeriodos,
+            x.numero_periodo,
+            x.semana_inicio,
+            x.semana_fin,
+            Number(x.semana_fin) - Number(x.semana_inicio) + 1,
+            JSON.stringify(x.horario),
+          ],
+        }));
+      const existingScheduleRows = scheduleRows.filter((x) => x.id);
+      const newScheduleRows = scheduleRows.filter((x) => !x.id);
+      await Promise.all(
+        existingScheduleRows.map(async (item) => {
+          const response = await fetchPostGeneral({
+            dataSend: { updateData: item.row, id: String(item.id).trim() },
+            sheetName: "HORARIOS",
+            urlEndPoint: `${URL}/updatePractice`,
+          });
+          if (!response?.status) throw Error();
+        }),
+      );
+      if (newScheduleRows.length) {
+        const response = await fetchPostGeneral({
+          dataSend: { insertData: newScheduleRows.map((x) => x.row) },
+          sheetName: "HORARIOS",
+          urlEndPoint: `${URL}/sendDocServ`,
+        });
+        if (!response?.status) throw Error();
+      }
       const summaryMap = new Map();
       periods.forEach((period) => {
         blocksFor(period).forEach((block) => {
@@ -357,19 +381,13 @@ export default function ModalHorarios({
           });
         });
       });
-      const existingSummaryKeys = new Set(
-        savedSummaries.map((item) =>
-          [item.id_asignatura, item.numero_periodo].join("|"),
-        ),
-      );
-      const summaryRows = [...summaryMap.entries()]
-        .filter(
-          ([, item]) =>
-            !existingSummaryKeys.has(
-              [item.subject.id_asignatura, item.periodo].join("|"),
-            ),
-        )
-        .map(([key, item]) => [
+      const summaryRows = [...summaryMap.entries()].map(([, item]) => {
+        const existing = savedSummaries.find(
+          (row) =>
+            [row.id_asignatura, row.numero_periodo].join("|") ===
+            [item.subject.id_asignatura, item.periodo].join("|"),
+        );
+        const values = [
           idPrograma,
           item.subject.id_asignatura,
           item.periodo,
@@ -379,16 +397,35 @@ export default function ModalHorarios({
           item.totalHorasGlobales - item.totalHorasHorario,
           item.totalHorasGlobales / 48,
           item.ratio,
-        ]);
-      if (summaryRows.length) {
-        console.log("RESUMEN_ASIGNATURAS insertData:", summaryRows);
-        const summaryResponse = await fetchPostGeneral({
-          dataSend: { insertData: summaryRows },
+          item.totalHorasGlobales,
+        ];
+        return { id: existing?.id, values };
+      });
+      await Promise.all(
+        summaryRows
+          .filter((item) => item.id)
+          .map(async (item) => {
+            const response = await fetchPostGeneral({
+              dataSend: {
+                updateData: [String(item.id).trim(), ...item.values],
+                id: String(item.id).trim(),
+              },
+              sheetName: "RESUMEN_ASIGNATURAS",
+              urlEndPoint: `${URL}/updatePractice`,
+            });
+            if (!response?.status) throw Error();
+          }),
+      );
+      const newSummaryRows = summaryRows
+        .filter((item) => !item.id)
+        .map((item) => item.values);
+      if (newSummaryRows.length) {
+        const response = await fetchPostGeneral({
+          dataSend: { insertData: newSummaryRows },
           sheetName: "RESUMEN_ASIGNATURAS",
           urlEndPoint: `${URL}/sendDocServ`,
         });
-        console.log("RESUMEN_ASIGNATURAS respuesta:", summaryResponse);
-        if (!summaryResponse?.status) throw Error();
+        if (!response?.status) throw Error();
       }
       // Persistir la proporción elegida en ASIGNATURAS. Algunas filas usan
       // id y otras id_asignatura como primera columna, por eso se soportan
@@ -429,7 +466,7 @@ export default function ModalHorarios({
                     id: assignmentId,
                   },
                   sheetName: "ASIGNATURAS",
-                  urlEndPoint: `${URL}/updateData`,
+                  urlEndPoint: `${URL}/updatePractice`,
                 });
                 if (!result?.status) throw Error();
               }),
@@ -713,6 +750,15 @@ export default function ModalHorarios({
                                 <b>{stats.totalHorasGlobales}</b>
                               </Typography>
                               <Typography>
+                                Total horas del periodo:{" "}
+                                <b>
+                                  {totalHorasPeriodoFor(
+                                    block.numero_periodo,
+                                    subject,
+                                  )}
+                                </b>
+                              </Typography>
+                              <Typography>
                                 Créditos: <b>{stats.creditos.toFixed(2)}</b>
                               </Typography>
                             </Stack>
@@ -730,6 +776,7 @@ export default function ModalHorarios({
         <Button onClick={onBack} disabled={saving}>
           Atrás
         </Button>
+        <Box sx={{ flexGrow: 1 }} />
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" onClick={save} disabled={saving || loading}>
           {saving ? "Guardando..." : "Guardar y finalizar"}
