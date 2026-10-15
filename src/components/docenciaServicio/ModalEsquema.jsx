@@ -110,9 +110,15 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
   const place = (subject, period, row, start) => {
     const duration = Number(subject.numero_semanas) || 1;
     const first = Math.max(1, Math.min(start, semanas - duration + 1));
+    // `subject.id` identifica la asignatura cuando el bloque proviene de la
+    // lista de asignaturas, pero `id` identifica la fila cuando el bloque ya
+    // existe en ESQUEMAS. No deben usarse indistintamente: enviar el primero
+    // a un endpoint de actualización provoca un 404 si no existe como ID de
+    // ESQUEMAS.
+    const existingRowId = subject.localId ? subject.id : "";
     const block = {
       ...subject,
-      id: subject.id || "",
+      id: existingRowId,
       localId: `${subject.id_asignatura || subject.id}-${period}-${Date.now()}`,
       id_programa: idPrograma,
       id_asignatura: subject.id_asignatura || subject.id,
@@ -166,23 +172,6 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
             ]),
         ).values(),
       );
-      const rows = newBlocks.map((x) => [
-        x.id ||
-          `${idPrograma}-${x.id_asignatura}-${x.numero_periodo}-${Date.now()}`,
-        idPrograma,
-        x.id_asignatura,
-        periodicidad,
-        totalPeriodos,
-        x.numero_periodo,
-        semanas,
-        x.nombre_asignatura,
-        x.numero_semanas,
-        x.numero_fila,
-        x.semana_inicio,
-        x.semana_fin,
-        x.orden_fila,
-        x.color,
-      ]);
       const existing = newBlocks.filter((x) => x.id);
       const inserted = newBlocks.filter((x) => !x.id);
       await Promise.all(existing.map((x) => fetchPostGeneral({
@@ -192,7 +181,7 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
           x.numero_fila, x.semana_inicio, x.semana_fin, x.orden_fila, x.color,
         ], id: x.id },
         sheetName: "ESQUEMAS",
-        urlEndPoint: `${URL}/updateData`,
+        urlEndPoint: `${URL}/updatePractice`,
       })));
       const rowsToInsert = inserted.map((x) => [
         `${idPrograma}-${x.id_asignatura}-${x.numero_periodo}-${Date.now()}`,
@@ -201,6 +190,7 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
         x.numero_fila, x.semana_inicio, x.semana_fin, x.orden_fila, x.color,
       ]);
       if (!rowsToInsert.length) {
+        clearCache();
         onSaved?.();
         onClose();
         return;
@@ -375,6 +365,7 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
       </DialogContent>
       <DialogActions>
         <Button onClick={onBack} disabled={saving}>Atrás</Button>
+        <Box sx={{ flexGrow: 1 }} />
         <Button onClick={onClose}>Cancelar</Button>
         <Button
           variant="contained"
