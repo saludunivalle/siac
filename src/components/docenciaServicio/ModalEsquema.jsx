@@ -39,7 +39,7 @@ const periodCount = (periodicity, duration) => {
   return sem && annual ? Math.ceil(n / 2) : !sem && !annual ? n * 2 : n;
 };
 
-export default function ModalEsquema({ open, onClose, programa, onSaved }) {
+export default function ModalEsquema({ open, onClose, onBack, programa, onSaved }) {
   const idPrograma = val(programa, "id_programa", "idPrograma", "id");
   const periodicidad = val(programa, "periodicidad");
   const duracion = val(programa, "duracion", "duracion_programa", "duración");
@@ -112,7 +112,7 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
     const first = Math.max(1, Math.min(start, semanas - duration + 1));
     const block = {
       ...subject,
-      id: "",
+      id: subject.id || "",
       localId: `${subject.id_asignatura || subject.id}-${period}-${Date.now()}`,
       id_programa: idPrograma,
       id_asignatura: subject.id_asignatura || subject.id,
@@ -154,7 +154,6 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
       const newBlocks = Array.from(
         new Map(
           blocks
-            .filter((x) => !x.id)
             .map((x) => [
               [
                 x.id_asignatura,
@@ -184,13 +183,30 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
         x.orden_fila,
         x.color,
       ]);
-      if (!rows.length) {
+      const existing = newBlocks.filter((x) => x.id);
+      const inserted = newBlocks.filter((x) => !x.id);
+      await Promise.all(existing.map((x) => fetchPostGeneral({
+        dataSend: { updateData: [
+          x.id, idPrograma, x.id_asignatura, periodicidad, totalPeriodos,
+          x.numero_periodo, semanas, x.nombre_asignatura, x.numero_semanas,
+          x.numero_fila, x.semana_inicio, x.semana_fin, x.orden_fila, x.color,
+        ], id: x.id },
+        sheetName: "ESQUEMAS",
+        urlEndPoint: `${URL}/updateData`,
+      })));
+      const rowsToInsert = inserted.map((x) => [
+        `${idPrograma}-${x.id_asignatura}-${x.numero_periodo}-${Date.now()}`,
+        idPrograma, x.id_asignatura, periodicidad, totalPeriodos,
+        x.numero_periodo, semanas, x.nombre_asignatura, x.numero_semanas,
+        x.numero_fila, x.semana_inicio, x.semana_fin, x.orden_fila, x.color,
+      ]);
+      if (!rowsToInsert.length) {
         onSaved?.();
         onClose();
         return;
       }
       const response = await fetchPostGeneral({
-        dataSend: { insertData: rows },
+        dataSend: { insertData: rowsToInsert },
         sheetName: "ESQUEMAS",
         urlEndPoint: `${URL}/sendDocServ`,
       });
@@ -358,6 +374,7 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
         )}
       </DialogContent>
       <DialogActions>
+        <Button onClick={onBack} disabled={saving}>Atrás</Button>
         <Button onClick={onClose}>Cancelar</Button>
         <Button
           variant="contained"
@@ -365,7 +382,7 @@ export default function ModalEsquema({ open, onClose, programa, onSaved }) {
           onClick={save}
           disabled={saving || loading}
         >
-          {saving ? "Guardando..." : "Guardar y continuar"}
+          {saving ? "Guardando..." : "Guardar y continuar a Horarios"}
         </Button>
       </DialogActions>
     </Dialog>

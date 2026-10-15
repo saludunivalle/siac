@@ -61,7 +61,7 @@ const emptySubject = (period) => ({
   numero_semanas: "",
 });
 
-export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
+export default function ModalAsignaturas({ open, onClose, onBack, programa, onSaved }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -165,6 +165,7 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
         semanasPeriodo,
         row.nombre_asignatura.trim(),
         Number(row.numero_semanas),
+        row.horas_independientes_opcion || "1:1",
       ]);
       const response = await fetchPostGeneral({
         dataSend: { insertData },
@@ -293,6 +294,7 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
         )}
       </DialogContent>
       <DialogActions>
+        <Button onClick={onBack} disabled={saving}>Atrás</Button>
         <Button onClick={onClose}>Cancelar</Button>
         <Button
           variant="contained"
@@ -300,7 +302,7 @@ export default function ModalAsignaturas({ open, onClose, programa, onSaved }) {
           onClick={handleSave}
           disabled={saving || loading}
         >
-          {saving ? "Guardando..." : "Guardar y continuar"}
+          {saving ? "Guardando..." : "Guardar y continuar a Esquemas"}
         </Button>
       </DialogActions>
     </Dialog>
