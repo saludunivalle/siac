@@ -3719,6 +3719,7 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
       <ModalAsignaturas
         open={showAsignaturasModal}
         onClose={() => setShowAsignaturasModal(false)}
+        onBack={() => setShowAsignaturasModal(false)}
         programa={{
           ...data,
           ...(programasData.find(
@@ -3735,6 +3736,7 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
       <ModalEsquema
         open={showEsquemaModal}
         onClose={() => setShowEsquemaModal(false)}
+        onBack={() => { setShowEsquemaModal(false); setShowAsignaturasModal(true); }}
         programa={{
           ...data,
           ...(programasData.find(
@@ -3751,6 +3753,7 @@ const PracticeScenario = ({ data, soloLectura = false }) => {
       <ModalHorarios
         open={showHorariosModal}
         onClose={() => setShowHorariosModal(false)}
+        onBack={() => { setShowHorariosModal(false); setShowEsquemaModal(true); }}
         programa={{
           ...data,
           ...(programasData.find(
