@@ -33,6 +33,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import TimelineIcon from "@mui/icons-material/Timeline";
+import ChecklistIcon from "@mui/icons-material/Checklist";
 import {
   Filtro5,
   Filtro7,
@@ -281,6 +282,12 @@ const Sidebar = ({ isCargo }) => {
       id: "management",
       title: "Gestión",
       items: [
+        {
+          text: "Seguimiento Decanato",
+          icon: <ChecklistIcon />,
+          path: "/seguimiento-decanato",
+          tooltip: "Seguimiento Decanato",
+        },
         ...(!hideDocenciaSeguimiento
           ? [
               {

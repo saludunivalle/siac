@@ -22,6 +22,7 @@ import RegistroCalificadoModificacion from './components/RegistroCalificadoModif
 import AcreditacionAltaCalidad from './components/AltaCalidad';
 import DashboardEstadisticas from './components/DashboardEstadisticas';
 import ConsolidadoHistoricoPage from './components/ConsolidadoHistoricoPage';
+import SeguimientoDecanato from './components/SeguimientoDecanato';
 import GlobalLoading from './components/GlobalLoading';
 import { preloadCommonData } from './service/fetch';
 
@@ -74,6 +75,7 @@ function App() {
               <Route path="/seguimiento" element={<Seguimiento />} />
               <Route path="/seguimientorac" element={<Seguimientorac />} />
               <Route path="/seguimiento-inicio" element={<SeguimientoInicio />} />
+              <Route path="/seguimiento-decanato" element={<SeguimientoDecanato />} />
               <Route path="/docencia-servicio" element={<DocenciaServicio />} />
               <Route path="/creacion-programa" element={<CreacionPrograms />} />
               <Route path="/programas-venc" element={<ProgramasVenc />} />
