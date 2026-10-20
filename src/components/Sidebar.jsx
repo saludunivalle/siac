@@ -53,14 +53,34 @@ const Sidebar = ({ isCargo }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const sidebarRef = useRef(null);
 
-  const hasPermission = (permission) =>
-    Array.isArray(isCargo) &&
-    isCargo.some((cargo) => {
-      const normalizedCargo = String(cargo || "")
+  const hasPermission = (permission) => {
+    const normalizarPermiso = (value) =>
+      String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
         .trim()
         .toLowerCase();
-      return normalizedCargo === String(permission).trim().toLowerCase();
-    });
+
+    const permisos = Array.isArray(isCargo) ? [...isCargo] : [isCargo];
+
+    try {
+      const logged = JSON.parse(sessionStorage.getItem("logged") || "[]");
+      const registros = Array.isArray(logged) ? logged : [logged];
+      registros.forEach((registro) => {
+        if (Array.isArray(registro?.permiso)) {
+          permisos.push(...registro.permiso);
+        } else if (registro?.permiso) {
+          permisos.push(registro.permiso);
+        }
+      });
+    } catch {
+      // Se conservan los permisos recibidos por props si no se puede leer la sesión.
+    }
+
+    return permisos.some(
+      (cargo) => normalizarPermiso(cargo) === normalizarPermiso(permission),
+    );
+  };
 
   const hideActivitiesReport =
     hasPermission("Director Escuela") || hasPermission("Director Programa");
