@@ -135,10 +135,11 @@ const obtenerEscuelaUsuario = () => {
 };
 
 export default function SeguimientoDecanato() {
+  const escuelaUsuario = obtenerEscuelaUsuario();
   const [filas, setFilas] = useState([]);
   const [filasDepartamentos, setFilasDepartamentos] = useState([]);
   const [isCargo, setCargo] = useState([" "]);
-  const [escuela, setEscuela] = useState(obtenerEscuelaUsuario);
+  const [escuela, setEscuela] = useState(escuelaUsuario);
   const [departamento, setDepartamento] = useState("");
   const [cargandoDepartamentos, setCargandoDepartamentos] = useState(false);
   const [cargando, setCargando] = useState(true);
@@ -271,7 +272,10 @@ export default function SeguimientoDecanato() {
               labelId="escuela-label"
               value={escuela}
               label="Escuela"
-              onChange={(event) => setEscuela(event.target.value)}
+              disabled={Boolean(escuelaUsuario)}
+              onChange={(event) => {
+                if (!escuelaUsuario) setEscuela(event.target.value);
+              }}
             >
               <MenuItem value="">Todas las escuelas</MenuItem>
               {ESCUELAS.map(([key, nombre]) => (
