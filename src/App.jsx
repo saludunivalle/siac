@@ -77,6 +77,9 @@ function App() {
               <Route path="/seguimiento-inicio" element={<SeguimientoInicio />} />
               <Route path="/seguimiento-decanato" element={<SeguimientoDecanato />} />
               <Route path="/docencia-servicio" element={<DocenciaServicio />} />
+              <Route path="/docencia-servicio/formulario-anexo" element={<DocenciaServicio />} />
+              <Route path="/docencia-servicio/formulario-escenario" element={<DocenciaServicio />} />
+              <Route path="/docencia-servicio/*" element={<DocenciaServicio />} />
               <Route path="/creacion-programa" element={<CreacionPrograms />} />
               <Route path="/programas-venc" element={<ProgramasVenc />} />
               <Route path="/semaforo-rc" element={<Semaforo />} />

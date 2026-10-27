@@ -150,7 +150,8 @@ const Sidebar = ({ isCargo }) => {
   };
 
   const isActive = (path) => {
-    return location.pathname === path;
+    if (path === "/") return location.pathname === "/";
+    return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
   // Funciones para el reporte de actividades
