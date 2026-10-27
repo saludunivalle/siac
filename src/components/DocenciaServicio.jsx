@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import CollapsibleButton from "./CollapsibleButton";
@@ -31,11 +32,19 @@ import {
   Card,
   CardContent,
   Autocomplete,
+  Checkbox,
+  Divider,
+  ButtonGroup,
 } from "@mui/material";
 import axios from "axios";
 import ModalAsignaturas from "./docenciaServicio/ModalAsignaturas";
 
 const DocenciaServicio = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isVistaAnexo = location.pathname.includes("/formulario-anexo");
+  const isVistaEscenario = location.pathname.includes("/formulario-escenario");
   const [data, setData] = useState([]);
   const [isCargo, setCargo] = useState([" "]);
   const [loading, setLoading] = useState(true);
@@ -94,9 +103,11 @@ const DocenciaServicio = () => {
     expandido: true,
   });
 
-  const [anexoFormData, setAnexoFormData] = useState({
+  const PERIODOS_ROMANOS = ["VI", "VII", "VIII", "IX", "X"];
+
+  const initialAnexoFormData = {
     idPrograma: "",
-    programasSeleccionados: [],
+    programaSeleccionado: null,
     idEscenario: "",
     nombreEscenario: "",
     urlAnexo: "",
@@ -105,21 +116,44 @@ const DocenciaServicio = () => {
     vigenciaDesde: "",
     vigenciaHasta: "",
     version: "",
-    // procesoCalidad: '',
+    procesoCalidad: "",
     cierre: "",
     observaciones: "",
     planes: [],
-    // localFile: null
-  });
+    localFile: null,
+    // Nuevos campos
+    nombre_IES: "Universidad del Valle",
+    correo: "",
+    nivel_formacion: "",
+    duracion_semanas: "",
+    duracion_semestres: "",
+    periodicidad_admision: "",
+    estudiantes_admitidos: "",
+    periodos_pract_formativas: [],
+    director_nombre: "Aida Josefina Rojas Fajardo",
+    director_cargo: "Vicedecana académica",
+    director_telefono: "602 3212100 ext. 7748",
+    director_correo: "vicedecanatura.salud@correounivalle.edu.co",
+    ds_ies_nombre: "",
+    ds_ies_cargo: "",
+    ds_ies_telefono: "",
+    ds_ies_correo: "",
+    fecha_formalizacion: "",
+    coordinacion_nombre: "",
+    coordinacion_cargo: "",
+    coordinacion_telefono: "",
+    coordinacion_correo: "",
+  };
+
+  const [anexoFormData, setAnexoFormData] = useState(initialAnexoFormData);
   const [reloadAnexos, setReloadAnexos] = useState(false);
 
   const programaSeleccionado = programasData.find(
     (programa) => programa["programa académico"] === filtroPrograma,
   );
 
-  // Estados para el formulario de documentos de escenario
-  const [showDocEscenarioForm, setShowDocEscenarioForm] = useState(null); // Cambiado a null para rastrear cuál escenario
-  const [docEscenarioFormData, setDocEscenarioFormData] = useState({
+  // Estados para el formulario de escenarios de práctica y documentos
+  const initialDocEscenarioState = {
     idEscenario: "",
     nombreEscenario: "",
     url: "",
@@ -128,7 +162,31 @@ const DocenciaServicio = () => {
     fechaInicio: "",
     fechaFin: "",
     localFile: null,
-  });
+    nombre_sede: "",
+    numero_sede: "",
+    departamento: "",
+    municipio: "",
+    direccion: "",
+    nit: "",
+    telefono: "",
+    correo: "",
+    contacto: "",
+    documento: "",
+    tipo_convenio: "",
+    firma_convenio: "",
+    otros_si: "",
+    anexo_tecnico: "",
+  };
+  const [showDocEscenarioForm, setShowDocEscenarioForm] = useState(null); // Cambiado a null para rastrear cuál escenario
+  const [docEscenarioFormData, setDocEscenarioFormData] = useState(
+    initialDocEscenarioState,
+  );
+
+  useEffect(() => {
+    if (isVistaEscenario && location.state?.escenario) {
+      setDocEscenarioFormData(location.state.escenario);
+    }
+  }, [isVistaEscenario, location.state]);
   const [escenariosData, setEscenariosData] = useState([]);
   const [uniqueTipologias, setUniqueTipologias] = useState([]);
   const [reloadDocEscenarios, setReloadDocEscenarios] = useState(false);
@@ -313,6 +371,7 @@ const DocenciaServicio = () => {
         programas,
         filtroEscuela,
         filtroEscenario,
+        escenarios,
       );
     } else if (tipoVista === "programa") {
       return agruparAnexosPorPrograma(
@@ -321,13 +380,56 @@ const DocenciaServicio = () => {
         programas,
         filtroPrograma,
         filtroEscenario,
+        escenarios,
       );
     }
 
     return {};
   };
 
-  // Función para agrupar anexos por escenario (funcionalidad original)
+  // Helper para verificar si un item, escenario o programa coincide con la búsqueda
+  const cumpleFiltroBusqueda = (item, escenarioObj, programaObj, term) => {
+    if (!term) return true;
+    const t = term.toLowerCase().trim();
+    if (!t) return true;
+
+    // 1. Nombre (escenario, institución, sede)
+    const nombre = String(
+      item?.nombre ||
+        item?.institucion ||
+        escenarioObj?.nombre ||
+        escenarioObj?.nombre_sede ||
+        "",
+    ).toLowerCase();
+    if (nombre.includes(t)) return true;
+
+    // 2. Código (del escenario o documento)
+    const codigo = String(
+      item?.codigo || escenarioObj?.codigo || "",
+    ).toLowerCase();
+    if (codigo.includes(t)) return true;
+
+    // 3. Municipio
+    const municipio = String(
+      escenarioObj?.municipio || item?.municipio || "",
+    ).toLowerCase();
+    if (municipio.includes(t)) return true;
+
+    // 4. Nombre del programa al que pertenece
+    const progNombre = String(
+      programaObj?.["programa académico"] ||
+        programaObj?.nombre_programa ||
+        item?.programa_info?.["programa académico"] ||
+        item?.denominacion_programa ||
+        item?.programa ||
+        "",
+    ).toLowerCase();
+    if (progNombre.includes(t)) return true;
+
+    return false;
+  };
+
+  // Función para agrupar anexos por escenario (con búsqueda por nombre, código, municipio o programa)
   const agruparAnexosPorEscenario = (
     anexos,
     docEscenarios,
@@ -342,19 +444,8 @@ const DocenciaServicio = () => {
       return agrupados;
     }
 
-    // Filtrar escenarios por búsqueda si hay filtro
-    const escenariosParaMostrar = filtroEscenario
-      ? escenarios.filter(
-          (escenario) =>
-            escenario.nombre &&
-            escenario.nombre
-              .toLowerCase()
-              .includes(filtroEscenario.toLowerCase()),
-        )
-      : escenarios;
-
     // Inicializar cada escenario con un objeto que contenga anexos técnicos y documentos de escenario
-    escenariosParaMostrar.forEach((escenario) => {
+    escenarios.forEach((escenario) => {
       agrupados[escenario.nombre] = {
         anexosTecnicos: [],
         documentosEscenario: [],
@@ -366,12 +457,20 @@ const DocenciaServicio = () => {
     // Validar y agrupar anexos técnicos por nombre de escenario
     if (anexos && Array.isArray(anexos)) {
       anexos.forEach((anexo) => {
-        if (anexo.nombre && agrupados[anexo.nombre] !== undefined) {
-          // Buscar información del programa para este anexo
+        const escenario = escenarios.find(
+          (esc) =>
+            (anexo.id_escenario && esc.id === anexo.id_escenario) ||
+            (anexo.nombre &&
+              esc.nombre?.trim().toLowerCase() ===
+                anexo.nombre?.trim().toLowerCase()),
+        );
+        const targetNombre = escenario ? escenario.nombre : anexo.nombre;
+
+        if (targetNombre && agrupados[targetNombre] !== undefined) {
           const programaInfo = programas?.find(
             (p) => p.id_programa === anexo.id_programa,
           );
-          agrupados[anexo.nombre].anexosTecnicos.push({
+          agrupados[targetNombre].anexosTecnicos.push({
             ...anexo,
             programa_info: programaInfo,
             tipo_documento: "anexo_tecnico",
@@ -383,40 +482,93 @@ const DocenciaServicio = () => {
     // Validar y agrupar documentos de escenario
     if (docEscenarios && Array.isArray(docEscenarios)) {
       docEscenarios.forEach((docEscenario) => {
-        // Buscar el escenario por id_escenario
         const escenario = escenarios.find(
-          (esc) => esc.id === docEscenario.id_escenario,
+          (esc) =>
+            (docEscenario.id_escenario &&
+              esc.id === docEscenario.id_escenario) ||
+            (docEscenario.institucion &&
+              esc.nombre?.trim().toLowerCase() ===
+                docEscenario.institucion?.trim().toLowerCase()),
         );
-        if (escenario && agrupados[escenario.nombre] !== undefined) {
-          // Buscar información del programa si existe
+        const targetNombre = escenario
+          ? escenario.nombre
+          : docEscenario.institucion;
+
+        if (targetNombre && agrupados[targetNombre] !== undefined) {
           const programaInfo = docEscenario.id_programa
             ? programas?.find((p) => p.id_programa === docEscenario.id_programa)
             : null;
 
-          agrupados[escenario.nombre].documentosEscenario.push({
+          agrupados[targetNombre].documentosEscenario.push({
             ...docEscenario,
             programa_info: programaInfo,
             tipo_documento: "documento_escenario",
-            nombre: escenario.nombre, // Agregar nombre del escenario para consistencia
+            nombre: targetNombre,
           });
         }
       });
     }
 
-    // Calcular total de items y aplicar filtro de escenario si existe
+    // Aplicar filtro de búsqueda (nombre, código, municipio o nombre del programa al que pertenece)
+    const term = filtroEscenario ? filtroEscenario.toLowerCase().trim() : "";
+
     Object.keys(agrupados).forEach((nombreEscenario) => {
-      // Aplicar filtro de escenario a documentos de escenario si está activo
-      if (filtroEscenario) {
-        agrupados[nombreEscenario].documentosEscenario = agrupados[
-          nombreEscenario
-        ].documentosEscenario.filter((doc) =>
-          nombreEscenario.toLowerCase().includes(filtroEscenario.toLowerCase()),
-        );
+      const grupo = agrupados[nombreEscenario];
+      const escenario = grupo.escenarioInfo;
+
+      if (term) {
+        // 1. Nombre (escenario, institución o sede)
+        const coincideNombre =
+          (nombreEscenario && nombreEscenario.toLowerCase().includes(term)) ||
+          (escenario?.nombre &&
+            escenario.nombre.toLowerCase().includes(term)) ||
+          (escenario?.nombre_sede &&
+            escenario.nombre_sede.toLowerCase().includes(term));
+
+        // 2. Código (del escenario o anexos/documentos)
+        const coincideCodigo =
+          (escenario?.codigo &&
+            String(escenario.codigo).toLowerCase().includes(term)) ||
+          grupo.anexosTecnicos.some(
+            (a) => a.codigo && String(a.codigo).toLowerCase().includes(term),
+          ) ||
+          grupo.documentosEscenario.some(
+            (d) => d.codigo && String(d.codigo).toLowerCase().includes(term),
+          );
+
+        // 3. Municipio (del escenario)
+        const coincideMunicipio =
+          escenario?.municipio &&
+          String(escenario.municipio).toLowerCase().includes(term);
+
+        // 4. Nombre del programa al que pertenece
+        const coincidePrograma =
+          grupo.anexosTecnicos.some((a) => {
+            const prog =
+              a.programa_info?.["programa académico"] ||
+              a.denominacion_programa ||
+              a.programa;
+            return prog && String(prog).toLowerCase().includes(term);
+          }) ||
+          grupo.documentosEscenario.some((d) => {
+            const prog =
+              d.programa_info?.["programa académico"] || d.programa;
+            return prog && String(prog).toLowerCase().includes(term);
+          });
+
+        if (
+          !coincideNombre &&
+          !coincideCodigo &&
+          !coincideMunicipio &&
+          !coincidePrograma
+        ) {
+          delete agrupados[nombreEscenario];
+          return;
+        }
       }
 
-      agrupados[nombreEscenario].totalItems =
-        agrupados[nombreEscenario].anexosTecnicos.length +
-        agrupados[nombreEscenario].documentosEscenario.length;
+      grupo.totalItems =
+        grupo.anexosTecnicos.length + grupo.documentosEscenario.length;
     });
 
     // Convertir a array, ordenar por total de items (mayor a menor) y volver a objeto
@@ -430,13 +582,14 @@ const DocenciaServicio = () => {
     return escenariosOrdenados;
   };
 
-  // Función para agrupar anexos por escuela
+  // Función para agrupar anexos por escuela (con búsqueda por nombre, código, municipio o programa)
   const agruparAnexosPorEscuela = (
     anexos,
     docEscenarios,
     programas,
     filtroEscuela,
     filtroEscenario,
+    escenarios,
   ) => {
     const agrupados = {};
 
@@ -472,30 +625,31 @@ const DocenciaServicio = () => {
     // Validar y agrupar anexos técnicos por escuela del programa
     if (anexos && Array.isArray(anexos)) {
       anexos.forEach((anexo) => {
-        // Aplicar filtro de escenario si está activo
+        const escenarioObj = escenarios?.find(
+          (e) => e.id === anexo.id_escenario || e.nombre === anexo.nombre,
+        );
+        const programa = anexo.id_programa
+          ? programas.find((p) => p.id_programa === anexo.id_programa)
+          : null;
+
+        // Aplicar búsqueda por nombre, código, municipio o programa
         if (
           filtroEscenario &&
-          anexo.nombre &&
-          !anexo.nombre.toLowerCase().includes(filtroEscenario.toLowerCase())
+          !cumpleFiltroBusqueda(anexo, escenarioObj, programa, filtroEscenario)
         ) {
-          return; // Saltar este anexo si no coincide con el filtro de escenario
+          return;
         }
 
-        if (anexo.id_programa) {
-          const programa = programas.find(
-            (p) => p.id_programa === anexo.id_programa,
-          );
-          if (
-            programa &&
-            programa.escuela &&
-            agrupados[programa.escuela] !== undefined
-          ) {
-            agrupados[programa.escuela].anexosTecnicos.push({
-              ...anexo,
-              programa_info: programa,
-              tipo_documento: "anexo_tecnico",
-            });
-          }
+        if (
+          programa &&
+          programa.escuela &&
+          agrupados[programa.escuela] !== undefined
+        ) {
+          agrupados[programa.escuela].anexosTecnicos.push({
+            ...anexo,
+            programa_info: programa,
+            tipo_documento: "anexo_tecnico",
+          });
         }
       });
     }
@@ -503,41 +657,56 @@ const DocenciaServicio = () => {
     // Validar y agrupar documentos de escenario
     if (docEscenarios && Array.isArray(docEscenarios)) {
       docEscenarios.forEach((docEscenario) => {
-        if (docEscenario.id_programa) {
-          const programa = programas.find(
-            (p) => p.id_programa === docEscenario.id_programa,
-          );
-          if (
-            programa &&
-            programa.escuela &&
-            agrupados[programa.escuela] !== undefined
-          ) {
-            // Aplicar filtro de escenario si está activo
-            if (
-              filtroEscenario &&
-              docEscenario.institucion &&
-              !docEscenario.institucion
-                .toLowerCase()
-                .includes(filtroEscenario.toLowerCase())
-            ) {
-              return; // Saltar este documento si no coincide con el filtro de escenario
-            }
+        const escenarioObj = escenarios?.find(
+          (e) =>
+            e.id === docEscenario.id_escenario ||
+            e.nombre === docEscenario.institucion,
+        );
+        const programa = docEscenario.id_programa
+          ? programas.find((p) => p.id_programa === docEscenario.id_programa)
+          : null;
 
-            agrupados[programa.escuela].documentosEscenario.push({
-              ...docEscenario,
-              programa_info: programa,
-              tipo_documento: "documento_escenario",
-            });
-          }
+        // Aplicar búsqueda por nombre, código, municipio o programa
+        if (
+          filtroEscenario &&
+          !cumpleFiltroBusqueda(
+            docEscenario,
+            escenarioObj,
+            programa,
+            filtroEscenario,
+          )
+        ) {
+          return;
+        }
+
+        if (
+          programa &&
+          programa.escuela &&
+          agrupados[programa.escuela] !== undefined
+        ) {
+          agrupados[programa.escuela].documentosEscenario.push({
+            ...docEscenario,
+            programa_info: programa,
+            tipo_documento: "documento_escenario",
+          });
         }
       });
     }
 
-    // Calcular total de items para cada escuela
+    // Calcular total de items para cada escuela y filtrar escuelas vacías si hay búsqueda activa
+    const term = filtroEscenario ? filtroEscenario.toLowerCase().trim() : "";
     Object.keys(agrupados).forEach((escuela) => {
       agrupados[escuela].totalItems =
         agrupados[escuela].anexosTecnicos.length +
         agrupados[escuela].documentosEscenario.length;
+
+      if (
+        term &&
+        agrupados[escuela].totalItems === 0 &&
+        !escuela.toLowerCase().includes(term)
+      ) {
+        delete agrupados[escuela];
+      }
     });
 
     // Convertir a array, ordenar por total de items (mayor a menor) y volver a objeto
@@ -551,13 +720,14 @@ const DocenciaServicio = () => {
     return escuelasOrdenadas;
   };
 
-  // Función para agrupar anexos por programa académico
+  // Función para agrupar anexos por programa académico (con búsqueda por nombre, código, municipio o programa)
   const agruparAnexosPorPrograma = (
     anexos,
     docEscenarios,
     programas,
     filtroPrograma,
     filtroEscenario,
+    escenarios,
   ) => {
     const agrupados = {};
 
@@ -593,30 +763,31 @@ const DocenciaServicio = () => {
     // Validar y agrupar anexos técnicos por programa académico
     if (anexos && Array.isArray(anexos)) {
       anexos.forEach((anexo) => {
-        // Aplicar filtro de escenario si está activo
+        const escenarioObj = escenarios?.find(
+          (e) => e.id === anexo.id_escenario || e.nombre === anexo.nombre,
+        );
+        const programa = anexo.id_programa
+          ? programas.find((p) => p.id_programa === anexo.id_programa)
+          : null;
+
+        // Aplicar búsqueda por nombre, código, municipio o programa
         if (
           filtroEscenario &&
-          anexo.nombre &&
-          !anexo.nombre.toLowerCase().includes(filtroEscenario.toLowerCase())
+          !cumpleFiltroBusqueda(anexo, escenarioObj, programa, filtroEscenario)
         ) {
-          return; // Saltar este anexo si no coincide con el filtro de escenario
+          return;
         }
 
-        if (anexo.id_programa) {
-          const programa = programas.find(
-            (p) => p.id_programa === anexo.id_programa,
-          );
-          if (
-            programa &&
-            programa["programa académico"] &&
-            agrupados[programa["programa académico"]] !== undefined
-          ) {
-            agrupados[programa["programa académico"]].anexosTecnicos.push({
-              ...anexo,
-              programa_info: programa,
-              tipo_documento: "anexo_tecnico",
-            });
-          }
+        if (
+          programa &&
+          programa["programa académico"] &&
+          agrupados[programa["programa académico"]] !== undefined
+        ) {
+          agrupados[programa["programa académico"]].anexosTecnicos.push({
+            ...anexo,
+            programa_info: programa,
+            tipo_documento: "anexo_tecnico",
+          });
         }
       });
     }
@@ -624,41 +795,56 @@ const DocenciaServicio = () => {
     // Validar y agrupar documentos de escenario
     if (docEscenarios && Array.isArray(docEscenarios)) {
       docEscenarios.forEach((docEscenario) => {
-        if (docEscenario.id_programa) {
-          const programa = programas.find(
-            (p) => p.id_programa === docEscenario.id_programa,
-          );
-          if (
-            programa &&
-            programa["programa académico"] &&
-            agrupados[programa["programa académico"]] !== undefined
-          ) {
-            // Aplicar filtro de escenario si está activo
-            if (
-              filtroEscenario &&
-              docEscenario.institucion &&
-              !docEscenario.institucion
-                .toLowerCase()
-                .includes(filtroEscenario.toLowerCase())
-            ) {
-              return; // Saltar este documento si no coincide con el filtro de escenario
-            }
+        const escenarioObj = escenarios?.find(
+          (e) =>
+            e.id === docEscenario.id_escenario ||
+            e.nombre === docEscenario.institucion,
+        );
+        const programa = docEscenario.id_programa
+          ? programas.find((p) => p.id_programa === docEscenario.id_programa)
+          : null;
 
-            agrupados[programa["programa académico"]].documentosEscenario.push({
-              ...docEscenario,
-              programa_info: programa,
-              tipo_documento: "documento_escenario",
-            });
-          }
+        // Aplicar búsqueda por nombre, código, municipio o programa
+        if (
+          filtroEscenario &&
+          !cumpleFiltroBusqueda(
+            docEscenario,
+            escenarioObj,
+            programa,
+            filtroEscenario,
+          )
+        ) {
+          return;
+        }
+
+        if (
+          programa &&
+          programa["programa académico"] &&
+          agrupados[programa["programa académico"]] !== undefined
+        ) {
+          agrupados[programa["programa académico"]].documentosEscenario.push({
+            ...docEscenario,
+            programa_info: programa,
+            tipo_documento: "documento_escenario",
+          });
         }
       });
     }
 
-    // Calcular total de items para cada programa académico
+    // Calcular total de items para cada programa académico y filtrar programas vacíos si hay búsqueda activa
+    const term = filtroEscenario ? filtroEscenario.toLowerCase().trim() : "";
     Object.keys(agrupados).forEach((programa) => {
       agrupados[programa].totalItems =
         agrupados[programa].anexosTecnicos.length +
         agrupados[programa].documentosEscenario.length;
+
+      if (
+        term &&
+        agrupados[programa].totalItems === 0 &&
+        !programa.toLowerCase().includes(term)
+      ) {
+        delete agrupados[programa];
+      }
     });
 
     // Convertir a array, ordenar por total de items (mayor a menor) y volver a objeto
@@ -821,41 +1007,73 @@ const DocenciaServicio = () => {
       });
     } else if (name === "idEscenario") {
       // Cuando se cambia el escenario, buscar su información completa en escenariosData
-      const selectedScenario = escenariosData.find((esc) => esc.id === value);
+      const selectedScenario = escenariosData.find(
+        (esc) => esc.id === value || esc.nombre === value,
+      );
 
       // Debug: mostrar qué datos están llegando
       console.log("=== DEBUG ESCENARIO SELECCIONADO ===");
       console.log("ID seleccionado:", value);
       console.log("Escenario encontrado:", selectedScenario);
-      console.log("escenariosData completo:", escenariosData);
       console.log("====================================");
 
       if (selectedScenario) {
         setDocEscenarioFormData({
           ...docEscenarioFormData,
-          idEscenario: value || "",
+          idEscenario: selectedScenario.id || value || "",
           nombreEscenario: selectedScenario.nombre || "",
           tipologia: selectedScenario.tipologia || "",
           codigo: selectedScenario.codigo || "",
           fechaInicio:
             convertirFechaParaInput(selectedScenario.fecha_inicio) || "",
           fechaFin: convertirFechaParaInput(selectedScenario.fecha_fin) || "",
+          nombre_sede: selectedScenario.nombre_sede || "",
+          numero_sede: selectedScenario.numero_sede || "",
+          departamento: selectedScenario.departamento || "",
+          municipio: selectedScenario.municipio || "",
+          direccion: selectedScenario.direccion || "",
+          nit: selectedScenario.nit || "",
+          telefono: selectedScenario.telefono || "",
+          correo: selectedScenario.correo || "",
+          contacto: selectedScenario.contacto || "",
+          documento: selectedScenario.documento || "",
+          tipo_convenio: selectedScenario.tipo_convenio || "",
+          firma_convenio:
+            convertirFechaParaInput(selectedScenario.firma_convenio) ||
+            selectedScenario.firma_convenio ||
+            "",
+          otros_si: selectedScenario.otros_si || "",
+          anexo_tecnico: selectedScenario.anexo_tecnico || "",
         });
       } else {
         setDocEscenarioFormData({
           ...docEscenarioFormData,
           idEscenario: value || "",
-          nombreEscenario: "",
+          nombreEscenario: value || "",
           tipologia: "",
           codigo: "",
           fechaInicio: "",
           fechaFin: "",
+          nombre_sede: "",
+          numero_sede: "",
+          departamento: "",
+          municipio: "",
+          direccion: "",
+          nit: "",
+          telefono: "",
+          correo: "",
+          contacto: "",
+          documento: "",
+          tipo_convenio: "",
+          firma_convenio: "",
+          otros_si: "",
+          anexo_tecnico: "",
         });
       }
     } else {
       setDocEscenarioFormData({
         ...docEscenarioFormData,
-        [name]: value || "",
+        [name]: value !== undefined && value !== null ? value : "",
         localFile: name === "url" ? null : docEscenarioFormData.localFile, // Limpiar archivo si se escribe en URL
       });
     }
@@ -891,15 +1109,100 @@ const DocenciaServicio = () => {
     }
   };
 
-  // Función para manejar la selección de múltiples programas con Autocomplete
+  // Helper para buscar campo de estudiantes admitidos en el objeto del programa
+  const extraerEstudiantesAdmitidos = (prog) => {
+    if (!prog) return "";
+    for (const [key, val] of Object.entries(prog)) {
+      const k = key.toLowerCase();
+      if (
+        k.includes("admit") ||
+        k.includes("estudiante") ||
+        k.includes("cupo")
+      ) {
+        if (val !== undefined && val !== null && String(val).trim() !== "") {
+          return String(val).trim();
+        }
+      }
+    }
+    return "";
+  };
+
+  // Función para manejar la selección de un único programa académico con Autocomplete
   const handleProgramaChange = (event, newValue) => {
-    setAnexoFormData({
-      ...anexoFormData,
-      programasSeleccionados: newValue || [], // newValue será un array
-      idPrograma:
-        newValue && newValue.length > 0
-          ? newValue.map((p) => p.id_programa).join(",")
-          : "", // IDs separados por coma
+    const programaRef = newValue || null;
+
+    let nivelFormacion = "";
+    let duracionSemanas = "";
+    let duracionSemestres = "";
+    let periodicidadAdmision = "";
+    let estudiantesAdmitidos = "";
+
+    if (programaRef) {
+      nivelFormacion =
+        programaRef["nivel de formación"] ||
+        programaRef["nivel de formacion"] ||
+        programaRef["nivel_formacion"] ||
+        programaRef["pregrado/posgrado"] ||
+        "";
+
+      const periodicidad =
+        programaRef["periodicidad"] ||
+        programaRef["periodicidad_admision"] ||
+        "";
+      periodicidadAdmision = periodicidad;
+
+      // Duración en semanas: si es anual 40, si es semestral 16
+      if (/anual/i.test(periodicidad)) {
+        duracionSemanas = "40";
+      } else if (/semestr/i.test(periodicidad)) {
+        duracionSemanas = "16";
+      } else {
+        const durStr = String(
+          programaRef["duración"] || programaRef["duracion"] || "",
+        );
+        if (/anual/i.test(durStr)) {
+          duracionSemanas = "40";
+        } else if (/semestr/i.test(durStr)) {
+          duracionSemanas = "16";
+        }
+      }
+
+      duracionSemestres =
+        programaRef["duración"] ||
+        programaRef["duracion"] ||
+        programaRef["duracion_programa"] ||
+        "";
+
+      const admit = extraerEstudiantesAdmitidos(programaRef);
+      if (admit) estudiantesAdmitidos = admit;
+    }
+
+    setAnexoFormData((prev) => ({
+      ...prev,
+      programaSeleccionado: programaRef,
+      idPrograma: programaRef ? programaRef.id_programa : "",
+      nivel_formacion: nivelFormacion,
+      duracion_semanas: duracionSemanas,
+      duracion_semestres: duracionSemestres,
+      periodicidad_admision: periodicidadAdmision,
+      estudiantes_admitidos: estudiantesAdmitidos,
+    }));
+  };
+
+  // Manejar selección múltiple de períodos con prácticas formativas (romanos)
+  const handlePeriodoPracticaToggle = (periodoRomano) => {
+    setAnexoFormData((prev) => {
+      const actuales = Array.isArray(prev.periodos_pract_formativas)
+        ? prev.periodos_pract_formativas
+        : [];
+      const index = actuales.indexOf(periodoRomano);
+      let nuevos;
+      if (index === -1) {
+        nuevos = [...actuales, periodoRomano];
+      } else {
+        nuevos = actuales.filter((p) => p !== periodoRomano);
+      }
+      return { ...prev, periodos_pract_formativas: nuevos };
     });
   };
 
@@ -1367,24 +1670,45 @@ const DocenciaServicio = () => {
       const planesData = serializarPlanes(anexo.planes || []);
       const insertData = [
         [
-          anexo.id, // A: id del anexo
-          anexo.id_programa || "", // B: id del programa
-          anexo.idEscenario, // C: id del escenario
-          anexo.nombre, // D: nombre del escenario
-          anexo.url, // E: URL del anexo
-          anexo.estado, // F: estado
-          anexo.tipo, // G: tipo
-          formatearFechaParaHoja(anexo.vigencia_desde), // H: vigencia desde
-          formatearFechaParaHoja(anexo.vigencia_hasta), // I: vigencia hasta
-          anexo.version, // J: versión
-          anexo.proceso_calidad, // K: proceso de calidad
-          anexo.cierre, // L: cierre
-          anexo.observaciones, // M: observaciones
-          planesData.horarios, // N: horarios (JSON)
-          planesData.horas_dia, // O: horas por día
-          planesData.horas_semana, // P: horas por semana
-          planesData.numero_semanas, // Q: número de semanas
-          planesData.creditos, // R: créditos
+          anexo.id, // A (0): id
+          anexo.id_programa || "", // B (1): id_programa
+          anexo.idEscenario, // C (2): id_escenario
+          anexo.nombre, // D (3): nombre
+          anexo.url, // E (4): url
+          anexo.estado, // F (5): estado
+          anexo.tipo, // G (6): tipo
+          formatearFechaParaHoja(anexo.vigencia_desde), // H (7): vigencia_desde
+          formatearFechaParaHoja(anexo.vigencia_hasta), // I (8): vigencia_hasta
+          anexo.version, // J (9): version
+          anexo.proceso_calidad || "", // K (10): proceso_calidad
+          anexo.cierre || "", // L (11): cierre
+          anexo.observaciones || "", // M (12): observaciones
+          planesData.horarios, // N (13): horarios
+          planesData.horas_dia, // O (14): horas_dia
+          planesData.horas_semana, // P (15): horas_semana
+          planesData.numero_semanas, // Q (16): numero_semanas
+          planesData.creditos, // R (17): creditos
+          anexo.nombre_IES || "", // S (18): nombre_IES
+          anexo.correo || "", // T (19): correo institucional
+          anexo.nivel_formacion || "", // U (20): nivel_formacion
+          anexo.duracion_semanas || "", // V (21): duracion_semanas
+          anexo.duracion_semestres || "", // W (22): duracion_semestres
+          anexo.periodicidad_admision || "", // X (23): periodicidad_admision
+          anexo.estudiantes_admitidos || "", // Y (24): estudiantes_admitidos
+          anexo.periodos_pract_formativas || "", // Z (25): periodos_pract_formativas
+          anexo.director_nombre || "", // AA (26): director_nombre
+          anexo.director_cargo || "", // AB (27): director_cargo
+          anexo.director_telefono || "", // AC (28): director_telefono
+          anexo.director_correo || "", // AD (29): director_correo
+          anexo.ds_ies_nombre || "", // AE (30): ds_ies_nombre
+          anexo.ds_ies_cargo || "", // AF (31): ds_ies_cargo
+          anexo.ds_ies_telefono || "", // AG (32): ds_ies_telefono
+          anexo.ds_ies_correo || "", // AH (33): ds_ies_correo
+          formatearFechaParaHoja(anexo.fecha_formalizacion), // AI (34): fecha_formalizacion
+          anexo.coordinacion_nombre || "", // AJ (35): coordinacion_nombre
+          anexo.coordinacion_cargo || "", // AK (36): coordinacion_cargo
+          anexo.coordinacion_telefono || "", // AL (37): coordinacion_telefono
+          anexo.coordinacion_correo || "", // AM (38): coordinacion_correo
         ],
       ];
 
@@ -1488,19 +1812,12 @@ const DocenciaServicio = () => {
     e.preventDefault();
     try {
       console.log(
-        "Programas seleccionados:",
-        anexoFormData.programasSeleccionados,
-      );
-      console.log(
-        "Cantidad de programas:",
-        anexoFormData.programasSeleccionados?.length,
+        "Programa seleccionado:",
+        anexoFormData.programaSeleccionado,
       );
 
-      if (
-        !anexoFormData.programasSeleccionados ||
-        anexoFormData.programasSeleccionados.length === 0
-      ) {
-        alert("Por favor selecciona al menos un programa académico válido.");
+      if (!anexoFormData.programaSeleccionado && !anexoFormData.idPrograma) {
+        alert("Por favor selecciona un programa académico válido.");
         return;
       }
 
@@ -1540,74 +1857,82 @@ const DocenciaServicio = () => {
         }
       }
 
-      // Crear anexos para cada programa seleccionado
-      const baseTimestamp = Date.now();
-      const newAnexos = anexoFormData.programasSeleccionados.map(
-        (programa, index) => ({
-          id: baseTimestamp + index * 1000, // usar timestamp base + offset para evitar duplicados
-          id_programa: programa.id_programa, // usar el id del programa seleccionado
-          idEscenario: anexoFormData.idEscenario, // id del escenario
-          nombre: anexoFormData.nombreEscenario, // nombre del escenario
-          url: fileUrl, // URL del anexo o archivo
-          estado: anexoFormData.estadoAnexo, // estado del anexo (Pendiente, En proceso, Listo)
-          tipo: anexoFormData.tipo,
-          vigencia_desde: anexoFormData.vigenciaDesde,
-          vigencia_hasta: anexoFormData.vigenciaHasta,
-          version: anexoFormData.version,
-          proceso_calidad: anexoFormData.procesoCalidad,
-          cierre: anexoFormData.cierre,
-          observaciones: anexoFormData.observaciones,
-          planes: anexoFormData.planes, // planes de práctica formativa
-        }),
-      );
+      // Convertir periodos_pract_formativas a string si es un array
+      const periodosRomanoStr = Array.isArray(
+        anexoFormData.periodos_pract_formativas,
+      )
+        ? anexoFormData.periodos_pract_formativas.join(", ")
+        : anexoFormData.periodos_pract_formativas || "";
 
-      // Verificar los datos a enviar
-      console.log("Datos de los nuevos anexos:", newAnexos);
+      const programa = anexoFormData.programaSeleccionado || {};
+      const periodicidad =
+        anexoFormData.periodicidad_admision ||
+        programa["periodicidad"] ||
+        programa["periodicidad_admision"] ||
+        "";
 
-      // Enviar los anexos secuencialmente para evitar conflictos
-      const resultados = [];
-      for (let i = 0; i < newAnexos.length; i++) {
-        console.log(
-          `Enviando anexo ${i + 1} de ${newAnexos.length}:`,
-          newAnexos[i],
-        );
-        try {
-          const resultado = await sendAnexoToSheet(newAnexos[i]);
-          resultados.push(resultado);
-          // Pequeña pausa entre envíos para evitar conflictos
-          if (i < newAnexos.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          }
-        } catch (error) {
-          console.error(`Error enviando anexo ${i + 1}:`, error);
-          resultados.push(false);
-        }
-      }
+      const durSem = /anual/i.test(periodicidad)
+        ? "40"
+        : /semestr/i.test(periodicidad)
+          ? "16"
+          : anexoFormData.duracion_semanas;
 
-      const todosExitosos = resultados.every(Boolean);
-      console.log("Resultados de envío:", resultados);
-      console.log("Todos exitosos:", todosExitosos);
+      const nuevoAnexo = {
+        id: Date.now(),
+        id_programa: programa.id_programa || anexoFormData.idPrograma,
+        idEscenario: anexoFormData.idEscenario,
+        nombre: anexoFormData.nombreEscenario,
+        url: fileUrl,
+        estado: anexoFormData.estadoAnexo,
+        tipo: anexoFormData.tipo,
+        vigencia_desde: anexoFormData.vigenciaDesde,
+        vigencia_hasta: anexoFormData.vigenciaHasta,
+        version: anexoFormData.version,
+        proceso_calidad: anexoFormData.procesoCalidad || "",
+        cierre: anexoFormData.cierre || "",
+        observaciones: anexoFormData.observaciones || "",
+        planes: anexoFormData.planes,
+        // Nuevos campos
+        nombre_IES: anexoFormData.nombre_IES,
+        correo: anexoFormData.correo,
+        nivel_formacion:
+          anexoFormData.nivel_formacion ||
+          programa["nivel de formación"] ||
+          programa["nivel de formacion"] ||
+          programa["nivel_formacion"] ||
+          programa["pregrado/posgrado"] ||
+          "",
+        duracion_semanas: anexoFormData.duracion_semanas || durSem,
+        duracion_semestres:
+          anexoFormData.duracion_semestres ||
+          programa["duración"] ||
+          programa["duracion"] ||
+          "",
+        periodicidad_admision: periodicidad,
+        estudiantes_admitidos: anexoFormData.estudiantes_admitidos,
+        periodos_pract_formativas: periodosRomanoStr,
+        director_nombre: anexoFormData.director_nombre,
+        director_cargo: anexoFormData.director_cargo,
+        director_telefono: anexoFormData.director_telefono,
+        director_correo: anexoFormData.director_correo,
+        ds_ies_nombre: anexoFormData.ds_ies_nombre,
+        ds_ies_cargo: anexoFormData.ds_ies_cargo,
+        ds_ies_telefono: anexoFormData.ds_ies_telefono,
+        ds_ies_correo: anexoFormData.ds_ies_correo,
+        fecha_formalizacion: anexoFormData.fecha_formalizacion,
+        coordinacion_nombre: anexoFormData.coordinacion_nombre,
+        coordinacion_cargo: anexoFormData.coordinacion_cargo,
+        coordinacion_telefono: anexoFormData.coordinacion_telefono,
+        coordinacion_correo: anexoFormData.coordinacion_correo,
+      };
 
-      if (todosExitosos) {
+      console.log("Datos del nuevo anexo a enviar:", nuevoAnexo);
+
+      const resultado = await sendAnexoToSheet(nuevoAnexo);
+
+      if (resultado) {
         // Reiniciar el formulario
-        setAnexoFormData({
-          idPrograma: "",
-          programasSeleccionados: [],
-          idEscenario: "",
-          nombreEscenario: "",
-          urlAnexo: "",
-          estadoAnexo: "Pendiente",
-          tipo: "",
-          vigenciaDesde: "",
-          vigenciaHasta: "",
-          version: "",
-          procesoCalidad: "",
-          cierre: "",
-          observaciones: "",
-          planes: [],
-          localFile: null,
-        });
-
+        setAnexoFormData(initialAnexoFormData);
         setShowAnexoForm(false);
 
         // Recargar los anexos
@@ -1648,6 +1973,7 @@ const DocenciaServicio = () => {
         alert(
           `${newAnexos.length} anexo${newAnexos.length !== 1 ? "s" : ""} guardado${newAnexos.length !== 1 ? "s" : ""} correctamente`,
         );
+        navigate("/docencia-servicio");
       } else {
         const exitosos = resultados.filter(Boolean).length;
         const fallidos = resultados.length - exitosos;
@@ -1661,46 +1987,29 @@ const DocenciaServicio = () => {
     }
   };
 
-  // Manejar el envío del formulario de documentos de escenario
+  // Manejar el envío del formulario de escenarios de práctica y documentos
   const handleDocEscenarioFormSubmit = async (e) => {
     e.preventDefault();
     try {
       // Validar campos obligatorios
       if (
-        !docEscenarioFormData.idEscenario ||
-        !docEscenarioFormData.nombreEscenario
+        !docEscenarioFormData.nombreEscenario &&
+        !docEscenarioFormData.idEscenario
       ) {
-        alert("Por favor selecciona un escenario de práctica válido.");
+        alert("Por favor selecciona o ingresa un escenario de práctica.");
         return;
       }
 
-      if (!docEscenarioFormData.url && !docEscenarioFormData.localFile) {
-        alert("Por favor proporciona una URL o selecciona un archivo local.");
-        return;
-      }
-
-      if (!docEscenarioFormData.tipologia) {
-        alert("Por favor ingrese la tipología.");
-        return;
-      }
-
-      if (!docEscenarioFormData.codigo) {
-        alert("Por favor ingrese el código.");
-        return;
-      }
-
-      if (!docEscenarioFormData.fechaInicio || !docEscenarioFormData.fechaFin) {
-        alert("Por favor proporciona las fechas de inicio y fin.");
-        return;
-      }
-
-      let fileUrl = docEscenarioFormData.url;
+      let fileUrl = docEscenarioFormData.url || "";
 
       // Si hay un archivo local, subirlo primero
       if (docEscenarioFormData.localFile) {
         const formData = new FormData();
         formData.append("file", docEscenarioFormData.localFile);
-        formData.append("scenarioName", docEscenarioFormData.nombreEscenario);
+        formData.append(
+          "scenarioName",
+          docEscenarioFormData.nombreEscenario || "Escenario",
+        );
 
         try {
           const response = await axios.post(
@@ -1726,54 +2035,88 @@ const DocenciaServicio = () => {
         }
       }
 
-      // Crear el documento de escenario (la institución se llena automáticamente desde el escenario)
-      const newDocEscenario = {
-        id: Date.now(), // ID único basado en timestamp
-        idEscenario: docEscenarioFormData.idEscenario,
-        institucion: docEscenarioFormData.nombreEscenario, // Usar el nombre del escenario como institución
-        url: fileUrl,
-        tipologia: docEscenarioFormData.tipologia,
-        codigo: docEscenarioFormData.codigo,
-        fechaInicio: docEscenarioFormData.fechaInicio,
-        fechaFin: docEscenarioFormData.fechaFin,
-      };
+      // Preparar los datos del escenario para la hoja ESC_PRACTICA (20 columnas A-T)
+      const escenarioId = docEscenarioFormData.idEscenario || Date.now();
+      const insertDataEscenario = [
+        [
+          escenarioId, // A (1): id
+          docEscenarioFormData.nombreEscenario || "", // B (2): nombre
+          docEscenarioFormData.tipologia || "", // C (3): tipologia
+          docEscenarioFormData.codigo || "", // D (4): codigo
+          formatearFechaParaHoja(docEscenarioFormData.fechaInicio) ||
+            docEscenarioFormData.fechaInicio ||
+            "", // E (5): fecha_inicio
+          formatearFechaParaHoja(docEscenarioFormData.fechaFin) ||
+            docEscenarioFormData.fechaFin ||
+            "", // F (6): fecha_fin
+          docEscenarioFormData.nombre_sede || "", // G (7): nombre_sede
+          docEscenarioFormData.numero_sede || "", // H (8): numero_sede
+          docEscenarioFormData.departamento || "", // I (9): departamento
+          docEscenarioFormData.municipio || "", // J (10): municipio
+          docEscenarioFormData.direccion || "", // K (11): direccion
+          docEscenarioFormData.nit || "", // L (12): nit
+          docEscenarioFormData.telefono || "", // M (13): telefono
+          docEscenarioFormData.correo || "", // N (14): correo
+          docEscenarioFormData.contacto || "", // O (15): contacto
+          docEscenarioFormData.documento || "", // P (16): documento
+          docEscenarioFormData.tipo_convenio || "", // Q (17): tipo_convenio
+          formatearFechaParaHoja(docEscenarioFormData.firma_convenio) ||
+            docEscenarioFormData.firma_convenio ||
+            "", // R (18): firma_convenio
+          docEscenarioFormData.otros_si || "", // S (19): otros_si
+          docEscenarioFormData.anexo_tecnico || "", // T (20): anexo_tecnico
+        ],
+      ];
 
-      console.log("Datos del nuevo documento de escenario:", newDocEscenario);
+      console.log("=== ENVIANDO DATOS A ESC_PRACTICA ===");
+      console.log("insertData:", insertDataEscenario);
 
-      // Enviar el documento de escenario
-      const resultado = await sendDocEscenarioToSheet(newDocEscenario);
+      const respEscenario = await axios.post(
+        "https://siac-server.vercel.app/sendDocServ",
+        {
+          insertData: insertDataEscenario,
+          sheetName: "ESC_PRACTICA",
+        },
+      );
 
-      if (resultado) {
+      // Si además se adjuntó archivo o URL, guardarlo en ANEXOS_ESC
+      if (fileUrl) {
+        const newDocEscenario = {
+          id: Date.now(),
+          idEscenario: escenarioId,
+          institucion: docEscenarioFormData.nombreEscenario,
+          url: fileUrl,
+          tipologia: docEscenarioFormData.tipologia,
+          codigo: docEscenarioFormData.codigo,
+          fechaInicio: docEscenarioFormData.fechaInicio,
+          fechaFin: docEscenarioFormData.fechaFin,
+        };
+        await sendDocEscenarioToSheet(newDocEscenario);
+      }
+
+      if (respEscenario.status === 200) {
         // Reiniciar el formulario
-        setDocEscenarioFormData({
-          idEscenario: "",
-          nombreEscenario: "",
-          url: "",
-          tipologia: "",
-          codigo: "",
-          fechaInicio: "",
-          fechaFin: "",
-          localFile: null,
-        });
-
+        setDocEscenarioFormData(initialDocEscenarioState);
         setShowDocEscenarioForm(null);
 
         // Mostrar mensaje de éxito
-        alert("Documento de escenario guardado correctamente");
+        alert("Escenario de práctica guardado correctamente.");
+        navigate("/docencia-servicio");
 
-        // Aquí se podría agregar la recarga de datos si es necesario
+        // Recargar datos
+        await fetchEscenarios();
         setTimeout(() => {
           setReloadDocEscenarios(true);
         }, 500);
       } else {
         alert(
-          "Error al guardar el documento de escenario. Por favor intenta de nuevo.",
+          "Error al guardar el escenario de práctica. Por favor intenta de nuevo.",
         );
       }
     } catch (error) {
-      console.error("Error al guardar el documento de escenario:", error);
+      console.error("Error al guardar el escenario de práctica:", error);
       alert(
-        "Error al guardar el documento de escenario. Por favor intenta de nuevo.",
+        "Error al guardar el escenario de práctica. Por favor intenta de nuevo.",
       );
     }
   };
@@ -2128,6 +2471,1242 @@ const DocenciaServicio = () => {
     }
   };
 
+  // Componente de formulario de anexo técnico reutilizable
+  const renderAnexoFormCompleto = () => (
+    <Box
+                  component="form"
+                  onSubmit={handleAnexoFormSubmit}
+                  sx={{
+                    marginTop: 2,
+                    maxWidth: "800px",
+                    mx: "auto",
+                    p: 3,
+                    border: "1px solid #ddd",
+                    borderRadius: 2,
+                    backgroundColor: "#f9f9f9",
+                  }}
+                >
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      mb: 3,
+                      textAlign: "center",
+                      fontWeight: 700,
+                      color: "#1b5e20",
+                    }}
+                  >
+                    Nuevo Anexo Técnico de Docencia-Servicio
+                  </Typography>
+
+                  <FormGroup sx={{ gap: 2.5 }}>
+                    {/* ── SECCIÓN 1: Institución y Programa Académico ── */}
+                    <Box
+                      sx={{
+                        p: 2.5,
+                        border: "1px solid #c8e6c9",
+                        borderRadius: 2,
+                        backgroundColor: "#ffffff",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          fontWeight: 700,
+                          color: "#2e7d32",
+                          mb: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        1. Información de la Institución y Programa
+                      </Typography>
+
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="a) Institución de Educación Superior (IES)"
+                            name="nombre_IES"
+                            value={anexoFormData.nombre_IES}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            required
+                            helperText="Institución de Educación Superior"
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Correo electrónico institucional"
+                            name="correo"
+                            type="email"
+                            value={anexoFormData.correo}
+                            onChange={handleAnexoInputChange}
+                            placeholder="ejemplo@correounivalle.edu.co"
+                            fullWidth
+                            required
+                            helperText="Correo electrónico institucional de contacto"
+                          />
+                        </Grid>
+
+                        {/* b) Denominación del Programa */}
+                        <Grid item xs={12}>
+                          <Autocomplete
+                            options={programasData}
+                            getOptionLabel={(option) =>
+                              option["programa académico"] || ""
+                            }
+                            value={anexoFormData.programaSeleccionado || null}
+                            onChange={handleProgramaChange}
+                            filterOptions={(options, params) => {
+                              const filtered = options.filter(
+                                (option) =>
+                                  option["programa académico"] &&
+                                  option["programa académico"]
+                                    .toLowerCase()
+                                    .includes(params.inputValue.toLowerCase()),
+                              );
+                              return filtered;
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="b) Denominación del Programa"
+                                placeholder="Escribe para buscar y seleccionar el programa académico..."
+                                fullWidth
+                                required={!anexoFormData.programaSeleccionado}
+                                helperText="Selecciona el programa académico para este anexo"
+                              />
+                            )}
+                            renderOption={(props, option, { index }) => (
+                              <Box
+                                component="li"
+                                {...props}
+                                key={`programa-option-${option.id_programa || index}`}
+                              >
+                                <Typography variant="body1">
+                                  {option["programa académico"]}
+                                </Typography>
+                              </Box>
+                            )}
+                            noOptionsText="No se encontraron programas"
+                            loadingText="Cargando programas..."
+                            isOptionEqualToValue={(option, value) =>
+                              option.id_programa === value?.id_programa
+                            }
+                          />
+                        </Grid>
+
+                        <Grid item xs={12}>
+                          <FormControl fullWidth required>
+                            <InputLabel id="escenarios-label">
+                              Escenario de Práctica
+                            </InputLabel>
+                            <Select
+                              labelId="escenarios-label"
+                              id="escenarios-select"
+                              name="idEscenario"
+                              value={anexoFormData.idEscenario}
+                              onChange={handleAnexoInputChange}
+                              label="Escenario de Práctica"
+                            >
+                              {data && Array.isArray(data)
+                                ? data.map((item) => (
+                                    <MenuItem key={item.id} value={item.id}>
+                                      {item.nombre}
+                                    </MenuItem>
+                                  ))
+                                : []}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+
+                        {/* Campos extraídos del programa */}
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="c) Nivel de formación"
+                            name="nivel_formacion"
+                            value={anexoFormData.nivel_formacion}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            helperText="Extraído de la información del programa"
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="d) Duración períodos académicos (semanas)"
+                            name="duracion_semanas"
+                            value={anexoFormData.duracion_semanas}
+                            onChange={handleAnexoInputChange}
+                            type="number"
+                            fullWidth
+                            helperText="40 semanas si es anual, 16 si es semestral"
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            label="e) Duración total del Programa (períodos)"
+                            name="duracion_semestres"
+                            value={anexoFormData.duracion_semestres}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            helperText="Extraído de la columna de duración"
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            label="f) Periodicidad de admisión"
+                            name="periodicidad_admision"
+                            value={anexoFormData.periodicidad_admision}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            helperText="Extraído de periodicidad del programa"
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            label="g) Estudiantes a admitir en Período 1"
+                            name="estudiantes_admitidos"
+                            value={anexoFormData.estudiantes_admitidos}
+                            onChange={handleAnexoInputChange}
+                            type="number"
+                            fullWidth
+                            helperText="Cupos / admitidos en período 1"
+                          />
+                        </Grid>
+
+                        {/* h) Períodos con prácticas formativas (romanos 6 al 10) */}
+                        <Grid item xs={12}>
+                          <Box
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 1,
+                              backgroundColor: "#f1f8e9",
+                              border: "1px dashed #aed581",
+                            }}
+                          >
+                            <FormLabel
+                              component="legend"
+                              sx={{
+                                fontWeight: 600,
+                                color: "#2e7d32",
+                                mb: 1,
+                                fontSize: "0.9rem",
+                              }}
+                            >
+                              h) Períodos con prácticas formativas (Seleccione
+                              uno o varios):
+                            </FormLabel>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                gap: 2,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {PERIODOS_ROMANOS.map((periodo) => {
+                                const isChecked =
+                                  Array.isArray(
+                                    anexoFormData.periodos_pract_formativas,
+                                  ) &&
+                                  anexoFormData.periodos_pract_formativas.includes(
+                                    periodo,
+                                  );
+                                return (
+                                  <FormControlLabel
+                                    key={periodo}
+                                    control={
+                                      <Checkbox
+                                        checked={isChecked}
+                                        onChange={() =>
+                                          handlePeriodoPracticaToggle(periodo)
+                                        }
+                                        sx={{
+                                          color: "#2e7d32",
+                                          "&.Mui-checked": {
+                                            color: "#1b5e20",
+                                          },
+                                        }}
+                                      />
+                                    }
+                                    label={
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontWeight: isChecked ? 700 : 500,
+                                        }}
+                                      >
+                                        {periodo}
+                                      </Typography>
+                                    }
+                                  />
+                                );
+                              })}
+                            </Box>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Box>
+
+                    {/* ── SECCIÓN 2: Responsables y Formalización ── */}
+                    <Box
+                      sx={{
+                        p: 2.5,
+                        border: "1px solid #bbdefb",
+                        borderRadius: 2,
+                        backgroundColor: "#ffffff",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          fontWeight: 700,
+                          color: "#1565c0",
+                          mb: 2,
+                        }}
+                      >
+                        2. Responsables y Formalización
+                      </Typography>
+
+                      {/* I. Decano/Director */}
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: "#333",
+                          mb: 1,
+                          mt: 0.5,
+                        }}
+                      >
+                        I. Decano / Director
+                      </Typography>
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="I. Decano/Director - Nombre"
+                            name="director_nombre"
+                            value={anexoFormData.director_nombre}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="I. Decano/Director - Cargo"
+                            name="director_cargo"
+                            value={anexoFormData.director_cargo}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="I. Decano/Director - Teléfono"
+                            name="director_telefono"
+                            value={anexoFormData.director_telefono}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="I. Decano/Director - Correo"
+                            name="director_correo"
+                            type="email"
+                            value={anexoFormData.director_correo}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                          />
+                        </Grid>
+                      </Grid>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      {/* II. Resp. Docencia-Servicio IES */}
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: "#333",
+                          mb: 1,
+                        }}
+                      >
+                        II. Resp. Docencia-Servicio IES
+                      </Typography>
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="II. Resp. Docencia-Servicio IES - Nombre"
+                            name="ds_ies_nombre"
+                            value={anexoFormData.ds_ies_nombre}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                            placeholder="Nombre del responsable"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="II. Resp. Docencia-Servicio IES - Cargo"
+                            name="ds_ies_cargo"
+                            value={anexoFormData.ds_ies_cargo}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                            placeholder="Cargo del responsable"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="II. Resp. Docencia-Servicio IES - Teléfono"
+                            name="ds_ies_telefono"
+                            value={anexoFormData.ds_ies_telefono}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                            placeholder="Teléfono / Extensión"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="II. Resp. Docencia-Servicio IES - Correo"
+                            name="ds_ies_correo"
+                            type="email"
+                            value={anexoFormData.ds_ies_correo}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                            placeholder="correo@correounivalle.edu.co"
+                          />
+                        </Grid>
+                      </Grid>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      {/* Fecha de formalización del plan */}
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Fecha de formalización del plan"
+                            name="fecha_formalizacion"
+                            type="date"
+                            value={anexoFormData.fecha_formalizacion}
+                            onChange={handleAnexoInputChange}
+                            InputLabelProps={{ shrink: true }}
+                            fullWidth
+                            size="small"
+                          />
+                        </Grid>
+                      </Grid>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      {/* III. Resp. Coordinación práctica */}
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: "#333",
+                          mb: 1,
+                        }}
+                      >
+                        III. Resp. Coordinación Práctica
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="III. Resp. Coordinación práctica Nombre"
+                            name="coordinacion_nombre"
+                            value={anexoFormData.coordinacion_nombre}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                            placeholder="Nombre del coordinador"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="III. Resp. Coordinación práctica Cargo"
+                            name="coordinacion_cargo"
+                            value={anexoFormData.coordinacion_cargo}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                            placeholder="Cargo del coordinador"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="III. Resp. Coordinación práctica Teléfono"
+                            name="coordinacion_telefono"
+                            value={anexoFormData.coordinacion_telefono}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                            placeholder="Teléfono / Extensión"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="III. Resp. Coordinación práctica Correo"
+                            name="coordinacion_correo"
+                            type="email"
+                            value={anexoFormData.coordinacion_correo}
+                            onChange={handleAnexoInputChange}
+                            fullWidth
+                            size="small"
+                            placeholder="correo@correounivalle.edu.co"
+                          />
+                        </Grid>
+                      </Grid>
+                    </Box>
+
+                    {/* ── SECCIÓN 3: Documento del Convenio y Vigencia ── */}
+                    <Box
+                      sx={{
+                        p: 2.5,
+                        border: "1px solid #e0e0e0",
+                        borderRadius: 2,
+                        backgroundColor: "#ffffff",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          fontWeight: 700,
+                          color: "#424242",
+                          mb: 2,
+                        }}
+                      >
+                        3. Documento y Parámetros del Anexo
+                      </Typography>
+
+                      <TextField
+                        label="URL del Documento"
+                        name="urlAnexo"
+                        value={anexoFormData.urlAnexo}
+                        onChange={handleAnexoInputChange}
+                        margin="normal"
+                        fullWidth
+                        placeholder="https://drive.google.com/..."
+                        helperText="URL donde se encuentra almacenado el documento"
+                      />
+
+                      <Typography
+                        variant="body2"
+                        sx={{ my: 1, textAlign: "center" }}
+                      >
+                        O
+                      </Typography>
+
+                      <Button variant="outlined" component="label" fullWidth>
+                        Seleccionar Archivo Local
+                        <input
+                          type="file"
+                          hidden
+                          onChange={handleAnexoInputChange}
+                          name="localFile"
+                        />
+                      </Button>
+                      {anexoFormData.localFile && (
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                          Archivo seleccionado: {anexoFormData.localFile.name}
+                        </Typography>
+                      )}
+
+                      <FormControl fullWidth margin="normal" required>
+                        <InputLabel id="tipo-label">Tipo</InputLabel>
+                        <Select
+                          labelId="tipo-label"
+                          name="tipo"
+                          value={anexoFormData.tipo}
+                          onChange={handleAnexoInputChange}
+                          label="Tipo"
+                          required
+                        >
+                          <MenuItem value="C.D.S. Clinicos">
+                            C.D.S. Clinicos
+                          </MenuItem>
+                          <MenuItem value="C.D.S. No clinicos">
+                            C.D.S. No clinicos
+                          </MenuItem>
+                          <MenuItem value="C. Integración de propiedad">
+                            C. Integración de propiedad
+                          </MenuItem>
+                        </Select>
+                      </FormControl>
+
+                      <Box sx={{ display: "flex", gap: 2, marginTop: 2 }}>
+                        <TextField
+                          label="Vigencia Desde"
+                          name="vigenciaDesde"
+                          type="date"
+                          value={anexoFormData.vigenciaDesde}
+                          onChange={handleAnexoInputChange}
+                          InputLabelProps={{
+                            shrink: true,
+                          }}
+                          fullWidth
+                          required
+                        />
+                        <TextField
+                          label="Vigencia Hasta"
+                          name="vigenciaHasta"
+                          type="date"
+                          value={anexoFormData.vigenciaHasta}
+                          onChange={handleAnexoInputChange}
+                          InputLabelProps={{
+                            shrink: true,
+                          }}
+                          fullWidth
+                          required
+                        />
+                      </Box>
+
+                      <Box sx={{ display: "flex", gap: 2, marginTop: 2 }}>
+                        <TextField
+                          label="Versión"
+                          name="version"
+                          type="number"
+                          value={anexoFormData.version}
+                          onChange={handleAnexoInputChange}
+                          required
+                          sx={{ width: "50%" }}
+                          inputProps={{ min: 1, step: 1 }}
+                        />
+                        <TextField
+                          label="Cierre (Opcional)"
+                          placeholder="Este campo es opcional"
+                          name="cierre"
+                          value={anexoFormData.cierre}
+                          onChange={handleAnexoInputChange}
+                          sx={{ width: "50%" }}
+                        />
+                      </Box>
+
+                      <FormGroup sx={{ marginTop: 2 }}>
+                        <FormLabel component="legend">Estado</FormLabel>
+                        <RadioGroup
+                          name="estadoAnexo"
+                          value={anexoFormData.estadoAnexo}
+                          onChange={handleAnexoInputChange}
+                          sx={{ display: "flex", flexDirection: "row" }}
+                        >
+                          <FormControlLabel
+                            value="Pendiente"
+                            control={<Radio />}
+                            label="Pendiente"
+                          />
+                          <FormControlLabel
+                            value="En proceso"
+                            control={<Radio />}
+                            label="En proceso"
+                          />
+                          <FormControlLabel
+                            value="Listo"
+                            control={<Radio />}
+                            label="Listo"
+                          />
+                          <FormControlLabel
+                            value="Inactivo"
+                            control={<Radio />}
+                            label="Inactivo"
+                          />
+                        </RadioGroup>
+                      </FormGroup>
+
+                      {anexoFormData.estadoAnexo === "Inactivo" && (
+                        <TextField
+                          label="Observaciones"
+                          name="observaciones"
+                          value={anexoFormData.observaciones}
+                          onChange={handleAnexoInputChange}
+                          margin="normal"
+                          multiline
+                          rows={3}
+                          fullWidth
+                        />
+                      )}
+                    </Box>
+
+                    {/* ── Sección de Planes de Práctica Formativa ── */}
+                    <Box sx={{ mt: 3 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          mb: 1.5,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 700, color: "#888787ff" }}
+                        >
+                          Planes Generales de Práctica Formativa
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={addPlan}
+                          sx={{
+                            backgroundColor: "#2e7d32",
+                            "&:hover": { backgroundColor: "#1b5e20" },
+                            textTransform: "none",
+                            fontWeight: 600,
+                          }}
+                        >
+                          + Añadir Plan
+                        </Button>
+                      </Box>
+
+                      {anexoFormData.planes.length === 0 && (
+                        <Box
+                          sx={{
+                            p: 2,
+                            border: "2px dashed #c8e6c9",
+                            borderRadius: 2,
+                            textAlign: "center",
+                            color: "#888",
+                          }}
+                        >
+                          <Typography variant="body2">
+                            Haz clic en <strong>+ Añadir Plan</strong> para
+                            registrar el plan de práctica formativa con
+                            horarios.
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {anexoFormData.planes.map((plan, planIdx) => (
+                        <PlanHorarioForm
+                          key={plan.id}
+                          plan={plan}
+                          planIdx={planIdx}
+                        />
+                      ))}
+
+                      {/* Resumen global si hay más de un plan */}
+                      {anexoFormData.planes.length > 1 &&
+                        (() => {
+                          const totalHSemana = anexoFormData.planes.reduce(
+                            (sum, p) => sum + calcularHorasSemana(p.grid),
+                            0,
+                          );
+                          return (
+                            <Box
+                              sx={{
+                                p: 1.5,
+                                background: "#e8f5e9",
+                                borderRadius: 1,
+                                textAlign: "center",
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="#2e7d32"
+                                fontWeight={700}
+                              >
+                                Total acumulado todos los planes:{" "}
+                                <strong>{totalHSemana} h/semana</strong>
+                              </Typography>
+                            </Box>
+                          );
+                        })()}
+                    </Box>
+                  </FormGroup>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                      justifyContent: "center",
+                      marginTop: 3,
+                    }}
+                  >
+                    <Button type="submit" variant="contained" color="primary">
+                      Guardar Anexo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      onClick={() => {
+                        toggleAnexoForm();
+                        navigate("/docencia-servicio");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                  </Box>
+                </Box>
+  );
+
+  // Componente de formulario de escenario de práctica reutilizable
+  const renderEscenarioForm = (isGeneral = false) => (
+    <Box
+      component="form"
+      onSubmit={handleDocEscenarioFormSubmit}
+      sx={{
+        marginTop: 2,
+        marginBottom: 3,
+        maxWidth: "950px",
+        mx: "auto",
+        p: 3,
+        border: "1px solid #1976d2",
+        borderRadius: 2,
+        backgroundColor: "#f8faff",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+      }}
+    >
+      <Typography
+        variant="h6"
+        sx={{ mb: 2, textAlign: "center", color: "#1976d2", fontWeight: 600 }}
+      >
+        {isGeneral
+          ? "Formulario de Escenario de Práctica"
+          : `Escenario de Práctica: ${docEscenarioFormData.nombreEscenario}`}
+      </Typography>
+
+      <FormGroup>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: "#1565c0",
+            mt: 1,
+            mb: 1,
+            borderBottom: "1px solid #e0e0e0",
+            pb: 0.5,
+          }}
+        >
+          1. Información General del Escenario
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            {isGeneral ? (
+              <Autocomplete
+                freeSolo
+                options={escenariosData || []}
+                getOptionLabel={(option) =>
+                  typeof option === "string" ? option : option.nombre || ""
+                }
+                value={
+                  escenariosData.find(
+                    (e) => e.id === docEscenarioFormData.idEscenario,
+                  ) ||
+                  docEscenarioFormData.nombreEscenario ||
+                  ""
+                }
+                onChange={(event, newValue) => {
+                  if (typeof newValue === "string") {
+                    setDocEscenarioFormData({
+                      ...docEscenarioFormData,
+                      idEscenario: "",
+                      nombreEscenario: newValue,
+                    });
+                  } else if (newValue && newValue.nombre) {
+                    setDocEscenarioFormData({
+                      ...docEscenarioFormData,
+                      idEscenario: newValue.id || "",
+                      nombreEscenario: newValue.nombre || "",
+                      tipologia: newValue.tipologia || "",
+                      codigo: newValue.codigo || "",
+                      fechaInicio:
+                        convertirFechaParaInput(newValue.fecha_inicio) || "",
+                      fechaFin:
+                        convertirFechaParaInput(newValue.fecha_fin) || "",
+                      nombre_sede: newValue.nombre_sede || "",
+                      numero_sede: newValue.numero_sede || "",
+                      departamento: newValue.departamento || "",
+                      municipio: newValue.municipio || "",
+                      direccion: newValue.direccion || "",
+                      nit: newValue.nit || "",
+                      telefono: newValue.telefono || "",
+                      correo: newValue.correo || "",
+                      contacto: newValue.contacto || "",
+                      documento: newValue.documento || "",
+                      tipo_convenio: newValue.tipo_convenio || "",
+                      firma_convenio:
+                        convertirFechaParaInput(newValue.firma_convenio) ||
+                        newValue.firma_convenio ||
+                        "",
+                      otros_si: newValue.otros_si || "",
+                      anexo_tecnico: newValue.anexo_tecnico || "",
+                    });
+                  } else {
+                    setDocEscenarioFormData({
+                      ...docEscenarioFormData,
+                      idEscenario: "",
+                      nombreEscenario: "",
+                    });
+                  }
+                }}
+                onInputChange={(event, newInputValue) => {
+                  if (!docEscenarioFormData.idEscenario) {
+                    setDocEscenarioFormData((prev) => ({
+                      ...prev,
+                      nombreEscenario: newInputValue,
+                    }));
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Escenario de Práctica (Nombre / Institución)"
+                    required
+                    fullWidth
+                    helperText="Seleccione uno existente o escriba uno nuevo"
+                  />
+                )}
+              />
+            ) : (
+              <TextField
+                label="Escenario de Práctica"
+                value={docEscenarioFormData.nombreEscenario}
+                disabled
+                fullWidth
+              />
+            )}
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <Autocomplete
+              freeSolo
+              options={uniqueTipologias}
+              value={docEscenarioFormData.tipologia}
+              onInputChange={(event, newInputValue) => {
+                setDocEscenarioFormData((prev) => ({
+                  ...prev,
+                  tipologia: newInputValue,
+                }));
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Tipología"
+                  fullWidth
+                  placeholder="Ej: Clínico, No Clínico"
+                />
+              )}
+            />
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <TextField
+              label="Código"
+              name="codigo"
+              value={docEscenarioFormData.codigo}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Código del escenario"
+            />
+          </Grid>
+        </Grid>
+
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: "#1565c0",
+            mt: 2.5,
+            mb: 1,
+            borderBottom: "1px solid #e0e0e0",
+            pb: 0.5,
+          }}
+        >
+          2. Sede y Ubicación
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Nombre de la Sede"
+              name="nombre_sede"
+              value={docEscenarioFormData.nombre_sede}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Nombre de la sede"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Número de Sede"
+              name="numero_sede"
+              value={docEscenarioFormData.numero_sede}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Ej: 1, 2..."
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="Departamento"
+              name="departamento"
+              value={docEscenarioFormData.departamento}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Ej: Valle del Cauca"
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="Municipio"
+              name="municipio"
+              value={docEscenarioFormData.municipio}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Ej: Cali, Tuluá..."
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="Dirección"
+              name="direccion"
+              value={docEscenarioFormData.direccion}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Dirección de la sede"
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="NIT"
+              name="nit"
+              value={docEscenarioFormData.nit}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Ej: 890399010-6"
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="Teléfono"
+              name="telefono"
+              value={docEscenarioFormData.telefono}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Teléfono de contacto"
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              label="Correo Electrónico"
+              name="correo"
+              type="email"
+              value={docEscenarioFormData.correo}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="correo@ejemplo.com"
+            />
+          </Grid>
+        </Grid>
+
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: "#1565c0",
+            mt: 2.5,
+            mb: 1,
+            borderBottom: "1px solid #e0e0e0",
+            pb: 0.5,
+          }}
+        >
+          3. Persona de Contacto
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Contacto (Nombre de la persona)"
+              name="contacto"
+              value={docEscenarioFormData.contacto}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Nombre y apellidos de la persona de contacto"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Documento"
+              name="documento"
+              value={docEscenarioFormData.documento}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Cédula / Documento de identidad"
+            />
+          </Grid>
+        </Grid>
+
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: "#1565c0",
+            mt: 2.5,
+            mb: 1,
+            borderBottom: "1px solid #e0e0e0",
+            pb: 0.5,
+          }}
+        >
+          4. Convenio y Fechas
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel
+                id={`tipo-convenio-label-${isGeneral ? "gen" : "card"}`}
+              >
+                Tipo de Convenio
+              </InputLabel>
+              <Select
+                labelId={`tipo-convenio-label-${isGeneral ? "gen" : "card"}`}
+                name="tipo_convenio"
+                value={docEscenarioFormData.tipo_convenio || ""}
+                onChange={handleDocEscenarioInputChange}
+                label="Tipo de Convenio"
+              >
+                <MenuItem value="No Clínico institucional">
+                  No Clínico institucional
+                </MenuItem>
+                <MenuItem value="Clínico">Clínico</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Firma de Convenio"
+              name="firma_convenio"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={docEscenarioFormData.firma_convenio}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Fecha de Inicio"
+              name="fechaInicio"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={docEscenarioFormData.fechaInicio}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Fecha de Fin"
+              name="fechaFin"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={docEscenarioFormData.fechaFin}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Otrosí"
+              name="otros_si"
+              value={docEscenarioFormData.otros_si}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Información u observaciones del Otrosí"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              label="Anexo Técnico"
+              name="anexo_tecnico"
+              value={docEscenarioFormData.anexo_tecnico}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="Información u observaciones del Anexo Técnico"
+            />
+          </Grid>
+        </Grid>
+
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: "#1565c0",
+            mt: 2.5,
+            mb: 1,
+            borderBottom: "1px solid #e0e0e0",
+            pb: 0.5,
+          }}
+        >
+          5. Documento / Soporte Adjunto (Opcional)
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <TextField
+              label="URL del Documento"
+              name="url"
+              value={docEscenarioFormData.url}
+              onChange={handleDocEscenarioInputChange}
+              fullWidth
+              placeholder="https://drive.google.com/..."
+              helperText="URL donde se encuentra almacenado el documento (opcional)"
+            />
+          </Grid>
+          <Grid item xs={12} sx={{ textAlign: "center" }}>
+            <Typography variant="body2" sx={{ my: 1 }}>
+              O
+            </Typography>
+            <Button variant="outlined" component="label">
+              Seleccionar Archivo Local
+              <input
+                type="file"
+                hidden
+                onChange={handleDocEscenarioInputChange}
+                name="localFile"
+              />
+            </Button>
+            {docEscenarioFormData.localFile && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Archivo seleccionado: {docEscenarioFormData.localFile.name}
+              </Typography>
+            )}
+          </Grid>
+        </Grid>
+      </FormGroup>
+
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          justifyContent: "center",
+          marginTop: 3,
+        }}
+      >
+        <Button type="submit" variant="contained" color="primary">
+          Guardar Escenario de Práctica
+        </Button>
+        <Button
+          type="button"
+          variant="outlined"
+          onClick={() => {
+            toggleDocEscenarioForm(null);
+            navigate("/docencia-servicio");
+          }}
+        >
+          Cancelar / Volver
+        </Button>
+      </Box>
+    </Box>
+  );
+
   return (
     <>
       <Header />
@@ -2136,15 +3715,91 @@ const DocenciaServicio = () => {
         <Box
           sx={{
             width: "100%",
-            maxWidth: "1100px",
+            maxWidth: isVistaAnexo || isVistaEscenario ? "950px" : "1100px",
             mx: "auto",
             px: { xs: 2, sm: 3, md: 4 },
             mt: 2,
             ml: { xs: "auto", md: 0 },
             position: "relative",
             left: { xs: 0, md: "-30px" },
+            mb: 6,
           }}
         >
+          {isVistaAnexo ? (
+            <Box sx={{ mb: 4 }}>
+              <Box
+                sx={{
+                  mb: 3,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 1,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate("/docencia-servicio")}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: "#2e7d32",
+                    color: "#2e7d32",
+                    "&:hover": {
+                      borderColor: "#1b5e20",
+                      backgroundColor: "rgba(46, 125, 50, 0.04)",
+                    },
+                  }}
+                >
+                  ← Volver a Docencia y Servicio
+                </Button>
+                <Typography variant="body2" sx={{ color: "#666" }}>
+                  Docencia-Servicio / Formulario de Anexo Convenio D.S.
+                </Typography>
+              </Box>
+
+              {renderAnexoFormCompleto()}
+            </Box>
+          ) : isVistaEscenario ? (
+            <Box sx={{ mb: 4 }}>
+              <Box
+                sx={{
+                  mb: 3,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 1,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate("/docencia-servicio")}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderColor: "#1976d2",
+                    color: "#1976d2",
+                    "&:hover": {
+                      borderColor: "#1565c0",
+                      backgroundColor: "rgba(25, 118, 210, 0.04)",
+                    },
+                  }}
+                >
+                  ← Volver a Docencia y Servicio
+                </Button>
+                <Typography variant="body2" sx={{ color: "#666" }}>
+                  Docencia-Servicio /{" "}
+                  {docEscenarioFormData.nombreEscenario
+                    ? ("Editar: " + docEscenarioFormData.nombreEscenario)
+                    : "Nuevo Escenario de Práctica"}
+                </Typography>
+              </Box>
+
+              {renderEscenarioForm(!docEscenarioFormData.nombreEscenario)}
+            </Box>
+          ) : (
+            <>
           <Typography
             variant="h4"
             sx={{
@@ -2165,33 +3820,71 @@ const DocenciaServicio = () => {
               </Typography>
 
               <Grid container spacing={3} alignItems="center">
-                {/* Selector de tipo de vista */}
-                <Grid item xs={12} md={4}>
-                  <FormControl fullWidth>
-                    <InputLabel>Agrupar por</InputLabel>
-                    <Select
-                      value={tipoVista}
-                      onChange={(e) => handleTipoVistaChange(e.target.value)}
-                      label="Agrupar por"
+                {/* Selector de tipo de vista con 3 botones */}
+                <Grid item xs={12} md={tipoVista === "escenario" ? 5 : 4}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      color: "#666",
+                      display: "block",
+                      mb: 0.75,
+                    }}
+                  >
+                    Agrupar por:
+                  </Typography>
+                  <ButtonGroup
+                    fullWidth
+                    variant="outlined"
+                    sx={{
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                      "& .MuiButton-root": {
+                        py: 1,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        fontSize: "0.85rem",
+                      },
+                    }}
+                  >
+                    <Button
+                      variant={
+                        tipoVista === "escenario" ? "contained" : "outlined"
+                      }
+                      onClick={() => handleTipoVistaChange("escenario")}
+                      color="primary"
                     >
-                      <MenuItem value="escenario">
-                        Escenarios de Práctica
-                      </MenuItem>
-                      <MenuItem value="escuela">Escuelas</MenuItem>
-                      <MenuItem value="programa">Programas Académicos</MenuItem>
-                    </Select>
-                  </FormControl>
+                      Escenarios
+                    </Button>
+                    <Button
+                      variant={
+                        tipoVista === "escuela" ? "contained" : "outlined"
+                      }
+                      onClick={() => handleTipoVistaChange("escuela")}
+                      color="primary"
+                    >
+                      Escuelas
+                    </Button>
+                    <Button
+                      variant={
+                        tipoVista === "programa" ? "contained" : "outlined"
+                      }
+                      onClick={() => handleTipoVistaChange("programa")}
+                      color="primary"
+                    >
+                      Programas
+                    </Button>
+                  </ButtonGroup>
                 </Grid>
 
-                {/* Filtro de búsqueda inteligente por escenario */}
-                <Grid item xs={12} md={4}>
+                {/* Barra de búsqueda inteligente por nombre, código, municipio o programa */}
+                <Grid item xs={12} md={tipoVista === "escenario" ? 7 : 4}>
                   <TextField
-                    label="Buscar Escenarios de Práctica"
-                    placeholder="Buscar por nombre de escenario..."
+                    label="Buscar"
+                    placeholder="Buscar por nombre, código, municipio o programa..."
                     value={filtroEscenario}
                     onChange={(e) => setFiltroEscenario(e.target.value)}
                     fullWidth
-                    helperText="Busca uno o varios escenarios por nombre"
+                    helperText="Filtra por nombre, código, municipio o programa al que pertenece"
                   />
                 </Grid>
 
@@ -2308,7 +4001,7 @@ const DocenciaServicio = () => {
               >
                 <Button
                   variant="contained"
-                  onClick={toggleAnexoForm}
+                  onClick={() => navigate("/docencia-servicio/formulario-anexo")}
                   sx={{ mb: 2 }}
                 >
                   Añadir Anexo Convenio D.S.
@@ -2324,502 +4017,17 @@ const DocenciaServicio = () => {
                 <Button
                   variant="contained"
                   onClick={() => {
-                    // Reset form data for general document scenario form
-                    setDocEscenarioFormData({
-                      idEscenario: "",
-                      nombreEscenario: "",
-                      url: "",
-                      tipologia: "",
-                      codigo: "",
-                      fechaInicio: "",
-                      fechaFin: "",
-                    });
-                    toggleDocEscenarioForm("general");
+                    setDocEscenarioFormData(initialDocEscenarioState);
+                    navigate("/docencia-servicio/formulario-escenario");
                   }}
                   sx={{ mb: 2 }}
                 >
-                  Añadir documento escenario
+                  Añadir Escenario de Práctica
                 </Button>
               </Box>
             )}
 
-            {(isCargo.includes("Convenio Docencia Servicio") ||
-              isCargo.includes("Sistemas")) &&
-              showAnexoForm && (
-                <Box
-                  component="form"
-                  onSubmit={handleAnexoFormSubmit}
-                  sx={{
-                    marginTop: 2,
-                    maxWidth: "800px",
-                    mx: "auto",
-                    p: 3,
-                    border: "1px solid #ddd",
-                    borderRadius: 2,
-                    backgroundColor: "#f9f9f9",
-                  }}
-                >
-                  <Typography variant="h6" sx={{ mb: 2, textAlign: "center" }}>
-                    Nuevo Anexo Técnico
-                  </Typography>
-
-                  <FormGroup>
-                    {/* Campo de selección de múltiples programas con búsqueda inteligente */}
-                    <Autocomplete
-                      multiple
-                      options={programasData}
-                      getOptionLabel={(option) =>
-                        option["programa académico"] || ""
-                      }
-                      value={anexoFormData.programasSeleccionados}
-                      onChange={handleProgramaChange}
-                      filterOptions={(options, params) => {
-                        const filtered = options.filter(
-                          (option) =>
-                            option["programa académico"] &&
-                            option["programa académico"]
-                              .toLowerCase()
-                              .includes(params.inputValue.toLowerCase()),
-                        );
-                        return filtered;
-                      }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Buscar Programas Académicos"
-                          placeholder="Escribe para buscar y seleccionar múltiples programas académicos..."
-                          margin="normal"
-                          fullWidth
-                          helperText="Puedes seleccionar múltiples programas académicos"
-                        />
-                      )}
-                      renderOption={(props, option, { index }) => (
-                        <Box
-                          component="li"
-                          {...props}
-                          key={`programa-option-${option.id_programa || index}`}
-                        >
-                          <Typography variant="body1">
-                            {option["programa académico"]}
-                          </Typography>
-                        </Box>
-                      )}
-                      noOptionsText="No se encontraron programas"
-                      loadingText="Cargando programas..."
-                      isOptionEqualToValue={(option, value) =>
-                        option.id_programa === value?.id_programa
-                      }
-                    />
-
-                    <FormControl fullWidth margin="normal">
-                      <InputLabel id="escenarios-label">
-                        Escenarios de Práctica
-                      </InputLabel>
-                      <Select
-                        labelId="escenarios-label"
-                        id="escenarios-select"
-                        name="idEscenario"
-                        value={anexoFormData.idEscenario}
-                        onChange={handleAnexoInputChange}
-                        label="Escenarios de Práctica"
-                      >
-                        {data && Array.isArray(data)
-                          ? data.map((item) => (
-                              <MenuItem key={item.id} value={item.id}>
-                                {item.nombre}
-                              </MenuItem>
-                            ))
-                          : []}
-                      </Select>
-                    </FormControl>
-
-                    <TextField
-                      label="URL del Documento"
-                      name="urlAnexo"
-                      value={anexoFormData.urlAnexo}
-                      onChange={handleAnexoInputChange}
-                      margin="normal"
-                      fullWidth
-                      placeholder="https://drive.google.com/..."
-                      helperText="URL donde se encuentra almacenado el documento"
-                    />
-
-                    <Typography
-                      variant="body2"
-                      sx={{ my: 1, textAlign: "center" }}
-                    >
-                      O
-                    </Typography>
-
-                    <Button variant="outlined" component="label" fullWidth>
-                      Seleccionar Archivo Local
-                      <input
-                        type="file"
-                        hidden
-                        onChange={handleAnexoInputChange}
-                        name="localFile"
-                      />
-                    </Button>
-                    {anexoFormData.localFile && (
-                      <Typography variant="body2" sx={{ mt: 1 }}>
-                        Archivo seleccionado: {anexoFormData.localFile.name}
-                      </Typography>
-                    )}
-
-                    <FormControl fullWidth margin="normal" required>
-                      <InputLabel id="tipo-label">Tipo</InputLabel>
-                      <Select
-                        labelId="tipo-label"
-                        name="tipo"
-                        value={anexoFormData.tipo}
-                        onChange={handleAnexoInputChange}
-                        label="Tipo"
-                        required
-                      >
-                        <MenuItem value="C.D.S. Clinicos">
-                          C.D.S. Clinicos
-                        </MenuItem>
-                        <MenuItem value="C.D.S. No clinicos">
-                          C.D.S. No clinicos
-                        </MenuItem>
-                        <MenuItem value="C. Integración de propiedad">
-                          C. Integración de propiedad
-                        </MenuItem>
-                        {/*<MenuItem value="C. Interinstitucionales">C. Interinstitucionales</MenuItem>*/}
-                        {/*<MenuItem value="C. Cooperación Académica">C. Cooperación Académica</MenuItem>*/}
-                        {/*<MenuItem value="OtroSi">Otro Si</MenuItem>*/}
-                        {/*<MenuItem value="Otros Anexos Técnicos">Otros Anexos Técnicos</MenuItem>*/}
-                      </Select>
-                    </FormControl>
-
-                    <Box sx={{ display: "flex", gap: 2, marginTop: 2 }}>
-                      <TextField
-                        label="Vigencia Desde"
-                        name="vigenciaDesde"
-                        type="date"
-                        value={anexoFormData.vigenciaDesde}
-                        onChange={handleAnexoInputChange}
-                        InputLabelProps={{
-                          shrink: true,
-                        }}
-                        fullWidth
-                        required
-                      />
-                      <TextField
-                        label="Vigencia Hasta"
-                        name="vigenciaHasta"
-                        type="date"
-                        value={anexoFormData.vigenciaHasta}
-                        onChange={handleAnexoInputChange}
-                        InputLabelProps={{
-                          shrink: true,
-                        }}
-                        fullWidth
-                        required
-                      />
-                    </Box>
-
-                    <Box sx={{ display: "flex", gap: 2, marginTop: 2 }}>
-                      <TextField
-                        label="Versión"
-                        name="version"
-                        type="number"
-                        value={anexoFormData.version}
-                        onChange={handleAnexoInputChange}
-                        required
-                        sx={{ width: "50%" }}
-                        inputProps={{ min: 1, step: 1 }}
-                      />
-                      <TextField
-                        label="Cierre (Opcional)"
-                        placeholder="Este campo es opcional"
-                        name="cierre"
-                        value={anexoFormData.cierre}
-                        onChange={handleAnexoInputChange}
-                        sx={{ width: "50%" }}
-                      />
-                    </Box>
-
-                    <FormGroup sx={{ marginTop: 2 }}>
-                      <FormLabel component="legend">Estado</FormLabel>
-                      <RadioGroup
-                        name="estadoAnexo"
-                        value={anexoFormData.estadoAnexo}
-                        onChange={handleAnexoInputChange}
-                        sx={{ display: "flex", flexDirection: "row" }}
-                      >
-                        <FormControlLabel
-                          value="Pendiente"
-                          control={<Radio />}
-                          label="Pendiente"
-                        />
-                        <FormControlLabel
-                          value="En proceso"
-                          control={<Radio />}
-                          label="En proceso"
-                        />
-                        <FormControlLabel
-                          value="Listo"
-                          control={<Radio />}
-                          label="Listo"
-                        />
-                        <FormControlLabel
-                          value="Inactivo"
-                          control={<Radio />}
-                          label="Inactivo"
-                        />
-                      </RadioGroup>
-                    </FormGroup>
-
-                    {anexoFormData.estadoAnexo === "Inactivo" && (
-                      <TextField
-                        label="Observaciones"
-                        name="observaciones"
-                        value={anexoFormData.observaciones}
-                        onChange={handleAnexoInputChange}
-                        margin="normal"
-                        multiline
-                        rows={3}
-                        fullWidth
-                      />
-                    )}
-
-                    {/* ── Sección de Planes de Práctica Formativa ── */}
-                    <Box sx={{ mt: 3 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          mb: 1.5,
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 700, color: "#888787ff" }}
-                        >
-                          Planes Generales de Práctica Formativa
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={addPlan}
-                          sx={{
-                            backgroundColor: "#2e7d32",
-                            "&:hover": { backgroundColor: "#1b5e20" },
-                            textTransform: "none",
-                            fontWeight: 600,
-                          }}
-                        >
-                          + Añadir Plan
-                        </Button>
-                      </Box>
-
-                      {anexoFormData.planes.length === 0 && (
-                        <Box
-                          sx={{
-                            p: 2,
-                            border: "2px dashed #c8e6c9",
-                            borderRadius: 2,
-                            textAlign: "center",
-                            color: "#888",
-                          }}
-                        >
-                          <Typography variant="body2">
-                            Haz clic en <strong>+ Añadir Plan</strong> para
-                            registrar el plan de práctica formativa con
-                            horarios.
-                          </Typography>
-                        </Box>
-                      )}
-
-                      {anexoFormData.planes.map((plan, planIdx) => (
-                        <PlanHorarioForm
-                          key={plan.id}
-                          plan={plan}
-                          planIdx={planIdx}
-                        />
-                      ))}
-
-                      {/* Resumen global si hay más de un plan */}
-                      {anexoFormData.planes.length > 1 &&
-                        (() => {
-                          const totalHSemana = anexoFormData.planes.reduce(
-                            (sum, p) => sum + calcularHorasSemana(p.grid),
-                            0,
-                          );
-                          return (
-                            <Box
-                              sx={{
-                                p: 1.5,
-                                background: "#e8f5e9",
-                                borderRadius: 1,
-                                textAlign: "center",
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-                                color="#2e7d32"
-                                fontWeight={700}
-                              >
-                                Total acumulado todos los planes:{" "}
-                                <strong>{totalHSemana} h/semana</strong>
-                              </Typography>
-                            </Box>
-                          );
-                        })()}
-                    </Box>
-                  </FormGroup>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 2,
-                      justifyContent: "center",
-                      marginTop: 3,
-                    }}
-                  >
-                    <Button type="submit" variant="contained" color="primary">
-                      Guardar Anexo
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      onClick={toggleAnexoForm}
-                    >
-                      Cancelar
-                    </Button>
-                  </Box>
-                </Box>
-              )}
-
-            {/* Formulario para documentos de escenario - Formulario general */}
-            {(isCargo.includes("Convenio Docencia Servicio") ||
-              isCargo.includes("Sistemas")) &&
-              showDocEscenarioForm === "general" && (
-                <Box
-                  component="form"
-                  onSubmit={handleDocEscenarioFormSubmit}
-                  sx={{
-                    marginTop: 2,
-                    marginBottom: 3,
-                    maxWidth: "800px",
-                    mx: "auto",
-                    p: 3,
-                    border: "1px solid #ddd",
-                    borderRadius: 2,
-                    backgroundColor: "#f0f8ff",
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{ mb: 2, textAlign: "center", color: "#1976d2" }}
-                  >
-                    Nuevo Documento de Escenario
-                  </Typography>
-
-                  <FormGroup>
-                    {/* Campo de selección de escenario de práctica */}
-                    <FormControl fullWidth margin="normal" required>
-                      <InputLabel id="doc-escenario-general-label">
-                        Escenario de Práctica
-                      </InputLabel>
-                      <Select
-                        labelId="doc-escenario-general-label"
-                        name="idEscenario"
-                        value={docEscenarioFormData.idEscenario}
-                        onChange={handleDocEscenarioInputChange}
-                        required
-                        label="Escenario de Práctica"
-                      >
-                        {data && Array.isArray(data)
-                          ? data.map((escenario) => (
-                              <MenuItem key={escenario.id} value={escenario.id}>
-                                {escenario.nombre}
-                              </MenuItem>
-                            ))
-                          : []}
-                      </Select>
-                    </FormControl>
-
-                    <TextField
-                      label="URL del Documento"
-                      name="url"
-                      value={docEscenarioFormData.url}
-                      onChange={handleDocEscenarioInputChange}
-                      margin="normal"
-                      fullWidth
-                      required
-                      placeholder="https://ejemplo.com/documento.pdf"
-                    />
-
-                    <TextField
-                      label="Tipología"
-                      name="tipologia"
-                      value={docEscenarioFormData.tipologia}
-                      onChange={handleDocEscenarioInputChange}
-                      margin="normal"
-                      fullWidth
-                      placeholder="Ej: Convenio, Anexo, etc."
-                    />
-
-                    <TextField
-                      label="Código"
-                      name="codigo"
-                      value={docEscenarioFormData.codigo}
-                      onChange={handleDocEscenarioInputChange}
-                      margin="normal"
-                      fullWidth
-                      placeholder="Código del documento"
-                    />
-
-                    <Box sx={{ display: "flex", gap: 2, marginTop: 2 }}>
-                      <TextField
-                        label="Fecha de Inicio"
-                        name="fechaInicio"
-                        type="date"
-                        value={docEscenarioFormData.fechaInicio}
-                        onChange={handleDocEscenarioInputChange}
-                        InputLabelProps={{
-                          shrink: true,
-                        }}
-                        fullWidth
-                      />
-                      <TextField
-                        label="Fecha de Fin"
-                        name="fechaFin"
-                        type="date"
-                        value={docEscenarioFormData.fechaFin}
-                        onChange={handleDocEscenarioInputChange}
-                        InputLabelProps={{
-                          shrink: true,
-                        }}
-                        fullWidth
-                      />
-                    </Box>
-                  </FormGroup>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 2,
-                      justifyContent: "center",
-                      marginTop: 3,
-                    }}
-                  >
-                    <Button type="submit" variant="contained" color="primary">
-                      Guardar Documento
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      onClick={() => toggleDocEscenarioForm("general")}
-                    >
-                      Cancelar
-                    </Button>
-                  </Box>
-                </Box>
-              )}
+            {/* Los formularios ahora se muestran en vistas separadas */}
           </Box>
 
           {loading ? (
@@ -2872,8 +4080,22 @@ const DocenciaServicio = () => {
                       datosEscenario.totalItems ||
                       totalAnexosTecnicos + totalDocEscenarios;
 
-                    // Generar texto del botón con información de vigencia
+                    // Obtener municipio del escenario
+                    const municipioTexto =
+                      escenarioInfo?.municipio ||
+                      escenariosData?.find(
+                        (esc) =>
+                          esc.nombre &&
+                          esc.nombre.trim().toLowerCase() ===
+                            nombreEscenario.trim().toLowerCase(),
+                      )?.municipio ||
+                      "";
+
+                    // Generar texto del botón con nombre, municipio, anexos y vigencia
                     let buttonText = `${nombreEscenario}`;
+                    if (municipioTexto) {
+                      buttonText += ` - ${municipioTexto}`;
+                    }
                     if (totalItems > 0) {
                       const partesDocs = [];
                       if (totalAnexosTecnicos > 0) {
@@ -2961,245 +4183,282 @@ const DocenciaServicio = () => {
                                 </Box>
                               )}
 
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  mb: 2,
-                                }}
-                              >
-                                <Typography variant="h6" sx={{ color: "#666" }}>
-                                  Documentos - {nombreEscenario}
-                                </Typography>
-                              </Box>
+                              {/* Información adicional del Escenario si existe */}
+                              {(() => {
+                                const infoEsc =
+                                  escenarioInfo ||
+                                  escenariosData?.find(
+                                    (esc) =>
+                                      esc.nombre &&
+                                      esc.nombre.trim().toLowerCase() ===
+                                        nombreEscenario.trim().toLowerCase(),
+                                  ) ||
+                                  {};
 
-                              {/* Formulario para documentos de escenario - Aparece aquí cerca del botón */}
-                              {(isCargo.includes(
-                                "Convenio Docencia Servicio",
-                              ) ||
-                                isCargo.includes("Sistemas")) &&
-                                showDocEscenarioForm === nombreEscenario && (
+                                const tieneDetalles = Boolean(
+                                  infoEsc &&
+                                    (infoEsc.codigo ||
+                                      infoEsc.tipologia ||
+                                      infoEsc.tipo_convenio ||
+                                      infoEsc.nombre_sede ||
+                                      infoEsc.numero_sede ||
+                                      infoEsc.departamento ||
+                                      infoEsc.municipio ||
+                                      infoEsc.direccion ||
+                                      infoEsc.nit ||
+                                      infoEsc.telefono ||
+                                      infoEsc.correo ||
+                                      infoEsc.contacto ||
+                                      infoEsc.documento ||
+                                      infoEsc.firma_convenio ||
+                                      infoEsc.fecha_inicio ||
+                                      infoEsc.fecha_fin ||
+                                      infoEsc.otros_si ||
+                                      infoEsc.anexo_tecnico),
+                                );
+
+                                if (!tieneDetalles) return null;
+
+                                return (
                                   <Box
-                                    component="form"
-                                    onSubmit={handleDocEscenarioFormSubmit}
                                     sx={{
-                                      marginTop: 2,
-                                      marginBottom: 3,
-                                      maxWidth: "800px",
-                                      mx: "auto",
-                                      p: 3,
-                                      border: "1px solid #ddd",
-                                      borderRadius: 2,
-                                      backgroundColor: "#f0f8ff",
+                                      mb: 2,
+                                      p: 2,
+                                      backgroundColor: "#f9fafb",
+                                      border: "1px solid #e5e7eb",
+                                      borderRadius: 1.5,
                                     }}
                                   >
                                     <Typography
-                                      variant="h6"
+                                      variant="subtitle2"
                                       sx={{
-                                        mb: 2,
-                                        textAlign: "center",
-                                        color: "#1976d2",
+                                        fontWeight: 700,
+                                        color: "#1e3a8a",
+                                        mb: 1.5,
                                       }}
                                     >
-                                      Nuevo Documento de Escenario:{" "}
-                                      {docEscenarioFormData.nombreEscenario}
+                                      Detalles del Escenario
                                     </Typography>
-
-                                    <FormGroup>
-                                      {/* Campo de selección de escenario de práctica (modificable) */}
-                                      <FormControl
-                                        fullWidth
-                                        margin="normal"
-                                        required
-                                      >
-                                        <InputLabel id="doc-escenario-label">
-                                          Escenario de Práctica
-                                        </InputLabel>
-                                        <Select
-                                          labelId="doc-escenario-label"
-                                          name="idEscenario"
-                                          value={
-                                            docEscenarioFormData.idEscenario
-                                          }
-                                          onChange={
-                                            handleDocEscenarioInputChange
-                                          }
-                                          required
-                                          label="Escenario de Práctica"
-                                        >
-                                          {escenariosData &&
-                                          Array.isArray(escenariosData)
-                                            ? escenariosData.map(
-                                                (escenario) => (
-                                                  <MenuItem
-                                                    key={escenario.id}
-                                                    value={escenario.id}
-                                                  >
-                                                    {escenario.nombre}
-                                                  </MenuItem>
-                                                ),
-                                              )
-                                            : []}
-                                        </Select>
-                                      </FormControl>
-
-                                      {/* Campos editables con placeholders pre-llenados desde ESC_PRACTICA */}
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          gap: 2,
-                                          marginTop: 2,
-                                        }}
-                                      >
-                                        <Autocomplete
-                                          freeSolo
-                                          options={uniqueTipologias}
-                                          value={docEscenarioFormData.tipologia}
-                                          onInputChange={(
-                                            event,
-                                            newInputValue,
-                                          ) => {
-                                            setDocEscenarioFormData({
-                                              ...docEscenarioFormData,
-                                              tipologia: newInputValue,
-                                            });
-                                          }}
-                                          renderInput={(params) => (
-                                            <TextField
-                                              {...params}
-                                              label="Tipología"
-                                              required
-                                              fullWidth
-                                              helperText="Seleccione una existente o escriba una nueva"
-                                            />
-                                          )}
-                                          sx={{ width: "50%" }}
-                                        />
-                                        <TextField
-                                          label="Código"
-                                          name="codigo"
-                                          type="number"
-                                          value={docEscenarioFormData.codigo}
-                                          onChange={
-                                            handleDocEscenarioInputChange
-                                          }
-                                          required
-                                          placeholder="Código del escenario"
-                                          sx={{ width: "50%" }}
-                                        />
-                                      </Box>
-
-                                      <TextField
-                                        label="URL del Documento"
-                                        name="url"
-                                        value={docEscenarioFormData.url}
-                                        onChange={handleDocEscenarioInputChange}
-                                        margin="normal"
-                                        fullWidth
-                                        placeholder="https://drive.google.com/..."
-                                        helperText="URL donde se encuentra almacenado el documento"
-                                      />
-
-                                      <Typography
-                                        variant="body2"
-                                        sx={{ my: 1, textAlign: "center" }}
-                                      >
-                                        O
-                                      </Typography>
-
-                                      <Button
-                                        variant="outlined"
-                                        component="label"
-                                        fullWidth
-                                      >
-                                        Seleccionar Archivo Local
-                                        <input
-                                          type="file"
-                                          hidden
-                                          onChange={
-                                            handleDocEscenarioInputChange
-                                          }
-                                          name="localFile"
-                                        />
-                                      </Button>
-                                      {docEscenarioFormData.localFile && (
-                                        <Typography
-                                          variant="body2"
-                                          sx={{ mt: 1 }}
-                                        >
-                                          Archivo seleccionado:{" "}
-                                          {docEscenarioFormData.localFile.name}
-                                        </Typography>
+                                    <Grid container spacing={1.5}>
+                                      {infoEsc.codigo && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Código:</strong>{" "}
+                                            {infoEsc.codigo}
+                                          </Typography>
+                                        </Grid>
                                       )}
-
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          gap: 2,
-                                          marginTop: 2,
-                                        }}
-                                      >
-                                        <TextField
-                                          label="Fecha de Inicio"
-                                          name="fechaInicio"
-                                          type="date"
-                                          value={
-                                            docEscenarioFormData.fechaInicio
-                                          }
-                                          onChange={
-                                            handleDocEscenarioInputChange
-                                          }
-                                          InputLabelProps={{
-                                            shrink: true,
-                                          }}
-                                          fullWidth
-                                          required
-                                        />
-                                        <TextField
-                                          label="Fecha de Fin"
-                                          name="fechaFin"
-                                          type="date"
-                                          value={docEscenarioFormData.fechaFin}
-                                          onChange={
-                                            handleDocEscenarioInputChange
-                                          }
-                                          InputLabelProps={{
-                                            shrink: true,
-                                          }}
-                                          fullWidth
-                                          required
-                                        />
-                                      </Box>
-                                    </FormGroup>
-
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        gap: 2,
-                                        justifyContent: "center",
-                                        marginTop: 3,
-                                      }}
-                                    >
-                                      <Button
-                                        type="submit"
-                                        variant="contained"
-                                        color="primary"
-                                      >
-                                        Guardar Documento
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="outlined"
-                                        onClick={() =>
-                                          toggleDocEscenarioForm(null)
-                                        }
-                                      >
-                                        Cancelar
-                                      </Button>
-                                    </Box>
+                                      {infoEsc.tipologia && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Tipología:</strong>{" "}
+                                            {infoEsc.tipologia}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.tipo_convenio && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Tipo Convenio:</strong>{" "}
+                                            {infoEsc.tipo_convenio}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.nombre_sede && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Nombre de Sede:</strong>{" "}
+                                            {infoEsc.nombre_sede}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.numero_sede && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Número de Sede:</strong>{" "}
+                                            {infoEsc.numero_sede}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.departamento && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Departamento:</strong>{" "}
+                                            {infoEsc.departamento}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.municipio && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Municipio:</strong>{" "}
+                                            {infoEsc.municipio}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.direccion && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Dirección:</strong>{" "}
+                                            {infoEsc.direccion}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.nit && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>NIT:</strong> {infoEsc.nit}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.telefono && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Teléfono:</strong>{" "}
+                                            {infoEsc.telefono}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.correo && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Correo:</strong>{" "}
+                                            {infoEsc.correo}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.contacto && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Contacto:</strong>{" "}
+                                            {infoEsc.contacto}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.documento && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Documento:</strong>{" "}
+                                            {infoEsc.documento}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.firma_convenio && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Firma Convenio:</strong>{" "}
+                                            {infoEsc.firma_convenio}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.fecha_inicio && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Fecha de Inicio:</strong>{" "}
+                                            {infoEsc.fecha_inicio}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.fecha_fin && (
+                                        <Grid item xs={12} sm={6} md={4}>
+                                          <Typography variant="body2">
+                                            <strong>Fecha de Fin:</strong>{" "}
+                                            {infoEsc.fecha_fin}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.otros_si && (
+                                        <Grid item xs={12} sm={6}>
+                                          <Typography variant="body2">
+                                            <strong>Otrosí:</strong>{" "}
+                                            {infoEsc.otros_si}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                      {infoEsc.anexo_tecnico && (
+                                        <Grid item xs={12} sm={6}>
+                                          <Typography variant="body2">
+                                            <strong>Anexo Técnico:</strong>{" "}
+                                            {infoEsc.anexo_tecnico}
+                                          </Typography>
+                                        </Grid>
+                                      )}
+                                    </Grid>
                                   </Box>
-                                )}
+                                );
+                              })()}
+
+                              {/* Botón para editar / completar datos del escenario */}
+                              {(isCargo.includes(
+                                "Convenio Docencia Servicio",
+                              ) ||
+                                isCargo.includes("Sistemas")) && (
+                                <Box
+                                  sx={{
+                                    my: 2,
+                                    display: "flex",
+                                    justifyContent: "flex-end",
+                                  }}
+                                >
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => {
+                                      const matching =
+                                        escenarioInfo ||
+                                        escenariosData?.find(
+                                          (e) => e.nombre === nombreEscenario,
+                                        ) ||
+                                        {};
+                                      const formData = {
+                                        idEscenario: matching.id || "",
+                                        nombreEscenario: nombreEscenario,
+                                        tipologia: matching.tipologia || "",
+                                        codigo: matching.codigo || "",
+                                        fechaInicio:
+                                          convertirFechaParaInput(
+                                            matching.fecha_inicio,
+                                          ) || "",
+                                        fechaFin:
+                                          convertirFechaParaInput(
+                                            matching.fecha_fin,
+                                          ) || "",
+                                        url: "",
+                                        localFile: null,
+                                        nombre_sede: matching.nombre_sede || "",
+                                        numero_sede: matching.numero_sede || "",
+                                        departamento:
+                                          matching.departamento || "",
+                                        municipio: matching.municipio || "",
+                                        direccion: matching.direccion || "",
+                                        nit: matching.nit || "",
+                                        telefono: matching.telefono || "",
+                                        correo: matching.correo || "",
+                                        contacto: matching.contacto || "",
+                                        documento: matching.documento || "",
+                                        tipo_convenio:
+                                          matching.tipo_convenio || "",
+                                        firma_convenio:
+                                          convertirFechaParaInput(
+                                            matching.firma_convenio,
+                                          ) ||
+                                          matching.firma_convenio ||
+                                          "",
+                                        otros_si: matching.otros_si || "",
+                                        anexo_tecnico:
+                                          matching.anexo_tecnico || "",
+                                      };
+                                      setDocEscenarioFormData(formData);
+                                      navigate(
+                                        "/docencia-servicio/formulario-escenario",
+                                        { state: { escenario: formData } },
+                                      );
+                                    }}
+                                  >
+                                    Editar / Añadir Datos del Escenario
+                                  </Button>
+                                </Box>
+                              )}
 
                               <AnexosEscenarioTable
                                 datos={datosEscenario}
@@ -3402,6 +4661,8 @@ const DocenciaServicio = () => {
                     los filtros aplicados.
                   </Typography>
                 )}
+            </>
+          )}
             </>
           )}
         </Box>
