@@ -2846,7 +2846,7 @@ const DocenciaServicio = () => {
                       <Grid container spacing={2} sx={{ mb: 2 }}>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="II. Resp. Docencia-Servicio IES - Nombre"
+                            label="Nombre"
                             name="ds_ies_nombre"
                             value={anexoFormData.ds_ies_nombre}
                             onChange={handleAnexoInputChange}
@@ -2857,7 +2857,7 @@ const DocenciaServicio = () => {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="II. Resp. Docencia-Servicio IES - Cargo"
+                            label="Cargo"
                             name="ds_ies_cargo"
                             value={anexoFormData.ds_ies_cargo}
                             onChange={handleAnexoInputChange}
@@ -2868,7 +2868,7 @@ const DocenciaServicio = () => {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="II. Resp. Docencia-Servicio IES - Teléfono"
+                            label="Teléfono"
                             name="ds_ies_telefono"
                             value={anexoFormData.ds_ies_telefono}
                             onChange={handleAnexoInputChange}
@@ -2879,7 +2879,7 @@ const DocenciaServicio = () => {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="II. Resp. Docencia-Servicio IES - Correo"
+                            label="Correo"
                             name="ds_ies_correo"
                             type="email"
                             value={anexoFormData.ds_ies_correo}
@@ -2925,7 +2925,7 @@ const DocenciaServicio = () => {
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="III. Resp. Coordinación práctica Nombre"
+                            label="Nombre"
                             name="coordinacion_nombre"
                             value={anexoFormData.coordinacion_nombre}
                             onChange={handleAnexoInputChange}
@@ -2936,7 +2936,7 @@ const DocenciaServicio = () => {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="III. Resp. Coordinación práctica Cargo"
+                            label="Cargo"
                             name="coordinacion_cargo"
                             value={anexoFormData.coordinacion_cargo}
                             onChange={handleAnexoInputChange}
@@ -2947,7 +2947,7 @@ const DocenciaServicio = () => {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="III. Resp. Coordinación práctica Teléfono"
+                            label="Teléfono"
                             name="coordinacion_telefono"
                             value={anexoFormData.coordinacion_telefono}
                             onChange={handleAnexoInputChange}
@@ -2958,7 +2958,7 @@ const DocenciaServicio = () => {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="III. Resp. Coordinación práctica Correo"
+                            label="Correo"
                             name="coordinacion_correo"
                             type="email"
                             value={anexoFormData.coordinacion_correo}
@@ -3819,30 +3819,23 @@ const DocenciaServicio = () => {
                 Filtros de Visualización
               </Typography>
 
-              <Grid container spacing={3} alignItems="center">
+              <Grid container spacing={2} alignItems="center">
                 {/* Selector de tipo de vista con 3 botones */}
                 <Grid item xs={12} md={tipoVista === "escenario" ? 5 : 4}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 600,
-                      color: "#666",
-                      display: "block",
-                      mb: 0.75,
-                    }}
-                  >
-                    Agrupar por:
-                  </Typography>
                   <ButtonGroup
                     fullWidth
                     variant="outlined"
+                    size="small"
                     sx={{
+                      height: "40px",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
                       "& .MuiButton-root": {
-                        py: 1,
+                        height: "100%",
+                        py: 0,
                         textTransform: "none",
                         fontWeight: 600,
                         fontSize: "0.85rem",
+                        whiteSpace: "nowrap",
                       },
                     }}
                   >
@@ -3879,12 +3872,17 @@ const DocenciaServicio = () => {
                 {/* Barra de búsqueda inteligente por nombre, código, municipio o programa */}
                 <Grid item xs={12} md={tipoVista === "escenario" ? 7 : 4}>
                   <TextField
+                    size="small"
                     label="Buscar"
                     placeholder="Buscar por nombre, código, municipio o programa..."
                     value={filtroEscenario}
                     onChange={(e) => setFiltroEscenario(e.target.value)}
                     fullWidth
-                    helperText="Filtra por nombre, código, municipio o programa al que pertenece"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        height: "40px",
+                      },
+                    }}
                   />
                 </Grid>
 
@@ -3892,6 +3890,7 @@ const DocenciaServicio = () => {
                 {tipoVista === "escuela" && (
                   <Grid item xs={12} md={4}>
                     <Autocomplete
+                      size="small"
                       options={["", ...escuelasUnicas]} // Incluir opción vacía para "Todas las escuelas"
                       getOptionLabel={(option) =>
                         option === "" ? "Todas las escuelas" : option
@@ -3914,9 +3913,15 @@ const DocenciaServicio = () => {
                       renderInput={(params) => (
                         <TextField
                           {...params}
+                          size="small"
                           label="Filtrar por Escuela"
                           placeholder="Buscar escuela..."
                           fullWidth
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              height: "40px",
+                            },
+                          }}
                         />
                       )}
                       renderOption={(props, option, { index }) => (
@@ -3940,6 +3945,7 @@ const DocenciaServicio = () => {
                 {tipoVista === "programa" && (
                   <Grid item xs={12} md={4}>
                     <Autocomplete
+                      size="small"
                       options={["", ...programasUnicos]} // Incluir opción vacía para "Todos los programas"
                       getOptionLabel={(option) =>
                         option === "" ? "Todos los programas" : option
@@ -3962,9 +3968,15 @@ const DocenciaServicio = () => {
                       renderInput={(params) => (
                         <TextField
                           {...params}
+                          size="small"
                           label="Filtrar por Programa"
                           placeholder="Buscar programa académico..."
                           fullWidth
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              height: "40px",
+                            },
+                          }}
                         />
                       )}
                       renderOption={(props, option, { index }) => (
