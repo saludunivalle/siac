@@ -64,8 +64,12 @@ const getProgramField = (programa, ...names) => {
 
 const getPeriodCount = (periodicidad, duracion) => {
   const amount = getNumber(duracion);
-  if (amount > 0) return amount;
-  return 10;
+  const durationIsSemesters = /sem/i.test(String(duracion));
+  const isAnnual = /anual/i.test(String(periodicidad));
+
+  if (durationIsSemesters && isAnnual) return Math.ceil(amount / 2);
+  if (!durationIsSemesters && !isAnnual) return amount * 2;
+  return amount || 1;
 };
 
 const getPeriodWeeks = (periodicidad, duracion) => {
@@ -273,7 +277,8 @@ export default function ModalAsignaturas({
 
         practicasDelProg.forEach((p) => {
           const nombreAsig = getSubjectName(p);
-          const periodoNum = parsePeriodoToNumber(getPeriodoRaw(p));
+          const rawPeriodo = getPeriodoRaw(p);
+          const periodoNum = parsePeriodoToNumber(rawPeriodo);
           if (!nombreAsig || !periodoNum) return;
 
           const dedupeKey = `${periodoNum}___${nombreAsig.toLowerCase()}`;
@@ -293,6 +298,7 @@ export default function ModalAsignaturas({
               id: "", // lista para ser guardada
               id_programa: idPrograma,
               numero_periodo: periodoNum,
+              periodoRaw: String(rawPeriodo).trim().toUpperCase(),
               nombre_asignatura: nombreAsig,
               numero_semanas: semanasPeriodo,
               fromPracticas: true,
@@ -321,14 +327,37 @@ export default function ModalAsignaturas({
     return Array.from(set).sort((a, b) => a - b);
   }, [rows]);
 
-  // Lista de períodos a mostrar en las pestañas
+  // Mapa de cómo venía originalmente el período en la hoja PRACTICAS (ej. 6 -> "VI")
+  const periodosRawMap = useMemo(() => {
+    const map = {};
+    rows.forEach((r) => {
+      if (r.numero_periodo && r.periodoRaw) {
+        map[Number(r.numero_periodo)] = r.periodoRaw;
+      }
+    });
+    return map;
+  }, [rows]);
+
+  const getPeriodoDisplay = (period) => {
+    const num = Number(period);
+    if (periodosRawMap[num]) return periodosRawMap[num];
+    const hayRomanos = Object.values(periodosRawMap).some((v) =>
+      /^[IVXLCDM]+$/i.test(String(v).trim()),
+    );
+    if (hayRomanos && ROMAN_MAP[num]) {
+      return ROMAN_MAP[num];
+    }
+    return String(period);
+  };
+
+  // Lista de años a mostrar en las pestañas:
+  // Si no tenemos datos de asignaturas en PRACTICAS, se dejan la cantidad de períodos (pestañas) que se calculaban de la anterior manera: totalPeriodos
   const periodosTabs = useMemo(() => {
-    if (mostrarTodos || periodosConAsignaturas.length === 0) {
-      const maxPeriod = Math.max(
-        totalPeriodos || 10,
-        ...periodosConAsignaturas,
-        10,
-      );
+    if (periodosConAsignaturas.length === 0) {
+      return Array.from({ length: totalPeriodos || 1 }, (_, i) => i + 1);
+    }
+    if (mostrarTodos) {
+      const maxPeriod = Math.max(totalPeriodos || 1, ...periodosConAsignaturas);
       return Array.from({ length: maxPeriod }, (_, i) => i + 1);
     }
     return periodosConAsignaturas;
@@ -380,7 +409,7 @@ export default function ModalAsignaturas({
     }
     setSaving(true);
     try {
-      const maxP = Math.max(totalPeriodos || 10, ...periodosConAsignaturas);
+      const maxP = Math.max(totalPeriodos || 1, ...periodosConAsignaturas);
       const insertData = validRows.map((row) => [
         row.id ||
           `${idPrograma}-${row.numero_periodo}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -389,7 +418,7 @@ export default function ModalAsignaturas({
         duracion,
         maxP,
         Number(row.numero_periodo),
-        `Periodo ${toRoman(row.numero_periodo)}`,
+        `Año ${getPeriodoDisplay(row.numero_periodo)}`,
         semanasPeriodo,
         row.nombre_asignatura.trim(),
         Number(row.numero_semanas),
@@ -427,15 +456,15 @@ export default function ModalAsignaturas({
             Duración: <strong>{duracion || "-"}</strong>
           </Typography>
           <Typography variant="body2">
-            Períodos con prácticas:{" "}
+            Años con prácticas:{" "}
             <strong>
               {periodosConAsignaturas.length > 0
-                ? periodosConAsignaturas.map((p) => toRoman(p)).join(", ")
-                : "Sin prácticas"}
+                ? periodosConAsignaturas.map((p) => getPeriodoDisplay(p)).join(", ")
+                : "Sin prácticas registradas"}
             </strong>
           </Typography>
           <Typography variant="body2">
-            Semanas por período: <strong>{semanasPeriodo}</strong>
+            Semanas por año: <strong>{semanasPeriodo}</strong>
           </Typography>
         </Stack>
 
@@ -450,7 +479,7 @@ export default function ModalAsignaturas({
                 .filter((r) => r.fromPracticas)
                 .map((r) => (
                   <li key={r.localId}>
-                    <strong>Periodo {toRoman(r.numero_periodo)}:</strong> {r.nombre_asignatura} ({r.numero_semanas} semanas)
+                    <strong>Año {getPeriodoDisplay(r.numero_periodo)}:</strong> {r.nombre_asignatura} ({r.numero_semanas} semanas)
                   </li>
                 ))}
             </Box>
@@ -470,8 +499,8 @@ export default function ModalAsignaturas({
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
               <Typography variant="subtitle2" sx={{ color: "text.secondary", fontWeight: 600 }}>
                 {mostrarTodos
-                  ? `Mostrando todos los períodos (1 a ${periodosTabs.length})`
-                  : `Mostrando períodos con prácticas (${periodosTabs.map((p) => toRoman(p)).join(", ")})`}
+                  ? `Mostrando todos los años (1 a ${periodosTabs.length})`
+                  : `Mostrando años con prácticas (${periodosTabs.map((p) => getPeriodoDisplay(p)).join(", ")})`}
               </Typography>
               {periodosConAsignaturas.length > 0 && (
                 <Button
@@ -485,7 +514,7 @@ export default function ModalAsignaturas({
                 >
                   {mostrarTodos
                     ? `Ver solo con prácticas (${periodosConAsignaturas.length})`
-                    : `Ver todos los períodos`}
+                    : `Ver todos los años (${totalPeriodos || periodosTabs.length})`}
                 </Button>
               )}
             </Box>
@@ -499,10 +528,11 @@ export default function ModalAsignaturas({
             >
               {periodosTabs.map((period, index) => {
                 const count = rowsForPeriod(period).length;
+                const labelPeriodo = getPeriodoDisplay(period);
                 return (
                   <Tab
                     key={period}
-                    label={`Periodo ${toRoman(period)}${count > 0 ? ` (${count})` : ""}`}
+                    label={`Año ${labelPeriodo}${count > 0 ? ` (${count})` : ""}`}
                     sx={{
                       fontWeight: count > 0 ? 700 : 500,
                       color: count > 0 ? "#2e7d32" : "inherit",
@@ -516,6 +546,7 @@ export default function ModalAsignaturas({
               const period = periodoActualNum;
               const periodRows = rowsForPeriod(period);
               const tieneAsignaturas = periodRows.length > 0;
+              const labelActual = getPeriodoDisplay(period);
               return (
                 <Box
                   sx={{
@@ -536,7 +567,7 @@ export default function ModalAsignaturas({
                     }}
                   >
                     <Typography sx={{ fontWeight: 700, color: "#1b5e20" }}>
-                      Periodo {toRoman(period)} (Semestre {period}): {semanasPeriodo} semanas
+                      Año {labelActual}: {semanasPeriodo} semanas
                     </Typography>
                     {tieneAsignaturas ? (
                       <Chip
@@ -556,7 +587,7 @@ export default function ModalAsignaturas({
                       variant="subtitle2"
                       sx={{ mb: 1.5, fontWeight: 700, color: "#37474f" }}
                     >
-                      Prácticas Formativas o Rotaciones del Período {toRoman(period)}
+                      Prácticas Formativas o Rotaciones del Año {labelActual}
                     </Typography>
                     {periodRows.map((row) => (
                       <Stack
@@ -626,7 +657,7 @@ export default function ModalAsignaturas({
                       onClick={() => addRow(period)}
                       sx={{ mt: 1 }}
                     >
-                      Agregar asignatura al Período {toRoman(period)}
+                      Agregar asignatura al Año {labelActual}
                     </Button>
                   </Box>
                 </Box>
