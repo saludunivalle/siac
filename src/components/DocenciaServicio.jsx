@@ -2824,7 +2824,12 @@ const DocenciaServicio = () => {
                                 flexWrap: "wrap",
                               }}
                             >
-                              {PERIODOS_ROMANOS.map((periodo) => {
+                              {Array.from(
+                                new Set([
+                                  ...PERIODOS_ROMANOS,
+                                  ...(periodosFromPracticas || []),
+                                ]),
+                              ).map((periodo) => {
                                 const isChecked =
                                   Array.isArray(
                                     anexoFormData.periodos_pract_formativas,
@@ -4801,6 +4806,7 @@ const DocenciaServicio = () => {
           open={showAsignaturasModal}
           onClose={() => setShowAsignaturasModal(false)}
           programa={programaSeleccionado}
+          practicasData={practicasData}
           onSaved={() => setReloadAnexos((value) => !value)}
         />
       </div>
