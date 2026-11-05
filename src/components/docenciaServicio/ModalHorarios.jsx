@@ -16,6 +16,7 @@ import {
   FormControlLabel,
   Stack,
   Select,
+  TextField,
   Tab,
   Tabs,
   Typography,
@@ -36,16 +37,30 @@ const DAYS = [
 const HOURS = Array.from({ length: 13 }, (_, i) => `${i + 6}:00-${i + 7}:00`);
 const emptySchedule = () => Object.fromEntries(DAYS.map((day) => [day, []]));
 const valueOf = (obj, ...names) => {
+  const clean = (value) => String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
   const key = Object.keys(obj || {}).find((k) =>
-    names.some((n) => k.toLowerCase() === n.toLowerCase()),
+    names.some((n) => clean(k) === clean(n)),
   );
   return key ? obj[key] : "";
 };
 const number = (value) => Number(String(value || "").match(/\d+/)?.[0]) || 0;
+const periodNumber = (value) => {
+  const raw = String(value || "").trim().toUpperCase();
+  if (/^\d+$/.test(raw)) return Number(raw);
+  const roman = { I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12, XIII: 13, XIV: 14, XV: 15 };
+  const token = raw.split(/[\s\-_/.]+/).find((item) => roman[item] || /^\d+$/.test(item));
+  return token ? (roman[token] || Number(token)) : 0;
+};
+const toRoman = (value) => ({ 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII", 13: "XIII", 14: "XIV", 15: "XV" }[Number(value)] || String(value));
 const periodCount = (periodicity, duration) => {
   const n = number(duration);
-  const sem = /sem/i.test(duration);
-  const annual = /anual/i.test(periodicity);
+  const context = `${periodicity || ""} ${duration || ""}`;
+  const sem = /sem/i.test(context);
+  const annual = /anual/i.test(context);
   return sem && annual ? Math.ceil(n / 2) : !sem && !annual ? n * 2 : n;
 };
 
@@ -55,6 +70,8 @@ export default function ModalHorarios({
   onBack,
   programa,
   onSaved,
+  embedded = false,
+  readOnly = false,
 }) {
   const idPrograma = valueOf(programa, "id_programa", "idPrograma", "id");
   const periodicidad = valueOf(programa, "periodicidad");
@@ -76,6 +93,7 @@ export default function ModalHorarios({
   const [error, setError] = useState("");
   const [expandedSchedule, setExpandedSchedule] = useState(null);
   const [ratios, setRatios] = useState({});
+  const [benefitData, setBenefitData] = useState({});
   const ratioOptions = ["1:1", "1:4", "1:2", "1:8", "4:1"];
   const colors = useMemo(() => {
     const result = {};
@@ -132,18 +150,18 @@ export default function ModalHorarios({
       .then(([e, h, a, summary]) => {
         if (!active) return;
         const esquemas = (e.data || []).filter(
-          (x) => String(x.id_programa) === String(idPrograma),
+          (x) => String(valueOf(x, "id_programa")).trim() === String(idPrograma).trim(),
         );
         const horarios = (h.data || []).filter(
-          (x) => String(x.id_programa) === String(idPrograma),
+          (x) => String(valueOf(x, "id_programa")).trim() === String(idPrograma).trim(),
         );
         setBlocks(esquemas);
         const asignaturas = (a.data || []).filter(
-          (x) => String(x.id_programa) === String(idPrograma),
+          (x) => String(valueOf(x, "id_programa")).trim() === String(idPrograma).trim(),
         );
         setAssignments(asignaturas);
         const summaries = (summary.data || []).filter(
-          (x) => String(x.id_programa) === String(idPrograma),
+          (x) => String(valueOf(x, "id_programa")).trim() === String(idPrograma).trim(),
         );
         setSavedSummaries(summaries);
         const loadedRatios = {};
@@ -166,11 +184,19 @@ export default function ModalHorarios({
         const loaded = {};
         horarios.forEach((row) => {
           try {
-            loaded[`${row.id_esquema}-${row.id_asignatura}`] = {
+            const normalizedRow = {
               ...row,
+              id: valueOf(row, "id", "id_horario") || row.id,
+              id_esquema: valueOf(row, "id_esquema") || row.id_esquema,
+              id_asignatura: valueOf(row, "id_asignatura") || row.id_asignatura,
+              numero_periodo: periodNumber(valueOf(row, "numero_periodo", "periodo")),
+              horario_json: valueOf(row, "horario_json", "horario") || row.horario_json,
+            };
+            loaded[`${normalizedRow.id_esquema}-${normalizedRow.id_asignatura}`] = {
+              ...normalizedRow,
               horario: {
                 ...emptySchedule(),
-                ...JSON.parse(row.horario_json || "{}"),
+                ...JSON.parse(normalizedRow.horario_json || "{}"),
               },
             };
           } catch {
@@ -197,7 +223,7 @@ export default function ModalHorarios({
     const source = Array.from(
       new Map(
         blocks
-          .filter((b) => Number(b.numero_periodo) === period)
+          .filter((b) => periodNumber(valueOf(b, "numero_periodo", "periodo")) === period)
           .map((b) => [
             [
               b.id_asignatura,
@@ -268,15 +294,26 @@ export default function ModalHorarios({
     blocks.some(
       (other) =>
         String(other.id_programa) === String(idPrograma) &&
-        Number(other.numero_periodo) === Number(block.numero_periodo) &&
+        periodNumber(valueOf(other, "numero_periodo", "periodo")) === periodNumber(block.numero_periodo) &&
         String(other.id_asignatura) !== String(subject.id_asignatura) &&
         Number(other.semana_inicio) <= Number(block.semana_fin) &&
         Number(other.semana_fin) >= Number(block.semana_inicio) &&
         schedules[keyFor(other, other)]?.horario?.[day]?.includes(hour),
     );
+  const scheduleFor = (block, subject) => {
+    const direct = schedules[keyFor(block, subject)];
+    if (direct) return direct;
+    return Object.values(schedules).find((item) =>
+      String(item.id_esquema) === String(subject.id) &&
+      String(item.id_asignatura) === String(subject.id_asignatura) &&
+      periodNumber(item.numero_periodo) === periodNumber(block.numero_periodo) &&
+      Number(item.semana_inicio) <= Number(block.semana_inicio) &&
+      Number(item.semana_fin) >= Number(block.semana_fin),
+    );
+  };
   const statsFor = (block, subject) => {
     const horario =
-      schedules[keyFor(block, subject)]?.horario || emptySchedule();
+      scheduleFor(block, subject)?.horario || emptySchedule();
     const horasSemana = Object.values(horario).reduce(
       (total, hours) => total + hours.length,
       0,
@@ -315,6 +352,58 @@ export default function ModalHorarios({
       return total + statsFor(block, subject).totalHorasGlobales;
     }, 0);
   const save = async () => {
+    if (readOnly) {
+      setSaving(true);
+      try {
+        const getAssignmentId = (item) => [item.id, item.id_asignatura].find(
+          (value) => String(value ?? "").trim() !== "",
+        );
+        const editedAssignments = assignments.filter((item) => {
+          const assignmentId = String(getAssignmentId(item));
+          return ["beneficiados", "relacion", "grupo", "estudiantes"]
+            .some((field) => Object.prototype.hasOwnProperty.call(benefitData, `${assignmentId}-${field}`));
+        });
+        const results = await Promise.all(editedAssignments.map((item) => {
+          const assignmentId = getAssignmentId(item);
+          const value = (field) => benefitData[`${assignmentId}-${field}`] ?? item[
+            { beneficiados: "estudiantes_beneficiados", estudiantes: "numero_estudiantes" }[field] || field
+          ] ?? "";
+          return fetchPostGeneral({
+            dataSend: {
+              updateData: [
+                assignmentId,
+                item.id_programa,
+                item.periodicidad,
+                item.duracion,
+                item.total_periodos,
+                item.numero_periodo,
+                item.nombre_periodo,
+                item.semanas_periodo,
+                item.nombre_asignatura,
+                item.numero_semanas,
+                item.horas_independientes_opcion || "1:1",
+                value("beneficiados"),
+                value("relacion"),
+                value("grupo"),
+                value("estudiantes"),
+              ],
+              id: assignmentId,
+            },
+            sheetName: "ASIGNATURAS",
+            urlEndPoint: `${URL}/updatePractice`,
+          });
+        }));
+        if (results.some((result) => !result?.status)) throw new Error("benefit-save");
+        clearCache();
+        onSaved?.(benefitData);
+        if (!embedded) onClose?.();
+      } catch {
+        setError("No se pudieron guardar los datos de estudiantes.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     setError("");
     setSaving(true);
     try {
@@ -339,21 +428,35 @@ export default function ModalHorarios({
             JSON.stringify(x.horario),
           ],
         }));
-      const existingScheduleRows = scheduleRows.filter((x) => x.id);
-      const newScheduleRows = scheduleRows.filter((x) => !x.id);
+      const existingScheduleRows = scheduleRows.filter((x) => String(x.id ?? "").trim());
+      const newScheduleRows = scheduleRows.filter((x) => !String(x.id ?? "").trim());
+      const failedUpdates = [];
       await Promise.all(
         existingScheduleRows.map(async (item) => {
-          const response = await fetchPostGeneral({
-            dataSend: { updateData: item.row, id: String(item.id).trim() },
-            sheetName: "HORARIOS",
-            urlEndPoint: `${URL}/updatePractice`,
-          });
-          if (!response?.status) throw Error();
+          try {
+            const response = await fetchPostGeneral({
+              dataSend: { updateData: item.row, id: String(item.id).trim() },
+              sheetName: "HORARIOS",
+              urlEndPoint: `${URL}/updatePractice`,
+            });
+            if (!response?.status) throw Error();
+          } catch {
+            // Algunas filas históricas no tienen un ID válido en la primera
+            // columna. En ese caso se conservan como una nueva fila.
+            failedUpdates.push({
+              ...item,
+              row: [
+                `${idPrograma}-${item.id_asignatura}-${item.numero_periodo}-${item.semana_inicio}-${Date.now()}`,
+                ...item.row.slice(1),
+              ],
+            });
+          }
         }),
       );
-      if (newScheduleRows.length) {
+      const rowsToInsert = [...newScheduleRows, ...failedUpdates];
+      if (rowsToInsert.length) {
         const response = await fetchPostGeneral({
-          dataSend: { insertData: newScheduleRows.map((x) => x.row) },
+          dataSend: { insertData: rowsToInsert.map((x) => x.row) },
           sheetName: "HORARIOS",
           urlEndPoint: `${URL}/sendDocServ`,
         });
@@ -479,7 +582,7 @@ export default function ModalHorarios({
         }
       clearCache();
       onSaved?.();
-      onClose();
+      if (!embedded) onClose?.();
     } catch {
       setError("No se pudieron guardar los horarios.");
     } finally {
@@ -487,16 +590,21 @@ export default function ModalHorarios({
     }
   };
 
+  const Wrapper = embedded ? Box : Dialog;
+  const wrapperProps = embedded
+    ? { sx: { width: "100%", boxSizing: "border-box", border: "1px solid #e0e0e0", borderRadius: 2, overflow: "hidden" } }
+    : { open, onClose, fullWidth: true, maxWidth: "lg" };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
+    <Wrapper {...wrapperProps}>
       <DialogTitle>Horarios de prácticas</DialogTitle>
-      <DialogContent dividers>
+      <DialogContent dividers onClick={() => setSelected({})}>
         <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
           <Typography>
             Periodicidad: <b>{periodicidad || "-"}</b>
           </Typography>
           <Typography>
-            Periodos: <b>{totalPeriodos || "-"}</b>
+            Años: <b>{totalPeriodos ? toRoman(totalPeriodos) : "-"}</b>
           </Typography>
         </Stack>
         {error && (
@@ -515,7 +623,7 @@ export default function ModalHorarios({
               scrollButtons="auto"
             >
               {periods.map((p) => (
-                <Tab key={p} label={`Periodo ${p}`} />
+                <Tab key={p} label={`Año ${toRoman(p)}`} />
               ))}
             </Tabs>
             {blocksFor(periods[tab] || 1).map((block, blockIndex) => {
@@ -577,7 +685,8 @@ export default function ModalHorarios({
                             key={s.id_asignatura}
                             className="subject-color-button"
                             variant="contained"
-                            onClick={() => {
+                            onClick={(event) => {
+                              event?.stopPropagation();
                               setSelected((old) => ({
                                 ...old,
                                 [selectorKey]: s.id_asignatura,
@@ -613,7 +722,7 @@ export default function ModalHorarios({
                         Selecciona una asignatura para habilitar su horario.
                       </Typography>
                     )}
-                    <Box sx={{ overflowX: "auto" }}>
+                    <Box sx={{ overflowX: "auto" }} onClick={(event) => event.stopPropagation()}>
                       <Box
                         sx={{
                           minWidth: 700,
@@ -629,7 +738,7 @@ export default function ModalHorarios({
                               sx={{
                                 textAlign: "center",
                                 fontWeight: 700,
-                                p: 1,
+                                p: 0.5,
                               }}
                             >
                               {day}
@@ -640,7 +749,7 @@ export default function ModalHorarios({
                           <React.Fragment key={hour}>
                             <Typography
                               sx={{
-                                p: 1,
+                                p: 0.5,
                                 borderTop: "1px solid #ddd",
                                 fontSize: 12,
                               }}
@@ -664,6 +773,7 @@ export default function ModalHorarios({
                                     <Checkbox
                                       checked={checked}
                                       disabled={
+                                        readOnly ||
                                         !editable ||
                                         hasConflict(block, subject, day, hour)
                                       }
@@ -674,11 +784,13 @@ export default function ModalHorarios({
                                   }
                                   sx={{
                                     m: 0,
+                                    minHeight: 28,
                                     justifyContent: "center",
                                     borderTop: "1px solid #ddd",
                                     backgroundColor: occupiedBy
                                       ? colorFor(occupiedBy)
                                       : "transparent",
+                                    "& .MuiCheckbox-root": { p: 0.25 },
                                   }}
                                 />
                               );
@@ -700,12 +812,35 @@ export default function ModalHorarios({
                               borderRadius: 1,
                             }}
                           >
-                            <Typography
-                              variant="subtitle1"
-                              sx={{ fontWeight: 700 }}
-                            >
-                              Resumen de {subject.nombre_asignatura}
-                            </Typography>
+                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, flexWrap: "wrap" }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 700, pt: 0.75 }}>
+                                Resumen de {subject.nombre_asignatura}
+                              </Typography>
+                              {readOnly && (
+                                <Box onClick={(event) => event.stopPropagation()} sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 78px)", sm: "repeat(4, 78px)" }, gap: 0.75, justifyContent: "flex-end" }}>
+                                  {["beneficiados", "relacion", "grupo", "estudiantes"].map((field) => (
+                                    <Box key={field} sx={{ width: 78 }}>
+                                      <Typography
+                                        variant="caption"
+                                        title={{ beneficiados: "Estudiantes beneficiados", relacion: "Relación", grupo: "Grupo", estudiantes: "Número de estudiantes" }[field]}
+                                        sx={{ display: "block", fontSize: "0.62rem", lineHeight: 1.1, mb: 0.35, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                      >
+                                        {{ beneficiados: "Est. beneficiados", relacion: "Relación", grupo: "Grupo", estudiantes: "N. estudiantes" }[field]}
+                                      </Typography>
+                                      <TextField
+                                        size="small"
+                                        type="number"
+                                        aria-label={{ beneficiados: "Estudiantes beneficiados", relacion: "Relación", grupo: "Grupo", estudiantes: "Número de estudiantes" }[field]}
+                                        value={benefitData[`${ratioKey}-${field}`] || ""}
+                                        onChange={(event) => setBenefitData((old) => ({ ...old, [`${ratioKey}-${field}`]: event.target.value }))}
+                                        inputProps={{ min: 0 }}
+                                        sx={{ width: 78, "& .MuiInputBase-input": { px: 1 } }}
+                                      />
+                                    </Box>
+                                  ))}
+                                </Box>
+                              )}
+                            </Box>
                             <FormControl
                               size="small"
                               sx={{ minWidth: 180, mt: 1 }}
@@ -715,6 +850,7 @@ export default function ModalHorarios({
                               </Typography>
                               <Select
                                 value={stats.ratio}
+                                disabled={readOnly}
                                 onChange={(event) =>
                                   setRatios((old) => ({
                                     ...old,
@@ -779,9 +915,9 @@ export default function ModalHorarios({
         <Box sx={{ flexGrow: 1 }} />
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" onClick={save} disabled={saving || loading}>
-          {saving ? "Guardando..." : "Guardar y finalizar"}
+          {saving ? "Guardando..." : readOnly ? "Finalizar convenio" : "Guardar y continuar"}
         </Button>
       </DialogActions>
-    </Dialog>
+    </Wrapper>
   );
 }

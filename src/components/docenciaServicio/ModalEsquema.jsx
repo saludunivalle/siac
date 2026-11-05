@@ -25,26 +25,40 @@ const COLORS = [
   "#ef9a9a",
   "#fff59d",
 ];
+const clean = (value) => String(value || "")
+  .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]/g, "");
 const val = (o, ...names) => {
   const key = Object.keys(o || {}).find((k) =>
-    names.some((n) => k.toLowerCase() === n.toLowerCase()),
+    names.some((n) => clean(k) === clean(n)),
   );
   return key ? o[key] : "";
 };
 const num = (v) => Number(String(v || "").match(/\d+/)?.[0]) || 0;
+const toRoman = (value) => ({ 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII", 13: "XIII", 14: "XIV", 15: "XV" }[Number(value)] || String(value));
+const periodNumber = (value) => {
+  const raw = String(value || "").trim().toUpperCase();
+  if (/^\d+$/.test(raw)) return Number(raw);
+  const roman = { I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12, XIII: 13, XIV: 14, XV: 15 };
+  const token = raw.split(/[\s\-_/.]+/).find((item) => roman[item] || /^\d+$/.test(item));
+  return token ? (roman[token] || Number(token)) : 0;
+};
 const periodCount = (periodicity, duration) => {
   const n = num(duration);
-  const sem = /sem/i.test(duration);
-  const annual = /anual/i.test(periodicity);
+  const context = `${periodicity || ""} ${duration || ""}`;
+  const sem = /sem/i.test(context);
+  const annual = /anual/i.test(context);
   return sem && annual ? Math.ceil(n / 2) : !sem && !annual ? n * 2 : n;
 };
 
-export default function ModalEsquema({ open, onClose, onBack, programa, onSaved }) {
+export default function ModalEsquema({ open, onClose, onBack, programa, onSaved, embedded = false }) {
   const idPrograma = val(programa, "id_programa", "idPrograma", "id");
   const periodicidad = val(programa, "periodicidad");
   const duracion = val(programa, "duracion", "duracion_programa", "duración");
   const totalPeriodos = periodCount(periodicidad, duracion);
-  const semanas = /sem/i.test(periodicidad) ? 18 : 48;
+  const semanas = /sem/i.test(`${periodicidad} ${duracion}`) ? 18 : 48;
   const [subjects, setSubjects] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [drag, setDrag] = useState(null);
@@ -76,13 +90,27 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
         if (!active) return;
         setSubjects(
           (a.data || []).filter(
-            (x) => String(x.id_programa) === String(idPrograma),
-          ),
+            (x) => String(val(x, "id_programa")).trim() === String(idPrograma).trim(),
+          ).map((x) => ({
+            ...x,
+            id: val(x, "id") || x.id,
+            id_programa: val(x, "id_programa") || x.id_programa,
+            numero_periodo: periodNumber(val(x, "numero_periodo", "periodo")),
+            nombre_asignatura: val(x, "nombre_asignatura") || x.nombre_asignatura,
+            numero_semanas: val(x, "numero_semanas") || x.numero_semanas,
+          })),
         );
         setBlocks(
           (e.data || [])
-            .filter((x) => String(x.id_programa) === String(idPrograma))
-            .map((x) => ({ ...x, localId: x.id })),
+            .filter((x) => String(val(x, "id_programa")).trim() === String(idPrograma).trim())
+            .map((x) => ({
+              ...x,
+              id: val(x, "id") || x.id,
+              id_programa: val(x, "id_programa") || x.id_programa,
+              numero_periodo: periodNumber(val(x, "numero_periodo", "periodo")),
+              id_asignatura: val(x, "id_asignatura") || x.id_asignatura,
+              localId: val(x, "id") || x.id,
+            })),
         );
       })
       .catch(() => active && setError("No se pudieron cargar los datos."))
@@ -92,8 +120,8 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
     };
   }, [open, idPrograma]);
   const subjectsFor = (p) =>
-    subjects.filter((x) => Number(x.numero_periodo) === p);
-  const blocksFor = (p) => blocks.filter((x) => Number(x.numero_periodo) === p);
+    subjects.filter((x) => periodNumber(val(x, "numero_periodo", "periodo")) === p);
+  const blocksFor = (p) => blocks.filter((x) => periodNumber(val(x, "numero_periodo", "periodo")) === p);
   const canPlace = (subject, period, row, start) => {
     const duration = Number(subject.numero_semanas) || 1;
     const first = Math.max(1, Math.min(start, semanas - duration + 1));
@@ -192,7 +220,7 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
       if (!rowsToInsert.length) {
         clearCache();
         onSaved?.();
-        onClose();
+        if (!embedded) onClose?.();
         return;
       }
       const response = await fetchPostGeneral({
@@ -203,15 +231,20 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
       if (!response?.status) throw Error();
       clearCache();
       onSaved?.();
-      onClose();
+      if (!embedded) onClose?.();
     } catch {
       setError("No se pudo guardar el esquema.");
     } finally {
       setSaving(false);
     }
   };
+  const Wrapper = embedded ? Box : Dialog;
+  const wrapperProps = embedded
+    ? { sx: { width: "100%", boxSizing: "border-box", border: "1px solid #e0e0e0", borderRadius: 2, overflow: "hidden" } }
+    : { open, onClose, fullWidth: true, maxWidth: "xl" };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
+    <Wrapper {...wrapperProps}>
       <DialogTitle>Esquema de prácticas</DialogTitle>
       <DialogContent dividers>
         <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
@@ -232,7 +265,7 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
           <>
             <Tabs value={periodoActivo} onChange={(_, value) => setPeriodoActivo(value)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2 }}>
               {Array.from({ length: totalPeriodos }, (_, i) => (
-                <Tab key={i + 1} label={`Periodo ${i + 1}`} />
+                <Tab key={i + 1} label={`Año ${toRoman(i + 1)}`} />
               ))}
             </Tabs>
             {(() => {
@@ -251,7 +284,7 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
               >
                 <Box sx={{ p: 1 }}>
                   <Typography sx={{ fontWeight: "bold" }}>
-                    Periodo {p}: {semanas} semanas
+                    Año {toRoman(p)}: {semanas} semanas
                   </Typography>
                 </Box>
                 <Box sx={{ p: 1 }}>
@@ -376,6 +409,6 @@ export default function ModalEsquema({ open, onClose, onBack, programa, onSaved 
           {saving ? "Guardando..." : "Guardar y continuar a Horarios"}
         </Button>
       </DialogActions>
-    </Dialog>
+    </Wrapper>
   );
 }

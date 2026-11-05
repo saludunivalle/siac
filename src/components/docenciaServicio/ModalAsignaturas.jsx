@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Chip,
@@ -19,6 +22,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import axios from "axios";
 import { clearCache, fetchPostGeneral } from "../../service/fetch";
 
@@ -44,6 +48,18 @@ const ROMAN_MAP = {
 
 const toRoman = (num) => ROMAN_MAP[Number(num)] || String(num);
 
+const normalizedKey = (key) => String(key || "")
+  .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]/g, "");
+
+const readColumn = (row, ...names) => {
+  const wanted = names.map(normalizedKey);
+  const key = Object.keys(row || {}).find((item) => wanted.includes(normalizedKey(item)));
+  return key ? row[key] : "";
+};
+
 const getNumber = (value) => {
   const match = String(value ?? "").match(/\d+(?:[.,]\d+)?/);
   return match ? Number(match[0].replace(",", ".")) : 0;
@@ -64,8 +80,9 @@ const getProgramField = (programa, ...names) => {
 
 const getPeriodCount = (periodicidad, duracion) => {
   const amount = getNumber(duracion);
-  const durationIsSemesters = /sem/i.test(String(duracion));
-  const isAnnual = /anual/i.test(String(periodicidad));
+  const context = `${periodicidad || ""} ${duracion || ""}`;
+  const durationIsSemesters = /sem/i.test(context);
+  const isAnnual = /anual/i.test(context);
 
   if (durationIsSemesters && isAnnual) return Math.ceil(amount / 2);
   if (!durationIsSemesters && !isAnnual) return amount * 2;
@@ -134,6 +151,11 @@ const parsePeriodoToNumber = (val) => {
   return null;
 };
 
+const periodNumber = (value) => {
+  const parsed = parsePeriodoToNumber(value);
+  return parsed || (Number(value) || 0);
+};
+
 // Extractor del nombre de asignatura desde fila de PRACTICAS
 const getSubjectName = (row) => {
   if (!row) return "";
@@ -184,7 +206,29 @@ const emptySubject = (period, semanas) => ({
   numero_periodo: period,
   nombre_asignatura: "",
   numero_semanas: semanas || 18,
+  estudiantes_beneficiados: "",
+  relacion: "",
+  grupo: "",
+  numero_estudiantes: "",
+  practicas: [],
 });
+
+const normalizePractice = (row) => {
+  const ra = String(readColumn(row, "Resultados de Aprendizaje (RA)", "resultados_aprendizaje") || "");
+  return {
+    localId: `practice-${readColumn(row, "id") || Date.now()}-${Math.random()}`,
+    id: readColumn(row, "id"),
+    idPractica: readColumn(row, "ID Práctica", "id_practica"),
+    nombrePractica: readColumn(row, "NOMBRE DE LA PRÁCTICA FORMATIVA O ROTACIÓN", "nombre_practica"),
+    competencias: readColumn(row, "Competencias", "competencias"),
+    resultadosAprendizaje: ra
+      .split(/\r?\n/)
+      .map((item) => item.replace(/^\s*\d+\s*[-.)]\s*/, "").trim())
+      .filter(Boolean),
+    numeroActividades: readColumn(row, "Número actividades para RA", "numero_actividades"),
+    evaluacion: readColumn(row, "Evaluacion", "evaluacion"),
+  };
+};
 
 export default function ModalAsignaturas({
   open,
@@ -193,6 +237,7 @@ export default function ModalAsignaturas({
   programa,
   practicasData,
   onSaved,
+  embedded = false,
 }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -200,6 +245,8 @@ export default function ModalAsignaturas({
   const [error, setError] = useState("");
   const [periodoActivo, setPeriodoActivo] = useState(0);
   const [mostrarTodos, setMostrarTodos] = useState(false);
+  const [practicasList, setPracticasList] = useState([]);
+  const [allPracticasList, setAllPracticasList] = useState([]);
 
   const periodicidad = getProgramField(programa, "periodicidad");
   const duracion = getProgramField(programa, "duracion", "duracion_programa", "duración");
@@ -254,23 +301,35 @@ export default function ModalAsignaturas({
           : [];
 
         const idProgStr = String(idPrograma).trim().toLowerCase();
+        setAllPracticasList(practicasList || []);
 
-        // 1. Asignaturas ya existentes en la BD para este programa
-        const existingRows = data
-          .filter((item) => String(item.id_programa).trim().toLowerCase() === idProgStr)
-          .map((item) => ({
-            ...item,
-            localId: item.id || `${Date.now()}-${Math.random()}`,
-            numero_semanas: item.numero_semanas || semanasPeriodo,
-          }));
-
-        // 2. Extraer asignaturas de la hoja PRACTICAS para este programa
-        const practicasDelProg = (practicasList || []).filter((p) => {
+        const practicasDelPrograma = (practicasList || []).filter((p) => {
           const pId = String(
-            p.id_programa || p.ID_PROGRAMA || p["id_programa"] || p["id programa"] || "",
+            readColumn(p, "ID_PROGRAMA", "id_programa", "id programa") || "",
           ).trim().toLowerCase();
           return pId === idProgStr;
         });
+        setPracticasList(practicasDelPrograma);
+        const practicesForSubject = (name) => practicasDelPrograma
+          .filter((practice) => getSubjectName(practice).trim().toLowerCase() === String(name || "").trim().toLowerCase())
+          .map(normalizePractice);
+
+        // 1. Asignaturas ya existentes en la BD para este programa
+        const existingRows = data
+          .filter((item) => String(readColumn(item, "id_programa", "ID_PROGRAMA") || "").trim().toLowerCase() === idProgStr)
+          .map((item) => ({
+            ...item,
+            id: readColumn(item, "id") || item.id,
+            id_programa: readColumn(item, "id_programa", "ID_PROGRAMA") || item.id_programa,
+            numero_periodo: periodNumber(readColumn(item, "numero_periodo", "PERÍODO ACADÉMICO", "periodo")),
+            nombre_asignatura: readColumn(item, "nombre_asignatura", "NOMBRE DE LA ASIGNATURA") || item.nombre_asignatura,
+            localId: readColumn(item, "id") || item.id || `${Date.now()}-${Math.random()}`,
+            numero_semanas: readColumn(item, "numero_semanas") || item.numero_semanas || semanasPeriodo,
+            practicas: practicesForSubject(readColumn(item, "nombre_asignatura", "NOMBRE DE LA ASIGNATURA") || item.nombre_asignatura),
+          }));
+
+        // 2. Extraer asignaturas de la hoja PRACTICAS para este programa
+        const practicasDelProg = practicasDelPrograma;
 
         const seenKeys = new Set();
         const practicasRowsToAdd = [];
@@ -288,7 +347,7 @@ export default function ModalAsignaturas({
           // Verificar si ya existe en existingRows
           const yaExiste = existingRows.some(
             (r) =>
-              Number(r.numero_periodo) === Number(periodoNum) &&
+              periodNumber(r.numero_periodo) === Number(periodoNum) &&
               String(r.nombre_asignatura || "").trim().toLowerCase() === nombreAsig.toLowerCase(),
           );
 
@@ -302,6 +361,7 @@ export default function ModalAsignaturas({
               nombre_asignatura: nombreAsig,
               numero_semanas: semanasPeriodo,
               fromPracticas: true,
+              practicas: practicesForSubject(nombreAsig),
             });
           }
         });
@@ -323,7 +383,7 @@ export default function ModalAsignaturas({
 
   // Períodos que tienen asignaturas (desde prácticas o existentes)
   const periodosConAsignaturas = useMemo(() => {
-    const set = new Set(rows.map((r) => Number(r.numero_periodo)).filter(Boolean));
+    const set = new Set(rows.map((r) => periodNumber(r.numero_periodo)).filter(Boolean));
     return Array.from(set).sort((a, b) => a - b);
   }, [rows]);
 
@@ -332,23 +392,18 @@ export default function ModalAsignaturas({
     const map = {};
     rows.forEach((r) => {
       if (r.numero_periodo && r.periodoRaw) {
-        map[Number(r.numero_periodo)] = r.periodoRaw;
+        map[periodNumber(r.numero_periodo)] = r.periodoRaw;
       }
     });
     return map;
   }, [rows]);
 
   const getPeriodoDisplay = (period) => {
-    const num = Number(period);
-    if (periodosRawMap[num]) return periodosRawMap[num];
-    const hayRomanos = Object.values(periodosRawMap).some((v) =>
-      /^[IVXLCDM]+$/i.test(String(v).trim()),
-    );
-    if (hayRomanos && ROMAN_MAP[num]) {
-      return ROMAN_MAP[num];
-    }
-    return String(period);
+    const num = periodNumber(period);
+    return toRoman(num || period);
   };
+
+  const getPeriodoRoman = (period) => toRoman(periodNumber(period));
 
   // Lista de años a mostrar en las pestañas:
   // Si no tenemos datos de asignaturas en PRACTICAS, se dejan la cantidad de períodos (pestañas) que se calculaban de la anterior manera: totalPeriodos
@@ -367,7 +422,7 @@ export default function ModalAsignaturas({
   const periodoActualNum = periodosTabs[periodoActivo] || periodosTabs[0] || 1;
 
   const rowsForPeriod = (period) =>
-    rows.filter((row) => Number(row.numero_periodo) === Number(period));
+    rows.filter((row) => periodNumber(row.numero_periodo) === periodNumber(period));
 
   const addRow = (period) =>
     setRows((current) => [...current, emptySubject(period, semanasPeriodo)]);
@@ -381,6 +436,46 @@ export default function ModalAsignaturas({
 
   const removeRow = (localId) =>
     setRows((current) => current.filter((row) => row.localId !== localId));
+
+  const updatePractice = (rowLocalId, practiceLocalId, field, value) =>
+    setRows((current) => current.map((row) => row.localId !== rowLocalId
+      ? row
+      : { ...row, practicas: (row.practicas || []).map((practice) => practice.localId === practiceLocalId
+        ? { ...practice, [field]: value }
+        : practice) }));
+
+  const addPractice = (row) => {
+    const periodLabel = getPeriodoRoman(row.numero_periodo);
+    const used = (row.practicas || []).length + 1;
+    const practice = {
+      localId: `practice-new-${Date.now()}-${Math.random()}`,
+      id: "",
+      idPractica: `PRAC-${periodLabel}-${String(used).padStart(2, "0")}`,
+      nombrePractica: row.nombre_asignatura || "",
+      competencias: "",
+      resultadosAprendizaje: [""],
+      numeroActividades: "",
+      evaluacion: "",
+    };
+    setRows((current) => current.map((item) => item.localId === row.localId
+      ? { ...item, practicas: [...(item.practicas || []), practice] }
+      : item));
+  };
+
+  const removePractice = (rowLocalId, practiceLocalId) =>
+    setRows((current) => current.map((row) => row.localId !== rowLocalId
+      ? row
+      : { ...row, practicas: (row.practicas || []).filter((practice) => practice.localId !== practiceLocalId) }));
+
+  const updatePracticeResult = (rowLocalId, practiceLocalId, index, value) =>
+    setRows((current) => current.map((row) => row.localId !== rowLocalId
+      ? row
+      : { ...row, practicas: (row.practicas || []).map((practice) => {
+        if (practice.localId !== practiceLocalId) return practice;
+        const resultados = [...(practice.resultadosAprendizaje || [])];
+        resultados[index] = value;
+        return { ...practice, resultadosAprendizaje: resultados };
+      }) }));
 
   const autocompletadasCount = useMemo(
     () => rows.filter((r) => r.fromPracticas).length,
@@ -410,29 +505,99 @@ export default function ModalAsignaturas({
     setSaving(true);
     try {
       const maxP = Math.max(totalPeriodos || 1, ...periodosConAsignaturas);
-      const insertData = validRows.map((row) => [
-        row.id ||
-          `${idPrograma}-${row.numero_periodo}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        idPrograma,
-        periodicidad,
-        duracion,
-        maxP,
-        Number(row.numero_periodo),
-        `Año ${getPeriodoDisplay(row.numero_periodo)}`,
-        semanasPeriodo,
+      const assignmentValues = (row, id) => [
+        id,
+        row.id_programa || idPrograma,
+        row.periodicidad || periodicidad,
+        row.duracion || duracion,
+        row.total_periodos || maxP,
+        periodNumber(row.numero_periodo),
+        row.nombre_periodo || `Año ${getPeriodoDisplay(row.numero_periodo)}`,
+        row.semanas_periodo || semanasPeriodo,
         row.nombre_asignatura.trim(),
         Number(row.numero_semanas),
         row.horas_independientes_opcion || "1:1",
+        row.estudiantes_beneficiados || "",
+        row.relacion || "",
+        row.grupo || "",
+        row.numero_estudiantes || "",
+      ];
+      const insertData = validRows.map((row) => assignmentValues(row,
+        row.id ||
+          `${idPrograma}-${row.numero_periodo}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      ));
+      const existingRows = rows.filter((row) => row.id && row.nombre_asignatura?.trim());
+      const [response, ...updateResponses] = await Promise.all([
+        insertData.length
+          ? fetchPostGeneral({
+              dataSend: { insertData },
+              sheetName: "ASIGNATURAS",
+              urlEndPoint: "https://siac-server.vercel.app/sendDocServ",
+            })
+          : Promise.resolve({ status: true }),
+        ...existingRows.map((row) => fetchPostGeneral({
+          dataSend: { updateData: assignmentValues(row, row.id), id: row.id },
+          sheetName: "ASIGNATURAS",
+          urlEndPoint: "https://siac-server.vercel.app/updatePractice",
+        })),
       ]);
-      const response = await fetchPostGeneral({
-        dataSend: { insertData },
-        sheetName: "ASIGNATURAS",
-        urlEndPoint: "https://siac-server.vercel.app/sendDocServ",
-      });
-      if (!response?.status) throw new Error("save");
+      if (!response?.status || updateResponses.some((item) => !item?.status)) throw new Error("save");
+
+      let nextPracticeId = Math.max(0, ...allPracticasList.map((item) => Number(readColumn(item, "id")) || 0)) + 1;
+      const usedPracticeCodes = new Set(allPracticasList.map((item) => String(readColumn(item, "ID Práctica", "id_practica") || "")));
+      const practicesToSave = rows.flatMap((row) => (row.practicas || []).map((practice) => {
+        const periodLabel = getPeriodoRoman(row.numero_periodo);
+        let sequence = 1;
+        let code = practice.idPractica || `PRAC-${periodLabel}-${String(sequence).padStart(2, "0")}`;
+        while (!practice.id && usedPracticeCodes.has(code)) {
+          sequence += 1;
+          code = `PRAC-${periodLabel}-${String(sequence).padStart(2, "0")}`;
+        }
+        usedPracticeCodes.add(code);
+        const id = practice.id || nextPracticeId++;
+        return {
+          id,
+          idPractica: code,
+          row,
+          practice,
+          values: [
+            id,
+            code,
+            idPrograma,
+            periodLabel,
+            row.nombre_asignatura.trim(),
+            practice.nombrePractica || row.nombre_asignatura.trim(),
+            practice.competencias || "",
+            (practice.resultadosAprendizaje || [])
+              .map((item, index) => `${index + 1}-${item}`)
+              .filter((item) => item.slice(item.indexOf("-") + 1).trim())
+              .join("\n"),
+            practice.numeroActividades || "",
+            practice.evaluacion || "",
+          ],
+        };
+      }));
+      const newPractices = practicesToSave.filter((item) => !item.practice.id);
+      const existingPractices = practicesToSave.filter((item) => item.practice.id);
+      if (newPractices.length) {
+        const practiceResponse = await fetchPostGeneral({
+          dataSend: { insertData: newPractices.map((item) => item.values) },
+          sheetName: "PRACTICAS",
+          urlEndPoint: "https://siac-server.vercel.app/sendDocServ",
+        });
+        if (!practiceResponse?.status) throw new Error("practice-save");
+      }
+      if (existingPractices.length) {
+        const practiceResponses = await Promise.all(existingPractices.map((item) => fetchPostGeneral({
+          dataSend: { updateData: item.values, id: item.practice.id },
+          sheetName: "PRACTICAS",
+          urlEndPoint: "https://siac-server.vercel.app/updatePractice",
+        })));
+        if (practiceResponses.some((item) => !item?.status)) throw new Error("practice-update");
+      }
       clearCache();
       onSaved?.();
-      onClose();
+      if (!embedded) onClose?.();
     } catch {
       setError("No se pudieron guardar las asignaturas.");
     } finally {
@@ -440,8 +605,13 @@ export default function ModalAsignaturas({
     }
   };
 
+  const Wrapper = embedded ? Box : Dialog;
+  const wrapperProps = embedded
+    ? { sx: { width: "100%", boxSizing: "border-box", border: "1px solid #e0e0e0", borderRadius: 2, overflow: "hidden" } }
+    : { open, onClose, fullWidth: true, maxWidth: "md" };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <Wrapper {...wrapperProps}>
       <DialogTitle sx={{ pb: 1 }}>
         <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
           Asignaturas de {programa?.["programa académico"] || "programa"}
@@ -590,13 +760,12 @@ export default function ModalAsignaturas({
                       Prácticas Formativas o Rotaciones del Año {labelActual}
                     </Typography>
                     {periodRows.map((row) => (
+                      <Box key={row.localId} sx={{ mb: 1.5 }}>
                       <Stack
-                        key={row.localId}
                         direction={{ xs: "column", sm: "row" }}
                         spacing={1}
                         alignItems={{ sm: "center" }}
                         sx={{
-                          mb: 1.5,
                           p: 1.5,
                           backgroundColor: "#ffffff",
                           borderRadius: 1,
@@ -649,6 +818,68 @@ export default function ModalAsignaturas({
                           <DeleteIcon />
                         </IconButton>
                       </Stack>
+                      <Accordion sx={{ mt: 1 }}>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography sx={{ fontWeight: 600 }}>
+                            Prácticas formativas ({(row.practicas || []).length})
+                          </Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          {(row.practicas || []).map((practice) => (
+                            <Box key={practice.localId} sx={{ mb: 2, p: 1.5, border: "1px solid #cfd8dc", borderRadius: 1 }}>
+                              <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ mb: 1.5 }}>
+                                <TextField size="small" label="ID práctica" value={practice.idPractica || ""} InputProps={{ readOnly: true }} sx={{ minWidth: 150 }} />
+                                <TextField
+                                  fullWidth size="small" label="Nombre de la práctica formativa o rotación"
+                                  value={practice.nombrePractica || ""}
+                                  onChange={(event) => updatePractice(row.localId, practice.localId, "nombrePractica", event.target.value)}
+                                />
+                                <TextField
+                                  size="small" type="number" label="Número actividades para RA"
+                                  value={practice.numeroActividades || ""}
+                                  onChange={(event) => updatePractice(row.localId, practice.localId, "numeroActividades", event.target.value)}
+                                  inputProps={{ min: 0 }} sx={{ minWidth: 190 }}
+                                />
+                                <IconButton color="error" onClick={() => removePractice(row.localId, practice.localId)}><DeleteIcon /></IconButton>
+                              </Stack>
+                              <TextField
+                                fullWidth multiline minRows={2} size="small" label="Competencias"
+                                value={practice.competencias || ""}
+                                onChange={(event) => updatePractice(row.localId, practice.localId, "competencias", event.target.value)}
+                                sx={{ mb: 1.5 }}
+                              />
+                              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Resultados de aprendizaje (RA)</Typography>
+                              {(practice.resultadosAprendizaje || []).map((result, resultIndex) => (
+                                <Stack key={`${practice.localId}-ra-${resultIndex}`} direction="row" spacing={1} sx={{ mb: 1 }}>
+                                  <TextField
+                                    fullWidth size="small" label={`RA ${resultIndex + 1}`} value={result}
+                                    onChange={(event) => updatePracticeResult(row.localId, practice.localId, resultIndex, event.target.value)}
+                                  />
+                                  <IconButton
+                                    color="error"
+                                    onClick={() => updatePractice(row.localId, practice.localId, "resultadosAprendizaje", (practice.resultadosAprendizaje || []).filter((_, index) => index !== resultIndex))}
+                                  >
+                                    <DeleteIcon />
+                                  </IconButton>
+                                </Stack>
+                              ))}
+                              <Button size="small" startIcon={<AddIcon />} onClick={() => updatePractice(row.localId, practice.localId, "resultadosAprendizaje", [...(practice.resultadosAprendizaje || []), ""])}>
+                                Agregar RA
+                              </Button>
+                              <TextField
+                                fullWidth multiline minRows={2} size="small" label="Evaluación"
+                                value={practice.evaluacion || ""}
+                                onChange={(event) => updatePractice(row.localId, practice.localId, "evaluacion", event.target.value)}
+                                sx={{ mt: 1.5 }}
+                              />
+                            </Box>
+                          ))}
+                          <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => addPractice(row)}>
+                            Agregar práctica formativa
+                          </Button>
+                        </AccordionDetails>
+                      </Accordion>
+                      </Box>
                     ))}
                     <Button
                       startIcon={<AddIcon />}
@@ -681,6 +912,6 @@ export default function ModalAsignaturas({
           {saving ? "Guardando..." : "Guardar y continuar a Esquemas"}
         </Button>
       </DialogActions>
-    </Dialog>
+    </Wrapper>
   );
 }
