@@ -35,9 +35,14 @@ import {
   Checkbox,
   Divider,
   ButtonGroup,
+  Stepper,
+  Step,
+  StepLabel,
 } from "@mui/material";
 import axios from "axios";
 import ModalAsignaturas from "./docenciaServicio/ModalAsignaturas";
+import ModalEsquema from "./docenciaServicio/ModalEsquema";
+import ModalHorarios from "./docenciaServicio/ModalHorarios";
 
 const DocenciaServicio = () => {
   const navigate = useNavigate();
@@ -147,8 +152,32 @@ const DocenciaServicio = () => {
     coordinacion_correo: "",
   };
 
-  const [anexoFormData, setAnexoFormData] = useState(initialAnexoFormData);
+  const WIZARD_STORAGE_KEY = "siac-docencia-servicio-wizard";
+  const [anexoFormData, setAnexoFormData] = useState(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(WIZARD_STORAGE_KEY) || "null");
+      return saved?.formData ? { ...initialAnexoFormData, ...saved.formData, localFile: null } : initialAnexoFormData;
+    } catch {
+      return initialAnexoFormData;
+    }
+  });
   const [reloadAnexos, setReloadAnexos] = useState(false);
+  const [wizardStep, setWizardStep] = useState(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(WIZARD_STORAGE_KEY) || "null");
+      return Number.isInteger(saved?.step) ? Math.min(Math.max(saved.step, 0), 5) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  useEffect(() => {
+    if (!isVistaAnexo) return;
+    sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({
+      step: wizardStep,
+      formData: { ...anexoFormData, localFile: null },
+    }));
+  }, [anexoFormData, wizardStep, isVistaAnexo]);
 
   const programaSeleccionado = programasData.find(
     (programa) => programa["programa académico"] === filtroPrograma,
@@ -2011,6 +2040,8 @@ const DocenciaServicio = () => {
         setAnexoFormData(initialAnexoFormData);
         setPeriodosFromPracticas(null);
         setShowAnexoForm(false);
+        sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+        setWizardStep(0);
 
         // Recargar los anexos
         setTimeout(async () => {
@@ -2047,16 +2078,10 @@ const DocenciaServicio = () => {
         }, 500);
 
         // Mostrar mensaje de éxito
-        alert(
-          `${newAnexos.length} anexo${newAnexos.length !== 1 ? "s" : ""} guardado${newAnexos.length !== 1 ? "s" : ""} correctamente`,
-        );
+        alert("Convenio Docencia-Servicio guardado correctamente");
         navigate("/docencia-servicio");
       } else {
-        const exitosos = resultados.filter(Boolean).length;
-        const fallidos = resultados.length - exitosos;
-        alert(
-          `Error: Solo se guardaron ${exitosos} de ${resultados.length} anexos. ${fallidos} anexo${fallidos !== 1 ? "s" : ""} fallaron. Por favor intenta de nuevo.`,
-        );
+        alert("No se pudo guardar el convenio. Por favor intenta de nuevo.");
       }
     } catch (error) {
       console.error("Error al guardar los anexos:", error);
@@ -2549,7 +2574,7 @@ const DocenciaServicio = () => {
   };
 
   // Componente de formulario de anexo técnico reutilizable
-  const renderAnexoFormCompleto = () => (
+  const renderAnexoFormCompleto = (activeWizardStep = null) => (
     <Box
                   component="form"
                   onSubmit={handleAnexoFormSubmit}
@@ -2578,13 +2603,7 @@ const DocenciaServicio = () => {
                   <FormGroup sx={{ gap: 2.5 }}>
                     {/* ── SECCIÓN 1: Institución y Programa Académico ── */}
                     <Box
-                      sx={{
-                        p: 2.5,
-                        border: "1px solid #c8e6c9",
-                        borderRadius: 2,
-                        backgroundColor: "#ffffff",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                      }}
+                      sx={{ display: activeWizardStep === null || activeWizardStep === 0 ? "block" : "none", p: 2.5, border: "1px solid #c8e6c9", borderRadius: 2, backgroundColor: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
                     >
                       <Typography
                         variant="subtitle1"
@@ -2879,13 +2898,7 @@ const DocenciaServicio = () => {
 
                     {/* ── SECCIÓN 2: Responsables y Formalización ── */}
                     <Box
-                      sx={{
-                        p: 2.5,
-                        border: "1px solid #bbdefb",
-                        borderRadius: 2,
-                        backgroundColor: "#ffffff",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                      }}
+                      sx={{ display: activeWizardStep === null || activeWizardStep === 1 ? "block" : "none", p: 2.5, border: "1px solid #bbdefb", borderRadius: 2, backgroundColor: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
                     >
                       <Typography
                         variant="subtitle1"
@@ -3095,15 +3108,14 @@ const DocenciaServicio = () => {
                       </Grid>
                     </Box>
 
-                    {/* ── SECCIÓN 3: Documento del Convenio y Vigencia ── */}
+                    {/*
+                      SECCIÓN 3 TEMPORALMENTE OCULTA
+                      Se conserva comentada para reactivarla cuando se definan
+                      nuevamente los campos de documento, URL y vigencia.
+                    */}
+                    {/*
                     <Box
-                      sx={{
-                        p: 2.5,
-                        border: "1px solid #e0e0e0",
-                        borderRadius: 2,
-                        backgroundColor: "#ffffff",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                      }}
+                      sx={{ display: activeWizardStep === null || activeWizardStep === 1 ? "block" : "none", p: 2.5, border: "1px solid #e0e0e0", borderRadius: 2, backgroundColor: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
                     >
                       <Typography
                         variant="subtitle1"
@@ -3263,9 +3275,10 @@ const DocenciaServicio = () => {
                         />
                       )}
                     </Box>
+                    */}
 
                     {/* ── Sección de Planes de Práctica Formativa ── */}
-                    <Box sx={{ mt: 3 }}>
+                    <Box sx={{ mt: 3, display: activeWizardStep === null ? "block" : "none" }}>
                       <Box
                         sx={{
                           display: "flex",
@@ -3352,12 +3365,7 @@ const DocenciaServicio = () => {
                   </FormGroup>
 
                   <Box
-                    sx={{
-                      display: "flex",
-                      gap: 2,
-                      justifyContent: "center",
-                      marginTop: 3,
-                    }}
+                    sx={{ display: activeWizardStep === null ? "flex" : "none", gap: 2, justifyContent: "center", marginTop: 3 }}
                   >
                     <Button type="submit" variant="contained" color="primary">
                       Guardar Anexo
@@ -3375,6 +3383,93 @@ const DocenciaServicio = () => {
                   </Box>
                 </Box>
   );
+
+  const renderConvenioWizard = () => {
+    const steps = [
+      "Institución y programa",
+      "Responsables y formalización",
+      "Asignaturas",
+      "Esquema",
+      "Horarios",
+      "Beneficiarios",
+    ];
+    const programaWizard = anexoFormData.programaSeleccionado || programaSeleccionado;
+    const goNext = () => {
+      if (wizardStep === 0 && !anexoFormData.programaSeleccionado) {
+        alert("Selecciona el programa académico para continuar.");
+        return;
+      }
+      setWizardStep((step) => Math.min(step + 1, steps.length - 1));
+    };
+    const finish = () => handleAnexoFormSubmit({ preventDefault: () => {} });
+
+    return (
+      <Box sx={{ width: "100%", maxWidth: "100%", boxSizing: "border-box", mx: "auto", pb: 4, overflowX: "hidden" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, gap: 2, flexWrap: "wrap" }}>
+          <Button variant="outlined" onClick={() => navigate("/docencia-servicio")}>← Volver</Button>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: "#1b5e20" }}>
+            Nuevo Convenio Docencia-Servicio
+          </Typography>
+          <Box sx={{ width: 100 }} />
+        </Box>
+        <Stepper activeStep={wizardStep} alternativeLabel sx={{ mb: 4 }}>
+          {steps.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+        </Stepper>
+
+        {(wizardStep === 0 || wizardStep === 1) && renderAnexoFormCompleto(wizardStep)}
+        {wizardStep === 2 && (
+          <ModalAsignaturas
+            open
+            embedded
+            programa={programaWizard}
+            practicasData={practicasData}
+            onClose={() => navigate("/docencia-servicio")}
+            onBack={() => setWizardStep(1)}
+            onSaved={() => setWizardStep(3)}
+          />
+        )}
+        {wizardStep === 3 && (
+          <ModalEsquema
+            open
+            embedded
+            programa={programaWizard}
+            onClose={() => navigate("/docencia-servicio")}
+            onBack={() => setWizardStep(2)}
+            onSaved={() => setWizardStep(4)}
+          />
+        )}
+        {wizardStep === 4 && (
+          <ModalHorarios
+            open
+            embedded
+            programa={programaWizard}
+            onClose={() => navigate("/docencia-servicio")}
+            onBack={() => setWizardStep(3)}
+            onSaved={() => setWizardStep(5)}
+          />
+        )}
+        {wizardStep === 5 && (
+          <ModalHorarios
+            open
+            embedded
+            readOnly
+            programa={programaWizard}
+            onClose={() => navigate("/docencia-servicio")}
+            onBack={() => setWizardStep(4)}
+            onSaved={finish}
+          />
+        )}
+        {(wizardStep === 0 || wizardStep === 1) && (
+          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
+            <Button disabled={wizardStep === 0} onClick={() => setWizardStep((step) => step - 1)}>Atrás</Button>
+            <Button variant="contained" onClick={wizardStep === 1 ? goNext : goNext}>
+              Continuar
+            </Button>
+          </Box>
+        )}
+      </Box>
+    );
+  };
 
   // Componente de formulario de escenario de práctica reutilizable
   const renderEscenarioForm = (isGeneral = false) => (
@@ -3839,7 +3934,9 @@ const DocenciaServicio = () => {
         <Box
           sx={{
             width: "100%",
-            maxWidth: isVistaAnexo || isVistaEscenario ? "950px" : "1100px",
+            maxWidth: isVistaAnexo ? "1450px" : isVistaEscenario ? "1100px" : "1100px",
+            boxSizing: "border-box",
+            overflowX: "hidden",
             mx: "auto",
             px: { xs: 2, sm: 3, md: 4 },
             mt: 2,
@@ -3850,40 +3947,7 @@ const DocenciaServicio = () => {
           }}
         >
           {isVistaAnexo ? (
-            <Box sx={{ mb: 4 }}>
-              <Box
-                sx={{
-                  mb: 3,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 1,
-                }}
-              >
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate("/docencia-servicio")}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderColor: "#2e7d32",
-                    color: "#2e7d32",
-                    "&:hover": {
-                      borderColor: "#1b5e20",
-                      backgroundColor: "rgba(46, 125, 50, 0.04)",
-                    },
-                  }}
-                >
-                  ← Volver a Docencia y Servicio
-                </Button>
-                <Typography variant="body2" sx={{ color: "#666" }}>
-                  Docencia-Servicio / Formulario de Anexo Convenio D.S.
-                </Typography>
-              </Box>
-
-              {renderAnexoFormCompleto()}
-            </Box>
+            renderConvenioWizard()
           ) : isVistaEscenario ? (
             <Box sx={{ mb: 4 }}>
               <Box
@@ -4141,14 +4205,6 @@ const DocenciaServicio = () => {
                   sx={{ mb: 2 }}
                 >
                   Añadir Anexo Convenio D.S.
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => setShowAsignaturasModal(true)}
-                  disabled={!programaSeleccionado}
-                  sx={{ mb: 2 }}
-                >
-                  Asignaturas
                 </Button>
                 <Button
                   variant="contained"
