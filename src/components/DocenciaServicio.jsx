@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -110,7 +110,23 @@ const DocenciaServicio = () => {
     expandido: true,
   });
 
-  const PERIODOS_ROMANOS = ["VI", "VII", "VIII", "IX", "X"];
+  const PERIODOS_ROMANOS = [
+    "I",
+    "II",
+    "III",
+    "IV",
+    "V",
+    "VI",
+    "VII",
+    "VIII",
+    "IX",
+    "X",
+    "XI",
+    "XII",
+    "XIII",
+    "XIV",
+    "XV",
+  ];
 
   const initialAnexoFormData = {
     idPrograma: "",
@@ -161,15 +177,17 @@ const DocenciaServicio = () => {
       return initialAnexoFormData;
     }
   });
+  const lastInitializedProgIdRef = useRef(null);
   const [reloadAnexos, setReloadAnexos] = useState(false);
   const [wizardStep, setWizardStep] = useState(() => {
     try {
       const saved = JSON.parse(sessionStorage.getItem(WIZARD_STORAGE_KEY) || "null");
-      return Number.isInteger(saved?.step) ? Math.min(Math.max(saved.step, 0), 5) : 0;
+      return Number.isInteger(saved?.step) ? Math.min(Math.max(saved.step, 0), 4) : 0;
     } catch {
       return 0;
     }
   });
+  const [asignaturasConfiguradas, setAsignaturasConfiguradas] = useState([]);
 
   useEffect(() => {
     if (!isVistaAnexo) return;
@@ -392,22 +410,163 @@ const DocenciaServicio = () => {
     }
   };
 
+  // Conversión de período a número (VI -> 6, VII -> 7, etc.)
+  const parsePeriodoToNumber = (val) => {
+    if (val === null || val === undefined) return null;
+    const str = String(val).trim().toUpperCase();
+    if (!str) return null;
+    if (/^\d+$/.test(str)) return parseInt(str, 10);
+    const romanMap = {
+      I: 1,
+      II: 2,
+      III: 3,
+      IV: 4,
+      V: 5,
+      VI: 6,
+      VII: 7,
+      VIII: 8,
+      IX: 9,
+      X: 10,
+      XI: 11,
+      XII: 12,
+      XIII: 13,
+      XIV: 14,
+      XV: 15,
+    };
+    if (romanMap[str]) return romanMap[str];
+    const words = str.split(/[\s\-_/.]+/);
+    for (const word of words) {
+      if (romanMap[word]) return romanMap[word];
+      if (/^\d+$/.test(word)) return parseInt(word, 10);
+    }
+    const cleanRoman = str.replace(/[^IVXLCDM]/g, "");
+    if (cleanRoman) {
+      const rMap = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+      let num = 0;
+      for (let i = 0; i < cleanRoman.length; i++) {
+        const curr = rMap[cleanRoman[i]];
+        const next = rMap[cleanRoman[i + 1]];
+        if (next && curr < next) num -= curr;
+        else num += curr;
+      }
+      if (num > 0 && num <= 30) return num;
+    }
+    return null;
+  };
+
+  // Determinar si un programa tiene régimen/periodicidad anual
+  const isAnualProgram = (periodicidad, duracion) => {
+    const pStr = String(periodicidad || "").toLowerCase();
+    const dStr = String(duracion || "").toLowerCase();
+    return (
+      pStr.includes("anual") ||
+      (dStr.includes("año") && !pStr.includes("semestr"))
+    );
+  };
+
+  // Calcular la cantidad de períodos académicos según periodicidad y duración
+  // Ej: 8 sem + Anual -> 4 años; 8 sem + Semestral -> 8 semestres
+  const calculateProgramPeriodsCount = (periodicidad, duracion) => {
+    const match = String(duracion || "").match(/\d+/);
+    const amount = match ? parseInt(match[0], 10) : 0;
+    if (!amount) return 5;
+
+    const pStr = String(periodicidad || "").toLowerCase();
+    const dStr = String(duracion || "").toLowerCase();
+
+    const isAnual =
+      pStr.includes("anual") ||
+      (dStr.includes("año") && !pStr.includes("semestr"));
+    const isSemestral = pStr.includes("semestr");
+    const durationIsSem = dStr.includes("sem");
+    const durationIsAnos = dStr.includes("año");
+
+    if (isAnual) {
+      if (durationIsSem) {
+        return Math.ceil(amount / 2);
+      }
+      if (durationIsAnos) {
+        return amount;
+      }
+      if (amount > 6) {
+        return Math.ceil(amount / 2);
+      }
+      return amount;
+    }
+
+    if (isSemestral) {
+      if (durationIsAnos) {
+        return amount * 2;
+      }
+      return amount;
+    }
+
+    if (durationIsSem) return amount;
+    return amount || 5;
+  };
+
   // Función para obtener los períodos de prácticas para un programa dado
-  const getPeriodosParaPrograma = (idPrograma, practicas) => {
+  const getPeriodosParaPrograma = (idPrograma, practicas, programaObj = null) => {
     if (!idPrograma || !practicas || practicas.length === 0) return [];
     const idProgramaStr = String(idPrograma).trim().toLowerCase();
     const practicasDelPrograma = practicas.filter((p) => {
-      const pId = String(p.id_programa || p["id_programa"] || "").trim().toLowerCase();
-      return pId === idProgramaStr;
+      const keyProg = Object.keys(p || {}).find((k) =>
+        k.toLowerCase().includes("programa"),
+      );
+      const valProg = keyProg ? p[keyProg] : (p.id_programa || p["id_programa"] || "");
+      return String(valProg).trim().toLowerCase() === idProgramaStr;
     });
     if (practicasDelPrograma.length === 0) return [];
-    // Extraer períodos únicos (ej: "VI", "VII", etc.)
-    const periodosKey = "período académico";
+
+    const progRef =
+      programaObj ||
+      (programasData || []).find(
+        (p) => String(p.id_programa).trim().toLowerCase() === idProgramaStr,
+      );
+
+    const periodicidad =
+      progRef?.periodicidad ||
+      progRef?.periodicidad_admision ||
+      anexoFormData.periodicidad_admision ||
+      "";
+    const duracion =
+      progRef?.["duración"] ||
+      progRef?.duracion ||
+      progRef?.duracion_programa ||
+      anexoFormData.duracion_semestres ||
+      "";
+    const esAnual = isAnualProgram(periodicidad, duracion);
+    const maxPeriodos = calculateProgramPeriodsCount(periodicidad, duracion);
+
+    // Extraer períodos únicos normalizados a Romano (ej: "I", "II", etc.)
     const periodosUnicos = [
       ...new Set(
         practicasDelPrograma
           .map((p) => {
-            const val = p[periodosKey] || p["periodo académico"] || p["periodo academico"] || p["período academico"] || "";
+            const keyPeriodo = Object.keys(p || {}).find((k) => {
+              const clean = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              return clean.includes("periodo");
+            });
+            const val = keyPeriodo
+              ? p[keyPeriodo]
+              : p["período académico"] ||
+                p["periodo académico"] ||
+                p["periodo academico"] ||
+                p["período academico"] ||
+                "";
+            let num = parsePeriodoToNumber(val);
+            if (!num) return "";
+            // Si el programa es anual y el período registrado viene en número de semestre mayor a los años (ej: VI en programa de 4 años),
+            // se convierte al año correspondiente: Math.ceil(num / 2)
+            if (esAnual && maxPeriodos > 0 && num > maxPeriodos) {
+              num = Math.ceil(num / 2);
+            }
+            if (maxPeriodos > 0 && num > maxPeriodos) {
+              return "";
+            }
+            if (num && PERIODOS_ROMANOS[num - 1]) {
+              return PERIODOS_ROMANOS[num - 1];
+            }
             return String(val).trim().toUpperCase();
           })
           .filter((v) => v !== ""),
@@ -415,6 +574,60 @@ const DocenciaServicio = () => {
     ];
     return periodosUnicos;
   };
+
+  // Efecto para autoseleccionar los períodos si la hoja de PRACTICAS ya los tiene
+  useEffect(() => {
+    const prog =
+      anexoFormData.programaSeleccionado ||
+      (anexoFormData.idPrograma &&
+        programasData.find(
+          (p) => String(p.id_programa) === String(anexoFormData.idPrograma),
+        ));
+    const idProg = prog?.id_programa || anexoFormData.idPrograma;
+    if (!idProg || !practicasData || practicasData.length === 0) return;
+
+    const periodicidad =
+      prog?.periodicidad ||
+      anexoFormData.periodicidad_admision ||
+      "";
+    const duracion =
+      prog?.["duración"] ||
+      prog?.duracion ||
+      anexoFormData.duracion_semestres ||
+      "";
+    const periodosEnHoja = getPeriodosParaPrograma(idProg, practicasData, {
+      ...prog,
+      periodicidad,
+      duracion,
+    });
+
+    if (periodosEnHoja && periodosEnHoja.length > 0) {
+      setPeriodosFromPracticas(periodosEnHoja);
+      // Solo autoseleccionar si este programa aún no ha sido inicializado y no hay selección manual
+      if (lastInitializedProgIdRef.current !== String(idProg)) {
+        lastInitializedProgIdRef.current = String(idProg);
+        setAnexoFormData((prev) => {
+          // Si el usuario ya tiene períodos seleccionados, respetarlos plenamente
+          if (
+            Array.isArray(prev.periodos_pract_formativas) &&
+            prev.periodos_pract_formativas.length > 0
+          ) {
+            return prev;
+          }
+          return {
+            ...prev,
+            ...(prog && !prev.programaSeleccionado ? { programaSeleccionado: prog } : {}),
+            periodos_pract_formativas: periodosEnHoja,
+          };
+        });
+      }
+    }
+  }, [
+    anexoFormData.programaSeleccionado,
+    anexoFormData.idPrograma,
+    practicasData,
+    programasData,
+  ]);
 
   // Función para agrupar anexos según el tipo de vista
   const agruparAnexos = (
@@ -1263,14 +1476,34 @@ const DocenciaServicio = () => {
 
     // Buscar períodos de prácticas formativas para este programa
     let periodosAutocompletados = [];
+    const count = calculateProgramPeriodsCount(
+      periodicidadAdmision,
+      duracionSemestres,
+    );
+    const validPeriodosDisponibles = Array.from(
+      { length: count },
+      (_, i) => PERIODOS_ROMANOS[i] || String(i + 1),
+    );
+
     if (programaRef) {
       const idProg = programaRef.id_programa;
-      periodosAutocompletados = getPeriodosParaPrograma(idProg, practicasData);
+      periodosAutocompletados = getPeriodosParaPrograma(
+        idProg,
+        practicasData,
+        {
+          ...programaRef,
+          periodicidad: periodicidadAdmision,
+          duracion: duracionSemestres,
+        },
+      ).filter((p) => validPeriodosDisponibles.includes(p));
     }
 
     // Si hay períodos en la hoja de prácticas, auto-seleccionarlos
     // Si no hay datos, dejar vacío para que el usuario seleccione manualmente
     // Si no hay programa seleccionado, resetear el estado
+    lastInitializedProgIdRef.current = programaRef
+      ? String(programaRef.id_programa)
+      : null;
     if (!programaRef) {
       setPeriodosFromPracticas(null);
     } else if (periodosAutocompletados.length > 0) {
@@ -1288,18 +1521,36 @@ const DocenciaServicio = () => {
       duracion_semestres: duracionSemestres,
       periodicidad_admision: periodicidadAdmision,
       estudiantes_admitidos: estudiantesAdmitidos,
-      periodos_pract_formativas: periodosAutocompletados.length > 0
-        ? periodosAutocompletados
-        : [],
+      periodos_pract_formativas:
+        periodosAutocompletados.length > 0 ? periodosAutocompletados : [],
     }));
   };
 
   // Manejar selección múltiple de períodos con prácticas formativas (romanos)
   const handlePeriodoPracticaToggle = (periodoRomano) => {
     setAnexoFormData((prev) => {
-      const actuales = Array.isArray(prev.periodos_pract_formativas)
-        ? prev.periodos_pract_formativas
-        : [];
+      const periodicidad =
+        prev.periodicidad_admision ||
+        prev.programaSeleccionado?.periodicidad ||
+        "";
+      const duracion =
+        prev.duracion_semestres ||
+        prev.programaSeleccionado?.["duración"] ||
+        prev.programaSeleccionado?.duracion ||
+        "";
+      const count = calculateProgramPeriodsCount(periodicidad, duracion);
+      const validPeriodosDisponibles = Array.from(
+        { length: count },
+        (_, i) => PERIODOS_ROMANOS[i] || String(i + 1),
+      );
+
+      // Limpiar actuales de cualquier período fantasma que no pertenezca a los períodos disponibles del programa
+      const actuales = (
+        Array.isArray(prev.periodos_pract_formativas)
+          ? prev.periodos_pract_formativas
+          : []
+      ).filter((p) => validPeriodosDisponibles.includes(p));
+
       const index = actuales.indexOf(periodoRomano);
       let nuevos;
       if (index === -1) {
@@ -2694,31 +2945,7 @@ const DocenciaServicio = () => {
                           />
                         </Grid>
 
-                        <Grid item xs={12}>
-                          <FormControl fullWidth required>
-                            <InputLabel id="escenarios-label">
-                              Escenario de Práctica
-                            </InputLabel>
-                            <Select
-                              labelId="escenarios-label"
-                              id="escenarios-select"
-                              name="idEscenario"
-                              value={anexoFormData.idEscenario}
-                              onChange={handleAnexoInputChange}
-                              label="Escenario de Práctica"
-                            >
-                              {data && Array.isArray(data)
-                                ? data.map((item) => (
-                                    <MenuItem key={item.id} value={item.id}>
-                                      {item.nombre}
-                                    </MenuItem>
-                                  ))
-                                : []}
-                            </Select>
-                          </FormControl>
-                        </Grid>
-
-                        {/* Campos extraídos del programa */}
+                        {/* c) Nivel de formación */}
                         <Grid item xs={12} sm={6}>
                           <TextField
                             label="c) Nivel de formación"
@@ -2738,7 +2965,7 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             type="number"
                             fullWidth
-                            helperText="49 semanas si es anual, 18 si es semestral"
+                            helperText="48 semanas si es anual, 18 si es semestral"
                           />
                         </Grid>
 
@@ -2776,18 +3003,14 @@ const DocenciaServicio = () => {
                           />
                         </Grid>
 
-                        {/* h) Períodos con prácticas formativas (romanos 6 al 10) */}
+                        {/* h) Períodos con prácticas formativas */}
                         <Grid item xs={12}>
                           <Box
                             sx={{
                               p: 1.5,
                               borderRadius: 1,
-                              backgroundColor: periodosFromPracticas && periodosFromPracticas.length > 0
-                                ? "#e8f5e9"
-                                : "#f1f8e9",
-                              border: periodosFromPracticas && periodosFromPracticas.length > 0
-                                ? "1px solid #4caf50"
-                                : "1px dashed #aed581",
+                              backgroundColor: "#e8f5e9",
+                              border: "1px solid #4caf50",
                             }}
                           >
                             <FormLabel
@@ -2799,43 +3022,18 @@ const DocenciaServicio = () => {
                                 fontSize: "0.9rem",
                               }}
                             >
-                              h) Períodos con prácticas formativas (Seleccione
-                              uno o varios):
+                              h) Períodos con prácticas formativas (Selecciona los períodos que tendrán prácticas):
                             </FormLabel>
-                            {periodosFromPracticas && periodosFromPracticas.length > 0 && (
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  display: "block",
-                                  mb: 1,
-                                  color: "#2e7d32",
-                                  fontStyle: "italic",
-                                  backgroundColor: "#c8e6c9",
-                                  p: 0.5,
-                                  px: 1,
-                                  borderRadius: 0.5,
-                                }}
-                              >
-                                Períodos autocompletados desde la hoja de prácticas formativas del programa.
-                              </Typography>
-                            )}
-                            {periodosFromPracticas && periodosFromPracticas.length === 0 && anexoFormData.programaSeleccionado && (
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  display: "block",
-                                  mb: 1,
-                                  color: "#f57f17",
-                                  fontStyle: "italic",
-                                  backgroundColor: "#fff9c4",
-                                  p: 0.5,
-                                  px: 1,
-                                  borderRadius: 0.5,
-                                }}
-                              >
-                                ⚠️ No se encontraron prácticas registradas para este programa. Seleccione los períodos manualmente.
-                              </Typography>
-                            )}
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                display: "block",
+                                mb: 1,
+                                color: "#2e7d32",
+                              }}
+                            >
+                              Los períodos seleccionados definirán las pestañas disponibles en los pasos de Asignaturas, Esquemas y Horarios.
+                            </Typography>
                             <Box
                               sx={{
                                 display: "flex",
@@ -2843,53 +3041,80 @@ const DocenciaServicio = () => {
                                 flexWrap: "wrap",
                               }}
                             >
-                              {Array.from(
-                                new Set([
-                                  ...PERIODOS_ROMANOS,
-                                  ...(periodosFromPracticas || []),
-                                ]),
-                              ).map((periodo) => {
-                                const isChecked =
-                                  Array.isArray(
-                                    anexoFormData.periodos_pract_formativas,
-                                  ) &&
-                                  anexoFormData.periodos_pract_formativas.includes(
-                                    periodo,
-                                  );
-                                // Deshabilitar si hay períodos autocompletados desde la hoja de prácticas
-                                const isDisabled = periodosFromPracticas && periodosFromPracticas.length > 0;
-                                return (
-                                  <FormControlLabel
-                                    key={periodo}
-                                    control={
-                                      <Checkbox
-                                        checked={isChecked}
-                                        onChange={() =>
-                                          handlePeriodoPracticaToggle(periodo)
-                                        }
-                                        disabled={isDisabled}
-                                        sx={{
-                                          color: isDisabled ? "#a5d6a7" : "#2e7d32",
-                                          "&.Mui-checked": {
-                                            color: isDisabled ? "#66bb6a" : "#1b5e20",
-                                          },
-                                        }}
-                                      />
-                                    }
-                                    label={
-                                      <Typography
-                                        variant="body2"
-                                        sx={{
-                                          fontWeight: isChecked ? 700 : 500,
-                                          color: isDisabled && !isChecked ? "#bdbdbd" : "inherit",
-                                        }}
-                                      >
-                                        {periodo}
-                                      </Typography>
-                                    }
-                                  />
+                              {(() => {
+                                const prog =
+                                  anexoFormData.programaSeleccionado ||
+                                  (anexoFormData.idPrograma &&
+                                    programasData.find(
+                                      (p) =>
+                                        String(p.id_programa) ===
+                                        String(anexoFormData.idPrograma),
+                                    ));
+                                const periodicidadProg =
+                                  prog?.["periodicidad"] ||
+                                  prog?.["periodicidad_admision"] ||
+                                  anexoFormData.periodicidad_admision ||
+                                  "";
+                                const duracionProg =
+                                  prog?.["duración"] ||
+                                  prog?.["duracion"] ||
+                                  prog?.["duracion_programa"] ||
+                                  anexoFormData.duracion_semestres ||
+                                  "";
+                                const count = calculateProgramPeriodsCount(
+                                  periodicidadProg,
+                                  duracionProg,
                                 );
-                              })}
+                                const esAnual = isAnualProgram(
+                                  periodicidadProg,
+                                  duracionProg,
+                                );
+                                const labelPrefix = esAnual ? "Año" : "Semestre";
+
+                                const periodosDisponibles = Array.from(
+                                  { length: count },
+                                  (_, i) => PERIODOS_ROMANOS[i] || String(i + 1),
+                                );
+
+                                return periodosDisponibles.map((periodo) => {
+                                  const isChecked =
+                                    Array.isArray(
+                                      anexoFormData.periodos_pract_formativas,
+                                    ) &&
+                                    anexoFormData.periodos_pract_formativas.includes(
+                                      periodo,
+                                    );
+                                  return (
+                                    <FormControlLabel
+                                      key={periodo}
+                                      control={
+                                        <Checkbox
+                                          checked={isChecked}
+                                          onChange={() =>
+                                            handlePeriodoPracticaToggle(periodo)
+                                          }
+                                          sx={{
+                                            color: "#2e7d32",
+                                            "&.Mui-checked": {
+                                              color: "#1b5e20",
+                                            },
+                                          }}
+                                        />
+                                      }
+                                      label={
+                                        <Typography
+                                          variant="body2"
+                                          sx={{
+                                            fontWeight: isChecked ? 700 : 500,
+                                          }}
+                                        >
+                                          {`${labelPrefix} ${periodo}`}
+                                        </Typography>
+                                      }
+                                    />
+                                  );
+                                });
+                              })()}
                             </Box>
                           </Box>
                         </Grid>
@@ -3391,9 +3616,32 @@ const DocenciaServicio = () => {
       "Asignaturas",
       "Esquema",
       "Horarios",
-      "Beneficiarios",
     ];
-    const programaWizard = anexoFormData.programaSeleccionado || programaSeleccionado;
+    const programaWizard = {
+      ...(programaSeleccionado || {}),
+      ...(anexoFormData.programaSeleccionado || {}),
+      id_programa:
+        anexoFormData.idPrograma ||
+        anexoFormData.programaSeleccionado?.id_programa ||
+        anexoFormData.programaSeleccionado?.id ||
+        programaSeleccionado?.id_programa ||
+        programaSeleccionado?.id ||
+        "",
+      periodicidad:
+        anexoFormData.periodicidad_admision ||
+        anexoFormData.programaSeleccionado?.periodicidad ||
+        programaSeleccionado?.periodicidad ||
+        "",
+      duracion:
+        anexoFormData.duracion_semestres ||
+        anexoFormData.programaSeleccionado?.["duración"] ||
+        anexoFormData.programaSeleccionado?.duracion ||
+        programaSeleccionado?.["duración"] ||
+        programaSeleccionado?.duracion ||
+        "",
+      duracion_programa: anexoFormData.duracion_semestres || "",
+      duracion_semestres: anexoFormData.duracion_semestres || "",
+    };
     const goNext = () => {
       if (wizardStep === 0 && !anexoFormData.programaSeleccionado) {
         alert("Selecciona el programa académico para continuar.");
@@ -3423,9 +3671,17 @@ const DocenciaServicio = () => {
             embedded
             programa={programaWizard}
             practicasData={practicasData}
+            escenariosData={escenariosData && escenariosData.length > 0 ? escenariosData : data}
+            periodosSeleccionados={anexoFormData.periodos_pract_formativas}
             onClose={() => navigate("/docencia-servicio")}
             onBack={() => setWizardStep(1)}
-            onSaved={() => setWizardStep(3)}
+            onSaved={(savedRows) => {
+              if (Array.isArray(savedRows) && savedRows.length > 0) {
+                setAsignaturasConfiguradas(savedRows);
+              }
+              fetchPracticas();
+              setWizardStep(3);
+            }}
           />
         )}
         {wizardStep === 3 && (
@@ -3433,6 +3689,10 @@ const DocenciaServicio = () => {
             open
             embedded
             programa={programaWizard}
+            asignaturasData={asignaturasConfiguradas}
+            practicasData={practicasData}
+            escenariosData={escenariosData && escenariosData.length > 0 ? escenariosData : data}
+            periodosSeleccionados={anexoFormData.periodos_pract_formativas}
             onClose={() => navigate("/docencia-servicio")}
             onBack={() => setWizardStep(2)}
             onSaved={() => setWizardStep(4)}
@@ -3443,26 +3703,17 @@ const DocenciaServicio = () => {
             open
             embedded
             programa={programaWizard}
+            escenariosData={escenariosData && escenariosData.length > 0 ? escenariosData : data}
+            periodosSeleccionados={anexoFormData.periodos_pract_formativas}
             onClose={() => navigate("/docencia-servicio")}
             onBack={() => setWizardStep(3)}
-            onSaved={() => setWizardStep(5)}
-          />
-        )}
-        {wizardStep === 5 && (
-          <ModalHorarios
-            open
-            embedded
-            readOnly
-            programa={programaWizard}
-            onClose={() => navigate("/docencia-servicio")}
-            onBack={() => setWizardStep(4)}
             onSaved={finish}
           />
         )}
         {(wizardStep === 0 || wizardStep === 1) && (
           <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
             <Button disabled={wizardStep === 0} onClick={() => setWizardStep((step) => step - 1)}>Atrás</Button>
-            <Button variant="contained" onClick={wizardStep === 1 ? goNext : goNext}>
+            <Button variant="contained" onClick={goNext}>
               Continuar
             </Button>
           </Box>

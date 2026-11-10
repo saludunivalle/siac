@@ -37,15 +37,30 @@ const DAYS = [
 const HOURS = Array.from({ length: 13 }, (_, i) => `${i + 6}:00-${i + 7}:00`);
 const emptySchedule = () => Object.fromEntries(DAYS.map((day) => [day, []]));
 const valueOf = (obj, ...names) => {
-  const clean = (value) => String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-  const key = Object.keys(obj || {}).find((k) =>
-    names.some((n) => clean(k) === clean(n)),
-  );
-  return key ? obj[key] : "";
+  if (!obj) return "";
+  const clean = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+
+  for (const n of names) {
+    const target = clean(n);
+    const key = Object.keys(obj).find((k) => clean(k) === target);
+    if (key && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== "") {
+      return obj[key];
+    }
+  }
+  for (const n of names) {
+    const target = clean(n);
+    if (target.length < 4) continue;
+    const key = Object.keys(obj).find((k) => clean(k).includes(target));
+    if (key && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== "") {
+      return obj[key];
+    }
+  }
+  return "";
 };
 const number = (value) => Number(String(value || "").match(/\d+/)?.[0]) || 0;
 const periodNumber = (value) => {
@@ -56,12 +71,44 @@ const periodNumber = (value) => {
   return token ? (roman[token] || Number(token)) : 0;
 };
 const toRoman = (value) => ({ 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII", 13: "XIII", 14: "XIV", 15: "XV" }[Number(value)] || String(value));
+const isAnualProgram = (periodicidad, duracion) => {
+  const pStr = String(periodicidad || "").toLowerCase();
+  const dStr = String(duracion || "").toLowerCase();
+  return (
+    pStr.includes("anual") ||
+    (dStr.includes("año") && !pStr.includes("semestr"))
+  );
+};
+
 const periodCount = (periodicity, duration) => {
-  const n = number(duration);
-  const context = `${periodicity || ""} ${duration || ""}`;
-  const sem = /sem/i.test(context);
-  const annual = /anual/i.test(context);
-  return sem && annual ? Math.ceil(n / 2) : !sem && !annual ? n * 2 : n;
+  const match = String(duration || "").match(/\d+/);
+  const amount = match ? parseInt(match[0], 10) : 0;
+  if (!amount) return 5;
+
+  const pStr = String(periodicity || "").toLowerCase();
+  const dStr = String(duration || "").toLowerCase();
+
+  const isAnual =
+    pStr.includes("anual") ||
+    (dStr.includes("año") && !pStr.includes("semestr"));
+  const isSemestral = pStr.includes("semestr");
+  const durationIsSem = dStr.includes("sem");
+  const durationIsAnos = dStr.includes("año");
+
+  if (isAnual) {
+    if (durationIsSem) return Math.ceil(amount / 2);
+    if (durationIsAnos) return amount;
+    if (amount > 6) return Math.ceil(amount / 2);
+    return amount;
+  }
+
+  if (isSemestral) {
+    if (durationIsAnos) return amount * 2;
+    return amount;
+  }
+
+  if (durationIsSem) return amount;
+  return amount || 5;
 };
 
 export default function ModalHorarios({
@@ -69,19 +116,24 @@ export default function ModalHorarios({
   onClose,
   onBack,
   programa,
+  escenariosData = [],
+  periodosSeleccionados = [],
   onSaved,
   embedded = false,
   readOnly = false,
 }) {
   const idPrograma = valueOf(programa, "id_programa", "idPrograma", "id");
-  const periodicidad = valueOf(programa, "periodicidad");
+  const periodicidad = valueOf(programa, "periodicidad", "periodicidad_admision");
   const duracion = valueOf(
     programa,
-    "duracion",
+    "duracion_semestres",
     "duracion_programa",
+    "duracion",
     "duración",
   );
   const totalPeriodos = periodCount(periodicidad, duracion);
+  const esAnual = isAnualProgram(periodicidad, duracion);
+  const labelPrefix = esAnual ? "Año" : "Semestre";
   const [blocks, setBlocks] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [savedSummaries, setSavedSummaries] = useState([]);
@@ -149,9 +201,28 @@ export default function ModalHorarios({
     ])
       .then(([e, h, a, summary]) => {
         if (!active) return;
-        const esquemas = (e.data || []).filter(
-          (x) => String(valueOf(x, "id_programa")).trim() === String(idPrograma).trim(),
-        );
+        const esquemas = (e.data || [])
+          .filter(
+            (x) => String(valueOf(x, "id_programa", "idPrograma", "id")).trim() === String(idPrograma).trim(),
+          )
+          .map((row) => {
+            let numPer = periodNumber(valueOf(row, "numero_periodo", "periodo"));
+            if (esAnual && totalPeriodos > 0 && numPer > totalPeriodos) {
+              numPer = Math.ceil(numPer / 2);
+            }
+            return {
+              ...row,
+              id: valueOf(row, "id") || row.id,
+              id_programa: valueOf(row, "id_programa", "idPrograma", "id") || row.id_programa,
+              id_asignatura: valueOf(row, "id_asignatura") || row.id_asignatura,
+              nombre_asignatura: valueOf(row, "nombre_asignatura", "nombre de la asignatura") || row.nombre_asignatura,
+              id_practica: valueOf(row, "id_practica", "id practica") || row.id_practica || "",
+              nombre_practica: valueOf(row, "nombre_practica", "nombre de la practica") || row.nombre_practica || "",
+              id_escenario: valueOf(row, "id_escenario", "idescenario") || row.id_escenario || "",
+              nombre_escenario: valueOf(row, "nombre_escenario", "escenario") || row.nombre_escenario || "",
+              numero_periodo: numPer,
+            };
+          });
         const horarios = (h.data || []).filter(
           (x) => String(valueOf(x, "id_programa")).trim() === String(idPrograma).trim(),
         );
@@ -184,12 +255,16 @@ export default function ModalHorarios({
         const loaded = {};
         horarios.forEach((row) => {
           try {
+            let numPerH = periodNumber(valueOf(row, "numero_periodo", "periodo"));
+            if (esAnual && totalPeriodos > 0 && numPerH > totalPeriodos) {
+              numPerH = Math.ceil(numPerH / 2);
+            }
             const normalizedRow = {
               ...row,
               id: valueOf(row, "id", "id_horario") || row.id,
               id_esquema: valueOf(row, "id_esquema") || row.id_esquema,
               id_asignatura: valueOf(row, "id_asignatura") || row.id_asignatura,
-              numero_periodo: periodNumber(valueOf(row, "numero_periodo", "periodo")),
+              numero_periodo: numPerH,
               horario_json: valueOf(row, "horario_json", "horario") || row.horario_json,
             };
             loaded[`${normalizedRow.id_esquema}-${normalizedRow.id_asignatura}`] = {
@@ -215,7 +290,26 @@ export default function ModalHorarios({
     };
   }, [open, idPrograma]);
 
-  const periods = Array.from({ length: totalPeriodos }, (_, i) => i + 1);
+  const periods = useMemo(() => {
+    if (Array.isArray(periodosSeleccionados) && periodosSeleccionados.length > 0) {
+      const selectedNums = Array.from(
+        new Set(
+          periodosSeleccionados
+            .map((p) => {
+              let n = periodNumber(p);
+              if (esAnual && totalPeriodos > 0 && n > totalPeriodos) {
+                n = Math.ceil(n / 2);
+              }
+              return n;
+            })
+            .filter((n) => n && n >= 1 && (totalPeriodos ? n <= totalPeriodos : true)),
+        ),
+      ).sort((a, b) => a - b);
+      if (selectedNums.length > 0) return selectedNums;
+    }
+    return Array.from({ length: totalPeriodos || 1 }, (_, i) => i + 1);
+  }, [periodosSeleccionados, totalPeriodos, esAnual]);
+
   const blocksFor = (period) => {
     // Un mismo esquema puede aparecer repetido en la hoja (por ejemplo,
     // después de guardar nuevamente la modal). Para horarios solo necesitamos
@@ -227,6 +321,7 @@ export default function ModalHorarios({
           .map((b) => [
             [
               b.id_asignatura,
+              b.id_practica || "",
               b.numero_fila,
               b.semana_inicio,
               b.semana_fin,
@@ -252,7 +347,14 @@ export default function ModalHorarios({
         );
         const subjects = Array.from(
           new Map(
-            active.map((subject) => [String(subject.id_asignatura), subject]),
+            active.map((subject) => [
+              String(
+                subject.id_practica
+                  ? `${subject.id_asignatura}-${subject.id_practica}`
+                  : subject.id_asignatura,
+              ),
+              subject,
+            ]),
           ).values(),
         );
         return {
@@ -265,7 +367,8 @@ export default function ModalHorarios({
       })
       .filter((b) => b.subjects.length);
   };
-  const keyFor = (block, subject) => `${subject.id}-${subject.id_asignatura}`;
+  const keyFor = (block, subject) =>
+    `${block.id}-${subject.id_asignatura}-${subject.id_practica || subject.id || "general"}`;
   const toggle = (block, subject, day, hour) => {
     const key = keyFor(block, subject);
     const current = schedules[key]?.horario || emptySchedule();
@@ -426,6 +529,10 @@ export default function ModalHorarios({
             x.semana_fin,
             Number(x.semana_fin) - Number(x.semana_inicio) + 1,
             JSON.stringify(x.horario),
+            x.id_practica || "",
+            x.nombre_practica || "",
+            x.id_escenario || "",
+            x.nombre_escenario || "",
           ],
         }));
       const existingScheduleRows = scheduleRows.filter((x) => String(x.id ?? "").trim());
@@ -623,22 +730,18 @@ export default function ModalHorarios({
               scrollButtons="auto"
             >
               {periods.map((p) => (
-                <Tab key={p} label={`Año ${toRoman(p)}`} />
+                <Tab key={p} label={`${labelPrefix} ${toRoman(p)}`} />
               ))}
             </Tabs>
             {blocksFor(periods[tab] || 1).map((block, blockIndex) => {
-              const subject = block.subjects.find(
-                (s) =>
-                  String(s.id_asignatura) ===
-                  String(
-                    selected[
-                      block.id ||
-                        `${block.numero_periodo}-${block.semana_inicio}`
-                    ],
-                  ),
-              );
               const selectorKey =
                 block.id || `${block.numero_periodo}-${block.semana_inicio}`;
+              const subject = block.subjects.find(
+                (s) => {
+                  const sKey = s.id_practica ? `${s.id_asignatura}-${s.id_practica}` : String(s.id_asignatura);
+                  return sKey === String(selected[selectorKey]);
+                },
+              );
               const current =
                 (subject && schedules[keyFor(block, subject)]?.horario) ||
                 emptySchedule();
@@ -676,20 +779,25 @@ export default function ModalHorarios({
                       sx={{ my: 2 }}
                     >
                       {block.subjects.map((s) => {
+                        const sKey = s.id_practica ? `${s.id_asignatura}-${s.id_practica}` : String(s.id_asignatura);
                         const isSelected =
                           subject &&
-                          String(subject.id_asignatura) ===
-                            String(s.id_asignatura);
+                          (s.id_practica
+                            ? String(subject.id_practica) === String(s.id_practica) && String(subject.id_asignatura) === String(s.id_asignatura)
+                            : String(subject.id_asignatura) === String(s.id_asignatura));
+                        const buttonLabel = s.nombre_practica
+                          ? `${s.nombre_asignatura}: ${s.nombre_practica} ${s.nombre_escenario ? `(${s.nombre_escenario})` : ""}`
+                          : s.nombre_asignatura;
                         return (
                           <Button
-                            key={s.id_asignatura}
+                            key={sKey}
                             className="subject-color-button"
                             variant="contained"
                             onClick={(event) => {
                               event?.stopPropagation();
                               setSelected((old) => ({
                                 ...old,
-                                [selectorKey]: s.id_asignatura,
+                                [selectorKey]: sKey,
                               }));
                             }}
                             sx={{
@@ -708,7 +816,7 @@ export default function ModalHorarios({
                             }}
                             style={{ backgroundColor: colorFor(s) }}
                           >
-                            {s.nombre_asignatura}
+                            {buttonLabel}
                           </Button>
                         );
                       })}
@@ -915,7 +1023,7 @@ export default function ModalHorarios({
         <Box sx={{ flexGrow: 1 }} />
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" onClick={save} disabled={saving || loading}>
-          {saving ? "Guardando..." : readOnly ? "Finalizar convenio" : "Guardar y continuar"}
+          {saving ? "Guardando..." : "Finalizar convenio"}
         </Button>
       </DialogActions>
     </Wrapper>
