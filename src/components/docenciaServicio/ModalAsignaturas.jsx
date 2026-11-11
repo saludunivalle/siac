@@ -1332,31 +1332,7 @@ export default function ModalAsignaturas({
                                           gap: 1,
                                           flexWrap: "wrap",
                                         }}
-                                      >
-                                        {practice.nombre_escenario && (
-                                          <Chip
-                                            size="small"
-                                            variant="outlined"
-                                            label={practice.nombre_escenario}
-                                            sx={{
-                                              fontSize: "0.7rem",
-                                              maxWidth: 220,
-                                            }}
-                                          />
-                                        )}
-                                        {practice.numero_semanas && (
-                                          <Chip
-                                            size="small"
-                                            color="primary"
-                                            variant="outlined"
-                                            label={`${practice.numero_semanas} sem`}
-                                            sx={{
-                                              fontSize: "0.7rem",
-                                              fontWeight: 600,
-                                            }}
-                                          />
-                                        )}
-                                      </Box>
+                                      ></Box>
                                     </AccordionSummary>
                                     <AccordionDetails
                                       sx={{
