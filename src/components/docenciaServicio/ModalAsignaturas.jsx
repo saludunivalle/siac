@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Accordion,
@@ -52,15 +52,18 @@ const ROMAN_MAP = {
 
 const toRoman = (num) => ROMAN_MAP[Number(num)] || String(num);
 
-const normalizedKey = (key) => String(key || "")
-  .toLowerCase()
-  .normalize("NFD")
-  .replace(/[\u0300-\u036f]/g, "")
-  .replace(/[^a-z0-9]/g, "");
+const normalizedKey = (key) =>
+  String(key || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
 
 const readColumn = (row, ...names) => {
   const wanted = names.map(normalizedKey);
-  const key = Object.keys(row || {}).find((item) => wanted.includes(normalizedKey(item)));
+  const key = Object.keys(row || {}).find((item) =>
+    wanted.includes(normalizedKey(item)),
+  );
   return key ? row[key] : "";
 };
 
@@ -125,7 +128,11 @@ const getPeriodCount = (periodicidad, duracion) => {
 const getPeriodWeeks = (periodicidad, duracion) => {
   const pStr = String(periodicidad || "").toLowerCase();
   const dStr = String(duracion || "").toLowerCase();
-  if (pStr.includes("anual") || (dStr.includes("año") && !pStr.includes("semestr"))) return 48;
+  if (
+    pStr.includes("anual") ||
+    (dStr.includes("año") && !pStr.includes("semestr"))
+  )
+    return 48;
   return 18;
 };
 
@@ -185,7 +192,7 @@ const parsePeriodoToNumber = (val) => {
 
 const periodNumber = (value) => {
   const parsed = parsePeriodoToNumber(value);
-  return parsed || (Number(value) || 0);
+  return parsed || Number(value) || 0;
 };
 
 // Extractor del nombre de asignatura desde fila de PRACTICAS
@@ -202,9 +209,15 @@ const getSubjectName = (row) => {
     }
   }
   return String(
-    row["NOMBRE DE LA ASIGNATURA A LA QUE PERTENECE LA PRÁCTICA FORMATIVA O ROTACIÓN"] ||
-      row["nombre de la asignatura a la que pertenece la práctica formativa o rotación"] ||
-      row["nombre de la asignatura a la que pertenece la practica formativa o rotacion"] ||
+    row[
+      "NOMBRE DE LA ASIGNATURA A LA QUE PERTENECE LA PRÁCTICA FORMATIVA O ROTACIÓN"
+    ] ||
+      row[
+        "nombre de la asignatura a la que pertenece la práctica formativa o rotación"
+      ] ||
+      row[
+        "nombre de la asignatura a la que pertenece la practica formativa o rotacion"
+      ] ||
       row["nombre_asignatura"] ||
       "",
   ).trim();
@@ -257,10 +270,13 @@ const distributeWeeksToPractices = (practicesList, totalAsigWeeks) => {
   }
 
   const explicitSum = practicesList.reduce(
-    (acc, p) => acc + (Number(p.numero_semanas) > 0 ? Number(p.numero_semanas) : 0),
+    (acc, p) =>
+      acc + (Number(p.numero_semanas) > 0 ? Number(p.numero_semanas) : 0),
     0,
   );
-  const withoutWeeks = practicesList.filter((p) => !(Number(p.numero_semanas) > 0));
+  const withoutWeeks = practicesList.filter(
+    (p) => !(Number(p.numero_semanas) > 0),
+  );
 
   if (withoutWeeks.length === count) {
     const baseWeeks = Math.max(1, Math.floor(targetWeeks / count));
@@ -271,7 +287,10 @@ const distributeWeeksToPractices = (practicesList, totalAsigWeeks) => {
     }));
   } else if (withoutWeeks.length > 0) {
     const remainingWeeks = Math.max(0, targetWeeks - explicitSum);
-    const baseWeeks = Math.max(1, Math.floor(remainingWeeks / withoutWeeks.length));
+    const baseWeeks = Math.max(
+      1,
+      Math.floor(remainingWeeks / withoutWeeks.length),
+    );
     const remainder = remainingWeeks - baseWeeks * withoutWeeks.length;
     let withoutIdx = 0;
     return practicesList.map((p) => {
@@ -288,26 +307,66 @@ const distributeWeeksToPractices = (practicesList, totalAsigWeeks) => {
 };
 
 const normalizePractice = (row) => {
-  const ra = String(readColumn(row, "Resultados de Aprendizaje (RA)", "resultados_aprendizaje") || "");
+  const ra = String(
+    readColumn(
+      row,
+      "Resultados de Aprendizaje (RA)",
+      "resultados_aprendizaje",
+    ) || "",
+  );
   return {
     localId: `practice-${readColumn(row, "id") || Date.now()}-${Math.random()}`,
     id: readColumn(row, "id"),
     idPractica: readColumn(row, "ID Práctica", "id_practica"),
-    nombrePractica: readColumn(row, "NOMBRE DE LA PRÁCTICA FORMATIVA O ROTACIÓN", "nombre_practica"),
+    nombrePractica: readColumn(
+      row,
+      "NOMBRE DE LA PRÁCTICA FORMATIVA O ROTACIÓN",
+      "nombre_practica",
+    ),
     competencias: readColumn(row, "Competencias", "competencias"),
     resultadosAprendizaje: ra
       .split(/\r?\n/)
       .map((item) => item.replace(/^\s*\d+\s*[-.)]\s*/, "").trim())
       .filter(Boolean),
-    numeroActividades: readColumn(row, "Número actividades para RA", "numero_actividades"),
+    numeroActividades: readColumn(
+      row,
+      "Número actividades para RA",
+      "numero_actividades",
+    ),
     evaluacion: readColumn(row, "Evaluacion", "evaluacion"),
-    id_escenario: readColumn(row, "id_escenario", "ID Escenario", "idescenario"),
-    nombre_escenario: readColumn(row, "nombre_escenario", "Escenario", "nombre escenario", "institucion"),
-    numero_semanas: readColumn(row, "numero_semanas", "semanas", "numero semanas"),
+    id_escenario: readColumn(
+      row,
+      "id_escenario",
+      "ID Escenario",
+      "idescenario",
+    ),
+    nombre_escenario: readColumn(
+      row,
+      "nombre_escenario",
+      "Escenario",
+      "nombre escenario",
+      "institucion",
+    ),
+    numero_semanas: readColumn(
+      row,
+      "numero_semanas",
+      "semanas",
+      "numero semanas",
+    ),
     grupo: readColumn(row, "grupo", "Grupo"),
-    numero_estudiantes: readColumn(row, "numero_estudiantes", "estudiantes", "numero estudiantes"),
+    numero_estudiantes: readColumn(
+      row,
+      "numero_estudiantes",
+      "estudiantes",
+      "numero estudiantes",
+    ),
     relacion: readColumn(row, "relacion", "Relacion", "relación", "Relación"),
-    estudiantes_beneficiados: readColumn(row, "estudiantes_beneficiados", "beneficiados", "estudiantes beneficiados"),
+    estudiantes_beneficiados: readColumn(
+      row,
+      "estudiantes_beneficiados",
+      "beneficiados",
+      "estudiantes beneficiados",
+    ),
   };
 };
 
@@ -330,9 +389,56 @@ export default function ModalAsignaturas({
   const [practicasList, setPracticasList] = useState([]);
   const [allPracticasList, setAllPracticasList] = useState([]);
   const [escenarios, setEscenarios] = useState(escenariosData || []);
+  const [expandedPractices, setExpandedPractices] = useState({});
+  const initialSnapshotRef = useRef("");
 
-  const periodicidad = getProgramField(programa, "periodicidad", "periodicidad_admision");
-  const duracion = getProgramField(programa, "duracion_semestres", "duracion_programa", "duracion", "duración");
+  const serializeAsignaturasSnapshot = (rowsList = []) =>
+    JSON.stringify(
+      (rowsList || []).map((row) => ({
+        numero_periodo: periodNumber(row.numero_periodo),
+        nombre_asignatura: String(row.nombre_asignatura || "").trim(),
+        numero_semanas:
+          row.numero_semanas === "" ? "" : Number(row.numero_semanas) || 0,
+        practicas: (row.practicas || []).map((practice) => ({
+          idPractica: String(practice.idPractica || "").trim(),
+          nombrePractica: String(practice.nombrePractica || "").trim(),
+          competencias: String(practice.competencias || ""),
+          resultadosAprendizaje: Array.isArray(practice.resultadosAprendizaje)
+            ? practice.resultadosAprendizaje.map((ra) => String(ra || ""))
+            : [],
+          evaluacion: String(practice.evaluacion || ""),
+          id_escenario: String(practice.id_escenario || ""),
+          nombre_escenario: String(practice.nombre_escenario || ""),
+          numero_semanas:
+            practice.numero_semanas === ""
+              ? ""
+              : Number(practice.numero_semanas) || 0,
+          grupo: String(practice.grupo || ""),
+          numero_estudiantes:
+            practice.numero_estudiantes === ""
+              ? ""
+              : Number(practice.numero_estudiantes) || 0,
+          relacion: String(practice.relacion || "1:1"),
+          estudiantes_beneficiados:
+            practice.estudiantes_beneficiados === ""
+              ? ""
+              : Number(practice.estudiantes_beneficiados) || 0,
+        })),
+      })),
+    );
+
+  const periodicidad = getProgramField(
+    programa,
+    "periodicidad",
+    "periodicidad_admision",
+  );
+  const duracion = getProgramField(
+    programa,
+    "duracion_semestres",
+    "duracion_programa",
+    "duracion",
+    "duración",
+  );
   const totalPeriodos = useMemo(
     () => getPeriodCount(periodicidad, duracion),
     [periodicidad, duracion],
@@ -359,7 +465,11 @@ export default function ModalAsignaturas({
           "https://siac-server.vercel.app/docServ",
           { sheetName: "PRACTICAS" },
         );
-        if (response.data && response.data.status && Array.isArray(response.data.data)) {
+        if (
+          response.data &&
+          response.data.status &&
+          Array.isArray(response.data.data)
+        ) {
           return response.data.data;
         }
       } catch (err) {
@@ -388,34 +498,67 @@ export default function ModalAsignaturas({
         const practicasDelPrograma = (practicasList || []).filter((p) => {
           const pId = String(
             readColumn(p, "ID_PROGRAMA", "id_programa", "id programa") || "",
-          ).trim().toLowerCase();
+          )
+            .trim()
+            .toLowerCase();
           return pId === idProgStr;
         });
         setPracticasList(practicasDelPrograma);
         const practicesForSubject = (name, totalAsigWeeks) => {
           const raw = practicasDelPrograma
-            .filter((practice) => getSubjectName(practice).trim().toLowerCase() === String(name || "").trim().toLowerCase())
+            .filter(
+              (practice) =>
+                getSubjectName(practice).trim().toLowerCase() ===
+                String(name || "")
+                  .trim()
+                  .toLowerCase(),
+            )
             .map(normalizePractice);
           return distributeWeeksToPractices(raw, totalAsigWeeks);
         };
 
         // 1. Asignaturas ya existentes en la BD para este programa
         const existingRows = data
-          .filter((item) => String(readColumn(item, "id_programa", "ID_PROGRAMA") || "").trim().toLowerCase() === idProgStr)
+          .filter(
+            (item) =>
+              String(readColumn(item, "id_programa", "ID_PROGRAMA") || "")
+                .trim()
+                .toLowerCase() === idProgStr,
+          )
           .map((item) => {
-            let numPer = periodNumber(readColumn(item, "numero_periodo", "PERÍODO ACADÉMICO", "periodo"));
+            let numPer = periodNumber(
+              readColumn(
+                item,
+                "numero_periodo",
+                "PERÍODO ACADÉMICO",
+                "periodo",
+              ),
+            );
             if (esAnual && totalPeriodos > 0 && numPer > totalPeriodos) {
               numPer = Math.ceil(numPer / 2);
             }
-            const asigName = readColumn(item, "nombre_asignatura", "NOMBRE DE LA ASIGNATURA") || item.nombre_asignatura;
-            const asigWeeks = Number(readColumn(item, "numero_semanas") || item.numero_semanas) || semanasPeriodo;
+            const asigName =
+              readColumn(
+                item,
+                "nombre_asignatura",
+                "NOMBRE DE LA ASIGNATURA",
+              ) || item.nombre_asignatura;
+            const asigWeeks =
+              Number(
+                readColumn(item, "numero_semanas") || item.numero_semanas,
+              ) || semanasPeriodo;
             return {
               ...item,
               id: readColumn(item, "id") || item.id,
-              id_programa: readColumn(item, "id_programa", "ID_PROGRAMA") || item.id_programa,
+              id_programa:
+                readColumn(item, "id_programa", "ID_PROGRAMA") ||
+                item.id_programa,
               numero_periodo: numPer,
               nombre_asignatura: asigName,
-              localId: readColumn(item, "id") || item.id || `${Date.now()}-${Math.random()}`,
+              localId:
+                readColumn(item, "id") ||
+                item.id ||
+                `${Date.now()}-${Math.random()}`,
               numero_semanas: asigWeeks,
               practicas: practicesForSubject(asigName, asigWeeks),
             };
@@ -444,7 +587,9 @@ export default function ModalAsignaturas({
           const yaExiste = existingRows.some(
             (r) =>
               periodNumber(r.numero_periodo) === Number(periodoNum) &&
-              String(r.nombre_asignatura || "").trim().toLowerCase() === nombreAsig.toLowerCase(),
+              String(r.nombre_asignatura || "")
+                .trim()
+                .toLowerCase() === nombreAsig.toLowerCase(),
           );
 
           if (!yaExiste) {
@@ -463,6 +608,7 @@ export default function ModalAsignaturas({
         });
 
         const mergedRows = [...existingRows, ...practicasRowsToAdd];
+        initialSnapshotRef.current = serializeAsignaturasSnapshot(mergedRows);
         setRows(mergedRows);
         setPeriodoActivo(0);
       })
@@ -496,7 +642,9 @@ export default function ModalAsignaturas({
 
   // Períodos que tienen asignaturas (desde prácticas o existentes)
   const periodosConAsignaturas = useMemo(() => {
-    const set = new Set(rows.map((r) => periodNumber(r.numero_periodo)).filter(Boolean));
+    const set = new Set(
+      rows.map((r) => periodNumber(r.numero_periodo)).filter(Boolean),
+    );
     return Array.from(set).sort((a, b) => a - b);
   }, [rows]);
 
@@ -521,7 +669,10 @@ export default function ModalAsignaturas({
   // Lista de años/períodos a mostrar en las pestañas:
   // Si el usuario seleccionó períodos en el Paso 0, se muestran exactamente y ÚNICAMENTE esos períodos seleccionados
   const periodosTabs = useMemo(() => {
-    if (Array.isArray(periodosSeleccionados) && periodosSeleccionados.length > 0) {
+    if (
+      Array.isArray(periodosSeleccionados) &&
+      periodosSeleccionados.length > 0
+    ) {
       const selectedNums = Array.from(
         new Set(
           periodosSeleccionados
@@ -532,13 +683,17 @@ export default function ModalAsignaturas({
               }
               return n;
             })
-            .filter((n) => n && n >= 1 && (totalPeriodos ? n <= totalPeriodos : true)),
+            .filter(
+              (n) => n && n >= 1 && (totalPeriodos ? n <= totalPeriodos : true),
+            ),
         ),
       ).sort((a, b) => a - b);
       if (selectedNums.length > 0) return selectedNums;
     }
     if (periodosConAsignaturas.length > 0) {
-      return periodosConAsignaturas.filter((n) => (totalPeriodos ? n <= totalPeriodos : true));
+      return periodosConAsignaturas.filter((n) =>
+        totalPeriodos ? n <= totalPeriodos : true,
+      );
     }
     return Array.from({ length: totalPeriodos || 1 }, (_, i) => i + 1);
   }, [periodosSeleccionados, periodosConAsignaturas, totalPeriodos, esAnual]);
@@ -547,7 +702,9 @@ export default function ModalAsignaturas({
   const periodoActualNum = periodosTabs[periodoActivo] || periodosTabs[0] || 1;
 
   const rowsForPeriod = (period) =>
-    rows.filter((row) => periodNumber(row.numero_periodo) === periodNumber(period));
+    rows.filter(
+      (row) => periodNumber(row.numero_periodo) === periodNumber(period),
+    );
 
   const addRow = (period) =>
     setRows((current) => [...current, emptySubject(period, semanasPeriodo)]);
@@ -563,11 +720,20 @@ export default function ModalAsignaturas({
     setRows((current) => current.filter((row) => row.localId !== localId));
 
   const updatePractice = (rowLocalId, practiceLocalId, field, value) =>
-    setRows((current) => current.map((row) => row.localId !== rowLocalId
-      ? row
-      : { ...row, practicas: (row.practicas || []).map((practice) => practice.localId === practiceLocalId
-        ? { ...practice, [field]: value }
-        : practice) }));
+    setRows((current) =>
+      current.map((row) =>
+        row.localId !== rowLocalId
+          ? row
+          : {
+              ...row,
+              practicas: (row.practicas || []).map((practice) =>
+                practice.localId === practiceLocalId
+                  ? { ...practice, [field]: value }
+                  : practice,
+              ),
+            },
+      ),
+    );
 
   const addPractice = (row) => {
     const periodLabel = getPeriodoRoman(row.numero_periodo);
@@ -597,33 +763,54 @@ export default function ModalAsignaturas({
       numeroActividades: "",
       evaluacion: "",
     };
-    setRows((current) => current.map((item) => item.localId === row.localId
-      ? { ...item, practicas: [...(item.practicas || []), practice] }
-      : item));
+    setRows((current) =>
+      current.map((item) =>
+        item.localId === row.localId
+          ? { ...item, practicas: [...(item.practicas || []), practice] }
+          : item,
+      ),
+    );
+    setExpandedPractices((prev) => ({ ...prev, [practice.localId]: true }));
   };
 
   const removePractice = (rowLocalId, practiceLocalId) =>
-    setRows((current) => current.map((row) => row.localId !== rowLocalId
-      ? row
-      : { ...row, practicas: (row.practicas || []).filter((practice) => practice.localId !== practiceLocalId) }));
+    setRows((current) =>
+      current.map((row) =>
+        row.localId !== rowLocalId
+          ? row
+          : {
+              ...row,
+              practicas: (row.practicas || []).filter(
+                (practice) => practice.localId !== practiceLocalId,
+              ),
+            },
+      ),
+    );
 
   const updatePracticeResult = (rowLocalId, practiceLocalId, index, value) =>
-    setRows((current) => current.map((row) => row.localId !== rowLocalId
-      ? row
-      : { ...row, practicas: (row.practicas || []).map((practice) => {
-        if (practice.localId !== practiceLocalId) return practice;
-        const resultados = [...(practice.resultadosAprendizaje || [])];
-        resultados[index] = value;
-        return { ...practice, resultadosAprendizaje: resultados };
-      }) }));
-
-  const autocompletadasCount = useMemo(
-    () => rows.filter((r) => r.fromPracticas).length,
-    [rows],
-  );
+    setRows((current) =>
+      current.map((row) =>
+        row.localId !== rowLocalId
+          ? row
+          : {
+              ...row,
+              practicas: (row.practicas || []).map((practice) => {
+                if (practice.localId !== practiceLocalId) return practice;
+                const resultados = [...(practice.resultadosAprendizaje || [])];
+                resultados[index] = value;
+                return { ...practice, resultadosAprendizaje: resultados };
+              }),
+            },
+      ),
+    );
 
   const handleSave = async () => {
     setError("");
+    if (serializeAsignaturasSnapshot(rows) === initialSnapshotRef.current) {
+      onSaved?.(rows);
+      if (!embedded) onClose?.();
+      return;
+    }
     const validRows = rows.filter(
       (row) => !row.id && row.nombre_asignatura?.trim(),
     );
@@ -662,11 +849,17 @@ export default function ModalAsignaturas({
         row.grupo || "",
         row.numero_estudiantes || "",
       ];
-      const insertData = validRows.map((row) => assignmentValues(row,
-        row.id ||
-          `${idPrograma}-${row.numero_periodo}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      ));
-      const existingRows = rows.filter((row) => row.id && row.nombre_asignatura?.trim());
+      const newRowIds = new Map();
+      const insertData = validRows.map((row) => {
+        const generatedId =
+          row.id ||
+          `${idPrograma}-${row.numero_periodo}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        newRowIds.set(row.localId, generatedId);
+        return assignmentValues(row, generatedId);
+      });
+      const existingRows = rows.filter(
+        (row) => row.id && row.nombre_asignatura?.trim(),
+      );
       const [response, ...updateResponses] = await Promise.all([
         insertData.length
           ? fetchPostGeneral({
@@ -675,59 +868,80 @@ export default function ModalAsignaturas({
               urlEndPoint: "https://siac-server.vercel.app/sendDocServ",
             })
           : Promise.resolve({ status: true }),
-        ...existingRows.map((row) => fetchPostGeneral({
-          dataSend: { updateData: assignmentValues(row, row.id), id: row.id },
-          sheetName: "ASIGNATURAS",
-          urlEndPoint: "https://siac-server.vercel.app/updatePractice",
-        })),
+        ...existingRows.map((row) =>
+          fetchPostGeneral({
+            dataSend: { updateData: assignmentValues(row, row.id), id: row.id },
+            sheetName: "ASIGNATURAS",
+            urlEndPoint: "https://siac-server.vercel.app/updatePractice",
+          }),
+        ),
       ]);
-      if (!response?.status || updateResponses.some((item) => !item?.status)) throw new Error("save");
+      if (!response?.status || updateResponses.some((item) => !item?.status))
+        throw new Error("save");
 
-      let nextPracticeId = Math.max(0, ...allPracticasList.map((item) => Number(readColumn(item, "id")) || 0)) + 1;
-      const usedPracticeCodes = new Set(allPracticasList.map((item) => String(readColumn(item, "ID Práctica", "id_practica") || "")));
-      const practicesToSave = rows.flatMap((row) => (row.practicas || []).map((practice) => {
-        const periodLabel = getPeriodoRoman(row.numero_periodo);
-        let sequence = 1;
-        let code = practice.idPractica || `PRAC-${periodLabel}-${String(sequence).padStart(2, "0")}`;
-        while (!practice.id && usedPracticeCodes.has(code)) {
-          sequence += 1;
-          code = `PRAC-${periodLabel}-${String(sequence).padStart(2, "0")}`;
-        }
-        usedPracticeCodes.add(code);
-        const id = practice.id || nextPracticeId++;
-        return {
-          id,
-          idPractica: code,
-          row,
-          practice,
-          values: [
+      let nextPracticeId =
+        Math.max(
+          0,
+          ...allPracticasList.map(
+            (item) => Number(readColumn(item, "id")) || 0,
+          ),
+        ) + 1;
+      const usedPracticeCodes = new Set(
+        allPracticasList.map((item) =>
+          String(readColumn(item, "ID Práctica", "id_practica") || ""),
+        ),
+      );
+      const savedPracticeMeta = new Map();
+      const practicesToSave = rows.flatMap((row) =>
+        (row.practicas || []).map((practice) => {
+          const periodLabel = getPeriodoRoman(row.numero_periodo);
+          let sequence = 1;
+          let code =
+            practice.idPractica ||
+            `PRAC-${periodLabel}-${String(sequence).padStart(2, "0")}`;
+          while (!practice.id && usedPracticeCodes.has(code)) {
+            sequence += 1;
+            code = `PRAC-${periodLabel}-${String(sequence).padStart(2, "0")}`;
+          }
+          usedPracticeCodes.add(code);
+          const id = practice.id || nextPracticeId++;
+          savedPracticeMeta.set(practice.localId, { id, idPractica: code });
+          return {
             id,
-            code,
-            idPrograma,
-            periodLabel,
-            row.nombre_asignatura.trim(),
-            practice.nombrePractica || row.nombre_asignatura.trim(),
-            practice.competencias || "",
-            (practice.resultadosAprendizaje || [])
-              .map((item, index) => `${index + 1}-${item}`)
-              .filter((item) => item.slice(item.indexOf("-") + 1).trim())
-              .join("\n"),
-            Array.isArray(practice.resultadosAprendizaje)
-              ? practice.resultadosAprendizaje.length
-              : (practice.numeroActividades || 0),
-            practice.evaluacion || "",
-            practice.id_escenario || "",
-            practice.nombre_escenario || "",
-            practice.numero_semanas || "",
-            practice.grupo || "",
-            practice.numero_estudiantes || "",
-            practice.relacion || "",
-            practice.estudiantes_beneficiados || "",
-          ],
-        };
-      }));
+            idPractica: code,
+            row,
+            practice,
+            values: [
+              id,
+              code,
+              idPrograma,
+              periodLabel,
+              row.nombre_asignatura.trim(),
+              practice.nombrePractica || row.nombre_asignatura.trim(),
+              practice.competencias || "",
+              (practice.resultadosAprendizaje || [])
+                .map((item, index) => `${index + 1}-${item}`)
+                .filter((item) => item.slice(item.indexOf("-") + 1).trim())
+                .join("\n"),
+              Array.isArray(practice.resultadosAprendizaje)
+                ? practice.resultadosAprendizaje.length
+                : practice.numeroActividades || 0,
+              practice.evaluacion || "",
+              practice.id_escenario || "",
+              practice.nombre_escenario || "",
+              practice.numero_semanas || "",
+              practice.grupo || "",
+              practice.numero_estudiantes || "",
+              practice.relacion || "",
+              practice.estudiantes_beneficiados || "",
+            ],
+          };
+        }),
+      );
       const newPractices = practicesToSave.filter((item) => !item.practice.id);
-      const existingPractices = practicesToSave.filter((item) => item.practice.id);
+      const existingPractices = practicesToSave.filter(
+        (item) => item.practice.id,
+      );
       if (newPractices.length) {
         const practiceResponse = await fetchPostGeneral({
           dataSend: { insertData: newPractices.map((item) => item.values) },
@@ -737,15 +951,32 @@ export default function ModalAsignaturas({
         if (!practiceResponse?.status) throw new Error("practice-save");
       }
       if (existingPractices.length) {
-        const practiceResponses = await Promise.all(existingPractices.map((item) => fetchPostGeneral({
-          dataSend: { updateData: item.values, id: item.practice.id },
-          sheetName: "PRACTICAS",
-          urlEndPoint: "https://siac-server.vercel.app/updatePractice",
-        })));
-        if (practiceResponses.some((item) => !item?.status)) throw new Error("practice-update");
+        const practiceResponses = await Promise.all(
+          existingPractices.map((item) =>
+            fetchPostGeneral({
+              dataSend: { updateData: item.values, id: item.practice.id },
+              sheetName: "PRACTICAS",
+              urlEndPoint: "https://siac-server.vercel.app/updatePractice",
+            }),
+          ),
+        );
+        if (practiceResponses.some((item) => !item?.status))
+          throw new Error("practice-update");
       }
+      const updatedRows = rows.map((row) => ({
+        ...row,
+        id: row.id || newRowIds.get(row.localId) || row.id,
+        practicas: (row.practicas || []).map((practice) => {
+          const meta = savedPracticeMeta.get(practice.localId);
+          return meta
+            ? { ...practice, id: meta.id, idPractica: meta.idPractica }
+            : practice;
+        }),
+      }));
+      initialSnapshotRef.current = serializeAsignaturasSnapshot(updatedRows);
+      setRows(updatedRows);
       clearCache();
-      onSaved?.(rows);
+      onSaved?.(updatedRows);
       if (!embedded) onClose?.();
     } catch {
       setError("No se pudieron guardar las asignaturas.");
@@ -756,7 +987,15 @@ export default function ModalAsignaturas({
 
   const Wrapper = embedded ? Box : Dialog;
   const wrapperProps = embedded
-    ? { sx: { width: "100%", boxSizing: "border-box", border: "1px solid #e0e0e0", borderRadius: 2, overflow: "hidden" } }
+    ? {
+        sx: {
+          width: "100%",
+          boxSizing: "border-box",
+          border: "1px solid #e0e0e0",
+          borderRadius: 2,
+          overflow: "hidden",
+        },
+      }
     : { open, onClose, fullWidth: true, maxWidth: "md" };
 
   return (
@@ -767,7 +1006,11 @@ export default function ModalAsignaturas({
         </Typography>
       </DialogTitle>
       <DialogContent dividers>
-        <Stack direction="row" spacing={3} sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}>
+        <Stack
+          direction="row"
+          spacing={3}
+          sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}
+        >
           <Typography variant="body2">
             Periodicidad: <strong>{periodicidad || "-"}</strong>
           </Typography>
@@ -778,7 +1021,9 @@ export default function ModalAsignaturas({
             Años con prácticas:{" "}
             <strong>
               {periodosConAsignaturas.length > 0
-                ? periodosConAsignaturas.map((p) => getPeriodoDisplay(p)).join(", ")
+                ? periodosConAsignaturas
+                    .map((p) => getPeriodoDisplay(p))
+                    .join(", ")
                 : "Sin prácticas registradas"}
             </strong>
           </Typography>
@@ -787,24 +1032,6 @@ export default function ModalAsignaturas({
           </Typography>
         </Stack>
 
-        {autocompletadasCount > 0 && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              Se autocompletaron {autocompletadasCount} asignatura(s) con {semanasPeriodo} semanas
-              (según la periodicidad {periodicidad || "del programa"}) desde la hoja de prácticas:
-            </Typography>
-            <Box component="ul" sx={{ m: 0, pl: 2.5, mt: 0.5 }}>
-              {rows
-                .filter((r) => r.fromPracticas)
-                .map((r) => (
-                  <li key={r.localId}>
-                    <strong>Año {getPeriodoDisplay(r.numero_periodo)}:</strong> {r.nombre_asignatura} ({r.numero_semanas} semanas)
-                  </li>
-                ))}
-            </Box>
-          </Alert>
-        )}
-
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -812,7 +1039,9 @@ export default function ModalAsignaturas({
         )}
 
         {loading ? (
-          <Typography sx={{ py: 3, textAlign: "center" }}>Cargando asignaturas...</Typography>
+          <Typography sx={{ py: 3, textAlign: "center" }}>
+            Cargando asignaturas...
+          </Typography>
         ) : (
           <>
             <Tabs
@@ -873,7 +1102,10 @@ export default function ModalAsignaturas({
                         sx={{ fontWeight: 600 }}
                       />
                     ) : (
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "text.secondary" }}
+                      >
                         Sin asignaturas registradas
                       </Typography>
                     )}
@@ -886,275 +1118,633 @@ export default function ModalAsignaturas({
                       Prácticas Formativas o Rotaciones del Año {labelActual}
                     </Typography>
                     {periodRows.map((row) => (
-                      <Box key={row.localId} sx={{ mb: 1.5 }}>
-                      <Stack
-                        direction={{ xs: "column", sm: "row" }}
-                        spacing={1}
-                        alignItems={{ sm: "center" }}
+                      <Box
+                        key={row.localId}
                         sx={{
-                          p: 1.5,
+                          mb: 2,
                           backgroundColor: "#ffffff",
-                          borderRadius: 1,
-                          border: "1px solid #cfd8dc",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                          borderRadius: 1.5,
+                          border: "1px solid #b0bec5",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                          overflow: "hidden",
                         }}
                       >
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label="Nombre de la asignatura"
-                          value={row.nombre_asignatura || ""}
-                          onChange={(e) =>
-                            updateRow(
-                              row.localId,
-                              "nombre_asignatura",
-                              e.target.value,
-                            )
-                          }
-                        />
-                        <TextField
-                          label="N.º semanas"
-                          size="small"
-                          type="number"
-                          value={row.numero_semanas ?? ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            updateRow(
-                              row.localId,
-                              "numero_semanas",
-                              value === "" ? "" : Math.min(Number(value), 48),
-                            );
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={1}
+                          alignItems={{ sm: "center" }}
+                          sx={{
+                            p: 1.5,
+                            backgroundColor: "#ffffff",
+                            borderBottom: "1px solid #e0e0e0",
                           }}
-                          inputProps={{ min: 1, max: 48 }}
-                          sx={{ minWidth: 120 }}
-                        />
-                        {row.fromPracticas && (
-                          <Chip
-                            label="De prácticas"
-                            size="small"
-                            color="success"
-                            variant="outlined"
-                            sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
-                          />
-                        )}
-                        <IconButton
-                          color="error"
-                          onClick={() => removeRow(row.localId)}
                         >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Stack>
-                      <Accordion sx={{ mt: 1 }}>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", width: "100%", pr: 2 }}>
-                            <Typography sx={{ fontWeight: 600 }}>
-                              Prácticas formativas ({(row.practicas || []).length})
-                            </Typography>
-                            {(() => {
-                              const sumSemanas = (row.practicas || []).reduce(
-                                (acc, p) => acc + (Number(p.numero_semanas) || 0),
-                                0,
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Nombre de la asignatura"
+                            value={row.nombre_asignatura || ""}
+                            onChange={(e) =>
+                              updateRow(
+                                row.localId,
+                                "nombre_asignatura",
+                                e.target.value,
+                              )
+                            }
+                          />
+                          <TextField
+                            label="N.º semanas"
+                            size="small"
+                            type="number"
+                            value={row.numero_semanas ?? ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              updateRow(
+                                row.localId,
+                                "numero_semanas",
+                                value === "" ? "" : Math.min(Number(value), 48),
                               );
-                              const totalSemanas = Number(row.numero_semanas) || 0;
-                              const coincide = sumSemanas === totalSemanas;
-                              return (
-                                <Chip
-                                  size="small"
-                                  label={
-                                    totalSemanas > 0
-                                      ? `Semanas asignadas: ${sumSemanas} / ${totalSemanas} sem ${coincide ? "✓" : `(Diferencia: ${sumSemanas - totalSemanas > 0 ? `+${sumSemanas - totalSemanas}` : `${sumSemanas - totalSemanas}`} sem)`}`
-                                      : `Total semanas prácticas: ${sumSemanas}`
-                                  }
-                                  color={coincide ? "success" : sumSemanas > totalSemanas ? "error" : "warning"}
-                                  sx={{ fontWeight: 600, fontSize: "0.75rem" }}
-                                />
-                              );
-                            })()}
-                          </Box>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                          {(row.practicas || []).map((practice, practiceIndex) => (
-                            <React.Fragment key={practice.localId}>
-                              {practiceIndex > 0 && (
-                                <Divider
-                                  sx={{
-                                    my: 2.5,
-                                    borderBottomWidth: 2,
-                                    borderColor: "#90a4ae",
-                                  }}
-                                >
+                            }}
+                            inputProps={{ min: 1, max: 48 }}
+                            sx={{ minWidth: 120 }}
+                          />
+                          <IconButton
+                            color="error"
+                            onClick={() => removeRow(row.localId)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Stack>
+                        <Accordion
+                          elevation={0}
+                          disableGutters
+                          sx={{
+                            "&:before": { display: "none" },
+                            backgroundColor: "#fafafa",
+                          }}
+                        >
+                          <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            sx={{ backgroundColor: "#f5f7f9" }}
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1.5,
+                                flexWrap: "wrap",
+                                width: "100%",
+                                pr: 2,
+                              }}
+                            >
+                              <Typography>
+                                Prácticas formativas (
+                                {(row.practicas || []).length})
+                              </Typography>
+                              {(() => {
+                                const sumSemanas = (row.practicas || []).reduce(
+                                  (acc, p) =>
+                                    acc + (Number(p.numero_semanas) || 0),
+                                  0,
+                                );
+                                const totalSemanas =
+                                  Number(row.numero_semanas) || 0;
+                                const coincide = sumSemanas === totalSemanas;
+                                return (
                                   <Chip
-                                    label={`Práctica ${practiceIndex + 1}`}
                                     size="small"
-                                    variant="outlined"
-                                    sx={{ fontSize: "0.7rem", fontWeight: 700, color: "#455a64", borderColor: "#90a4ae" }}
+                                    label={
+                                      totalSemanas > 0
+                                        ? `Semanas asignadas: ${sumSemanas} / ${totalSemanas} sem ${coincide ? "✓" : `(Diferencia: ${sumSemanas - totalSemanas > 0 ? `+${sumSemanas - totalSemanas}` : `${sumSemanas - totalSemanas}`} sem)`}`
+                                        : `Total semanas prácticas: ${sumSemanas}`
+                                    }
+                                    color={
+                                      coincide
+                                        ? "success"
+                                        : sumSemanas > totalSemanas
+                                          ? "error"
+                                          : "warning"
+                                    }
+                                    sx={{
+                                      fontWeight: 600,
+                                      fontSize: "0.75rem",
+                                    }}
                                   />
-                                </Divider>
-                              )}
-                              <Box
-                                sx={{
-                                  mb: 2,
-                                  p: 1.75,
-                                  border: "1px solid #b0bec5",
-                                  borderLeft: "4px solid #1976d2",
-                                  borderRadius: 1,
-                                  backgroundColor: "#ffffff",
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  sx={{ fontWeight: 700, color: "#1976d2", display: "block", mb: 1 }}
-                                >
-                                  Práctica formativa #{practiceIndex + 1}
-                                </Typography>
-                                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ mb: 1.5 }}>
-                                <TextField size="small" label="ID práctica" value={practice.idPractica || ""} InputProps={{ readOnly: true }} sx={{ minWidth: 150 }} />
-                                <TextField
-                                  fullWidth size="small" label="Nombre de la práctica formativa o rotación"
-                                  value={practice.nombrePractica || ""}
-                                  onChange={(event) => updatePractice(row.localId, practice.localId, "nombrePractica", event.target.value)}
-                                />
-                                <TextField
-                                  size="small"
-                                  type="number"
-                                  label="Número actividades para RA"
-                                  value={
-                                    Array.isArray(practice.resultadosAprendizaje)
-                                      ? practice.resultadosAprendizaje.length
-                                      : (practice.numeroActividades || 0)
-                                  }
-                                  InputProps={{ readOnly: true }}
-                                  helperText="Determinado por los RA agregados"
-                                  sx={{ minWidth: 190 }}
-                                />
-                                <IconButton color="error" onClick={() => removePractice(row.localId, practice.localId)}><DeleteIcon /></IconButton>
-                              </Stack>
-
-                              {/* Sección: Escenario de Práctica, Semanas y Cupos */}
-                              <Box sx={{ mb: 1.5, p: 1.5, backgroundColor: "#f9fbfd", borderRadius: 1, border: "1px dashed #90caf9" }}>
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: "#1565c0", display: "block", mb: 1 }}>
-                                  Escenario de Práctica y Cupos / Beneficiarios
-                                </Typography>
-                                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems="center" flexWrap="wrap">
-                                  <FormControl size="small" sx={{ minWidth: 240, flex: 1 }}>
-                                    <InputLabel id={`escenario-label-${practice.localId}`}>Escenario de práctica</InputLabel>
-                                    <Select
-                                      labelId={`escenario-label-${practice.localId}`}
-                                      label="Escenario de práctica"
-                                      value={practice.id_escenario || ""}
-                                      onChange={(event) => {
-                                        const selectedId = event.target.value;
-                                        const escObj = (escenarios || []).find((e) => String(e.id) === String(selectedId));
-                                        const nombreEsc = escObj ? (escObj.nombre || escObj.institucion || "") : "";
-                                        updatePractice(row.localId, practice.localId, "id_escenario", selectedId);
-                                        updatePractice(row.localId, practice.localId, "nombre_escenario", nombreEsc);
+                                );
+                              })()}
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ pt: 1.5 }}>
+                            {(row.practicas || []).map(
+                              (practice, practiceIndex) => (
+                                <React.Fragment key={practice.localId}>
+                                  <Divider
+                                    sx={{
+                                      mt: practiceIndex === 0 ? 0.5 : 2.5,
+                                      mb: 1.5,
+                                      borderBottomWidth: 2,
+                                      borderColor: "#90a4ae",
+                                    }}
+                                  >
+                                    <Chip
+                                      label={`Práctica ${practiceIndex + 1}`}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{
+                                        fontSize: "0.7rem",
+                                        fontWeight: 700,
+                                        color: "#455a64",
+                                        borderColor: "#90a4ae",
+                                      }}
+                                    />
+                                  </Divider>
+                                  <Accordion
+                                    expanded={Boolean(
+                                      expandedPractices[practice.localId],
+                                    )}
+                                    onChange={(_, isExpanded) =>
+                                      setExpandedPractices((prev) => ({
+                                        ...prev,
+                                        [practice.localId]: isExpanded,
+                                      }))
+                                    }
+                                    elevation={0}
+                                    disableGutters
+                                    sx={{
+                                      mb: 1.5,
+                                      border: "1px solid #b0bec5",
+                                      borderLeft: "4px solid #1976d2",
+                                      borderRadius: "4px !important",
+                                      backgroundColor: "#ffffff",
+                                      "&:before": { display: "none" },
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    <AccordionSummary
+                                      expandIcon={<ExpandMoreIcon />}
+                                      sx={{
+                                        minHeight: 44,
+                                        "& .MuiAccordionSummary-content": {
+                                          my: 0.75,
+                                          alignItems: "center",
+                                          justifyContent: "space-between",
+                                          gap: 1,
+                                          flexWrap: "wrap",
+                                          pr: 1,
+                                        },
                                       }}
                                     >
-                                      <MenuItem value="">
-                                        <em>-- Seleccionar Escenario --</em>
-                                      </MenuItem>
-                                      {(escenarios || []).map((esc) => (
-                                        <MenuItem key={esc.id} value={esc.id}>
-                                          {esc.nombre || esc.institucion || `Escenario ${esc.id}`}
-                                        </MenuItem>
-                                      ))}
-                                    </Select>
-                                  </FormControl>
-
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    label="Semanas práctica"
-                                    value={practice.numero_semanas || ""}
-                                    onChange={(event) => updatePractice(row.localId, practice.localId, "numero_semanas", event.target.value)}
-                                    inputProps={{ min: 1 }}
-                                    sx={{ width: 140 }}
-                                    helperText="Semanas de esta rotación"
-                                  />
-
-                                  <TextField
-                                    size="small"
-                                    label="Grupo"
-                                    placeholder="Ej: G1, A"
-                                    value={practice.grupo || ""}
-                                    onChange={(event) => updatePractice(row.localId, practice.localId, "grupo", event.target.value)}
-                                    sx={{ width: 100 }}
-                                  />
-
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    label="N° Estudiantes"
-                                    value={practice.numero_estudiantes || ""}
-                                    onChange={(event) => updatePractice(row.localId, practice.localId, "numero_estudiantes", event.target.value)}
-                                    inputProps={{ min: 0 }}
-                                    sx={{ width: 120 }}
-                                  />
-
-                                  <FormControl size="small" sx={{ width: 110 }}>
-                                    <InputLabel id={`relacion-label-${practice.localId}`}>Relación</InputLabel>
-                                    <Select
-                                      labelId={`relacion-label-${practice.localId}`}
-                                      label="Relación"
-                                      value={practice.relacion || "1:1"}
-                                      onChange={(event) => updatePractice(row.localId, practice.localId, "relacion", event.target.value)}
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 1,
+                                          flexWrap: "wrap",
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            fontWeight: 700,
+                                            color: "#1976d2",
+                                            fontSize: "0.78rem",
+                                          }}
+                                        >
+                                          Práctica formativa #
+                                          {practiceIndex + 1}
+                                        </Typography>
+                                        {practice.nombrePractica && (
+                                          <Typography
+                                            variant="body2"
+                                            sx={{
+                                              fontWeight: 600,
+                                              color: "#37474f",
+                                            }}
+                                          >
+                                            {practice.nombrePractica}
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 1,
+                                          flexWrap: "wrap",
+                                        }}
+                                      >
+                                        {practice.nombre_escenario && (
+                                          <Chip
+                                            size="small"
+                                            variant="outlined"
+                                            label={practice.nombre_escenario}
+                                            sx={{
+                                              fontSize: "0.7rem",
+                                              maxWidth: 220,
+                                            }}
+                                          />
+                                        )}
+                                        {practice.numero_semanas && (
+                                          <Chip
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                            label={`${practice.numero_semanas} sem`}
+                                            sx={{
+                                              fontSize: "0.7rem",
+                                              fontWeight: 600,
+                                            }}
+                                          />
+                                        )}
+                                      </Box>
+                                    </AccordionSummary>
+                                    <AccordionDetails
+                                      sx={{
+                                        pt: 1.5,
+                                        borderTop: "1px solid #eceff1",
+                                      }}
                                     >
-                                      {["1:1", "1:2", "1:3", "1:4", "1:5", "1:6", "1:8", "4:1"].map((r) => (
-                                        <MenuItem key={r} value={r}>{r}</MenuItem>
+                                      <Stack
+                                        direction={{ xs: "column", md: "row" }}
+                                        spacing={1.5}
+                                        sx={{ mb: 1.5 }}
+                                      >
+                                        <TextField
+                                          size="small"
+                                          label="ID práctica"
+                                          value={practice.idPractica || ""}
+                                          InputProps={{ readOnly: true }}
+                                          sx={{ minWidth: 150 }}
+                                        />
+                                        <TextField
+                                          fullWidth
+                                          size="small"
+                                          label="Nombre de la práctica formativa o rotación"
+                                          value={practice.nombrePractica || ""}
+                                          onChange={(event) =>
+                                            updatePractice(
+                                              row.localId,
+                                              practice.localId,
+                                              "nombrePractica",
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                        <TextField
+                                          size="small"
+                                          type="number"
+                                          label="Número actividades para RA"
+                                          value={
+                                            Array.isArray(
+                                              practice.resultadosAprendizaje,
+                                            )
+                                              ? practice.resultadosAprendizaje
+                                                  .length
+                                              : practice.numeroActividades || 0
+                                          }
+                                          InputProps={{ readOnly: true }}
+                                          helperText="Determinado por los RA agregados"
+                                          sx={{ minWidth: 190 }}
+                                        />
+                                        <IconButton
+                                          color="error"
+                                          onClick={() =>
+                                            removePractice(
+                                              row.localId,
+                                              practice.localId,
+                                            )
+                                          }
+                                        >
+                                          <DeleteIcon />
+                                        </IconButton>
+                                      </Stack>
+
+                                      {/* Sección: Escenario de Práctica, Semanas y Cupos */}
+                                      <Box
+                                        sx={{
+                                          mb: 1.5,
+                                          p: 1.5,
+                                          backgroundColor: "#f9fbfd",
+                                          borderRadius: 1,
+                                          border: "1px dashed #90caf9",
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="caption"
+                                          sx={{
+                                            fontWeight: 700,
+                                            color: "#1565c0",
+                                            display: "block",
+                                            mb: 1,
+                                          }}
+                                        >
+                                          Escenario de Práctica y Cupos /
+                                          Beneficiarios
+                                        </Typography>
+                                        <Stack
+                                          direction={{
+                                            xs: "column",
+                                            md: "row",
+                                          }}
+                                          spacing={1.5}
+                                          alignItems="center"
+                                          flexWrap="wrap"
+                                        >
+                                          <FormControl
+                                            size="small"
+                                            sx={{ minWidth: 240, flex: 1 }}
+                                          >
+                                            <InputLabel
+                                              id={`escenario-label-${practice.localId}`}
+                                            >
+                                              Escenario de práctica
+                                            </InputLabel>
+                                            <Select
+                                              labelId={`escenario-label-${practice.localId}`}
+                                              label="Escenario de práctica"
+                                              value={
+                                                practice.id_escenario || ""
+                                              }
+                                              onChange={(event) => {
+                                                const selectedId =
+                                                  event.target.value;
+                                                const escObj = (
+                                                  escenarios || []
+                                                ).find(
+                                                  (e) =>
+                                                    String(e.id) ===
+                                                    String(selectedId),
+                                                );
+                                                const nombreEsc = escObj
+                                                  ? escObj.nombre ||
+                                                    escObj.institucion ||
+                                                    ""
+                                                  : "";
+                                                updatePractice(
+                                                  row.localId,
+                                                  practice.localId,
+                                                  "id_escenario",
+                                                  selectedId,
+                                                );
+                                                updatePractice(
+                                                  row.localId,
+                                                  practice.localId,
+                                                  "nombre_escenario",
+                                                  nombreEsc,
+                                                );
+                                              }}
+                                            >
+                                              <MenuItem value="">
+                                                <em>
+                                                  -- Seleccionar Escenario --
+                                                </em>
+                                              </MenuItem>
+                                              {(escenarios || []).map((esc) => (
+                                                <MenuItem
+                                                  key={esc.id}
+                                                  value={esc.id}
+                                                >
+                                                  {esc.nombre ||
+                                                    esc.institucion ||
+                                                    `Escenario ${esc.id}`}
+                                                </MenuItem>
+                                              ))}
+                                            </Select>
+                                          </FormControl>
+
+                                          <TextField
+                                            size="small"
+                                            type="number"
+                                            label="Semanas práctica"
+                                            value={
+                                              practice.numero_semanas || ""
+                                            }
+                                            onChange={(event) =>
+                                              updatePractice(
+                                                row.localId,
+                                                practice.localId,
+                                                "numero_semanas",
+                                                event.target.value,
+                                              )
+                                            }
+                                            inputProps={{ min: 1 }}
+                                            sx={{ width: 140 }}
+                                          />
+
+                                          <TextField
+                                            size="small"
+                                            label="Grupo"
+                                            placeholder="Ej: G1, A"
+                                            value={practice.grupo || ""}
+                                            onChange={(event) =>
+                                              updatePractice(
+                                                row.localId,
+                                                practice.localId,
+                                                "grupo",
+                                                event.target.value,
+                                              )
+                                            }
+                                            sx={{ width: 100 }}
+                                          />
+
+                                          <TextField
+                                            size="small"
+                                            type="number"
+                                            label="N° Estudiantes"
+                                            value={
+                                              practice.numero_estudiantes || ""
+                                            }
+                                            onChange={(event) =>
+                                              updatePractice(
+                                                row.localId,
+                                                practice.localId,
+                                                "numero_estudiantes",
+                                                event.target.value,
+                                              )
+                                            }
+                                            inputProps={{ min: 0 }}
+                                            sx={{ width: 120 }}
+                                          />
+
+                                          <FormControl
+                                            size="small"
+                                            sx={{ width: 110 }}
+                                          >
+                                            <InputLabel
+                                              id={`relacion-label-${practice.localId}`}
+                                            >
+                                              Relación
+                                            </InputLabel>
+                                            <Select
+                                              labelId={`relacion-label-${practice.localId}`}
+                                              label="Relación"
+                                              value={practice.relacion || "1:1"}
+                                              onChange={(event) =>
+                                                updatePractice(
+                                                  row.localId,
+                                                  practice.localId,
+                                                  "relacion",
+                                                  event.target.value,
+                                                )
+                                              }
+                                            >
+                                              {[
+                                                "1:1",
+                                                "1:2",
+                                                "1:3",
+                                                "1:4",
+                                                "1:5",
+                                                "1:6",
+                                                "1:8",
+                                                "4:1",
+                                              ].map((r) => (
+                                                <MenuItem key={r} value={r}>
+                                                  {r}
+                                                </MenuItem>
+                                              ))}
+                                            </Select>
+                                          </FormControl>
+
+                                          <TextField
+                                            size="small"
+                                            type="number"
+                                            label="Est. Beneficiados"
+                                            value={
+                                              practice.estudiantes_beneficiados ||
+                                              ""
+                                            }
+                                            onChange={(event) =>
+                                              updatePractice(
+                                                row.localId,
+                                                practice.localId,
+                                                "estudiantes_beneficiados",
+                                                event.target.value,
+                                              )
+                                            }
+                                            inputProps={{ min: 0 }}
+                                            sx={{ width: 130 }}
+                                          />
+                                        </Stack>
+                                      </Box>
+
+                                      <TextField
+                                        fullWidth
+                                        multiline
+                                        minRows={2}
+                                        size="small"
+                                        label="Competencias"
+                                        value={practice.competencias || ""}
+                                        onChange={(event) =>
+                                          updatePractice(
+                                            row.localId,
+                                            practice.localId,
+                                            "competencias",
+                                            event.target.value,
+                                          )
+                                        }
+                                        sx={{ mb: 1.5 }}
+                                      />
+                                      <Typography
+                                        variant="subtitle2"
+                                        sx={{ mb: 0.5 }}
+                                      >
+                                        Resultados de aprendizaje (RA)
+                                      </Typography>
+                                      {(
+                                        practice.resultadosAprendizaje || []
+                                      ).map((result, resultIndex) => (
+                                        <Stack
+                                          key={`${practice.localId}-ra-${resultIndex}`}
+                                          direction="row"
+                                          spacing={1}
+                                          sx={{ mb: 1 }}
+                                        >
+                                          <TextField
+                                            fullWidth
+                                            size="small"
+                                            label={`RA ${resultIndex + 1}`}
+                                            value={result}
+                                            onChange={(event) =>
+                                              updatePracticeResult(
+                                                row.localId,
+                                                practice.localId,
+                                                resultIndex,
+                                                event.target.value,
+                                              )
+                                            }
+                                          />
+                                          <IconButton
+                                            color="error"
+                                            onClick={() =>
+                                              updatePractice(
+                                                row.localId,
+                                                practice.localId,
+                                                "resultadosAprendizaje",
+                                                (
+                                                  practice.resultadosAprendizaje ||
+                                                  []
+                                                ).filter(
+                                                  (_, index) =>
+                                                    index !== resultIndex,
+                                                ),
+                                              )
+                                            }
+                                          >
+                                            <DeleteIcon />
+                                          </IconButton>
+                                        </Stack>
                                       ))}
-                                    </Select>
-                                  </FormControl>
-
-                                  <TextField
-                                    size="small"
-                                    type="number"
-                                    label="Est. Beneficiados"
-                                    value={practice.estudiantes_beneficiados || ""}
-                                    onChange={(event) => updatePractice(row.localId, practice.localId, "estudiantes_beneficiados", event.target.value)}
-                                    inputProps={{ min: 0 }}
-                                    sx={{ width: 130 }}
-                                  />
-                                </Stack>
-                              </Box>
-
-                              <TextField
-                                fullWidth multiline minRows={2} size="small" label="Competencias"
-                                value={practice.competencias || ""}
-                                onChange={(event) => updatePractice(row.localId, practice.localId, "competencias", event.target.value)}
-                                sx={{ mb: 1.5 }}
-                              />
-                              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Resultados de aprendizaje (RA)</Typography>
-                              {(practice.resultadosAprendizaje || []).map((result, resultIndex) => (
-                                <Stack key={`${practice.localId}-ra-${resultIndex}`} direction="row" spacing={1} sx={{ mb: 1 }}>
-                                  <TextField
-                                    fullWidth size="small" label={`RA ${resultIndex + 1}`} value={result}
-                                    onChange={(event) => updatePracticeResult(row.localId, practice.localId, resultIndex, event.target.value)}
-                                  />
-                                  <IconButton
-                                    color="error"
-                                    onClick={() => updatePractice(row.localId, practice.localId, "resultadosAprendizaje", (practice.resultadosAprendizaje || []).filter((_, index) => index !== resultIndex))}
-                                  >
-                                    <DeleteIcon />
-                                  </IconButton>
-                                </Stack>
-                              ))}
-                              <Button size="small" startIcon={<AddIcon />} onClick={() => updatePractice(row.localId, practice.localId, "resultadosAprendizaje", [...(practice.resultadosAprendizaje || []), ""])}>
-                                Agregar RA
-                              </Button>
-                              <TextField
-                                fullWidth multiline minRows={2} size="small" label="Evaluación"
-                                value={practice.evaluacion || ""}
-                                onChange={(event) => updatePractice(row.localId, practice.localId, "evaluacion", event.target.value)}
-                                sx={{ mt: 1.5 }}
-                              />
-                              </Box>
-                            </React.Fragment>
-                          ))}
-                          <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => addPractice(row)}>
-                            Agregar práctica formativa
-                          </Button>
-                        </AccordionDetails>
-                      </Accordion>
+                                      <Button
+                                        size="small"
+                                        startIcon={<AddIcon />}
+                                        onClick={() =>
+                                          updatePractice(
+                                            row.localId,
+                                            practice.localId,
+                                            "resultadosAprendizaje",
+                                            [
+                                              ...(practice.resultadosAprendizaje ||
+                                                []),
+                                              "",
+                                            ],
+                                          )
+                                        }
+                                      >
+                                        Agregar RA
+                                      </Button>
+                                      <TextField
+                                        fullWidth
+                                        multiline
+                                        minRows={2}
+                                        size="small"
+                                        label="Evaluación"
+                                        value={practice.evaluacion || ""}
+                                        onChange={(event) =>
+                                          updatePractice(
+                                            row.localId,
+                                            practice.localId,
+                                            "evaluacion",
+                                            event.target.value,
+                                          )
+                                        }
+                                        sx={{ mt: 1.5 }}
+                                      />
+                                    </AccordionDetails>
+                                  </Accordion>
+                                </React.Fragment>
+                              ),
+                            )}
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<AddIcon />}
+                              onClick={() => addPractice(row)}
+                              sx={{ mt: 0.5 }}
+                            >
+                              Agregar práctica formativa
+                            </Button>
+                          </AccordionDetails>
+                        </Accordion>
                       </Box>
                     ))}
                     <Button
