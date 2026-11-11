@@ -37,7 +37,7 @@ import {
   ButtonGroup,
   Stepper,
   Step,
-  StepLabel,
+  StepButton,
 } from "@mui/material";
 import axios from "axios";
 import ModalAsignaturas from "./docenciaServicio/ModalAsignaturas";
@@ -1422,6 +1422,31 @@ const DocenciaServicio = () => {
       }
     }
     return "";
+  };
+
+  // Normaliza texto para búsquedas sin distinguir mayúsculas ni tildes
+  const normalizeSearchText = (value) =>
+    String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+
+  // Formatea el nombre del programa agregando la sede cuando es distinta a Cali
+  const getProgramaOptionLabel = (option) => {
+    if (!option) return "";
+    if (typeof option === "string") return option;
+    const nombre = String(option["programa académico"] || "").trim();
+    if (!nombre) return "";
+    const sede = String(option.sede || option.SEDE || "").trim();
+    if (
+      sede &&
+      normalizeSearchText(sede) !== "cali" &&
+      !normalizeSearchText(nombre).endsWith(normalizeSearchText(sede))
+    ) {
+      return `${nombre} - ${sede}`;
+    }
+    return nombre;
   };
 
   // Función para manejar la selección de un único programa académico con Autocomplete
@@ -2901,20 +2926,18 @@ const DocenciaServicio = () => {
                         <Grid item xs={12}>
                           <Autocomplete
                             options={programasData}
-                            getOptionLabel={(option) =>
-                              option["programa académico"] || ""
-                            }
+                            getOptionLabel={getProgramaOptionLabel}
                             value={anexoFormData.programaSeleccionado || null}
                             onChange={handleProgramaChange}
                             filterOptions={(options, params) => {
-                              const filtered = options.filter(
-                                (option) =>
-                                  option["programa académico"] &&
-                                  option["programa académico"]
-                                    .toLowerCase()
-                                    .includes(params.inputValue.toLowerCase()),
-                              );
-                              return filtered;
+                              const search = normalizeSearchText(params.inputValue);
+                              return options.filter((option) => {
+                                const label = getProgramaOptionLabel(option);
+                                return (
+                                  label !== "" &&
+                                  normalizeSearchText(label).includes(search)
+                                );
+                              });
                             }}
                             renderInput={(params) => (
                               <TextField
@@ -2933,14 +2956,17 @@ const DocenciaServicio = () => {
                                 key={`programa-option-${option.id_programa || index}`}
                               >
                                 <Typography variant="body1">
-                                  {option["programa académico"]}
+                                  {getProgramaOptionLabel(option)}
                                 </Typography>
                               </Box>
                             )}
                             noOptionsText="No se encontraron programas"
                             loadingText="Cargando programas..."
                             isOptionEqualToValue={(option, value) =>
-                              option.id_programa === value?.id_programa
+                              option.id_programa && value?.id_programa
+                                ? String(option.id_programa) === String(value.id_programa)
+                                : getProgramaOptionLabel(option) ===
+                                  getProgramaOptionLabel(value)
                             }
                           />
                         </Grid>
@@ -3255,24 +3281,6 @@ const DocenciaServicio = () => {
 
                       <Divider sx={{ my: 2 }} />
 
-                      {/* Fecha de formalización del plan */}
-                      <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            label="Fecha de formalización del plan"
-                            name="fecha_formalizacion"
-                            type="date"
-                            value={anexoFormData.fecha_formalizacion}
-                            onChange={handleAnexoInputChange}
-                            InputLabelProps={{ shrink: true }}
-                            fullWidth
-                            size="small"
-                          />
-                        </Grid>
-                      </Grid>
-
-                      <Divider sx={{ my: 2 }} />
-
                       {/* III. Resp. Coordinación práctica */}
                       <Typography
                         variant="body2"
@@ -3328,6 +3336,34 @@ const DocenciaServicio = () => {
                             fullWidth
                             size="small"
                             placeholder="correo@correounivalle.edu.co"
+                          />
+                        </Grid>
+                      </Grid>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      {/* IV. Formalización del Plan (última sección del paso 2) */}
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: "#333",
+                          mb: 1,
+                        }}
+                      >
+                        IV. Formalización del Plan
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Fecha de formalización del plan"
+                            name="fecha_formalizacion"
+                            type="date"
+                            value={anexoFormData.fecha_formalizacion}
+                            onChange={handleAnexoInputChange}
+                            InputLabelProps={{ shrink: true }}
+                            fullWidth
+                            size="small"
                           />
                         </Grid>
                       </Grid>
@@ -3649,6 +3685,14 @@ const DocenciaServicio = () => {
       }
       setWizardStep((step) => Math.min(step + 1, steps.length - 1));
     };
+    const handleStepSelect = (targetStep) => {
+      if (targetStep === wizardStep) return;
+      if (targetStep >= 2 && !anexoFormData.programaSeleccionado) {
+        alert("Selecciona el programa académico para continuar.");
+        return;
+      }
+      setWizardStep(targetStep);
+    };
     const finish = () => handleAnexoFormSubmit({ preventDefault: () => {} });
 
     return (
@@ -3660,8 +3704,17 @@ const DocenciaServicio = () => {
           </Typography>
           <Box sx={{ width: 100 }} />
         </Box>
-        <Stepper activeStep={wizardStep} alternativeLabel sx={{ mb: 4 }}>
-          {steps.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+        <Stepper nonLinear activeStep={wizardStep} alternativeLabel sx={{ mb: 4 }}>
+          {steps.map((label, index) => (
+            <Step key={label}>
+              <StepButton
+                onClick={() => handleStepSelect(index)}
+                sx={{ cursor: "pointer" }}
+              >
+                {label}
+              </StepButton>
+            </Step>
+          ))}
         </Stepper>
 
         {(wizardStep === 0 || wizardStep === 1) && renderAnexoFormCompleto(wizardStep)}
@@ -4181,7 +4234,19 @@ const DocenciaServicio = () => {
     <>
       <Header />
       <Sidebar isCargo={isCargo} />
-      <div className="content-with-sidebar">
+      <Box
+        className={isVistaAnexo ? undefined : "content-with-sidebar"}
+        sx={
+          isVistaAnexo
+            ? {
+                ml: { xs: 0, md: "48px" },
+                width: { xs: "100%", md: "calc(100% - 48px)" },
+                boxSizing: "border-box",
+                transition: "margin-left 0.3s ease",
+              }
+            : undefined
+        }
+      >
         <Box
           sx={{
             width: "100%",
@@ -4191,9 +4256,13 @@ const DocenciaServicio = () => {
             mx: "auto",
             px: { xs: 2, sm: 3, md: 4 },
             mt: 2,
-            ml: { xs: "auto", md: 0 },
-            position: "relative",
-            left: { xs: 0, md: "-30px" },
+            ...(isVistaAnexo
+              ? {}
+              : {
+                  ml: { xs: "auto", md: 0 },
+                  position: "relative",
+                  left: { xs: 0, md: "-30px" },
+                }),
             mb: 6,
           }}
         >
@@ -5116,7 +5185,7 @@ const DocenciaServicio = () => {
           practicasData={practicasData}
           onSaved={() => setReloadAnexos((value) => !value)}
         />
-      </div>
+      </Box>
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -301,7 +301,11 @@ const periodNumber = (value) => {
   return parsed || (Number(value) || 0);
 };
 
-const toRoman = (value) => ROMAN_MAP[Number(value)] || String(value);
+const NUMBER_TO_ROMAN = Object.fromEntries(
+  Object.entries(ROMAN_MAP).map(([roman, num]) => [num, roman]),
+);
+
+const toRoman = (value) => NUMBER_TO_ROMAN[Number(value)] || String(value);
 
 const getPeriodRaw = (row) => {
   if (!row) return "";
@@ -409,6 +413,46 @@ export default function ModalEsquema({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [periodoActivo, setPeriodoActivo] = useState(0);
+  const initialBlocksSnapshotRef = useRef("");
+
+  const serializeEsquemaSnapshot = (blocksList = []) =>
+    JSON.stringify(
+      (blocksList || [])
+        .map((x) => ({
+          id_asignatura: String(x.id_asignatura || ""),
+          id_practica: String(x.id_practica || ""),
+          numero_periodo: Number(x.numero_periodo) || 0,
+          numero_fila: Number(x.numero_fila) || 1,
+          semana_inicio: Number(x.semana_inicio) || 0,
+          semana_fin: Number(x.semana_fin) || 0,
+          numero_semanas: Number(x.numero_semanas) || 0,
+          nombre_asignatura: String(x.nombre_asignatura || ""),
+          nombre_practica: String(x.nombre_practica || ""),
+          id_escenario: String(x.id_escenario || ""),
+          nombre_escenario: String(x.nombre_escenario || ""),
+        }))
+        .sort((a, b) =>
+          [
+            a.numero_periodo,
+            a.id_asignatura,
+            a.id_practica,
+            a.numero_fila,
+            a.semana_inicio,
+            a.semana_fin,
+          ]
+            .join("|")
+            .localeCompare(
+              [
+                b.numero_periodo,
+                b.id_asignatura,
+                b.id_practica,
+                b.numero_fila,
+                b.semana_inicio,
+                b.semana_fin,
+              ].join("|"),
+            ),
+        ),
+    );
 
   const periodosTabs = React.useMemo(() => {
     if (Array.isArray(periodosSeleccionados) && periodosSeleccionados.length > 0) {
@@ -445,9 +489,51 @@ export default function ModalEsquema({
     return cleanName || "";
   };
 
+  const getSubjectIndex = (id) =>
+    subjects.findIndex((item) => String(item.id) === String(id));
+
   const color = (id) => {
-    const index = subjects.findIndex((item) => String(item.id) === String(id));
+    const index = getSubjectIndex(id);
     return index >= 0 ? `hsl(${(index * 137) % 360} 70% 78%)` : COLORS[0];
+  };
+
+  // Mismo tono de la asignatura con distintas luminosidades cuando tiene varias prácticas
+  const getPracticeColor = (subject, practiceIndex = 0, totalPractices = 1) => {
+    const index = getSubjectIndex(subject?.id);
+    if (index < 0) return COLORS[0];
+    const hue = (index * 137) % 360;
+    if (totalPractices <= 1) {
+      return `hsl(${hue} 70% 78%)`;
+    }
+    const lightnessTones = [85, 66, 76, 56, 81, 61];
+    const lightness =
+      practiceIndex < lightnessTones.length
+        ? lightnessTones[practiceIndex]
+        : Math.max(52, 86 - ((practiceIndex * 9) % 34));
+    return `hsl(${hue} 72% ${lightness}%)`;
+  };
+
+  const getBlockColor = (block, subject) => {
+    if (!block) return "transparent";
+    const sPractices = subject?.practicas || [];
+    if (sPractices.length > 1) {
+      const bPrId = String(block.id_practica || "").trim().toLowerCase();
+      const bPrName = String(block.nombre_practica || "").trim().toLowerCase();
+      const prIdx = sPractices.findIndex((pr, idx) => {
+        const prId = String(pr.id_practica || pr.idPractica || pr.id || `PRAC-${idx + 1}`)
+          .trim()
+          .toLowerCase();
+        if (bPrId && prId && bPrId === prId) return true;
+        const prName = String(pr.nombre_practica || pr.nombrePractica || "")
+          .trim()
+          .toLowerCase();
+        return Boolean(!bPrId && bPrName && prName && bPrName === prName);
+      });
+      if (prIdx >= 0) {
+        return getPracticeColor(subject, prIdx, sPractices.length);
+      }
+    }
+    return block.color || color(subject?.id);
   };
 
   const matchesProgram = (row) => {
@@ -652,42 +738,42 @@ export default function ModalEsquema({
 
         setSubjects(mergedAsignaturas);
 
-        setBlocks(
-          (e.data || [])
-            .filter(matchesProgram)
-            .map((x) => {
-              let numPerB = periodNumber(getPeriodRaw(x));
-              if (esAnual && totalPeriodos > 0 && numPerB > totalPeriodos) {
-                numPerB = Math.ceil(numPerB / 2);
-              }
-              const asigId = val(x, "id_asignatura") || x.id_asignatura;
-              const asigNombre = getSubjectName(x) || val(x, "nombre_asignatura") || x.nombre_asignatura;
-              const prId = getPracticeId(x) || val(x, "id_practica") || "";
-              const prNombre = getPracticeName(x) || val(x, "nombre_practica") || "";
-              const escId = getScenarioId(x) || val(x, "id_escenario") || "";
-              const escNombre = getScenarioName(x) || val(x, "nombre_escenario") || "";
-              const itemKey = prId ? `${asigId}-${prId}` : asigId;
-              return {
-                ...x,
-                id: val(x, "id") || x.id,
-                id_item: itemKey,
-                id_programa: idPrograma,
-                numero_periodo: numPerB,
-                id_asignatura: asigId,
-                nombre_asignatura: asigNombre,
-                id_practica: prId,
-                nombre_practica: prNombre,
-                id_escenario: escId,
-                nombre_escenario: escNombre,
-                numero_semanas: Number(val(x, "numero_semanas") || x.numero_semanas) || 1,
-                numero_fila: Number(val(x, "numero_fila") || x.numero_fila) || 1,
-                semana_inicio: Number(val(x, "semana_inicio") || x.semana_inicio) || 1,
-                semana_fin: Number(val(x, "semana_fin") || x.semana_fin) || 1,
-                localId: val(x, "id") || x.id || `placed-${Date.now()}-${Math.random()}`,
-                isPlacedBlock: true,
-              };
-            }),
-        );
+        const loadedBlocks = (e.data || [])
+          .filter(matchesProgram)
+          .map((x) => {
+            let numPerB = periodNumber(getPeriodRaw(x));
+            if (esAnual && totalPeriodos > 0 && numPerB > totalPeriodos) {
+              numPerB = Math.ceil(numPerB / 2);
+            }
+            const asigId = val(x, "id_asignatura") || x.id_asignatura;
+            const asigNombre = getSubjectName(x) || val(x, "nombre_asignatura") || x.nombre_asignatura;
+            const prId = getPracticeId(x) || val(x, "id_practica") || "";
+            const prNombre = getPracticeName(x) || val(x, "nombre_practica") || "";
+            const escId = getScenarioId(x) || val(x, "id_escenario") || "";
+            const escNombre = getScenarioName(x) || val(x, "nombre_escenario") || "";
+            const itemKey = prId ? `${asigId}-${prId}` : asigId;
+            return {
+              ...x,
+              id: val(x, "id") || x.id,
+              id_item: itemKey,
+              id_programa: idPrograma,
+              numero_periodo: numPerB,
+              id_asignatura: asigId,
+              nombre_asignatura: asigNombre,
+              id_practica: prId,
+              nombre_practica: prNombre,
+              id_escenario: escId,
+              nombre_escenario: escNombre,
+              numero_semanas: Number(val(x, "numero_semanas") || x.numero_semanas) || 1,
+              numero_fila: Number(val(x, "numero_fila") || x.numero_fila) || 1,
+              semana_inicio: Number(val(x, "semana_inicio") || x.semana_inicio) || 1,
+              semana_fin: Number(val(x, "semana_fin") || x.semana_fin) || 1,
+              localId: val(x, "id") || x.id || `placed-${Date.now()}-${Math.random()}`,
+              isPlacedBlock: true,
+            };
+          });
+        initialBlocksSnapshotRef.current = serializeEsquemaSnapshot(loadedBlocks);
+        setBlocks(loadedBlocks);
       })
       .catch(() => active && setError("No se pudieron cargar los datos."))
       .finally(() => active && setLoading(false));
@@ -793,7 +879,7 @@ export default function ModalEsquema({
       semana_inicio: first,
       semana_fin: last,
       orden_fila: line,
-      color: item.color || color(targetSubject.id),
+      color: getBlockColor(item, targetSubject),
     };
 
     setBlocks((old) => [
@@ -827,6 +913,11 @@ export default function ModalEsquema({
 
   const save = async () => {
     setError("");
+    if (serializeEsquemaSnapshot(blocks) === initialBlocksSnapshotRef.current) {
+      onSaved?.();
+      if (!embedded) onClose?.();
+      return;
+    }
     setSaving(true);
     try {
       const newBlocks = Array.from(
@@ -878,38 +969,45 @@ export default function ModalEsquema({
           }),
         ),
       );
-      const rowsToInsert = inserted.map((x) => [
-        `${idPrograma}-${x.id_asignatura}-${x.numero_periodo}-${x.numero_fila || 1}-${x.semana_inicio}-${Date.now()}`,
-        idPrograma,
-        x.id_asignatura,
-        periodicidad,
-        totalPeriodos,
-        x.numero_periodo,
-        semanas,
-        x.nombre_asignatura,
-        x.numero_semanas,
-        x.numero_fila || 1,
-        x.semana_inicio,
-        x.semana_fin,
-        x.orden_fila || 1,
-        x.color,
-        x.id_practica || "",
-        x.nombre_practica || "",
-        x.id_escenario || "",
-        x.nombre_escenario || "",
-      ]);
-      if (!rowsToInsert.length) {
-        clearCache();
-        onSaved?.();
-        if (!embedded) onClose?.();
-        return;
-      }
-      const response = await fetchPostGeneral({
-        dataSend: { insertData: rowsToInsert },
-        sheetName: "ESQUEMAS",
-        urlEndPoint: `${URL}/sendDocServ`,
+      const insertedIdByLocalId = new Map();
+      const rowsToInsert = inserted.map((x, idx) => {
+        const generatedId = `${idPrograma}-${x.id_asignatura}-${x.numero_periodo}-${x.numero_fila || 1}-${x.semana_inicio}-${Date.now()}-${idx}`;
+        insertedIdByLocalId.set(x.localId, generatedId);
+        return [
+          generatedId,
+          idPrograma,
+          x.id_asignatura,
+          periodicidad,
+          totalPeriodos,
+          x.numero_periodo,
+          semanas,
+          x.nombre_asignatura,
+          x.numero_semanas,
+          x.numero_fila || 1,
+          x.semana_inicio,
+          x.semana_fin,
+          x.orden_fila || 1,
+          x.color,
+          x.id_practica || "",
+          x.nombre_practica || "",
+          x.id_escenario || "",
+          x.nombre_escenario || "",
+        ];
       });
-      if (!response?.status) throw Error();
+      if (rowsToInsert.length) {
+        const response = await fetchPostGeneral({
+          dataSend: { insertData: rowsToInsert },
+          sheetName: "ESQUEMAS",
+          urlEndPoint: `${URL}/sendDocServ`,
+        });
+        if (!response?.status) throw Error();
+      }
+      const updatedBlocks = newBlocks.map((x) => ({
+        ...x,
+        id: x.id || insertedIdByLocalId.get(x.localId) || x.id,
+      }));
+      initialBlocksSnapshotRef.current = serializeEsquemaSnapshot(updatedBlocks);
+      setBlocks(updatedBlocks);
       clearCache();
       onSaved?.();
       if (!embedded) onClose?.();
@@ -951,9 +1049,19 @@ export default function ModalEsquema({
               scrollButtons="auto"
               sx={{ mb: 2 }}
             >
-              {periodosTabs.map((pNum) => (
-                <Tab key={pNum} label={`${labelPrefix} ${toRoman(pNum)}`} />
-              ))}
+              {periodosTabs.map((pNum) => {
+                const count = subjectsFor(pNum).length;
+                return (
+                  <Tab
+                    key={pNum}
+                    label={`${labelPrefix} ${toRoman(pNum)}${count > 0 ? ` (${count})` : ""}`}
+                    sx={{
+                      fontWeight: count > 0 ? 700 : 500,
+                      color: count > 0 ? "#2e7d32" : "inherit",
+                    }}
+                  />
+                );
+              })}
             </Tabs>
             {(() => {
               const p = periodosTabs[periodoActivo] || periodosTabs[0] || 1;
@@ -1006,7 +1114,7 @@ export default function ModalEsquema({
                         id_escenario: pr.id_escenario || "",
                         nombre_escenario: escName,
                         numero_semanas: prWeeks,
-                        color: color(s.id),
+                        color: getPracticeColor(s, prIdx, sPractices.length),
                         labelDisplay: label,
                       });
                     }
@@ -1107,50 +1215,52 @@ export default function ModalEsquema({
                           const lines = getSubjectLines(s, p);
                           return lines.map((lineIdx) => (
                             <React.Fragment key={`${s.id}-${lineIdx}`}>
-                              {/* Tarjeta lateral de la asignatura */}
-                              <Box
-                                sx={{
-                                  p: 1,
-                                  borderTop: "1px solid #ddd",
-                                  borderRight: "2px solid #bbb",
-                                  backgroundColor: "#fafafa",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  gap: 1,
-                                }}
-                              >
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden" }}>
-                                  <Box
-                                    sx={{
-                                      width: 12,
-                                      height: 12,
-                                      borderRadius: "50%",
-                                      backgroundColor: color(s.id),
-                                      flexShrink: 0,
-                                    }}
-                                  />
-                                  <Box sx={{ overflow: "hidden" }}>
-                                    <Typography
+                              {/* Tarjeta lateral de la asignatura (se expande verticalmente para cubrir todos sus carriles) */}
+                              {lineIdx === 1 && (
+                                <Box
+                                  sx={{
+                                    gridColumn: "1",
+                                    gridRow: lines.length > 1 ? `span ${lines.length}` : undefined,
+                                    p: 1,
+                                    borderTop: "1px solid #bbb",
+                                    borderRight: "2px solid #bbb",
+                                    backgroundColor: "#fafafa",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 1,
+                                  }}
+                                >
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden" }}>
+                                    <Box
                                       sx={{
-                                        fontWeight: 600,
-                                        fontSize: 12,
-                                        lineHeight: 1.2,
-                                        color: "#111",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
+                                        width: 12,
+                                        height: 12,
+                                        borderRadius: "50%",
+                                        backgroundColor: color(s.id),
+                                        flexShrink: 0,
                                       }}
-                                      title={s.nombre_asignatura}
-                                    >
-                                      {s.nombre_asignatura}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ fontSize: 10, color: "text.secondary" }}>
-                                      {s.numero_semanas || semanas} sem. {lines.length > 1 ? `(Línea ${lineIdx})` : ""}
-                                    </Typography>
+                                    />
+                                    <Box sx={{ overflow: "hidden" }}>
+                                      <Typography
+                                        sx={{
+                                          fontWeight: 600,
+                                          fontSize: 12,
+                                          lineHeight: 1.2,
+                                          color: "#111",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                        title={s.nombre_asignatura}
+                                      >
+                                        {s.nombre_asignatura}
+                                      </Typography>
+                                      <Typography variant="caption" sx={{ fontSize: 10, color: "text.secondary" }}>
+                                        {s.numero_semanas || semanas} sem. {lines.length > 1 ? `(${lines.length} líneas)` : ""}
+                                      </Typography>
+                                    </Box>
                                   </Box>
-                                </Box>
-                                {lineIdx === 1 && (
                                   <Button
                                     size="small"
                                     variant="text"
@@ -1162,13 +1272,14 @@ export default function ModalEsquema({
                                       fontSize: 10,
                                       textTransform: "none",
                                       color: "text.secondary",
+                                      flexShrink: 0,
                                       "&:hover": { color: "primary.main", backgroundColor: "rgba(0,0,0,0.05)" },
                                     }}
                                   >
                                     + Línea
                                   </Button>
-                                )}
-                              </Box>
+                                </Box>
+                              )}
 
                               {/* Celdas de semanas para esta asignatura */}
                               {Array.from({ length: semanas }, (_, w) => {
@@ -1188,6 +1299,8 @@ export default function ModalEsquema({
                                         Number(b.semana_fin)) /
                                         2,
                                     );
+                                const isLastWeek =
+                                  Boolean(b) && weekNum === Number(b.semana_fin);
                                 const blockLabel = b
                                   ? `${b.nombre_practica || b.nombre_asignatura}${
                                       b.id_practica && (s.practicas || []).length > 1 ? ` (${b.id_practica})` : ""
@@ -1215,19 +1328,19 @@ export default function ModalEsquema({
                                       }
                                     }}
                                     sx={{
-                                      minHeight: 44,
-                                      borderTop: "1px solid #ddd",
+                                      minHeight: 46,
+                                      borderTop: lineIdx === 1 ? "1px solid #bbb" : "1px dashed #d0d7de",
                                       borderLeft: "1px solid #eee",
-                                      backgroundColor: b ? (b.color || color(s.id)) : "transparent",
+                                      backgroundColor: b ? getBlockColor(b, s) : "transparent",
                                       fontSize: 10,
-                                      overflow: middle ? "visible" : "hidden",
+                                      overflow: middle || isLastWeek ? "visible" : "hidden",
                                       whiteSpace: "nowrap",
                                       textAlign: "center",
                                       display: "flex",
                                       alignItems: "center",
                                       justifyContent: "center",
                                       position: "relative",
-                                      zIndex: middle ? 2 : 1,
+                                      zIndex: isLastWeek ? 3 : middle ? 2 : 1,
                                       cursor: b ? "grab" : "pointer",
                                       px: 0.25,
                                       transition: "background-color 0.15s",
@@ -1236,12 +1349,50 @@ export default function ModalEsquema({
                                       },
                                     }}
                                   >
+                                    {isLastWeek && (
+                                      <Box
+                                        component="span"
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeBlock(b);
+                                        }}
+                                        title="Quitar de la línea"
+                                        sx={{
+                                          position: "absolute",
+                                          top: 2,
+                                          right: 2,
+                                          zIndex: 4,
+                                          cursor: "pointer",
+                                          fontWeight: "bold",
+                                          fontSize: 11,
+                                          lineHeight: 1,
+                                          color: "#333",
+                                          backgroundColor: "rgba(255,255,255,0.9)",
+                                          border: "1px solid rgba(0,0,0,0.2)",
+                                          borderRadius: "50%",
+                                          width: 15,
+                                          height: 15,
+                                          display: "inline-flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          "&:hover": {
+                                            backgroundColor: "#ffebee",
+                                            color: "error.main",
+                                            borderColor: "error.main",
+                                          },
+                                        }}
+                                      >
+                                        ×
+                                      </Box>
+                                    )}
                                     {middle && (
                                       <Box
                                         sx={{
                                           display: "inline-flex",
                                           alignItems: "center",
                                           justifyContent: "center",
+                                          mt: isLastWeek ? 1.25 : 0,
                                           px: 0.5,
                                           maxWidth: "100%",
                                           backgroundColor: "rgba(255,255,255,0.92)",
@@ -1263,33 +1414,6 @@ export default function ModalEsquema({
                                         >
                                           {blockLabel}
                                         </Typography>
-                                        <Box
-                                          component="span"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeBlock(b);
-                                          }}
-                                          title="Quitar de la línea"
-                                          sx={{
-                                            ml: 0.5,
-                                            cursor: "pointer",
-                                            fontWeight: "bold",
-                                            fontSize: 13,
-                                            color: "rgba(0,0,0,0.6)",
-                                            borderRadius: "50%",
-                                            width: 16,
-                                            height: 16,
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            "&:hover": {
-                                              backgroundColor: "rgba(0,0,0,0.15)",
-                                              color: "error.main",
-                                            },
-                                          }}
-                                        >
-                                          ×
-                                        </Box>
                                       </Box>
                                     )}
                                   </Box>

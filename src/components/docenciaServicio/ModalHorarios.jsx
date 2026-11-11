@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Box,
   Button,
   Checkbox,
@@ -19,6 +16,7 @@ import {
   TextField,
   Tab,
   Tabs,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -454,6 +452,52 @@ export default function ModalHorarios({
       )) return total;
       return total + statsFor(block, subject).totalHorasGlobales;
     }, 0);
+
+  const subjectsCountForPeriod = (period) => {
+    const uniqueSubjects = new Set();
+    assignments.forEach((item) => {
+      let numPer = periodNumber(valueOf(item, "numero_periodo", "periodo"));
+      if (esAnual && totalPeriodos > 0 && numPer > totalPeriodos) {
+        numPer = Math.ceil(numPer / 2);
+      }
+      if (numPer !== period) return;
+      const key = String(
+        [item.id_asignatura, item.id].find((v) => String(v ?? "").trim() !== "") ||
+          valueOf(item, "nombre_asignatura", "nombre de la asignatura") ||
+          "",
+      )
+        .trim()
+        .toLowerCase();
+      if (key) uniqueSubjects.add(key);
+    });
+    blocks.forEach((b) => {
+      if (periodNumber(valueOf(b, "numero_periodo", "periodo")) !== period) return;
+      const key = String(b.id_asignatura || b.nombre_asignatura || "")
+        .trim()
+        .toLowerCase();
+      if (key) uniqueSubjects.add(key);
+    });
+    return uniqueSubjects.size;
+  };
+
+  const truncatePracticeName = (name) => {
+    const cleanName = String(name || "").trim();
+    const words = cleanName.split(/\s+/).filter(Boolean);
+    if (words.length <= 5) return cleanName;
+    const keepCount = Math.min(5, Math.ceil(words.length / 2));
+    return `${words.slice(0, keepCount).join(" ")}...`;
+  };
+
+  const isSameSubjectOrPractice = (a, b) => {
+    if (!a || !b) return false;
+    if (a.id_practica || b.id_practica) {
+      return (
+        String(a.id_asignatura) === String(b.id_asignatura) &&
+        String(a.id_practica || "") === String(b.id_practica || "")
+      );
+    }
+    return String(a.id_asignatura) === String(b.id_asignatura);
+  };
   const save = async () => {
     if (readOnly) {
       setSaving(true);
@@ -729,290 +773,585 @@ export default function ModalHorarios({
               variant="scrollable"
               scrollButtons="auto"
             >
-              {periods.map((p) => (
-                <Tab key={p} label={`${labelPrefix} ${toRoman(p)}`} />
-              ))}
+              {periods.map((p) => {
+                const count = subjectsCountForPeriod(p);
+                return (
+                  <Tab
+                    key={p}
+                    label={`${labelPrefix} ${toRoman(p)}${count > 0 ? ` (${count})` : ""}`}
+                    sx={{
+                      fontWeight: count > 0 ? 700 : 500,
+                      color: count > 0 ? "#2e7d32" : "inherit",
+                    }}
+                  />
+                );
+              })}
             </Tabs>
-            {blocksFor(periods[tab] || 1).map((block, blockIndex) => {
-              const selectorKey =
+            {(() => {
+              const periodBlocks = blocksFor(periods[tab] || 1);
+              if (periodBlocks.length === 0) {
+                return (
+                  <Typography color="text.secondary" sx={{ mt: 2 }}>
+                    No hay ciclos configurados para este período.
+                  </Typography>
+                );
+              }
+
+              const getSelectorKey = (block) =>
                 block.id || `${block.numero_periodo}-${block.semana_inicio}`;
-              const subject = block.subjects.find(
-                (s) => {
-                  const sKey = s.id_practica ? `${s.id_asignatura}-${s.id_practica}` : String(s.id_asignatura);
-                  return sKey === String(selected[selectorKey]);
-                },
-              );
-              const current =
-                (subject && schedules[keyFor(block, subject)]?.horario) ||
-                emptySchedule();
+
+              const getSelectedSubjectForBlock = (block) => {
+                const key = getSelectorKey(block);
+                return block.subjects.find((s) => {
+                  const sKey = s.id_practica
+                    ? `${s.id_asignatura}-${s.id_practica}`
+                    : String(s.id_asignatura);
+                  return sKey === String(selected[key]);
+                });
+              };
+
+              const activeIndex = periodBlocks.findIndex((block, idx) => {
+                const key = getSelectorKey(block);
+                return expandedSchedule === null
+                  ? idx === 0
+                  : expandedSchedule === key;
+              });
+              const activeBlock =
+                activeIndex >= 0 ? periodBlocks[activeIndex] : null;
+              const selectorKey = activeBlock
+                ? getSelectorKey(activeBlock)
+                : null;
+              const subject = activeBlock
+                ? getSelectedSubjectForBlock(activeBlock)
+                : null;
+
               return (
-                <Accordion
-                  key={`${block.semana_inicio}-${block.semana_fin}`}
-                  expanded={
-                    expandedSchedule === null
-                      ? blockIndex === 0
-                      : expandedSchedule === selectorKey
-                  }
-                  onChange={() =>
-                    setExpandedSchedule((current) => {
-                      if (current === selectorKey) return null;
-                      if (current === null && blockIndex === 0)
-                        return "__closed__";
-                      return selectorKey;
-                    })
-                  }
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="h6">
-                      Ciclo {blockIndex + 1}:{" "}
-                      {Number(block.semana_fin) -
-                        Number(block.semana_inicio) +
-                        1}{" "}
-                      semanas
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Stack
-                      direction="row"
-                      flexWrap="wrap"
-                      gap={1}
-                      sx={{ my: 2 }}
-                    >
-                      {block.subjects.map((s) => {
-                        const sKey = s.id_practica ? `${s.id_asignatura}-${s.id_practica}` : String(s.id_asignatura);
-                        const isSelected =
-                          subject &&
-                          (s.id_practica
-                            ? String(subject.id_practica) === String(s.id_practica) && String(subject.id_asignatura) === String(s.id_asignatura)
-                            : String(subject.id_asignatura) === String(s.id_asignatura));
-                        const buttonLabel = s.nombre_practica
-                          ? `${s.nombre_asignatura}: ${s.nombre_practica} ${s.nombre_escenario ? `(${s.nombre_escenario})` : ""}`
-                          : s.nombre_asignatura;
-                        return (
-                          <Button
-                            key={sKey}
-                            className="subject-color-button"
-                            variant="contained"
-                            onClick={(event) => {
-                              event?.stopPropagation();
-                              setSelected((old) => ({
-                                ...old,
-                                [selectorKey]: sKey,
-                              }));
-                            }}
-                            sx={{
-                              color: "#fff",
-                              opacity: subject && !isSelected ? 0.45 : 1,
-                              backgroundColor: colorFor(s),
-                              "&.MuiButton-contained": {
-                                backgroundColor: colorFor(s),
-                              },
-                              boxShadow: isSelected
-                                ? "0 0 0 3px rgba(0, 0, 0, 0.28)"
-                                : "none",
-                              "&:hover": {
-                                backgroundColor: colorFor(s),
-                              },
-                            }}
-                            style={{ backgroundColor: colorFor(s) }}
-                          >
-                            {buttonLabel}
-                          </Button>
-                        );
-                      })}
-                    </Stack>
-                    {!subject && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 1 }}
-                      >
-                        Selecciona una asignatura para habilitar su horario.
-                      </Typography>
-                    )}
-                    <Box sx={{ overflowX: "auto" }} onClick={(event) => event.stopPropagation()}>
-                      <Box
-                        sx={{
-                          minWidth: 700,
-                          display: "grid",
-                          gridTemplateColumns: "120px repeat(7, 1fr)",
-                        }}
-                      >
-                        <Box />
-                        <>
-                          {DAYS.map((day) => (
-                            <Typography
-                              key={day}
-                              sx={{
-                                textAlign: "center",
-                                fontWeight: 700,
-                                p: 0.5,
-                              }}
-                            >
-                              {day}
-                            </Typography>
-                          ))}
-                        </>
-                        {HOURS.map((hour) => (
-                          <React.Fragment key={hour}>
-                            <Typography
-                              sx={{
-                                p: 0.5,
-                                borderTop: "1px solid #ddd",
-                                fontSize: 12,
-                              }}
-                            >
-                              {hour}
-                            </Typography>
-                            {DAYS.map((day) => {
-                              const occupiedBy = block.subjects.find((s) =>
-                                (
-                                  schedules[keyFor(block, s)]?.horario?.[day] ||
-                                  []
-                                ).includes(hour),
-                              );
-                              const checked = Boolean(occupiedBy);
-                              const editable = Boolean(subject);
-                              return (
-                                <FormControlLabel
-                                  key={`${day}-${hour}`}
-                                  label=""
-                                  control={
-                                    <Checkbox
-                                      checked={checked}
-                                      disabled={
-                                        readOnly ||
-                                        !editable ||
-                                        hasConflict(block, subject, day, hour)
-                                      }
-                                      onChange={() =>
-                                        toggle(block, subject, day, hour)
-                                      }
-                                    />
-                                  }
-                                  sx={{
-                                    m: 0,
-                                    minHeight: 28,
-                                    justifyContent: "center",
-                                    borderTop: "1px solid #ddd",
-                                    backgroundColor: occupiedBy
-                                      ? colorFor(occupiedBy)
-                                      : "transparent",
-                                    "& .MuiCheckbox-root": { p: 0.25 },
-                                  }}
-                                />
-                              );
-                            })}
-                          </React.Fragment>
-                        ))}
-                      </Box>
-                    </Box>
-                    {subject &&
-                      (() => {
-                        const stats = statsFor(block, subject);
-                        const ratioKey = String(subject.id_asignatura);
-                        return (
+                <>
+                  {/* Barra horizontal de ciclos con ancho proporcional al número de semanas */}
+                  <Box
+                    onClick={(event) => event.stopPropagation()}
+                    sx={{
+                      display: "flex",
+                      alignItems: "stretch",
+                      gap: 1,
+                      mt: 2,
+                      mb: activeBlock ? 1.5 : 0,
+                      width: "100%",
+                    }}
+                  >
+                    {periodBlocks.map((block, blockIndex) => {
+                      const blockKey = getSelectorKey(block);
+                      const durationWeeks = Math.max(
+                        1,
+                        Number(block.semana_fin) -
+                          Number(block.semana_inicio) +
+                          1,
+                      );
+                      const isExpanded =
+                        expandedSchedule === null
+                          ? blockIndex === 0
+                          : expandedSchedule === blockKey;
+                      const blockSubject = getSelectedSubjectForBlock(block);
+                      const cycleTotalHours = blockSubject
+                        ? statsFor(block, blockSubject).totalHorasHorario
+                        : block.subjects.reduce(
+                            (sum, s) =>
+                              sum + statsFor(block, s).totalHorasHorario,
+                            0,
+                          );
+                      const headerTooltip = `Ciclo ${blockIndex + 1}: ${durationWeeks} semanas · Total horas del ciclo: ${cycleTotalHours}`;
+
+                      return (
+                        <Tooltip key={`${block.semana_inicio}-${block.semana_fin}`} title={headerTooltip} arrow>
                           <Box
+                            role="button"
+                            tabIndex={0}
+                            onClick={() =>
+                              setExpandedSchedule((current) => {
+                                if (current === blockKey) return "__closed__";
+                                if (current === null && blockIndex === 0)
+                                  return "__closed__";
+                                return blockKey;
+                              })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setExpandedSchedule((current) => {
+                                  if (current === blockKey) return "__closed__";
+                                  if (current === null && blockIndex === 0)
+                                    return "__closed__";
+                                  return blockKey;
+                                });
+                              }
+                            }}
                             sx={{
-                              mt: 2,
-                              p: 2,
-                              backgroundColor: "#fafafa",
+                              flex: `${durationWeeks} 1 0%`,
+                              minWidth: 0,
+                              px: 1.5,
+                              py: 1.25,
                               borderRadius: 1,
+                              border: "1px solid",
+                              borderColor: isExpanded ? "primary.main" : "#d0d7de",
+                              backgroundColor: isExpanded ? "#eef6ff" : "#ffffff",
+                              boxShadow: isExpanded
+                                ? "0 2px 6px rgba(25, 118, 210, 0.14)"
+                                : "0 1px 2px rgba(0, 0, 0, 0.05)",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 1,
+                              overflow: "hidden",
+                              transition: "all 0.2s ease",
+                              "&:hover": {
+                                borderColor: "primary.main",
+                                backgroundColor: isExpanded ? "#e3f0ff" : "#f8fafc",
+                              },
                             }}
                           >
-                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, flexWrap: "wrap" }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 700, pt: 0.75 }}>
-                                Resumen de {subject.nombre_asignatura}
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 1,
+                                flexWrap: "wrap",
+                                minWidth: 0,
+                                flex: 1,
+                              }}
+                            >
+                              <Typography
+                                variant="subtitle1"
+                                sx={{
+                                  fontWeight: 700,
+                                  fontSize: "0.95rem",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  color: isExpanded ? "primary.dark" : "text.primary",
+                                }}
+                              >
+                                Ciclo {blockIndex + 1}: {durationWeeks} semanas
                               </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: "text.secondary",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                Total horas del ciclo:{" "}
+                                <Box
+                                  component="span"
+                                  sx={{ color: "text.primary", fontWeight: 700 }}
+                                >
+                                  {cycleTotalHours}
+                                </Box>
+                              </Typography>
+                            </Box>
+                            <ExpandMoreIcon
+                              sx={{
+                                flexShrink: 0,
+                                color: isExpanded ? "primary.main" : "action.active",
+                                transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                                transition: "transform 0.2s ease",
+                              }}
+                            />
+                          </Box>
+                        </Tooltip>
+                      );
+                    })}
+                  </Box>
+
+                  {/* Panel desplegado del ciclo seleccionado ocupando todo el ancho */}
+                  {activeBlock && (
+                    <Box
+                      onClick={(event) => event.stopPropagation()}
+                      sx={{
+                        width: "100%",
+                        boxSizing: "border-box",
+                        p: 2,
+                        border: "1px solid #d0d7de",
+                        borderRadius: 1,
+                        backgroundColor: "#ffffff",
+                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08)",
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        flexWrap="wrap"
+                        gap={1}
+                        sx={{ mb: 2 }}
+                      >
+                        {activeBlock.subjects.map((s) => {
+                          const sKey = s.id_practica
+                            ? `${s.id_asignatura}-${s.id_practica}`
+                            : String(s.id_asignatura);
+                          const isSelected =
+                            subject &&
+                            (s.id_practica
+                              ? String(subject.id_practica) === String(s.id_practica) &&
+                                String(subject.id_asignatura) === String(s.id_asignatura)
+                              : String(subject.id_asignatura) === String(s.id_asignatura));
+                          const buttonLabel = s.nombre_practica
+                            ? `${s.nombre_asignatura}: ${s.nombre_practica} ${s.nombre_escenario ? `(${s.nombre_escenario})` : ""}`.trim()
+                            : s.nombre_asignatura;
+                          const shortButtonLabel = s.nombre_practica
+                            ? `${s.nombre_asignatura}: ${truncatePracticeName(s.nombre_practica)}${s.nombre_escenario ? ` (${s.nombre_escenario})` : ""}`
+                            : s.nombre_asignatura;
+                          return (
+                            <Tooltip key={sKey} title={buttonLabel} arrow>
+                              <Button
+                                className="subject-color-button"
+                                variant="contained"
+                                onClick={(event) => {
+                                  event?.stopPropagation();
+                                  setSelected((old) => ({
+                                    ...old,
+                                    [selectorKey]: sKey,
+                                  }));
+                                }}
+                                sx={{
+                                  color: "#fff",
+                                  opacity: subject && !isSelected ? 0.45 : 1,
+                                  backgroundColor: colorFor(s),
+                                  "&.MuiButton-contained": {
+                                    backgroundColor: colorFor(s),
+                                  },
+                                  boxShadow: isSelected
+                                    ? "0 0 0 3px rgba(0, 0, 0, 0.28)"
+                                    : "none",
+                                  "&:hover": {
+                                    backgroundColor: colorFor(s),
+                                  },
+                                }}
+                                style={{ backgroundColor: colorFor(s) }}
+                              >
+                                {shortButtonLabel}
+                              </Button>
+                            </Tooltip>
+                          );
+                        })}
+                      </Stack>
+                      {!subject ? (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 1, mb: 1.5 }}
+                        >
+                          Selecciona una asignatura para habilitar su horario.
+                        </Typography>
+                      ) : (
+                        (() => {
+                          const stats = statsFor(activeBlock, subject);
+                          const ratioKey = String(subject.id_asignatura);
+                          return (
+                            <Box
+                              sx={{
+                                mb: 2,
+                                px: 1.5,
+                                py: 1,
+                                backgroundColor: "#fafafa",
+                                border: "1px solid #e0e0e0",
+                                borderRadius: 1,
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  gap: 1.5,
+                                  flexWrap: { xs: "wrap", md: "nowrap" },
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.75,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      whiteSpace: "nowrap",
+                                      fontSize: "0.8rem",
+                                    }}
+                                  >
+                                    Relación horas indep.:
+                                  </Typography>
+                                  <FormControl size="small" sx={{ minWidth: 70 }}>
+                                    <Select
+                                      value={stats.ratio}
+                                      disabled={readOnly}
+                                      sx={{ fontSize: "0.8rem", height: 28 }}
+                                      onChange={(event) =>
+                                        setRatios((old) => ({
+                                          ...old,
+                                          [ratioKey]: event.target.value,
+                                        }))
+                                      }
+                                    >
+                                      {ratioOptions.map((option) => (
+                                        <MenuItem key={option} value={option}>
+                                          {option}
+                                        </MenuItem>
+                                      ))}
+                                    </Select>
+                                  </FormControl>
+                                </Box>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    whiteSpace: "nowrap",
+                                    fontSize: "0.8rem",
+                                  }}
+                                >
+                                  Horas/semana: <b>{stats.horasSemana}</b>
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    whiteSpace: "nowrap",
+                                    fontSize: "0.8rem",
+                                  }}
+                                >
+                                  Horas independientes:{" "}
+                                  <b>{stats.horasIndependientes}</b>
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    whiteSpace: "nowrap",
+                                    fontSize: "0.8rem",
+                                  }}
+                                >
+                                  Total global de horas:{" "}
+                                  <b>{stats.totalHorasGlobales}</b>
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    whiteSpace: "nowrap",
+                                    fontSize: "0.8rem",
+                                  }}
+                                >
+                                  Total horas del periodo:{" "}
+                                  <b>
+                                    {totalHorasPeriodoFor(
+                                      activeBlock.numero_periodo,
+                                      subject,
+                                    )}
+                                  </b>
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    whiteSpace: "nowrap",
+                                    fontSize: "0.8rem",
+                                  }}
+                                >
+                                  Créditos: <b>{stats.creditos.toFixed(2)}</b>
+                                </Typography>
+                              </Box>
                               {readOnly && (
-                                <Box onClick={(event) => event.stopPropagation()} sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 78px)", sm: "repeat(4, 78px)" }, gap: 0.75, justifyContent: "flex-end" }}>
-                                  {["beneficiados", "relacion", "grupo", "estudiantes"].map((field) => (
+                                <Box
+                                  onClick={(event) => event.stopPropagation()}
+                                  sx={{
+                                    mt: 1,
+                                    display: "grid",
+                                    gridTemplateColumns: {
+                                      xs: "repeat(2, 78px)",
+                                      sm: "repeat(4, 78px)",
+                                    },
+                                    gap: 0.75,
+                                    justifyContent: "flex-end",
+                                  }}
+                                >
+                                  {[
+                                    "beneficiados",
+                                    "relacion",
+                                    "grupo",
+                                    "estudiantes",
+                                  ].map((field) => (
                                     <Box key={field} sx={{ width: 78 }}>
                                       <Typography
                                         variant="caption"
-                                        title={{ beneficiados: "Estudiantes beneficiados", relacion: "Relación", grupo: "Grupo", estudiantes: "Número de estudiantes" }[field]}
-                                        sx={{ display: "block", fontSize: "0.62rem", lineHeight: 1.1, mb: 0.35, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                        title={
+                                          {
+                                            beneficiados:
+                                              "Estudiantes beneficiados",
+                                            relacion: "Relación",
+                                            grupo: "Grupo",
+                                            estudiantes: "Número de estudiantes",
+                                          }[field]
+                                        }
+                                        sx={{
+                                          display: "block",
+                                          fontSize: "0.62rem",
+                                          lineHeight: 1.1,
+                                          mb: 0.35,
+                                          whiteSpace: "nowrap",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                        }}
                                       >
-                                        {{ beneficiados: "Est. beneficiados", relacion: "Relación", grupo: "Grupo", estudiantes: "N. estudiantes" }[field]}
+                                        {
+                                          {
+                                            beneficiados: "Est. beneficiados",
+                                            relacion: "Relación",
+                                            grupo: "Grupo",
+                                            estudiantes: "N. estudiantes",
+                                          }[field]
+                                        }
                                       </Typography>
                                       <TextField
                                         size="small"
                                         type="number"
-                                        aria-label={{ beneficiados: "Estudiantes beneficiados", relacion: "Relación", grupo: "Grupo", estudiantes: "Número de estudiantes" }[field]}
-                                        value={benefitData[`${ratioKey}-${field}`] || ""}
-                                        onChange={(event) => setBenefitData((old) => ({ ...old, [`${ratioKey}-${field}`]: event.target.value }))}
+                                        aria-label={
+                                          {
+                                            beneficiados:
+                                              "Estudiantes beneficiados",
+                                            relacion: "Relación",
+                                            grupo: "Grupo",
+                                            estudiantes: "Número de estudiantes",
+                                          }[field]
+                                        }
+                                        value={
+                                          benefitData[`${ratioKey}-${field}`] ||
+                                          ""
+                                        }
+                                        onChange={(event) =>
+                                          setBenefitData((old) => ({
+                                            ...old,
+                                            [`${ratioKey}-${field}`]:
+                                              event.target.value,
+                                          }))
+                                        }
                                         inputProps={{ min: 0 }}
-                                        sx={{ width: 78, "& .MuiInputBase-input": { px: 1 } }}
+                                        sx={{
+                                          width: 78,
+                                          "& .MuiInputBase-input": { px: 1 },
+                                        }}
                                       />
                                     </Box>
                                   ))}
                                 </Box>
                               )}
                             </Box>
-                            <FormControl
-                              size="small"
-                              sx={{ minWidth: 180, mt: 1 }}
-                            >
-                              <Typography variant="caption">
-                                Horas independientes
-                              </Typography>
-                              <Select
-                                value={stats.ratio}
-                                disabled={readOnly}
-                                onChange={(event) =>
-                                  setRatios((old) => ({
-                                    ...old,
-                                    [ratioKey]: event.target.value,
-                                  }))
-                                }
+                          );
+                        })()
+                      )}
+                      <Box
+                        sx={{ overflowX: "auto" }}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <Box
+                          sx={{
+                            minWidth: 700,
+                            display: "grid",
+                            gridTemplateColumns: "120px repeat(7, 1fr)",
+                          }}
+                        >
+                          <Box />
+                          <>
+                            {DAYS.map((day) => (
+                              <Typography
+                                key={day}
+                                sx={{
+                                  textAlign: "center",
+                                  fontWeight: 700,
+                                  p: 0.5,
+                                }}
                               >
-                                {ratioOptions.map((option) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                            <Stack
-                              direction={{ xs: "column", sm: "row" }}
-                              spacing={2}
-                              sx={{ mt: 1 }}
-                            >
-                              <Typography>
-                                Horas/semana: <b>{stats.horasSemana}</b>
+                                {day}
                               </Typography>
-                              <Typography>
-                                Total Horas del ciclo:{" "}
-                                <b>{stats.totalHorasHorario}</b>
+                            ))}
+                          </>
+                          {HOURS.map((hour) => (
+                            <React.Fragment key={hour}>
+                              <Typography
+                                sx={{
+                                  p: 0.5,
+                                  borderTop: "1px solid #ddd",
+                                  fontSize: 12,
+                                }}
+                              >
+                                {hour}
                               </Typography>
-                              <Typography>
-                                Horas independientes:{" "}
-                                <b>{stats.horasIndependientes}</b>
-                              </Typography>
-                              <Typography>
-                                Total global de horas:{" "}
-                                <b>{stats.totalHorasGlobales}</b>
-                              </Typography>
-                              <Typography>
-                                Total horas del periodo:{" "}
-                                <b>
-                                  {totalHorasPeriodoFor(
-                                    block.numero_periodo,
-                                    subject,
-                                  )}
-                                </b>
-                              </Typography>
-                              <Typography>
-                                Créditos: <b>{stats.creditos.toFixed(2)}</b>
-                              </Typography>
-                            </Stack>
-                          </Box>
-                        );
-                      })()}
-                  </AccordionDetails>
-                </Accordion>
+                              {DAYS.map((day) => {
+                                const occupiedBy = activeBlock.subjects.find((s) =>
+                                  (
+                                    schedules[keyFor(activeBlock, s)]?.horario?.[day] ||
+                                    []
+                                  ).includes(hour),
+                                );
+                                const occupiedByOther = Boolean(
+                                  occupiedBy &&
+                                    subject &&
+                                    !isSameSubjectOrPractice(occupiedBy, subject),
+                                );
+                                const checked = Boolean(occupiedBy);
+                                const editable = Boolean(subject);
+                                return (
+                                  <FormControlLabel
+                                    key={`${day}-${hour}`}
+                                    label=""
+                                    control={
+                                      <Checkbox
+                                        checked={checked}
+                                        disabled={
+                                          readOnly ||
+                                          !editable ||
+                                          occupiedByOther ||
+                                          hasConflict(activeBlock, subject, day, hour)
+                                        }
+                                        onChange={() =>
+                                          toggle(activeBlock, subject, day, hour)
+                                        }
+                                        sx={
+                                          occupiedByOther
+                                            ? {
+                                                color: "#757575",
+                                                "&.Mui-checked": {
+                                                  color: "#757575",
+                                                },
+                                                "&.Mui-disabled": {
+                                                  color: "#757575",
+                                                },
+                                              }
+                                            : undefined
+                                        }
+                                      />
+                                    }
+                                    sx={{
+                                      m: 0,
+                                      minHeight: 28,
+                                      justifyContent: "center",
+                                      borderTop: "1px solid #ddd",
+                                      backgroundColor: occupiedBy
+                                        ? colorFor(occupiedBy)
+                                        : "transparent",
+                                      "& .MuiCheckbox-root": { p: 0.25 },
+                                    }}
+                                  />
+                                );
+                              })}
+                            </React.Fragment>
+                          ))}
+                        </Box>
+                      </Box>
+                    </Box>
+                  )}
+                </>
               );
-            })}
+            })()}
           </>
         )}
       </DialogContent>
