@@ -27,11 +27,8 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import axios from "axios";
 import { clearCache, fetchPostGeneral } from "../../service/fetch";
-
 const ENDPOINT = "https://siac-server.vercel.app/docServ";
-
 const ROMAN_MAP = {
   1: "I",
   2: "II",
@@ -258,6 +255,27 @@ const emptySubject = (period, semanas) => ({
   practicas: [],
 });
 
+const getPracticeValidationError = (practice, subjectName) => {
+  if (!String(subjectName || "").trim()) return "La asignatura es obligatoria.";
+  const required = [
+    ["nombre de la práctica", practice.nombrePractica],
+    ["escenario de práctica", practice.id_escenario],
+    ["semanas de práctica", practice.numero_semanas],
+    ["grupo", practice.grupo],
+    ["número de estudiantes", practice.numero_estudiantes],
+    ["relación", practice.relacion],
+    ["estudiantes beneficiados", practice.estudiantes_beneficiados],
+    ["competencias", practice.competencias],
+    ["evaluación", practice.evaluacion],
+  ];
+  const missing = required.find(([, value]) => String(value ?? "").trim() === "");
+  if (missing) return `Completa el campo ${missing[0]}.`;
+  if (!(practice.resultadosAprendizaje || []).some((item) => String(item || "").trim())) {
+    return "Agrega al menos un resultado de aprendizaje.";
+  }
+  return "";
+};
+
 const distributeWeeksToPractices = (practicesList, totalAsigWeeks) => {
   if (!practicesList || practicesList.length === 0) return [];
   const targetWeeks = Number(totalAsigWeeks) > 0 ? Number(totalAsigWeeks) : 18;
@@ -418,7 +436,7 @@ export default function ModalAsignaturas({
             practice.numero_estudiantes === ""
               ? ""
               : Number(practice.numero_estudiantes) || 0,
-          relacion: String(practice.relacion || "1:1"),
+          relacion: String(practice.relacion || ""),
           estudiantes_beneficiados:
             practice.estudiantes_beneficiados === ""
               ? ""
@@ -461,10 +479,11 @@ export default function ModalAsignaturas({
 
     const loadPracticas = async () => {
       try {
-        const response = await axios.post(
-          "https://siac-server.vercel.app/docServ",
-          { sheetName: "PRACTICAS" },
-        );
+        const response = await fetchPostGeneral({
+          dataSend: {},
+          sheetName: "PRACTICAS",
+          urlEndPoint: ENDPOINT,
+        });
         if (
           response.data &&
           response.data.status &&
@@ -514,11 +533,22 @@ export default function ModalAsignaturas({
                   .toLowerCase(),
             )
             .map(normalizePractice);
-          return distributeWeeksToPractices(raw, totalAsigWeeks);
+          const seenPractices = new Set();
+          const uniquePractices = raw.filter((practice) => {
+            const key = String(
+              practice.id || practice.idPractica || practice.nombrePractica || practice.localId,
+            )
+              .trim()
+              .toLowerCase();
+            if (seenPractices.has(key)) return false;
+            seenPractices.add(key);
+            return true;
+          });
+          return distributeWeeksToPractices(uniquePractices, totalAsigWeeks);
         };
 
         // 1. Asignaturas ya existentes en la BD para este programa
-        const existingRows = data
+        const existingRowsRaw = data
           .filter(
             (item) =>
               String(readColumn(item, "id_programa", "ID_PROGRAMA") || "")
@@ -563,6 +593,17 @@ export default function ModalAsignaturas({
               practicas: practicesForSubject(asigName, asigWeeks),
             };
           });
+        const existingRowKeys = new Set();
+        const existingRows = existingRowsRaw.filter((row) => {
+          const key = `${periodNumber(row.numero_periodo)}___${String(
+            row.nombre_asignatura || "",
+          )
+            .trim()
+            .toLowerCase()}`;
+          if (existingRowKeys.has(key)) return false;
+          existingRowKeys.add(key);
+          return true;
+        });
 
         // 2. Extraer asignaturas de la hoja PRACTICAS para este programa
         const practicasDelProg = practicasDelPrograma;
@@ -628,10 +669,11 @@ export default function ModalAsignaturas({
       setEscenarios(escenariosData);
       return;
     }
-    axios
-      .post("https://siac-server.vercel.app/getInstituciones", {
-        sheetName: "ESC_PRACTICA",
-      })
+    fetchPostGeneral({
+      dataSend: {},
+      sheetName: "ESC_PRACTICA",
+      urlEndPoint: "https://siac-server.vercel.app/getInstituciones",
+    })
       .then((res) => {
         if (res.data?.status && Array.isArray(res.data.data)) {
           setEscenarios(res.data.data);
@@ -700,6 +742,7 @@ export default function ModalAsignaturas({
 
   // Período numérico seleccionado actualmente
   const periodoActualNum = periodosTabs[periodoActivo] || periodosTabs[0] || 1;
+  const esUltimoPeriodo = periodoActivo >= periodosTabs.length - 1;
 
   const rowsForPeriod = (period) =>
     rows.filter(
@@ -756,7 +799,7 @@ export default function ModalAsignaturas({
       numero_semanas: semanasRestantes > 0 ? semanasRestantes : "",
       grupo: "",
       numero_estudiantes: "",
-      relacion: "1:1",
+      relacion: "",
       estudiantes_beneficiados: "",
       competencias: "",
       resultadosAprendizaje: [""],
@@ -806,7 +849,22 @@ export default function ModalAsignaturas({
 
   const handleSave = async () => {
     setError("");
+    const isLastPeriod = esUltimoPeriodo;
+    const currentPeriod = periodoActualNum;
+    const invalidPractice = rows
+      .filter((row) => periodNumber(row.numero_periodo) === Number(currentPeriod))
+      .flatMap((row) => (row.practicas || []).map((practice) => ({ row, practice })))
+      .find(({ row, practice }) => getPracticeValidationError(practice, row.nombre_asignatura));
+    if (invalidPractice) {
+      setError(getPracticeValidationError(invalidPractice.practice, invalidPractice.row.nombre_asignatura));
+      setExpandedPractices((prev) => ({ ...prev, [invalidPractice.practice.localId]: true }));
+      return;
+    }
     if (serializeAsignaturasSnapshot(rows) === initialSnapshotRef.current) {
+      if (!isLastPeriod) {
+        setPeriodoActivo((current) => current + 1);
+        return;
+      }
       onSaved?.(rows);
       if (!embedded) onClose?.();
       return;
@@ -930,9 +988,9 @@ export default function ModalAsignaturas({
               practice.id_escenario || "",
               practice.nombre_escenario || "",
               practice.numero_semanas || "",
-              practice.grupo || "",
-              practice.numero_estudiantes || "",
               practice.relacion || "",
+              practice.numero_estudiantes || "",
+              practice.grupo || "",
               practice.estudiantes_beneficiados || "",
             ],
           };
@@ -975,7 +1033,11 @@ export default function ModalAsignaturas({
       }));
       initialSnapshotRef.current = serializeAsignaturasSnapshot(updatedRows);
       setRows(updatedRows);
-      clearCache();
+      clearCache("/docServ");
+      if (!isLastPeriod) {
+        setPeriodoActivo((current) => current + 1);
+        return;
+      }
       onSaved?.(updatedRows);
       if (!embedded) onClose?.();
     } catch {
@@ -1143,6 +1205,7 @@ export default function ModalAsignaturas({
                             fullWidth
                             size="small"
                             label="Nombre de la asignatura"
+                            required
                             value={row.nombre_asignatura || ""}
                             onChange={(e) =>
                               updateRow(
@@ -1201,7 +1264,8 @@ export default function ModalAsignaturas({
                                 Prácticas formativas (
                                 {(row.practicas || []).length})
                               </Typography>
-                              {(() => {
+                              {
+                              /** (() => {
                                 const sumSemanas = (row.practicas || []).reduce(
                                   (acc, p) =>
                                     acc + (Number(p.numero_semanas) || 0),
@@ -1231,7 +1295,7 @@ export default function ModalAsignaturas({
                                     }}
                                   />
                                 );
-                              })()}
+                              })()*/}
                             </Box>
                           </AccordionSummary>
                           <AccordionDetails sx={{ pt: 1.5 }}>
@@ -1356,6 +1420,7 @@ export default function ModalAsignaturas({
                                           fullWidth
                                           size="small"
                                           label="Nombre de la práctica formativa o rotación"
+                                          required
                                           value={practice.nombrePractica || ""}
                                           onChange={(event) =>
                                             updatePractice(
@@ -1379,7 +1444,6 @@ export default function ModalAsignaturas({
                                               : practice.numeroActividades || 0
                                           }
                                           InputProps={{ readOnly: true }}
-                                          helperText="Determinado por los RA agregados"
                                           sx={{ minWidth: 190 }}
                                         />
                                         <IconButton
@@ -1400,16 +1464,16 @@ export default function ModalAsignaturas({
                                         sx={{
                                           mb: 1.5,
                                           p: 1.5,
-                                          backgroundColor: "#f9fbfd",
+                                          backgroundColor: "#fff1f2",
                                           borderRadius: 1,
-                                          border: "1px dashed #90caf9",
+                                          border: "2px solid #e57373",
                                         }}
                                       >
                                         <Typography
                                           variant="caption"
                                           sx={{
                                             fontWeight: 700,
-                                            color: "#1565c0",
+                                            color: "#b71c1c",
                                             display: "block",
                                             mb: 1,
                                           }}
@@ -1429,6 +1493,7 @@ export default function ModalAsignaturas({
                                           <FormControl
                                             size="small"
                                             sx={{ minWidth: 240, flex: 1 }}
+                                            required
                                           >
                                             <InputLabel
                                               id={`escenario-label-${practice.localId}`}
@@ -1492,6 +1557,7 @@ export default function ModalAsignaturas({
                                             size="small"
                                             type="number"
                                             label="Semanas práctica"
+                                            required
                                             value={
                                               practice.numero_semanas || ""
                                             }
@@ -1510,6 +1576,7 @@ export default function ModalAsignaturas({
                                           <TextField
                                             size="small"
                                             label="Grupo"
+                                            required
                                             placeholder="Ej: G1, A"
                                             value={practice.grupo || ""}
                                             onChange={(event) =>
@@ -1527,6 +1594,7 @@ export default function ModalAsignaturas({
                                             size="small"
                                             type="number"
                                             label="N° Estudiantes"
+                                            required
                                             value={
                                               practice.numero_estudiantes || ""
                                             }
@@ -1545,6 +1613,7 @@ export default function ModalAsignaturas({
                                           <FormControl
                                             size="small"
                                             sx={{ width: 110 }}
+                                            required
                                           >
                                             <InputLabel
                                               id={`relacion-label-${practice.localId}`}
@@ -1554,7 +1623,7 @@ export default function ModalAsignaturas({
                                             <Select
                                               labelId={`relacion-label-${practice.localId}`}
                                               label="Relación"
-                                              value={practice.relacion || "1:1"}
+                                              value={practice.relacion || ""}
                                               onChange={(event) =>
                                                 updatePractice(
                                                   row.localId,
@@ -1564,6 +1633,9 @@ export default function ModalAsignaturas({
                                                 )
                                               }
                                             >
+                                              <MenuItem value="">
+                                                <em>-- Seleccionar relación --</em>
+                                              </MenuItem>
                                               {[
                                                 "1:1",
                                                 "1:2",
@@ -1585,6 +1657,7 @@ export default function ModalAsignaturas({
                                             size="small"
                                             type="number"
                                             label="Est. Beneficiados"
+                                            required
                                             value={
                                               practice.estudiantes_beneficiados ||
                                               ""
@@ -1609,6 +1682,7 @@ export default function ModalAsignaturas({
                                         minRows={2}
                                         size="small"
                                         label="Competencias"
+                                        required
                                         value={practice.competencias || ""}
                                         onChange={(event) =>
                                           updatePractice(
@@ -1639,6 +1713,7 @@ export default function ModalAsignaturas({
                                             fullWidth
                                             size="small"
                                             label={`RA ${resultIndex + 1}`}
+                                            required
                                             value={result}
                                             onChange={(event) =>
                                               updatePracticeResult(
@@ -1694,6 +1769,7 @@ export default function ModalAsignaturas({
                                         minRows={2}
                                         size="small"
                                         label="Evaluación"
+                                        required
                                         value={practice.evaluacion || ""}
                                         onChange={(event) =>
                                           updatePractice(
@@ -1751,7 +1827,11 @@ export default function ModalAsignaturas({
           onClick={handleSave}
           disabled={saving || loading}
         >
-          {saving ? "Guardando..." : "Guardar y continuar a Esquemas"}
+          {saving
+            ? "Guardando..."
+            : esUltimoPeriodo
+              ? "Guardar y continuar a Esquemas"
+              : "Guardar y continuar con el siguiente periodo"}
         </Button>
       </DialogActions>
     </Wrapper>
