@@ -13,7 +13,6 @@ import {
   Typography,
 } from "@mui/material";
 import SaveIcon from "@mui/icons-material/Save";
-import axios from "axios";
 import { clearCache, fetchPostGeneral } from "../../service/fetch";
 
 const URL = "https://siac-server.vercel.app";
@@ -473,6 +472,7 @@ export default function ModalEsquema({
     }
     return Array.from({ length: totalPeriodos || 1 }, (_, i) => i + 1);
   }, [periodosSeleccionados, totalPeriodos, esAnual]);
+  const esUltimoPeriodo = periodoActivo >= periodosTabs.length - 1;
 
   const resolveScenarioName = (rawName, escId) => {
     const cleanName = String(rawName || "").trim();
@@ -585,9 +585,9 @@ export default function ModalEsquema({
     };
 
     Promise.all([
-      axios.post(`${URL}/docServ`, { sheetName: "ASIGNATURAS" }).then((r) => r.data).catch(() => ({ data: [] })),
-      axios.post(`${URL}/docServ`, { sheetName: "ESQUEMAS" }).then((r) => r.data).catch(() => ({ data: [] })),
-      axios.post(`${URL}/docServ`, { sheetName: "PRACTICAS" }).then((r) => r.data).catch(() => ({ data: practicasData || [] })),
+      fetchPostGeneral({ dataSend: {}, sheetName: "ASIGNATURAS", urlEndPoint: `${URL}/docServ` }).catch(() => ({ data: [] })),
+      fetchPostGeneral({ dataSend: {}, sheetName: "ESQUEMAS", urlEndPoint: `${URL}/docServ` }).catch(() => ({ data: [] })),
+      fetchPostGeneral({ dataSend: {}, sheetName: "PRACTICAS", urlEndPoint: `${URL}/docServ` }).catch(() => ({ data: practicasData || [] })),
     ])
       .then(([a, e, p]) => {
         if (!active) return;
@@ -772,8 +772,22 @@ export default function ModalEsquema({
               isPlacedBlock: true,
             };
           });
-        initialBlocksSnapshotRef.current = serializeEsquemaSnapshot(loadedBlocks);
-        setBlocks(loadedBlocks);
+        const seenBlockKeys = new Set();
+        const uniqueLoadedBlocks = loadedBlocks.filter((block) => {
+          const key = [
+            block.numero_periodo,
+            block.id_asignatura,
+            block.id_practica || block.nombre_practica,
+            block.numero_fila,
+            block.semana_inicio,
+            block.semana_fin,
+          ].join("|");
+          if (seenBlockKeys.has(key)) return false;
+          seenBlockKeys.add(key);
+          return true;
+        });
+        initialBlocksSnapshotRef.current = serializeEsquemaSnapshot(uniqueLoadedBlocks);
+        setBlocks(uniqueLoadedBlocks);
       })
       .catch(() => active && setError("No se pudieron cargar los datos."))
       .finally(() => active && setLoading(false));
@@ -913,6 +927,10 @@ export default function ModalEsquema({
 
   const save = async () => {
     setError("");
+    if (serializeEsquemaSnapshot(blocks) === initialBlocksSnapshotRef.current && !esUltimoPeriodo) {
+      setPeriodoActivo((current) => current + 1);
+      return;
+    }
     if (serializeEsquemaSnapshot(blocks) === initialBlocksSnapshotRef.current) {
       onSaved?.();
       if (!embedded) onClose?.();
@@ -1008,7 +1026,11 @@ export default function ModalEsquema({
       }));
       initialBlocksSnapshotRef.current = serializeEsquemaSnapshot(updatedBlocks);
       setBlocks(updatedBlocks);
-      clearCache();
+      clearCache("/docServ");
+      if (!esUltimoPeriodo) {
+        setPeriodoActivo((current) => current + 1);
+        return;
+      }
       onSaved?.();
       if (!embedded) onClose?.();
     } catch {
@@ -1478,7 +1500,11 @@ export default function ModalEsquema({
           onClick={save}
           disabled={saving || loading}
         >
-          {saving ? "Guardando..." : "Guardar y continuar a Horarios"}
+          {saving
+            ? "Guardando..."
+            : esUltimoPeriodo
+              ? "Guardar y continuar a Horarios"
+              : "Guardar y continuar con el siguiente periodo"}
         </Button>
       </DialogActions>
     </Wrapper>

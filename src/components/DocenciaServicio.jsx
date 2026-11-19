@@ -4,7 +4,7 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import CollapsibleButton from "./CollapsibleButton";
 import { Filtro14 } from "../service/data";
-import { fetchPostGeneral } from "../service/fetch";
+import { clearCache, fetchPostGeneral } from "../service/fetch";
 import {
   Box,
   Typography,
@@ -43,6 +43,7 @@ import axios from "axios";
 import ModalAsignaturas from "./docenciaServicio/ModalAsignaturas";
 import ModalEsquema from "./docenciaServicio/ModalEsquema";
 import ModalHorarios from "./docenciaServicio/ModalHorarios";
+import ModalRevision from "./docenciaServicio/ModalRevision";
 
 const DocenciaServicio = () => {
   const navigate = useNavigate();
@@ -71,6 +72,20 @@ const DocenciaServicio = () => {
   // Estados para el formulario de anexos técnicos
   const [showAnexoForm, setShowAnexoForm] = useState(false);
   const [showAsignaturasModal, setShowAsignaturasModal] = useState(false);
+  const isValidEmail = (value) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+  const isValidPhone = (value) =>
+    /\d/.test(String(value || ""));
+  const getContactFieldError = (name, value) => {
+    if (!String(value || "").trim()) return "Este campo es obligatorio.";
+    if ((name === "correo" || name.endsWith("_correo")) && !isValidEmail(value)) {
+      return "Ingresa un correo electrónico válido.";
+    }
+    if ((name === "telefono" || name.endsWith("_telefono")) && !isValidPhone(value)) {
+      return "Ingresa un teléfono válido usando solo números y separadores.";
+    }
+    return "";
+  };
   // Constantes para la tabla de horarios
   const DIAS = [
     "Lunes",
@@ -129,6 +144,7 @@ const DocenciaServicio = () => {
   ];
 
   const initialAnexoFormData = {
+    idAnexo: "",
     idPrograma: "",
     programaSeleccionado: null,
     idEscenario: "",
@@ -166,13 +182,29 @@ const DocenciaServicio = () => {
     coordinacion_cargo: "",
     coordinacion_telefono: "",
     coordinacion_correo: "",
+    seguimiento_evaluacion: "",
   };
 
   const WIZARD_STORAGE_KEY = "siac-docencia-servicio-wizard";
   const [anexoFormData, setAnexoFormData] = useState(() => {
     try {
       const saved = JSON.parse(sessionStorage.getItem(WIZARD_STORAGE_KEY) || "null");
-      return saved?.formData ? { ...initialAnexoFormData, ...saved.formData, localFile: null } : initialAnexoFormData;
+      if (saved?.formData) {
+        const restored = { ...initialAnexoFormData, ...saved.formData, localFile: null };
+        [
+          "nombre_IES",
+          "director_nombre",
+          "director_cargo",
+          "director_telefono",
+          "director_correo",
+        ].forEach((field) => {
+          if (!String(restored[field] || "").trim()) {
+            restored[field] = initialAnexoFormData[field];
+          }
+        });
+        return restored;
+      }
+      return initialAnexoFormData;
     } catch {
       return initialAnexoFormData;
     }
@@ -182,20 +214,30 @@ const DocenciaServicio = () => {
   const [wizardStep, setWizardStep] = useState(() => {
     try {
       const saved = JSON.parse(sessionStorage.getItem(WIZARD_STORAGE_KEY) || "null");
-      return Number.isInteger(saved?.step) ? Math.min(Math.max(saved.step, 0), 4) : 0;
+      return Number.isInteger(saved?.step) ? Math.min(Math.max(saved.step, 0), 5) : 0;
     } catch {
       return 0;
     }
   });
+  const [touchedAnexoFields, setTouchedAnexoFields] = useState({});
   const [asignaturasConfiguradas, setAsignaturasConfiguradas] = useState([]);
+  const [anexoDirty, setAnexoDirty] = useState(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(WIZARD_STORAGE_KEY) || "null");
+      return Boolean(saved?.dirty);
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     if (!isVistaAnexo) return;
     sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({
       step: wizardStep,
+      dirty: anexoDirty,
       formData: { ...anexoFormData, localFile: null },
     }));
-  }, [anexoFormData, wizardStep, isVistaAnexo]);
+  }, [anexoFormData, wizardStep, anexoDirty, isVistaAnexo]);
 
   const programaSeleccionado = programasData.find(
     (programa) => programa["programa académico"] === filtroPrograma,
@@ -265,13 +307,15 @@ const DocenciaServicio = () => {
   const fetchProgramas = async () => {
     try {
       // Cambiar a la ruta correcta que apunta a la base de datos principal
-      const response = await axios.post("https://siac-server.vercel.app/", {
+      const response = await fetchPostGeneral({
+        dataSend: {},
         sheetName: "Programas",
+        urlEndPoint: "https://siac-server.vercel.app/",
       });
 
-      if (response.data && response.data.status) {
-        console.log("Programas obtenidos:", response.data.data);
-        const programas = response.data.data || [];
+      if (response?.status) {
+        console.log("Programas obtenidos:", response.data);
+        const programas = response.data || [];
         setProgramasData(programas);
 
         // Extraer escuelas únicas (la columna "Escuela" se normaliza a "escuela")
@@ -310,13 +354,23 @@ const DocenciaServicio = () => {
   // Función para obtener los anexos técnicos
   const fetchAnexos = async () => {
     try {
-      const response = await axios.post(
-        "https://siac-server.vercel.app/getAnexos",
-        { sheetName: "ANEXOS_TEC" },
-      );
-      if (response.data && response.data.status) {
-        console.log("Anexos obtenidos:", response.data.data);
-        return response.data.data || [];
+      const response = await fetchPostGeneral({
+        dataSend: {},
+        sheetName: "ANEXOS_TEC",
+        urlEndPoint: "https://siac-server.vercel.app/getAnexos",
+      });
+      if (response?.status) {
+        console.log("Anexos obtenidos:", response.data);
+        const seenPrograms = new Set();
+        return (response.data || []).filter((anexo) => {
+          const programId = String(
+            anexo?.id_programa || anexo?.ID_PROGRAMA || anexo?.["id programa"] || "",
+          ).trim().toLowerCase();
+          if (!programId) return true;
+          if (seenPrograms.has(programId)) return false;
+          seenPrograms.add(programId);
+          return true;
+        });
       } else {
         console.warn("No se pudieron obtener los anexos:", response.data);
         return [];
@@ -330,22 +384,23 @@ const DocenciaServicio = () => {
   // Función para obtener los escenarios de práctica de la hoja ESC_PRACTICA
   const fetchEscenarios = async () => {
     try {
-      const response = await axios.post(
-        "https://siac-server.vercel.app/getInstituciones",
-        { sheetName: "ESC_PRACTICA" },
-      );
-      if (response.data && response.data.status) {
+      const response = await fetchPostGeneral({
+        dataSend: {},
+        sheetName: "ESC_PRACTICA",
+        urlEndPoint: "https://siac-server.vercel.app/getInstituciones",
+      });
+      if (response?.status) {
         console.log("=== DEBUG ESC_PRACTICA DATA ===");
-        console.log("Escenarios de práctica obtenidos:", response.data.data);
-        console.log("Primer escenario ejemplo:", response.data.data[0]);
+        console.log("Escenarios de práctica obtenidos:", response.data);
+        console.log("Primer escenario ejemplo:", response.data[0]);
         console.log(
           "Estructura de campos:",
-          Object.keys(response.data.data[0] || {}),
+          Object.keys(response.data[0] || {}),
         );
         console.log("===============================");
 
-        setEscenariosData(response.data.data || []);
-        return response.data.data || [];
+        setEscenariosData(response.data || []);
+        return response.data || [];
       } else {
         console.warn(
           "No se pudieron obtener los escenarios de práctica:",
@@ -364,14 +419,15 @@ const DocenciaServicio = () => {
   // Función para obtener los documentos de escenario de la hoja ANEXOS_ESC
   const fetchDocEscenarios = async () => {
     try {
-      const response = await axios.post(
-        "https://siac-server.vercel.app/getDocEscenarios",
-        { sheetName: "ANEXOS_ESC" },
-      );
-      if (response.data && response.data.status) {
-        console.log("Documentos de escenario obtenidos:", response.data.data);
-        setDocEscenarios(response.data.data || []);
-        return response.data.data || [];
+      const response = await fetchPostGeneral({
+        dataSend: {},
+        sheetName: "ANEXOS_ESC",
+        urlEndPoint: "https://siac-server.vercel.app/getDocEscenarios",
+      });
+      if (response?.status) {
+        console.log("Documentos de escenario obtenidos:", response.data);
+        setDocEscenarios(response.data || []);
+        return response.data || [];
       } else {
         console.warn(
           "No se pudieron obtener los documentos de escenario:",
@@ -390,12 +446,14 @@ const DocenciaServicio = () => {
   // Función para obtener los datos de prácticas formativas de la hoja "practicas"
   const fetchPracticas = async () => {
     try {
-      const response = await axios.post("https://siac-server.vercel.app/docServ", {
+      const response = await fetchPostGeneral({
+        dataSend: {},
         sheetName: "PRACTICAS",
+        urlEndPoint: "https://siac-server.vercel.app/docServ",
       });
-      if (response.data && response.data.status) {
-        console.log("Prácticas obtenidas:", response.data.data);
-        const practicas = response.data.data || [];
+      if (response?.status) {
+        console.log("Prácticas obtenidas:", response.data);
+        const practicas = response.data || [];
         setPracticasData(practicas);
         return practicas;
       } else {
@@ -1378,6 +1436,8 @@ const DocenciaServicio = () => {
 
   const handleAnexoInputChange = (e) => {
     const { name, value, files } = e.target;
+    setTouchedAnexoFields((prev) => ({ ...prev, [name]: true }));
+    setAnexoDirty(true);
 
     if (name === "localFile") {
       setAnexoFormData({
@@ -1449,9 +1509,33 @@ const DocenciaServicio = () => {
     return nombre;
   };
 
+  const getAnexoProgramId = (anexo) =>
+    String(
+      anexo?.id_programa || anexo?.ID_PROGRAMA || anexo?.["id programa"] || "",
+    ).trim();
+
+  const getAnexoForProgram = (programId) =>
+    (anexos || []).find(
+      (anexo) =>
+        getAnexoProgramId(anexo).toLowerCase() === String(programId || "").trim().toLowerCase(),
+    ) || null;
+
+  const getAnexoId = (anexo) =>
+    anexo?.id || anexo?.ID || anexo?.id_anexo || anexo?.ID_ANEXO || "";
+
+  const toInputDate = (value) => {
+    const text = String(value || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+    const match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+    return match
+      ? `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`
+      : text;
+  };
+
   // Función para manejar la selección de un único programa académico con Autocomplete
   const handleProgramaChange = (event, newValue) => {
     const programaRef = newValue || null;
+    const existingAnexo = programaRef ? getAnexoForProgram(programaRef.id_programa) : null;
 
     let nivelFormacion = "";
     let duracionSemanas = "";
@@ -1461,6 +1545,7 @@ const DocenciaServicio = () => {
 
     if (programaRef) {
       nivelFormacion =
+        existingAnexo?.nivel_formacion ||
         programaRef["nivel de formación"] ||
         programaRef["nivel de formacion"] ||
         programaRef["nivel_formacion"] ||
@@ -1471,7 +1556,7 @@ const DocenciaServicio = () => {
         programaRef["periodicidad"] ||
         programaRef["periodicidad_admision"] ||
         "";
-      periodicidadAdmision = periodicidad;
+      periodicidadAdmision = existingAnexo?.periodicidad_admision || periodicidad;
 
       // Duración en semanas: si es anual 49, si es semestral 18
       if (/anual/i.test(periodicidad)) {
@@ -1490,13 +1575,14 @@ const DocenciaServicio = () => {
       }
 
       duracionSemestres =
+        existingAnexo?.duracion_semestres ||
         programaRef["duración"] ||
         programaRef["duracion"] ||
         programaRef["duracion_programa"] ||
         "";
 
       const admit = extraerEstudiantesAdmitidos(programaRef);
-      if (admit) estudiantesAdmitidos = admit;
+      estudiantesAdmitidos = existingAnexo?.estudiantes_admitidos || admit;
     }
 
     // Buscar períodos de prácticas formativas para este programa
@@ -1539,20 +1625,58 @@ const DocenciaServicio = () => {
 
     setAnexoFormData((prev) => ({
       ...prev,
+      idAnexo: getAnexoId(existingAnexo),
       programaSeleccionado: programaRef,
       idPrograma: programaRef ? programaRef.id_programa : "",
-      nivel_formacion: nivelFormacion,
-      duracion_semanas: duracionSemanas,
-      duracion_semestres: duracionSemestres,
-      periodicidad_admision: periodicidadAdmision,
-      estudiantes_admitidos: estudiantesAdmitidos,
-      periodos_pract_formativas:
-        periodosAutocompletados.length > 0 ? periodosAutocompletados : [],
+      nivel_formacion: existingAnexo ? existingAnexo.nivel_formacion || "" : nivelFormacion,
+      duracion_semanas: existingAnexo ? existingAnexo.duracion_semanas || "" : duracionSemanas,
+      duracion_semestres: existingAnexo ? existingAnexo.duracion_semestres || "" : duracionSemestres,
+      periodicidad_admision: existingAnexo ? existingAnexo.periodicidad_admision || "" : periodicidadAdmision,
+      estudiantes_admitidos: existingAnexo ? existingAnexo.estudiantes_admitidos || "" : estudiantesAdmitidos,
+      periodos_pract_formativas: existingAnexo
+        ? String(existingAnexo.periodos_pract_formativas || "")
+              .split(/[,|]/)
+              .map((item) => item.trim())
+              .filter(Boolean)
+        : periodosAutocompletados.length > 0 ? periodosAutocompletados : [],
+      idEscenario: existingAnexo ? existingAnexo.idEscenario || existingAnexo.id_escenario || "" : "",
+      nombreEscenario: existingAnexo ? existingAnexo.nombre || existingAnexo.nombre_escenario || "" : "",
+      urlAnexo: existingAnexo ? existingAnexo.url || "" : "",
+      estadoAnexo: existingAnexo ? existingAnexo.estado || "Pendiente" : "Pendiente",
+      tipo: existingAnexo ? existingAnexo.tipo || "" : "",
+      vigenciaDesde: toInputDate(existingAnexo?.vigencia_desde || existingAnexo?.vigenciaDesde),
+      vigenciaHasta: toInputDate(existingAnexo?.vigencia_hasta || existingAnexo?.vigenciaHasta),
+      version: existingAnexo ? existingAnexo.version || "" : "",
+      cierre: existingAnexo ? existingAnexo.cierre || "" : "",
+      observaciones: existingAnexo ? existingAnexo.observaciones || "" : "",
+      seguimiento_evaluacion: existingAnexo ? existingAnexo.seguimiento_evaluacion || "" : "",
+      planes:
+        Array.isArray(existingAnexo?.planes) && existingAnexo.planes.length > 0
+          ? existingAnexo.planes
+          : [],
+      nombre_IES: existingAnexo ? existingAnexo.nombre_IES || "" : prev.nombre_IES || "Universidad del Valle",
+      correo: existingAnexo ? existingAnexo.correo || "" : "",
+      director_nombre: existingAnexo ? existingAnexo.director_nombre || "" : prev.director_nombre || "",
+      director_cargo: existingAnexo ? existingAnexo.director_cargo || "" : prev.director_cargo || "",
+      director_telefono: existingAnexo ? existingAnexo.director_telefono || "" : prev.director_telefono || "",
+      director_correo: existingAnexo ? existingAnexo.director_correo || "" : prev.director_correo || "",
+      ds_ies_nombre: existingAnexo ? existingAnexo.ds_ies_nombre || "" : "",
+      ds_ies_cargo: existingAnexo ? existingAnexo.ds_ies_cargo || "" : "",
+      ds_ies_telefono: existingAnexo ? existingAnexo.ds_ies_telefono || "" : "",
+      ds_ies_correo: existingAnexo ? existingAnexo.ds_ies_correo || "" : "",
+      fecha_formalizacion: toInputDate(existingAnexo?.fecha_formalizacion),
+      coordinacion_nombre: existingAnexo ? existingAnexo.coordinacion_nombre || "" : "",
+      coordinacion_cargo: existingAnexo ? existingAnexo.coordinacion_cargo || "" : "",
+      coordinacion_telefono: existingAnexo ? existingAnexo.coordinacion_telefono || "" : "",
+      coordinacion_correo: existingAnexo ? existingAnexo.coordinacion_correo || "" : "",
     }));
+    setAnexoDirty(!existingAnexo);
+    setTouchedAnexoFields({});
   };
 
   // Manejar selección múltiple de períodos con prácticas formativas (romanos)
   const handlePeriodoPracticaToggle = (periodoRomano) => {
+    setAnexoDirty(true);
     setAnexoFormData((prev) => {
       const periodicidad =
         prev.periodicidad_admision ||
@@ -2090,6 +2214,7 @@ const DocenciaServicio = () => {
           anexo.coordinacion_cargo || "", // AK (36): coordinacion_cargo
           anexo.coordinacion_telefono || "", // AL (37): coordinacion_telefono
           anexo.coordinacion_correo || "", // AM (38): coordinacion_correo
+          anexo.seguimiento_evaluacion || "", // AN (39): seguimiento_evaluacion
         ],
       ];
 
@@ -2104,14 +2229,16 @@ const DocenciaServicio = () => {
 
       // Hacer la solicitud POST al servidor con los datos y el nombre de la hoja
       const response = await axios.post(
-        "https://siac-server.vercel.app/sendDocServ",
-        {
-          insertData,
-          sheetName,
-        },
+        anexo.actualizar
+          ? "https://siac-server.vercel.app/updatePractice"
+          : "https://siac-server.vercel.app/sendDocServ",
+        anexo.actualizar
+          ? { updateData: insertData[0], id: anexo.id, sheetName }
+          : { insertData, sheetName },
       );
 
       if (response.status === 200) {
+        clearCache("getAnexos");
         console.log(
           "✅ Anexo guardado correctamente en la hoja ANEXOS_TEC:",
           response.data,
@@ -2167,6 +2294,7 @@ const DocenciaServicio = () => {
       );
 
       if (response.status === 200) {
+        clearCache("getDocEscenarios");
         console.log(
           "✅ Documento de escenario guardado correctamente en la hoja ANEXOS_ESC:",
           response.data,
@@ -2189,7 +2317,7 @@ const DocenciaServicio = () => {
   };
 
   // Manejar el envío del formulario de anexos
-  const handleAnexoFormSubmit = async (e) => {
+  const handleAnexoFormSubmit = async (e, finalize = true) => {
     e.preventDefault();
     try {
       console.log(
@@ -2258,8 +2386,13 @@ const DocenciaServicio = () => {
           ? "18"
           : anexoFormData.duracion_semanas;
 
+      const existingProgramAnexo = getAnexoForProgram(
+        programa.id_programa || anexoFormData.idPrograma,
+      );
+      const anexoId = anexoFormData.idAnexo || getAnexoId(existingProgramAnexo);
       const nuevoAnexo = {
-        id: Date.now(),
+        id: anexoId || Date.now(),
+        actualizar: Boolean(anexoId),
         id_programa: programa.id_programa || anexoFormData.idPrograma,
         idEscenario: anexoFormData.idEscenario,
         nombre: anexoFormData.nombreEscenario,
@@ -2305,6 +2438,7 @@ const DocenciaServicio = () => {
         coordinacion_cargo: anexoFormData.coordinacion_cargo,
         coordinacion_telefono: anexoFormData.coordinacion_telefono,
         coordinacion_correo: anexoFormData.coordinacion_correo,
+        seguimiento_evaluacion: anexoFormData.seguimiento_evaluacion || "",
       };
 
       console.log("Datos del nuevo anexo a enviar:", nuevoAnexo);
@@ -2312,10 +2446,16 @@ const DocenciaServicio = () => {
       const resultado = await sendAnexoToSheet(nuevoAnexo);
 
       if (resultado) {
+        if (!finalize) {
+          setAnexoFormData((prev) => ({ ...prev, idAnexo: nuevoAnexo.id }));
+          setAnexoDirty(false);
+          return true;
+        }
         // Reiniciar el formulario
         setAnexoFormData(initialAnexoFormData);
         setPeriodosFromPracticas(null);
         setShowAnexoForm(false);
+        setAnexoDirty(false);
         sessionStorage.removeItem(WIZARD_STORAGE_KEY);
         setWizardStep(0);
 
@@ -2358,10 +2498,12 @@ const DocenciaServicio = () => {
         navigate("/docencia-servicio");
       } else {
         alert("No se pudo guardar el convenio. Por favor intenta de nuevo.");
+        return false;
       }
     } catch (error) {
       console.error("Error al guardar los anexos:", error);
       alert("Error al guardar los anexos. Por favor intenta de nuevo.");
+      return false;
     }
   };
 
@@ -2918,7 +3060,8 @@ const DocenciaServicio = () => {
                             placeholder="ejemplo@correounivalle.edu.co"
                             fullWidth
                             required
-                            helperText="Correo electrónico institucional de contacto"
+                            error={Boolean(touchedAnexoFields.correo && getContactFieldError("correo", anexoFormData.correo))}
+                            helperText={touchedAnexoFields.correo && getContactFieldError("correo", anexoFormData.correo) || "Correo electrónico institucional de contacto"}
                           />
                         </Grid>
 
@@ -3183,6 +3326,7 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                           />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -3193,6 +3337,7 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                           />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -3203,6 +3348,9 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
+                            error={Boolean(touchedAnexoFields.director_telefono && getContactFieldError("director_telefono", anexoFormData.director_telefono))}
+                            helperText={touchedAnexoFields.director_telefono ? getContactFieldError("director_telefono", anexoFormData.director_telefono) : ""}
                           />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -3214,6 +3362,9 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
+                            error={Boolean(touchedAnexoFields.director_correo && getContactFieldError("director_correo", anexoFormData.director_correo))}
+                            helperText={touchedAnexoFields.director_correo ? getContactFieldError("director_correo", anexoFormData.director_correo) : ""}
                           />
                         </Grid>
                       </Grid>
@@ -3240,6 +3391,7 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                             placeholder="Nombre del responsable"
                           />
                         </Grid>
@@ -3251,6 +3403,7 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                             placeholder="Cargo del responsable"
                           />
                         </Grid>
@@ -3262,7 +3415,10 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                             placeholder="Teléfono / Extensión"
+                            error={Boolean(touchedAnexoFields.ds_ies_telefono && getContactFieldError("ds_ies_telefono", anexoFormData.ds_ies_telefono))}
+                            helperText={touchedAnexoFields.ds_ies_telefono ? getContactFieldError("ds_ies_telefono", anexoFormData.ds_ies_telefono) : ""}
                           />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -3274,7 +3430,10 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                             placeholder="correo@correounivalle.edu.co"
+                            error={Boolean(touchedAnexoFields.ds_ies_correo && getContactFieldError("ds_ies_correo", anexoFormData.ds_ies_correo))}
+                            helperText={touchedAnexoFields.ds_ies_correo ? getContactFieldError("ds_ies_correo", anexoFormData.ds_ies_correo) : ""}
                           />
                         </Grid>
                       </Grid>
@@ -3301,6 +3460,7 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                             placeholder="Nombre del coordinador"
                           />
                         </Grid>
@@ -3312,6 +3472,7 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                             placeholder="Cargo del coordinador"
                           />
                         </Grid>
@@ -3323,7 +3484,10 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                             placeholder="Teléfono / Extensión"
+                            error={Boolean(touchedAnexoFields.coordinacion_telefono && getContactFieldError("coordinacion_telefono", anexoFormData.coordinacion_telefono))}
+                            helperText={touchedAnexoFields.coordinacion_telefono ? getContactFieldError("coordinacion_telefono", anexoFormData.coordinacion_telefono) : ""}
                           />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -3335,7 +3499,10 @@ const DocenciaServicio = () => {
                             onChange={handleAnexoInputChange}
                             fullWidth
                             size="small"
+                            required
                             placeholder="correo@correounivalle.edu.co"
+                            error={Boolean(touchedAnexoFields.coordinacion_correo && getContactFieldError("coordinacion_correo", anexoFormData.coordinacion_correo))}
+                            helperText={touchedAnexoFields.coordinacion_correo ? getContactFieldError("coordinacion_correo", anexoFormData.coordinacion_correo) : ""}
                           />
                         </Grid>
                       </Grid>
@@ -3364,6 +3531,7 @@ const DocenciaServicio = () => {
                             InputLabelProps={{ shrink: true }}
                             fullWidth
                             size="small"
+                            required
                           />
                         </Grid>
                       </Grid>
@@ -3652,6 +3820,7 @@ const DocenciaServicio = () => {
       "Asignaturas",
       "Esquema",
       "Horarios",
+      "Revisión",
     ];
     const programaWizard = {
       ...(programaSeleccionado || {}),
@@ -3678,22 +3847,78 @@ const DocenciaServicio = () => {
       duracion_programa: anexoFormData.duracion_semestres || "",
       duracion_semestres: anexoFormData.duracion_semestres || "",
     };
-    const goNext = () => {
+    const saveCurrentStep = async () => {
+      if (wizardStep !== 0 && wizardStep !== 1) return true;
+      if (anexoFormData.idAnexo && !anexoDirty) return true;
+      const saved = await handleAnexoFormSubmit(
+        { preventDefault: () => {} },
+        false,
+      );
+      return saved !== false;
+    };
+
+    const goNext = async () => {
       if (wizardStep === 0 && !anexoFormData.programaSeleccionado) {
         alert("Selecciona el programa académico para continuar.");
         return;
       }
+      if (wizardStep === 1) {
+        const requiredFields = [
+          "director_nombre", "director_cargo", "director_telefono", "director_correo",
+          "ds_ies_nombre", "ds_ies_cargo", "ds_ies_telefono", "ds_ies_correo",
+          "coordinacion_nombre", "coordinacion_cargo", "coordinacion_telefono",
+          "coordinacion_correo", "fecha_formalizacion",
+        ];
+        const invalidField = requiredFields.find((field) => {
+          if (!String(anexoFormData[field] || "").trim()) return true;
+          return ["director_telefono", "director_correo", "ds_ies_telefono", "ds_ies_correo", "coordinacion_telefono", "coordinacion_correo"]
+            .includes(field) && getContactFieldError(field, anexoFormData[field]);
+        });
+        if (invalidField) {
+          alert("Corrige los campos de correo y teléfono antes de continuar.");
+          return;
+        }
+      }
+      if (!(await saveCurrentStep())) return;
       setWizardStep((step) => Math.min(step + 1, steps.length - 1));
     };
-    const handleStepSelect = (targetStep) => {
+    const handleStepSelect = async (targetStep) => {
       if (targetStep === wizardStep) return;
       if (targetStep >= 2 && !anexoFormData.programaSeleccionado) {
         alert("Selecciona el programa académico para continuar.");
         return;
       }
+      if (wizardStep === 1 && targetStep > 1) {
+        const requiredFields = [
+          "director_nombre", "director_cargo", "director_telefono", "director_correo",
+          "ds_ies_nombre", "ds_ies_cargo", "ds_ies_telefono", "ds_ies_correo",
+          "coordinacion_nombre", "coordinacion_cargo", "coordinacion_telefono",
+          "coordinacion_correo", "fecha_formalizacion",
+        ];
+        const invalidField = requiredFields.find((field) => {
+          if (!String(anexoFormData[field] || "").trim()) return true;
+          return ["director_telefono", "director_correo", "ds_ies_telefono", "ds_ies_correo", "coordinacion_telefono", "coordinacion_correo"]
+            .includes(field) && getContactFieldError(field, anexoFormData[field]);
+        });
+        if (invalidField) {
+          alert("Corrige los campos de correo y teléfono antes de continuar.");
+          return;
+        }
+      }
+      if (targetStep > wizardStep && !(await saveCurrentStep())) return;
       setWizardStep(targetStep);
     };
-    const finish = () => handleAnexoFormSubmit({ preventDefault: () => {} });
+    const finish = () => {
+      if (anexoFormData.idAnexo && !anexoDirty) {
+        setAnexoFormData(initialAnexoFormData);
+        setPeriodosFromPracticas(null);
+        setShowAnexoForm(false);
+        sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+        setWizardStep(0);
+        return;
+      }
+      return handleAnexoFormSubmit({ preventDefault: () => {} });
+    };
 
     return (
       <Box sx={{ width: "100%", maxWidth: "100%", boxSizing: "border-box", mx: "auto", pb: 4, overflowX: "hidden" }}>
@@ -3760,9 +3985,26 @@ const DocenciaServicio = () => {
             periodosSeleccionados={anexoFormData.periodos_pract_formativas}
             onClose={() => navigate("/docencia-servicio")}
             onBack={() => setWizardStep(3)}
-            onSaved={finish}
+          onSaved={() => setWizardStep(5)}
           />
         )}
+      {wizardStep === 5 && (
+        <ModalRevision
+          open
+          embedded
+          programa={programaWizard}
+          anexoFormData={anexoFormData}
+          practicasData={practicasData}
+          escenariosData={escenariosData && escenariosData.length > 0 ? escenariosData : data}
+          docEscenariosData={docEscenarios}
+          onSeguimientoChange={(value) => {
+            setAnexoDirty(true);
+            setAnexoFormData((prev) => ({ ...prev, seguimiento_evaluacion: value }));
+          }}
+          onBack={() => setWizardStep(4)}
+          onFinish={finish}
+        />
+      )}
         {(wizardStep === 0 || wizardStep === 1) && (
           <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
             <Button disabled={wizardStep === 0} onClick={() => setWizardStep((step) => step - 1)}>Atrás</Button>

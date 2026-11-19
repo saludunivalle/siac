@@ -307,6 +307,7 @@ export default function ModalHorarios({
     }
     return Array.from({ length: totalPeriodos || 1 }, (_, i) => i + 1);
   }, [periodosSeleccionados, totalPeriodos, esAnual]);
+  const esUltimoPeriodo = tab >= periods.length - 1;
 
   const blocksFor = (period) => {
     // Un mismo esquema puede aparecer repetido en la hoja (por ejemplo,
@@ -541,7 +542,11 @@ export default function ModalHorarios({
           });
         }));
         if (results.some((result) => !result?.status)) throw new Error("benefit-save");
-        clearCache();
+        clearCache("/docServ");
+        if (!esUltimoPeriodo) {
+          setTab((current) => current + 1);
+          return;
+        }
         onSaved?.(benefitData);
         if (!embedded) onClose?.();
       } catch {
@@ -731,7 +736,11 @@ export default function ModalHorarios({
             optionError,
           );
         }
-      clearCache();
+      clearCache("/docServ");
+      if (!esUltimoPeriodo) {
+        setTab((current) => current + 1);
+        return;
+      }
       onSaved?.();
       if (!embedded) onClose?.();
     } catch {
@@ -826,7 +835,7 @@ export default function ModalHorarios({
                 : null;
 
               return (
-                <>
+                <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
                   {/* Barra horizontal de ciclos con ancho proporcional al número de semanas */}
                   <Box
                     onClick={(event) => event.stopPropagation()}
@@ -837,6 +846,7 @@ export default function ModalHorarios({
                       mt: 2,
                       mb: activeBlock ? 1.5 : 0,
                       width: "100%",
+                      order: 1,
                     }}
                   >
                     {periodBlocks.map((block, blockIndex) => {
@@ -913,8 +923,9 @@ export default function ModalHorarios({
                             <Box
                               sx={{
                                 display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                                justifyContent: "flex-start",
+                                flexDirection: "column",
                                 gap: 1,
                                 flexWrap: "wrap",
                                 minWidth: 0,
@@ -942,6 +953,7 @@ export default function ModalHorarios({
                                   whiteSpace: "nowrap",
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
+                                  fontSize: "0.8rem",
                                 }}
                               >
                                 Total horas del ciclo:{" "}
@@ -967,6 +979,128 @@ export default function ModalHorarios({
                     })}
                   </Box>
 
+                  {/* Resumen global y del período: no depende del ciclo desplegado */}
+                  {(() => {
+                    const periodSubjects = [];
+                    periodBlocks.forEach((block) => {
+                      (block.subjects || []).forEach((item) => {
+                        if (
+                          !periodSubjects.some((existing) =>
+                            isSameSubjectOrPractice(existing, item),
+                          )
+                        ) {
+                          periodSubjects.push(item);
+                        }
+                      });
+                    });
+
+                    const totalGlobalFor = (item) =>
+                      periods.reduce(
+                        (total, periodNumberValue) =>
+                          total +
+                          blocksFor(periodNumberValue).reduce((periodTotal, block) => {
+                            const blockSubject = (block.subjects || []).find((candidate) =>
+                              isSameSubjectOrPractice(candidate, item),
+                            );
+                            return blockSubject
+                              ? periodTotal + statsFor(block, blockSubject).totalHorasGlobales
+                              : periodTotal;
+                          }, 0),
+                        0,
+                      );
+
+                    return periodSubjects.length > 0 ? (
+                      <Box
+                        sx={{
+                          mt: 1.5,
+                          mb: 1.5,
+                          order: 3,
+                          p: 1.5,
+                          border: "1px solid #c5cae9",
+                          borderRadius: 1.5,
+                          backgroundColor: "#f8f9ff",
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 700, color: "#283593", mb: 1 }}
+                        >
+                          Resumen de asignaturas del período {toRoman(periods[tab] || 1)}
+                        </Typography>
+                        <Stack spacing={1}>
+                          {periodSubjects.map((item) => {
+                            const periodHours = totalHorasPeriodoFor(
+                              periods[tab] || 1,
+                              item,
+                            );
+                            const globalHours = totalGlobalFor(item);
+                            const ratio =
+                              ratios[String(item.id_asignatura)] ||
+                              assignments.find(
+                                (assignment) =>
+                                  String(
+                                    [assignment.id, assignment.id_asignatura].find(
+                                      (value) => String(value ?? "").trim() !== "",
+                                    ),
+                                  ) === String(item.id_asignatura),
+                              )?.horas_independientes_opcion || "1:1";
+                            const label = item.nombre_asignatura;
+                            return (
+                              <Box
+                                key={`${item.id_asignatura}-${item.id_practica || "general"}`}
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1.5,
+                                  flexWrap: "wrap",
+                                  p: 1,
+                                  borderRadius: 1,
+                                  backgroundColor: "#fff",
+                                  border: "1px solid #e0e3f5",
+                                }}
+                              >
+                                <Typography sx={{ flex: 1, minWidth: 220, fontWeight: 600 }}>
+                                  {label}
+                                </Typography>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                  <Typography variant="body2">Relación:</Typography>
+                                  <FormControl size="small" sx={{ minWidth: 70 }}>
+                                    <Select
+                                      value={ratio}
+                                      disabled={readOnly}
+                                      sx={{ fontSize: "0.8rem", height: 28 }}
+                                      onChange={(event) =>
+                                        setRatios((old) => ({
+                                          ...old,
+                                          [String(item.id_asignatura)]: event.target.value,
+                                        }))
+                                      }
+                                    >
+                                      {ratioOptions.map((option) => (
+                                        <MenuItem key={option} value={option}>
+                                          {option}
+                                        </MenuItem>
+                                      ))}
+                                    </Select>
+                                  </FormControl>
+                                </Box>
+                                <Typography variant="body2">
+                                  Horas del período: <b>{periodHours}</b>
+                                </Typography>
+                                <Typography variant="body2">
+                                  Horas globales: <b>{globalHours}</b>
+                                </Typography>
+                                <Typography variant="body2">
+                                  Créditos: <b>{(periodHours / 48).toFixed(2)}</b>
+                                </Typography>
+                              </Box>
+                            );
+                          })}
+                        </Stack>
+                      </Box>
+                    ) : null;
+                  })()}
+
                   {/* Panel desplegado del ciclo seleccionado ocupando todo el ancho */}
                   {activeBlock && (
                     <Box
@@ -974,6 +1108,7 @@ export default function ModalHorarios({
                       sx={{
                         width: "100%",
                         boxSizing: "border-box",
+                        order: 2,
                         p: 2,
                         border: "1px solid #d0d7de",
                         borderRadius: 1,
@@ -1017,14 +1152,18 @@ export default function ModalHorarios({
                                 }}
                                 sx={{
                                   color: "#fff",
-                                  opacity: subject && !isSelected ? 0.45 : 1,
+                                  opacity: subject && !isSelected ? 0.28 : 1,
+                                  transform: isSelected ? "scale(1.04)" : "scale(1)",
+                                  position: "relative",
+                                  zIndex: isSelected ? 1 : 0,
                                   backgroundColor: colorFor(s),
                                   "&.MuiButton-contained": {
                                     backgroundColor: colorFor(s),
                                   },
                                   boxShadow: isSelected
-                                    ? "0 0 0 3px rgba(0, 0, 0, 0.28)"
+                                    ? "0 0 0 3px rgba(0, 0, 0, 0.28), 0 4px 10px rgba(0, 0, 0, 0.22)"
                                     : "none",
+                                  transition: "opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease",
                                   "&:hover": {
                                     backgroundColor: colorFor(s),
                                   },
@@ -1071,10 +1210,10 @@ export default function ModalHorarios({
                               >
                                 <Box
                                   sx={{
-                                    display: "flex",
                                     alignItems: "center",
                                     gap: 0.75,
                                     flexShrink: 0,
+                                    display: "none",
                                   }}
                                 >
                                   <Typography
@@ -1130,6 +1269,7 @@ export default function ModalHorarios({
                                   sx={{
                                     whiteSpace: "nowrap",
                                     fontSize: "0.8rem",
+                                    display: "none",
                                   }}
                                 >
                                   Total global de horas:{" "}
@@ -1140,6 +1280,7 @@ export default function ModalHorarios({
                                   sx={{
                                     whiteSpace: "nowrap",
                                     fontSize: "0.8rem",
+                                    display: "none",
                                   }}
                                 >
                                   Total horas del periodo:{" "}
@@ -1155,6 +1296,7 @@ export default function ModalHorarios({
                                   sx={{
                                     whiteSpace: "nowrap",
                                     fontSize: "0.8rem",
+                                    display: "none",
                                   }}
                                 >
                                   Créditos: <b>{stats.creditos.toFixed(2)}</b>
@@ -1338,6 +1480,15 @@ export default function ModalHorarios({
                                       backgroundColor: occupiedBy
                                         ? colorFor(occupiedBy)
                                         : "transparent",
+                                      opacity:
+                                        subject && occupiedBy && occupiedByOther
+                                          ? 0.28
+                                          : 1,
+                                      filter:
+                                        subject && occupiedBy && occupiedByOther
+                                          ? "saturate(0.55)"
+                                          : "none",
+                                      transition: "opacity 0.2s ease, filter 0.2s ease",
                                       "& .MuiCheckbox-root": { p: 0.25 },
                                     }}
                                   />
@@ -1349,7 +1500,7 @@ export default function ModalHorarios({
                       </Box>
                     </Box>
                   )}
-                </>
+                </Box>
               );
             })()}
           </>
@@ -1362,7 +1513,11 @@ export default function ModalHorarios({
         <Box sx={{ flexGrow: 1 }} />
         <Button onClick={onClose}>Cancelar</Button>
         <Button variant="contained" onClick={save} disabled={saving || loading}>
-          {saving ? "Guardando..." : "Finalizar convenio"}
+          {saving
+            ? "Guardando..."
+            : esUltimoPeriodo
+              ? "Guardar y continuar"
+              : "Guardar y continuar con el siguiente periodo"}
         </Button>
       </DialogActions>
     </Wrapper>
