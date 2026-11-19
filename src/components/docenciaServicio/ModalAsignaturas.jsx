@@ -324,6 +324,31 @@ const distributeWeeksToPractices = (practicesList, totalAsigWeeks) => {
   return practicesList;
 };
 
+const calculatePracticeDerivedValues = (practice) => {
+  const simultaneous = Number(String(practice?.numero_estudiantes || "").match(/\d+/)?.[0]) || 0;
+  const groups = Number(String(practice?.grupo || "").match(/\d+/)?.[0]) || 0;
+  const beneficiaries = practice?.estudiantes_beneficiados ?? "";
+  return [
+    simultaneous,
+    groups,
+    simultaneous * groups,
+    groups,
+    groups,
+    beneficiaries,
+    beneficiaries,
+  ];
+};
+
+const readCalculatedPracticeValues = (row) => [
+  readColumn(row, "max_estudiantes_simultanea", "numero maximo de estudiantes en practica simultanea"),
+  readColumn(row, "grupos_estudiantes_dia", "numero de grupos de estudiantes que realizaran la practica o rotacion al dia"),
+  readColumn(row, "max_estudiantes_escenario_dia", "maximo numero de estudiantes que podrian desarrollar la practica o rotacion por el escenario al dia"),
+  readColumn(row, "grupos_diferentes_semana", "total de grupos de diferentes estudiantes que podrian desarrollar la practica o rotacion en el escenario a la semana"),
+  readColumn(row, "veces_programada_periodo", "numero de veces que se programara la practica o rotacion"),
+  readColumn(row, "max_beneficiarios_practica", "maximo numero de estudiantes beneficiarios del escenario discriminado por practica o rotacion"),
+  readColumn(row, "max_beneficiarios_periodo", "maximo numero de estudiantes beneficiarios del escenario agrupados por periodo academico"),
+];
+
 const normalizePractice = (row) => {
   const ra = String(
     readColumn(
@@ -385,6 +410,7 @@ const normalizePractice = (row) => {
       "beneficiados",
       "estudiantes beneficiados",
     ),
+    calculatedValues: readCalculatedPracticeValues(row),
   };
 };
 
@@ -484,12 +510,8 @@ export default function ModalAsignaturas({
           sheetName: "PRACTICAS",
           urlEndPoint: ENDPOINT,
         });
-        if (
-          response.data &&
-          response.data.status &&
-          Array.isArray(response.data.data)
-        ) {
-          return response.data.data;
+        if (response?.status && Array.isArray(response.data)) {
+          return response.data;
         }
       } catch (err) {
         console.warn("No se pudieron cargar prácticas formativas:", err);
@@ -675,8 +697,8 @@ export default function ModalAsignaturas({
       urlEndPoint: "https://siac-server.vercel.app/getInstituciones",
     })
       .then((res) => {
-        if (res.data?.status && Array.isArray(res.data.data)) {
-          setEscenarios(res.data.data);
+        if (res?.status && Array.isArray(res.data)) {
+          setEscenarios(res.data);
         }
       })
       .catch((e) => console.warn("No se pudieron cargar escenarios:", e));
@@ -860,7 +882,18 @@ export default function ModalAsignaturas({
       setExpandedPractices((prev) => ({ ...prev, [invalidPractice.practice.localId]: true }));
       return;
     }
-    if (serializeAsignaturasSnapshot(rows) === initialSnapshotRef.current) {
+    const calculatedValuesMissing = rows.some((row) =>
+      (row.practicas || []).some((practice) =>
+        practice.id &&
+        (!Array.isArray(practice.calculatedValues) ||
+          practice.calculatedValues.length < 7 ||
+          practice.calculatedValues.some((value) => String(value ?? "").trim() === "")),
+      ),
+    );
+    if (
+      serializeAsignaturasSnapshot(rows) === initialSnapshotRef.current &&
+      !calculatedValuesMissing
+    ) {
       if (!isLastPeriod) {
         setPeriodoActivo((current) => current + 1);
         return;
@@ -992,6 +1025,7 @@ export default function ModalAsignaturas({
               practice.numero_estudiantes || "",
               practice.grupo || "",
               practice.estudiantes_beneficiados || "",
+              ...calculatePracticeDerivedValues(practice),
             ],
           };
         }),
@@ -1027,7 +1061,12 @@ export default function ModalAsignaturas({
         practicas: (row.practicas || []).map((practice) => {
           const meta = savedPracticeMeta.get(practice.localId);
           return meta
-            ? { ...practice, id: meta.id, idPractica: meta.idPractica }
+            ? {
+                ...practice,
+                id: meta.id,
+                idPractica: meta.idPractica,
+                calculatedValues: calculatePracticeDerivedValues(practice),
+              }
             : practice;
         }),
       }));

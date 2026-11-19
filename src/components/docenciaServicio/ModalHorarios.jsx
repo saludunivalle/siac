@@ -370,27 +370,33 @@ export default function ModalHorarios({
     `${block.id}-${subject.id_asignatura}-${subject.id_practica || subject.id || "general"}`;
   const toggle = (block, subject, day, hour) => {
     const key = keyFor(block, subject);
-    const current = schedules[key]?.horario || emptySchedule();
+    const existing = scheduleFor(block, subject);
+    const current = existing?.horario || emptySchedule();
     const values = current[day] || [];
     const next = values.includes(hour)
       ? values.filter((x) => x !== hour)
       : [...values, hour];
-    setSchedules((old) => ({
-      ...old,
-      [key]: {
-        ...(old[key] || {
+    setSchedules((old) => {
+      const existingKey = Object.keys(old).find((itemKey) => old[itemKey] === existing);
+      const nextSchedules = { ...old };
+      if (existingKey && existingKey !== key) delete nextSchedules[existingKey];
+      return {
+        ...nextSchedules,
+        [key]: {
+          ...(existing || old[key] || {
           ...block,
           id_esquema: subject.id,
           id_asignatura: subject.id_asignatura,
           horario: emptySchedule(),
-        }),
-        ...block,
-        id_esquema: subject.id,
-        id_asignatura: subject.id_asignatura,
-        nombre_asignatura: subject.nombre_asignatura,
-        horario: { ...current, [day]: next },
-      },
-    }));
+          }),
+          ...block,
+          id_esquema: subject.id,
+          id_asignatura: subject.id_asignatura,
+          nombre_asignatura: subject.nombre_asignatura,
+          horario: { ...current, [day]: next },
+        },
+      };
+    });
   };
   const hasConflict = (block, subject, day, hour) =>
     blocks.some(
@@ -400,7 +406,7 @@ export default function ModalHorarios({
         String(other.id_asignatura) !== String(subject.id_asignatura) &&
         Number(other.semana_inicio) <= Number(block.semana_fin) &&
         Number(other.semana_fin) >= Number(block.semana_inicio) &&
-        schedules[keyFor(other, other)]?.horario?.[day]?.includes(hour),
+        scheduleFor(other, other)?.horario?.[day]?.includes(hour),
     );
   const scheduleFor = (block, subject) => {
     const direct = schedules[keyFor(block, subject)];
@@ -1429,10 +1435,7 @@ export default function ModalHorarios({
                               </Typography>
                               {DAYS.map((day) => {
                                 const occupiedBy = activeBlock.subjects.find((s) =>
-                                  (
-                                    schedules[keyFor(activeBlock, s)]?.horario?.[day] ||
-                                    []
-                                  ).includes(hour),
+                                  (scheduleFor(activeBlock, s)?.horario?.[day] || []).includes(hour),
                                 );
                                 const occupiedByOther = Boolean(
                                   occupiedBy &&
